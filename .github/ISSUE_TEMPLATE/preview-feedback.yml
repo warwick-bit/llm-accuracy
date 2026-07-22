@@ -1,0 +1,51 @@
+name: Private-preview feedback
+description: Report a sanitized reproducible behaviour or installation problem.
+title: "[preview] "
+labels:
+  - preview-feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use synthetic, authorised examples only. Do not include credentials, customer data, raw prompts, provider payloads, logs, or private transcripts.
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Claude Code
+        - Installation / marketplace
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version
+      placeholder: "0.3.0"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected evidence boundary
+      description: State what the model should have treated as evidence, inference, or unknown.
+      placeholder: Use synthetic data and identifiers only.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Replace real names, values, and responses with synthetic equivalents.
+      placeholder: Sanitized reproduction only.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I am authorised to share this sanitized reproduction.
+          required: true
+        - label: This issue contains no credentials, customer data, raw prompts, provider payloads, logs, or private transcripts.
+          required: true

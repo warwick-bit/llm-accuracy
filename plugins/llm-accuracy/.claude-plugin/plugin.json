@@ -1,0 +1,8 @@
+{
+  "name": "llm-accuracy",
+  "description": "Private-preview accuracy hygiene for Claude Code: evidence discipline, stale-memory checks, and self-audit.",
+  "version": "0.3.0",
+  "author": {
+    "name": "Warwick"
+  }
+}

@@ -1,0 +1,47 @@
+name: Private Preview Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  private-preview-gates:
+    name: private-preview-gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependency
+        run: python3 -m pip install --disable-pip-version-check pytest
+
+      - name: Run distribution tests
+        run: python3 -m pytest -q
+
+      - name: Validate manifests and hook syntax
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          paths = [
+              Path(".claude-plugin/marketplace.json"),
+              Path("plugins/llm-accuracy/.claude-plugin/plugin.json"),
+              Path("plugins/llm-accuracy/hooks.json"),
+              Path("plugins/llm-accuracy/hooks/hooks.json"),
+          ]
+          for path in paths:
+              json.loads(path.read_text(encoding="utf-8"))
+          PY
+          find plugins/llm-accuracy/hooks -name '*.py' -print0 | xargs -0 -r python3 -m py_compile
+
+      - name: Enforce private-preview distribution boundary
+        run: python3 scripts/check_private_preview_boundary.py plugins/llm-accuracy
