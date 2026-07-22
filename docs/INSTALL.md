@@ -83,13 +83,17 @@ an explicit check of an earlier answer.
 In **Cowork**, the plugin's skills and advisory hooks can run. The hook behavior
 is the same targeted, non-blocking behavior described for Claude Code terminal.
 
-## Claude chat on the web — organization-managed only
+## Claude chat on the web — personal marketplace (skills only)
 
-Individual preview participants cannot self-install this private GitHub
-marketplace in Claude chat on the web. A Team or Enterprise organization owner
-can connect a private GitHub repository to an organization marketplace and make
-the plugin available to members. That organization path is separate from this
-personal private preview.
+On a paid Claude plan, open **Customize**, then **Plugins**. Under **Personal
+plugins**, select **Add marketplace**, choose **Add from a repository**, and add
+`warwick-bit/llm-accuracy`. Use the GitHub account that the preview maintainer
+has added to the private repository, then install LLM Accuracy from the new
+marketplace.
+
+Chat exposes the plugin's skills, including self-audit, but does not run its
+advisory hooks. Team and Enterprise owners can instead connect the private
+repository as an organization marketplace for controlled member distribution.
 
 ## Claude Code on the web — pilot only
 

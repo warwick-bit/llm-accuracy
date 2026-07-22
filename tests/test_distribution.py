@@ -59,4 +59,6 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     assert "No session ledger, prompt history, or tool output" in plugin_readme
     assert "Claude Code terminal or IDE — full preview" in install_guide
     assert "Claude Desktop Chat — skills-only" in install_guide
+    assert "Claude chat on the web — personal marketplace (skills only)" in install_guide
+    assert "Add marketplace" in install_guide
     assert "Claude Code on the web — pilot only" in install_guide

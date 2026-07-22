@@ -35,8 +35,10 @@ access to this private repository is limited to invited GitHub collaborators.
 - **Claude Desktop Chat:** upload the release ZIP for skills-only use. The
   automatic advisory hooks do not run in chat.
 - **Claude Cowork:** upload the same ZIP for the full skills-and-hooks preview.
-- **Claude chat on the web:** requires a Team or Enterprise administrator to
-  distribute the plugin through an organization marketplace.
+- **Claude chat on the web:** add the private GitHub marketplace through
+  **Customize → Plugins** for skills-only use; Chat does not run the advisory
+  hooks. Team and Enterprise owners can alternatively distribute it through an
+  organization marketplace.
 - **Claude Code on the web:** not yet supported for this preview; it needs a
   project-scoped cloud smoke test against a private marketplace.
 
