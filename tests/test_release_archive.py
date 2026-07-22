@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import zipfile
 from pathlib import Path
 from types import ModuleType
@@ -50,3 +51,23 @@ def test_release_archive_rejects_external_symlink(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="symlink artifact: linked.md"):
         builder.build_archive(tmp_path / "llm-accuracy.zip", plugin=plugin)
+
+
+def test_release_archive_omits_untracked_plugin_files(tmp_path: Path) -> None:
+    builder = load_builder()
+    repository = tmp_path / "source"
+    plugin = repository / "plugins" / "llm-accuracy"
+    (plugin / ".claude-plugin").mkdir(parents=True)
+    (plugin / ".claude-plugin" / "plugin.json").write_text("{}", encoding="utf-8")
+    (plugin / "README.md").write_text("tracked source", encoding="utf-8")
+
+    subprocess.run(["git", "init", "-q", str(repository)], check=True)
+    subprocess.run(["git", "-C", str(repository), "add", "plugins"], check=True)
+    (plugin / "untracked-release-note.md").write_text("do not ship", encoding="utf-8")
+
+    archive_path = builder.build_archive(tmp_path / "llm-accuracy.zip", plugin=plugin)
+    with zipfile.ZipFile(archive_path) as archive:
+        names = set(archive.namelist())
+
+    assert "README.md" in names
+    assert "untracked-release-note.md" not in names

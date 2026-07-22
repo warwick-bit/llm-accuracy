@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import zipfile
 from pathlib import Path
 
@@ -30,14 +31,55 @@ def plugin_version(plugin: Path = PLUGIN) -> str:
     return version
 
 
+def repository_root(plugin: Path) -> Path:
+    """Return the Git worktree that owns the plugin source."""
+    result = subprocess.run(
+        ["git", "-C", str(plugin), "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    if result.returncode:
+        raise ValueError("plugin source must be inside a Git worktree")
+    return Path(result.stdout.strip())
+
+
+def tracked_plugin_files(plugin: Path) -> list[Path]:
+    """Return the Git-tracked files rooted at the plugin source."""
+    repository = repository_root(plugin)
+    try:
+        relative_plugin = plugin.relative_to(repository)
+    except ValueError as error:
+        raise ValueError("plugin source must be inside its Git worktree") from error
+    result = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repository),
+            "ls-files",
+            "--cached",
+            "-z",
+            "--",
+            relative_plugin.as_posix(),
+        ],
+        capture_output=True,
+        check=True,
+    )
+    return sorted(
+        repository / Path(relative_path)
+        for relative_path in result.stdout.decode().split("\0")
+        if relative_path
+    )
+
+
 def archive_members(plugin: Path = PLUGIN) -> list[Path]:
-    """Return deterministic, preview-safe source files for the release archive."""
+    """Return deterministic, preview-safe tracked files for the release archive."""
     violations = boundary_violations(plugin)
     if violations:
         raise ValueError("private-preview boundary check failed: " + "; ".join(violations))
     return [
         path
-        for path in sorted(plugin.rglob("*"))
+        for path in tracked_plugin_files(plugin)
         if path.is_file()
         and not (IGNORED_PARTS & set(path.relative_to(plugin).parts))
         and path.suffix.lower() not in IGNORED_SUFFIXES
