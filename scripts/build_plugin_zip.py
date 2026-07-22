@@ -51,6 +51,13 @@ def tracked_plugin_files(plugin: Path) -> list[Path]:
         relative_plugin = plugin.relative_to(repository)
     except ValueError as error:
         raise ValueError("plugin source must be inside its Git worktree") from error
+    for diff_args in (("diff",), ("diff", "--cached")):
+        result = subprocess.run(
+            ["git", "-C", str(repository), *diff_args, "--quiet", "--", relative_plugin.as_posix()],
+            check=False,
+        )
+        if result.returncode:
+            raise ValueError("plugin source has uncommitted changes")
     result = subprocess.run(
         [
             "git",

@@ -53,8 +53,7 @@ def test_release_archive_rejects_external_symlink(tmp_path: Path) -> None:
         builder.build_archive(tmp_path / "llm-accuracy.zip", plugin=plugin)
 
 
-def test_release_archive_omits_untracked_plugin_files(tmp_path: Path) -> None:
-    builder = load_builder()
+def tracked_test_plugin(tmp_path: Path) -> Path:
     repository = tmp_path / "source"
     plugin = repository / "plugins" / "llm-accuracy"
     (plugin / ".claude-plugin").mkdir(parents=True)
@@ -62,7 +61,16 @@ def test_release_archive_omits_untracked_plugin_files(tmp_path: Path) -> None:
     (plugin / "README.md").write_text("tracked source", encoding="utf-8")
 
     subprocess.run(["git", "init", "-q", str(repository)], check=True)
+    subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
+    subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test User"], check=True)
     subprocess.run(["git", "-C", str(repository), "add", "plugins"], check=True)
+    subprocess.run(["git", "-C", str(repository), "commit", "-qm", "fixture"], check=True)
+    return plugin
+
+
+def test_release_archive_omits_untracked_plugin_files(tmp_path: Path) -> None:
+    builder = load_builder()
+    plugin = tracked_test_plugin(tmp_path)
     (plugin / "untracked-release-note.md").write_text("do not ship", encoding="utf-8")
 
     archive_path = builder.build_archive(tmp_path / "llm-accuracy.zip", plugin=plugin)
@@ -71,3 +79,12 @@ def test_release_archive_omits_untracked_plugin_files(tmp_path: Path) -> None:
 
     assert "README.md" in names
     assert "untracked-release-note.md" not in names
+
+
+def test_release_archive_rejects_uncommitted_tracked_changes(tmp_path: Path) -> None:
+    builder = load_builder()
+    plugin = tracked_test_plugin(tmp_path)
+    (plugin / "README.md").write_text("uncommitted change", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="plugin source has uncommitted changes"):
+        builder.build_archive(tmp_path / "llm-accuracy.zip", plugin=plugin)
