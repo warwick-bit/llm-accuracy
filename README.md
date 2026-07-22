@@ -27,10 +27,23 @@ for responsible disclosure.
 
 ## Install for preview participants
 
-Add this private Git repository as a marketplace in Claude Code, then install
-`llm-accuracy`. Installation access is limited to invited GitHub collaborators.
-The first preview release must be validated in a clean local Claude Code runtime
-before relying on it for consequential work.
+Choose the installation path that matches your Claude environment. Installation
+access to this private repository is limited to invited GitHub collaborators.
+
+- **Claude Code in a terminal or IDE:** the full preview, including advisory
+  hooks. Follow the [terminal guide](docs/INSTALL.md#claude-code-terminal-or-ide-full-preview).
+- **Claude Desktop Chat:** upload the release ZIP for skills-only use. The
+  automatic advisory hooks do not run in chat.
+- **Claude Cowork:** upload the same ZIP for the full skills-and-hooks preview.
+- **Claude chat on the web:** requires a Team or Enterprise administrator to
+  distribute the plugin through an organization marketplace.
+- **Claude Code on the web:** not yet supported for this preview; it needs a
+  project-scoped cloud smoke test against a private marketplace.
+
+See the complete [installation guide](docs/INSTALL.md), including activation,
+updates, removal, and troubleshooting. The first preview release must be
+validated in a clean supported runtime before relying on it for consequential
+work.
 
 ## Day-to-day use
 

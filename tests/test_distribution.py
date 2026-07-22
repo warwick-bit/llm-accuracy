@@ -47,6 +47,7 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
     preview = (ROOT / "PREVIEW.md").read_text(encoding="utf-8")
     plugin_readme = (PLUGIN / "README.md").read_text(encoding="utf-8")
+    install_guide = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
 
     assert "not open source" in root_readme.lower()
     assert "Do not submit credentials" in root_readme
@@ -56,3 +57,6 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     assert "Never submit" in preview
     assert "does not guarantee" in plugin_readme
     assert "No session ledger, prompt history, or tool output" in plugin_readme
+    assert "Claude Code terminal or IDE — full preview" in install_guide
+    assert "Claude Desktop Chat — skills-only" in install_guide
+    assert "Claude Code on the web — pilot only" in install_guide
