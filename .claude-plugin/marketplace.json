@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "llm-accuracy-preview",
+  "description": "Private preview of evidence-first accuracy hygiene for LLM workflows.",
+  "owner": {
+    "name": "Warwick"
+  },
+  "plugins": [
+    {
+      "name": "llm-accuracy",
+      "description": "Evidence discipline, stale-memory checks, calibrated uncertainty, and self-audit.",
+      "category": "productivity",
+      "source": "./plugins/llm-accuracy"
+    }
+  ]
+}
