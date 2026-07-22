@@ -39,6 +39,9 @@ def boundary_violations(plugin: Path) -> list[str]:
         relative = path.relative_to(plugin)
         if "__pycache__" in relative.parts:
             continue
+        if path.is_symlink():
+            violations.append(f"symlink artifact: {relative}")
+            continue
         if any(
             part.lower().startswith(FORBIDDEN_PATH_PREFIXES)
             for part in relative.parts

@@ -30,6 +30,14 @@ def test_non_text_artifact_is_rejected_cleanly(tmp_path: Path) -> None:
     ]
 
 
+def test_symlink_is_rejected_before_its_target_is_read(tmp_path: Path) -> None:
+    outside = tmp_path.parent / "outside-preview-artifact.md"
+    outside.write_text("private source", encoding="utf-8")
+    (tmp_path / "linked.md").symlink_to(outside)
+
+    assert boundary_violations(tmp_path) == ["symlink artifact: linked.md"]
+
+
 def test_docs_may_discuss_disallowed_commands(tmp_path: Path) -> None:
     (tmp_path / "README.md").write_text(
         "Do not use subprocess or curl in this plugin.\n", encoding="utf-8"
