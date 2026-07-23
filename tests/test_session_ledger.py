@@ -287,6 +287,37 @@ def test_symlinked_state_directory_is_never_read_or_pruned(tmp_path: Path) -> No
     assert not ledger.begin_plan(session_id, data_root=data_root, cwd="/work/project", now=NOW)
 
 
+def test_symlinked_plugin_data_root_is_never_read_pruned_or_cleared(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    outside = tmp_path / "outside"
+    data_root = tmp_path / "plugin-data"
+    outside.mkdir()
+    data_root.symlink_to(outside, target_is_directory=True)
+    session_id = "session-one"
+    external_record = ledger.record_path(data_root, session_id)
+    external_record.parent.mkdir(parents=True)
+    external_record.write_text(
+        json.dumps(
+            {
+                "compact_summary": "Synthetic external summary.",
+                "expires_at": ledger.timestamp(NOW + timedelta(days=1)),
+                "plan_id": ledger.DEFAULT_PLAN_ID,
+                "schema_version": ledger.SCHEMA_VERSION,
+                "workspace_hash": ledger.canonical_workspace_hash("/work/project"),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert not ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    assert ledger.session_start_context(
+        session_start_payload(source="compact"), data_root=data_root, now=NOW
+    ) is None
+    assert not ledger.begin_plan(session_id, data_root=data_root, cwd="/work/project", now=NOW)
+    assert not ledger.clear_all(data_root=data_root)
+    assert external_record.exists()
+
+
 def test_hook_emits_session_start_json_and_clear_all_is_local(tmp_path: Path, monkeypatch, capsys) -> None:
     ledger = load_ledger()
     data_root = tmp_path / "plugin-data"

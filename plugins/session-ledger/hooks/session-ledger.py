@@ -79,7 +79,7 @@ def session_directory(data_root: Path, session_id: str) -> Path:
 def state_paths_are_safe(data_root: Path, session_id: str | None = None) -> bool:
     """Return whether ledger state can be used without traversing a symlink."""
     state = state_directory(data_root)
-    paths = (state, state / "sessions")
+    paths = (data_root, state, state / "sessions")
     if session_id:
         paths += (session_directory(data_root, session_id),)
     return not any(path.is_symlink() for path in paths)
@@ -391,7 +391,7 @@ def clear_all(data_root: Path | None = None) -> bool:
     if not root:
         return False
     target = state_directory(root)
-    if target.is_symlink():
+    if root.is_symlink() or target.is_symlink():
         return False
     try:
         if target.exists():
