@@ -818,9 +818,12 @@ def main(arguments: list[str] | None = None) -> int:
             "clear",
         ),
     )
+    parser.add_argument("--plugin-data")
     parser.add_argument("--session-id")
     try:
         options = parser.parse_args(arguments)
+        if options.plugin_data:
+            os.environ[DATA_ENVIRONMENT_VARIABLE] = options.plugin_data
         if options.action in {"begin-plan", "clear"}:
             run_local_action(options.action, options.session_id or "")
         else:

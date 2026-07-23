@@ -213,12 +213,20 @@ def test_hook_commands_include_the_script_and_action() -> None:
     post_compact = hooks["PostCompact"][0]["hooks"][0]
     session_start = hooks["SessionStart"][0]["hooks"][0]
 
-    assert capture["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" capture'
-    assert stop["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" capture'
-    assert pre_compact["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" pre-compact'
-    assert post_compact["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" post-compact'
-    assert session_start["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" session-start'
-    assert all("args" not in hook for hook in (capture, stop, pre_compact, post_compact, session_start))
+    for hook, action in (
+        (capture, "capture"),
+        (stop, "capture"),
+        (pre_compact, "pre-compact"),
+        (post_compact, "post-compact"),
+        (session_start, "session-start"),
+    ):
+        assert hook["command"] == "python3"
+        assert hook["args"] == [
+            "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+            action,
+            "--plugin-data",
+            "${CLAUDE_PLUGIN_DATA}",
+        ]
 
 
 def test_hook_source_uses_python_3_8_compatible_utc_timezone() -> None:
@@ -241,6 +249,22 @@ def test_session_start_initializes_an_empty_same_session_ledger(tmp_path: Path) 
     assert record["compact_summary"] == ""
     assert record["entries"] == []
     assert record["schema_version"] == ledger.SCHEMA_VERSION
+
+
+def test_hook_cli_uses_the_host_provided_plugin_data_path(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    monkeypatch.delenv(ledger.DATA_ENVIRONMENT_VARIABLE, raising=False)
+    monkeypatch.setattr(
+        ledger.sys, "stdin", io.StringIO(json.dumps(session_start_payload(source="startup")))
+    )
+
+    assert ledger.main(["session-start", "--plugin-data", str(data_root)]) == 0
+
+    assert capsys.readouterr().out == ""
+    assert ledger.record_path(data_root, "session-one").exists()
 
 
 def test_continuous_capture_keeps_a_bounded_full_fidelity_session_record(tmp_path: Path) -> None:
