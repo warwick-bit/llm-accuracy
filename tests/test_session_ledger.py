@@ -370,7 +370,8 @@ def test_precompact_captures_the_current_ledger_before_summary_persistence(
 
     assert ledger.main(["pre-compact"]) == 0
     precompact_output = json.loads(capsys.readouterr().out)
-    context = precompact_output["additionalContext"]
+    assert precompact_output["hookSpecificOutput"]["hookEventName"] == "PreCompact"
+    context = precompact_output["hookSpecificOutput"]["additionalContext"]
     assert "UNTRUSTED PRE-COMPACTION REFERENCE" in context
     assert "preserve the current working boundary" in context
 

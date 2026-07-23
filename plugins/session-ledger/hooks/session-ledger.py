@@ -771,7 +771,16 @@ def emit_session_context(context: str) -> None:
 
 def emit_precompact_context(context: str) -> None:
     """Emit the PreCompact additional context response."""
-    print(json.dumps({"additionalContext": context}))
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "additionalContext": context,
+                    "hookEventName": "PreCompact",
+                }
+            }
+        )
+    )
 
 
 def run_hook_action(action: str) -> None:
