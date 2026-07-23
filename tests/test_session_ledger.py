@@ -357,7 +357,7 @@ def test_rolling_record_keeps_newest_complete_entries_within_its_byte_limit() ->
     assert bounded[0]["fingerprint"] != "0"
 
 
-def test_precompact_captures_the_current_ledger_before_summary_persistence(
+def test_precompact_flushes_the_current_ledger_before_summary_persistence(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
     ledger = load_ledger()
@@ -369,11 +369,11 @@ def test_precompact_captures_the_current_ledger_before_summary_persistence(
     monkeypatch.setattr(ledger.sys, "stdin", io.StringIO(json.dumps(payload)))
 
     assert ledger.main(["pre-compact"]) == 0
-    precompact_output = json.loads(capsys.readouterr().out)
-    assert precompact_output["hookSpecificOutput"]["hookEventName"] == "PreCompact"
-    context = precompact_output["hookSpecificOutput"]["additionalContext"]
-    assert "UNTRUSTED PRE-COMPACTION REFERENCE" in context
-    assert "preserve the current working boundary" in context
+    assert capsys.readouterr().out == ""
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("assistant", "Decision: preserve the current working boundary.")
+    ]
 
     monkeypatch.setattr(
         ledger.sys,

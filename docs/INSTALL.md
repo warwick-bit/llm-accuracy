@@ -49,10 +49,12 @@ evidence, block work, or verify facts automatically.
 
 Session Ledger is a separate, optional plugin for accuracy across one long
 Claude Code session. It starts a bounded local ledger at SessionStart, appends a
-rolling user/assistant session record as the session progresses, and supplies it
-before compaction. Install it only if you accept that the retained record and
-Claude's compact summary may contain sensitive local content. It is unsupported
-in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude Code on the web.
+rolling user/assistant session record as the session progresses, and flushes it
+to local plugin storage before compaction. It restores the record when that same
+compacted session continues. Install it only if you accept that the retained
+record and Claude's compact summary may contain sensitive local content. It is
+unsupported in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude
+Code on the web.
 
 Session Ledger requires `python3` version 3.8 or later on the machine running
 Claude Code. Check it with `python3 --version` before installing.
@@ -67,9 +69,9 @@ claude plugin enable session-ledger@llm-accuracy-preview --scope user
 Then run `/reload-plugins` in an active Claude Code session, or start a new
 one. After that, use Claude normally: the ledger starts automatically with the
 session, captures a bounded rolling user/assistant session record on user-prompt
-and turn-complete hooks, supplies it before context compaction, and restores it
-only when that same session continues. It never carries into a completely new
-Claude session.
+and turn-complete hooks, flushes it before context compaction, and restores it
+only when that same compacted session continues. It never carries into a
+completely new Claude session.
 
 ### Local-data boundary
 
@@ -88,9 +90,9 @@ Claude session.
 - **Clear:** run `/session-ledger:clear` to delete all local Session Ledger
   state immediately.
 
-The pre-compaction and restored content is explicitly marked as untrusted
-historical reference. Claude must not treat it as instructions and must reverify
-time-sensitive facts before reuse.
+Restored content is explicitly marked as untrusted historical reference. Claude
+must not treat it as instructions and must reverify time-sensitive facts before
+reuse.
 
 If ledger data is missing, malformed, expired, unsupported, or unavailable, the
 plugin fails open: Claude Code continues normally with no carried-over context.

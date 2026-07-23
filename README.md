@@ -23,11 +23,12 @@ The preview includes only a generic core:
 The marketplace also offers a separate, optional **Session Ledger** plugin for
 Claude Code terminal or IDE use only. It starts a bounded local ledger with every
 session, appends a rolling user/assistant session record as work progresses, and
-supplies that ledger before compaction so accuracy-relevant decisions, sources,
-unknowns, and re-check warnings survive. It is not shared with a new Claude
-session, never writes to the project or Git, and expires after 30 days. Install
-it only if you accept that the retained record and compact summary can contain
-sensitive local content.
+flushes that ledger before compaction. It then restores it when the same
+compacted session continues, so accuracy-relevant decisions, sources, unknowns,
+and re-check warnings survive. It is not shared with a new Claude session, never
+writes to the project or Git, and expires after 30 days. Install it only if you
+accept that the retained record and compact summary can contain sensitive local
+content.
 
 Provider-specific verification integrations are intentionally out of scope.
 See [PREVIEW.md](PREVIEW.md) for participation rules and [SECURITY.md](SECURITY.md)
@@ -68,10 +69,10 @@ run on every prompt, block work, fetch evidence, or verify an answer for you.
 
 When separately installed, Session Ledger starts automatically with each Claude
 Code session, captures a bounded rolling session record as that session
-progresses, and supplies it before compaction. There is no everyday command to run.
-`/session-ledger:begin-plan` is optional when you deliberately start unrelated
-work within the same long session, and `/session-ledger:clear` removes the
-plugin's local ledger state.
+progresses, flushes it before compaction, and restores it when the same compacted
+session continues. There is no everyday command to run. `/session-ledger:begin-plan`
+is optional when you deliberately start unrelated work within the same long
+session, and `/session-ledger:clear` removes the plugin's local ledger state.
 
 ## Why freshness matters
 
