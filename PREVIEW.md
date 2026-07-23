@@ -13,7 +13,7 @@ amounts, dates, and provider responses with synthetic equivalents.
 
 - credentials, tokens, or secrets;
 - customer, employee, or prospect data;
-- raw provider responses, logs, or session-ledger contents; or
+- raw provider responses, logs, or locally persisted session-ledger contents; or
 - content you are not authorised to share.
 
 The plugin is advisory. Participants remain responsible for reviewing outputs

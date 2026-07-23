@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "llm-accuracy"
+LEDGER = ROOT / "plugins" / "session-ledger"
 
 
 def load_json(relative_path: str) -> dict[str, object]:
@@ -22,10 +23,25 @@ def test_claude_plugin_manifest_identifies_the_preview() -> None:
     assert "codex" not in str(claude).lower()
 
 
-def test_claude_marketplace_publishes_only_the_preview_plugin() -> None:
+def test_claude_marketplace_publishes_the_two_isolated_preview_plugins() -> None:
     claude = load_json(".claude-plugin/marketplace.json")
 
-    assert [entry["name"] for entry in claude["plugins"]] == ["llm-accuracy"]
+    assert [entry["name"] for entry in claude["plugins"]] == [
+        "llm-accuracy",
+        "session-ledger",
+    ]
+
+
+def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
+    manifest = load_json("plugins/session-ledger/.claude-plugin/plugin.json")
+
+    assert manifest["name"] == "session-ledger"
+    assert manifest["version"] == "0.1.0"
+    assert manifest["defaultEnabled"] is False
+    assert not (LEDGER / ".codex-plugin").exists()
+    assert "Compact summaries can contain sensitive local content" in (
+        (LEDGER / "README.md").read_text(encoding="utf-8")
+    )
 
 
 def test_preview_contains_no_codex_runtime_package() -> None:
@@ -52,7 +68,7 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     assert "not open source" in root_readme.lower()
     assert "Do not submit credentials" in root_readme
     assert "no command\nto run or system prompt to paste for matching prompts" in root_readme
-    assert "No session ledger is" in root_readme
+    assert "LLM Accuracy itself remains stateless" in root_readme
     assert "stale summary after a long session" in root_readme
     assert "Never submit" in preview
     assert "does not guarantee" in plugin_readme
@@ -62,3 +78,4 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     assert "Claude chat on the web — personal marketplace (skills only)" in install_guide
     assert "Add marketplace" in install_guide
     assert "Claude Code on the web — pilot only" in install_guide
+    assert "Session Ledger — Claude Code terminal or IDE only" in install_guide

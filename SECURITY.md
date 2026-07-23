@@ -7,6 +7,8 @@ owner directly through GitHub.
 Include only a sanitized reproduction. Never include credentials, private
 prompts, customer data, raw provider payloads, or session-ledger contents.
 
-The preview has no telemetry, server-side data store, persisted prompt capture,
-or persisted tool-output capture. Hooks operate in the participant's local
-runtime and are advisory and non-blocking.
+LLM Accuracy has no telemetry, server-side data store, persisted prompt capture,
+or persisted tool-output capture. The separately installed Session Ledger stores
+only the participant's local compact summary in Claude plugin data; it has no
+telemetry or server-side store. Hooks operate in the participant's local runtime
+and are advisory and non-blocking.

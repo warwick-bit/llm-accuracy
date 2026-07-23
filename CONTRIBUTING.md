@@ -11,8 +11,12 @@ Before proposing a release-affecting change, run:
 
 ```bash
 python3 -m pytest -q
-find plugins/llm-accuracy/hooks -name '*.py' -print0 | xargs -0 -r python3 -m py_compile
+find plugins -path '*/hooks/*.py' -print0 | xargs -0 -r python3 -m py_compile
 ```
 
 Keep the preview generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
+
+Session Ledger source must not include any captured ledger content. Use only
+synthetic compact summaries in tests and preserve its local-only, 30-day,
+same-session boundary.

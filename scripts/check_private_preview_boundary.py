@@ -10,8 +10,10 @@ from pathlib import Path
 
 
 ALLOWED_SUFFIXES = frozenset({".json", ".md", ".py", ".yaml", ".yml"})
-FORBIDDEN_PATH_PREFIXES = (
+COMMON_FORBIDDEN_PATH_PREFIXES = (
     "verify-number",
+)
+ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES = COMMON_FORBIDDEN_PATH_PREFIXES + (
     "session_ledger",
     "session-ledger",
 )
@@ -32,8 +34,17 @@ FORBIDDEN_PYTHON_IMPORT = re.compile(
 )
 
 
-def boundary_violations(plugin: Path) -> list[str]:
+def boundary_violations(
+    plugin: Path, *, profile: str = "accuracy-core"
+) -> list[str]:
     """Return deterministic, safe-to-report boundary violations for a plugin tree."""
+    if profile not in {"accuracy-core", "session-ledger"}:
+        raise ValueError(f"unknown preview-boundary profile: {profile}")
+    forbidden_path_prefixes = (
+        ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
+        if profile == "accuracy-core"
+        else COMMON_FORBIDDEN_PATH_PREFIXES
+    )
     violations: list[str] = []
     for path in plugin.rglob("*"):
         relative = path.relative_to(plugin)
@@ -43,7 +54,7 @@ def boundary_violations(plugin: Path) -> list[str]:
             violations.append(f"symlink artifact: {relative}")
             continue
         if any(
-            part.lower().startswith(FORBIDDEN_PATH_PREFIXES)
+            part.lower().startswith(forbidden_path_prefixes)
             for part in relative.parts
         ) or path.name.lower() in FORBIDDEN_FILE_NAMES:
             violations.append(f"excluded artifact: {relative}")
@@ -69,8 +80,13 @@ def boundary_violations(plugin: Path) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("plugin", type=Path)
+    parser.add_argument(
+        "--profile",
+        choices=("accuracy-core", "session-ledger"),
+        default="accuracy-core",
+    )
     args = parser.parse_args()
-    violations = boundary_violations(args.plugin)
+    violations = boundary_violations(args.plugin, profile=args.profile)
     if violations:
         print("Private-preview boundary violation:", file=sys.stderr)
         print("\n".join(violations), file=sys.stderr)

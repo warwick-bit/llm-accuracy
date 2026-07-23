@@ -45,6 +45,52 @@ The hooks add reminders only for matching open-ended analysis or source-conflict
 prompts and after context compaction. They do not run on every prompt, fetch
 evidence, block work, or verify facts automatically.
 
+## Session Ledger — Claude Code terminal or IDE only
+
+Session Ledger is a separate, optional plugin for accuracy across one long
+Claude Code session. Install it only if you accept that Claude's compact summary
+may contain sensitive local content. It is unsupported in Claude Desktop Chat,
+Cowork, Claude chat on the web, and Claude Code on the web.
+
+Install it after adding the marketplace:
+
+```bash
+claude plugin install session-ledger@llm-accuracy-preview --scope user
+claude plugin enable session-ledger@llm-accuracy-preview --scope user
+```
+
+Then run `/reload-plugins` in an active Claude Code session, or start a new
+one. After that, use Claude normally: the ledger stores a bounded compact
+summary automatically after context compaction and restores it only when that
+same session continues. It never carries into a completely new Claude session.
+
+### Local-data boundary
+
+- **Stored:** the compact summary plus hashed session/workspace identifiers,
+  schema version, and expiry metadata. The summary itself can contain sensitive
+  local material, including paths or names mentioned in the conversation.
+- **Not independently captured:** a transcript, workspace path, plan name, tool
+  output, provider payload, credentials, or any server copy.
+- **Retention:** records are never read or injected after 30 days and are
+  purged on the next Session Ledger hook. Claude's default final-scope uninstall
+  also deletes plugin data; `--keep-data` deliberately preserves it.
+- **Clear:** run `/session-ledger:clear` to delete all local Session Ledger
+  state immediately.
+
+The restored content is explicitly marked as untrusted historical reference.
+Claude must not treat it as instructions and must reverify time-sensitive facts
+before reuse.
+
+If ledger data is missing, malformed, expired, unsupported, or unavailable, the
+plugin fails open: Claude Code continues normally with no carried-over context.
+
+### Optional plan boundary
+
+Every session has an automatic default ledger; a plan is not required. If you
+start unrelated work within a long session, run `/session-ledger:begin-plan`.
+It starts a clean ledger section for the current session without storing a plan
+name or carrying data to another session.
+
 ### Update or remove
 
 To refresh the private marketplace, run:
@@ -117,9 +163,11 @@ and [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-
 
 ## Privacy and safety
 
-The preview has no telemetry, server-side store, persisted session ledger,
-prompt capture, or tool-output capture. It improves evidence hygiene; it does
-not guarantee factual correctness, completeness, freshness, or domain truth.
+LLM Accuracy has no telemetry, server-side store, persisted prompt capture, or
+tool-output capture. The separate Session Ledger plugin has no telemetry or
+server-side store, but does persist a local compact summary as described above.
+Neither plugin guarantees factual correctness, completeness, freshness, or
+domain truth.
 
 For feedback, submit only sanitized and authorized reproductions through the
 private-preview issue form.
