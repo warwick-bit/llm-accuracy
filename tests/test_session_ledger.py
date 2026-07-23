@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import io
 import json
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType
 
@@ -14,7 +15,7 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / "plugins" / "session-ledger" / "hooks" / "session-ledger.py"
 HOOK_CONFIG = ROOT / "plugins" / "session-ledger" / "hooks" / "hooks.json"
-NOW = datetime(2026, 7, 23, 5, 45, tzinfo=UTC)
+NOW = datetime(2026, 7, 23, 5, 45, tzinfo=timezone.utc)
 
 
 def load_ledger() -> ModuleType:
@@ -192,6 +193,14 @@ def test_hook_commands_include_the_script_and_action() -> None:
     assert session_start["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" session-start'
     assert "args" not in post_compact
     assert "args" not in session_start
+
+
+def test_hook_source_uses_python_3_8_compatible_utc_timezone() -> None:
+    source = HOOK.read_text(encoding="utf-8")
+
+    ast.parse(source, feature_version=(3, 8))
+    assert "from datetime import UTC" not in source
+    assert "timezone.utc" in source
 
 
 def test_summary_is_bounded_and_cannot_break_untrusted_context_delimiters(tmp_path: Path) -> None:

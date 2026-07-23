@@ -16,7 +16,7 @@ import shutil
 import sys
 import tempfile
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -31,12 +31,12 @@ DEFAULT_PLAN_ID = "default"
 
 def utc_now() -> datetime:
     """Return the current timezone-aware UTC time."""
-    return datetime.now(UTC)
+    return datetime.now(timezone.utc)
 
 
 def timestamp(value: datetime) -> str:
     """Return a stable UTC timestamp."""
-    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def parse_timestamp(value: object) -> datetime | None:
@@ -44,7 +44,7 @@ def parse_timestamp(value: object) -> datetime | None:
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
     except ValueError:
         return None
 
