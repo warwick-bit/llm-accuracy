@@ -13,6 +13,7 @@ from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / "plugins" / "session-ledger" / "hooks" / "session-ledger.py"
+HOOK_CONFIG = ROOT / "plugins" / "session-ledger" / "hooks" / "hooks.json"
 NOW = datetime(2026, 7, 23, 5, 45, tzinfo=UTC)
 
 
@@ -157,6 +158,40 @@ def test_optional_plan_boundary_restores_only_a_new_plan_record(tmp_path: Path) 
     assert context is not None
     assert "Synthetic new-plan evidence." in context
     assert "Synthetic verified source" not in context
+
+
+def test_active_plan_scope_is_refreshed_with_each_compaction(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    ledger.begin_plan("session-one", data_root=data_root, cwd="/work/project", now=NOW)
+
+    compacted_at = NOW + timedelta(days=29)
+    ledger.write_compact_summary(
+        compact_payload(summary="Synthetic retained plan evidence."),
+        data_root=data_root,
+        now=compacted_at,
+    )
+
+    scope = json.loads(ledger.scope_path(data_root, "session-one").read_text())
+    assert scope["expires_at"] == "2026-09-20T05:45:00Z"
+    context = ledger.session_start_context(
+        session_start_payload(source="resume"),
+        data_root=data_root,
+        now=NOW + timedelta(days=31),
+    )
+    assert context is not None
+    assert "Synthetic retained plan evidence." in context
+
+
+def test_hook_commands_include_the_script_and_action() -> None:
+    hooks = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))["hooks"]
+    post_compact = hooks["PostCompact"][0]["hooks"][0]
+    session_start = hooks["SessionStart"][0]["hooks"][0]
+
+    assert post_compact["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" post-compact'
+    assert session_start["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" session-start'
+    assert "args" not in post_compact
+    assert "args" not in session_start
 
 
 def test_summary_is_bounded_and_cannot_break_untrusted_context_delimiters(tmp_path: Path) -> None:

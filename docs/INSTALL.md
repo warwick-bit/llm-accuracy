@@ -100,12 +100,16 @@ claude plugin marketplace update llm-accuracy-preview
 ```
 
 Then run `/reload-plugins` in an active Claude Code session. To remove the
-plugin and marketplace:
+plugins and local Session Ledger data:
 
 ```bash
+claude plugin uninstall session-ledger@llm-accuracy-preview --scope user
 claude plugin uninstall llm-accuracy@llm-accuracy-preview --scope user
 claude plugin marketplace remove llm-accuracy-preview
 ```
+
+The default final-scope uninstall removes Session Ledger plugin data. Do not use
+`--keep-data` unless you intentionally want to retain its compact summaries.
 
 If installation fails, first confirm that you can access the private GitHub
 repository and that it contains `.claude-plugin/marketplace.json` on `main`.

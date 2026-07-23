@@ -223,6 +223,31 @@ def active_plan_id(
     return DEFAULT_PLAN_ID
 
 
+def refresh_plan_scope(
+    data_root: Path, session_id: str, workspace_hash: str, plan_id: str, now: datetime
+) -> None:
+    """Extend the active explicit-plan marker after a successful compaction."""
+    if plan_id == DEFAULT_PLAN_ID:
+        return
+    scope = read_json(scope_path(data_root, session_id))
+    if (
+        not scope
+        or not is_current(scope, now)
+        or scope.get("plan_id") != plan_id
+        or scope.get("workspace_hash") != workspace_hash
+    ):
+        return
+    write_json_atomic(
+        scope_path(data_root, session_id),
+        {
+            "expires_at": timestamp(expires_at(now)),
+            "plan_id": plan_id,
+            "schema_version": SCHEMA_VERSION,
+            "workspace_hash": workspace_hash,
+        },
+    )
+
+
 def write_compact_summary(
     payload: dict[str, Any], *, data_root: Path | None = None, now: datetime | None = None
 ) -> bool:
@@ -237,16 +262,18 @@ def write_compact_summary(
     workspace_hash = canonical_workspace_hash(cwd)
     prune_expired(root, current_time)
     compact_summary, summary_truncated = bounded_summary(summary)
+    plan_id = active_plan_id(root, session_id, workspace_hash, current_time)
     record = {
         "compact_summary": compact_summary,
         "created_at": timestamp(current_time),
         "expires_at": timestamp(expires_at(current_time)),
-        "plan_id": active_plan_id(root, session_id, workspace_hash, current_time),
+        "plan_id": plan_id,
         "schema_version": SCHEMA_VERSION,
         "summary_truncated": summary_truncated,
         "workspace_hash": workspace_hash,
     }
     write_json_atomic(record_path(root, session_id), record)
+    refresh_plan_scope(root, session_id, workspace_hash, plan_id, current_time)
     return True
 
 
