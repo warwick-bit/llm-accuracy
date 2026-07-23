@@ -239,6 +239,45 @@ def test_symlinked_state_directory_fails_open_without_writing_outside(tmp_path: 
     assert list(outside.iterdir()) == []
 
 
+def test_symlinked_state_directory_is_never_read_or_pruned(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    outside = tmp_path / "outside"
+    data_root.mkdir()
+    outside.mkdir()
+    ledger.state_directory(data_root).symlink_to(outside, target_is_directory=True)
+    session_id = "session-one"
+    current_record = outside / "sessions" / ledger.digest(session_id) / "record.json"
+    expired_record = outside / "sessions" / "unrelated" / "record.json"
+    current_record.parent.mkdir(parents=True)
+    expired_record.parent.mkdir(parents=True)
+    current_record.write_text(
+        json.dumps(
+            {
+                "compact_summary": "Synthetic external summary.",
+                "expires_at": ledger.timestamp(NOW + timedelta(days=1)),
+                "plan_id": ledger.DEFAULT_PLAN_ID,
+                "schema_version": ledger.SCHEMA_VERSION,
+                "workspace_hash": ledger.canonical_workspace_hash("/work/project"),
+            }
+        ),
+        encoding="utf-8",
+    )
+    expired_record.write_text(
+        json.dumps(
+            {"expires_at": ledger.timestamp(NOW - timedelta(days=1)), "schema_version": 1}
+        ),
+        encoding="utf-8",
+    )
+
+    assert ledger.session_start_context(
+        session_start_payload(source="compact"), data_root=data_root, now=NOW
+    ) is None
+    assert current_record.exists()
+    assert expired_record.exists()
+    assert not ledger.begin_plan(session_id, data_root=data_root, cwd="/work/project", now=NOW)
+
+
 def test_hook_emits_session_start_json_and_clear_all_is_local(tmp_path: Path, monkeypatch, capsys) -> None:
     ledger = load_ledger()
     data_root = tmp_path / "plugin-data"

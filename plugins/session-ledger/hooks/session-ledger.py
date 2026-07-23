@@ -76,6 +76,15 @@ def session_directory(data_root: Path, session_id: str) -> Path:
     return state_directory(data_root) / "sessions" / digest(session_id)
 
 
+def state_paths_are_safe(data_root: Path, session_id: str | None = None) -> bool:
+    """Return whether ledger state can be used without traversing a symlink."""
+    state = state_directory(data_root)
+    paths = (state, state / "sessions")
+    if session_id:
+        paths += (session_directory(data_root, session_id),)
+    return not any(path.is_symlink() for path in paths)
+
+
 def record_path(data_root: Path, session_id: str) -> Path:
     """Return the sole current ledger record for a session."""
     return session_directory(data_root, session_id) / "record.json"
@@ -178,9 +187,9 @@ def remove_file(path: Path) -> None:
 
 def remove_session(data_root: Path, session_id: str) -> None:
     """Delete the ledger state for one session only."""
-    directory = session_directory(data_root, session_id)
-    if directory.is_symlink():
+    if not state_paths_are_safe(data_root, session_id):
         return
+    directory = session_directory(data_root, session_id)
     for filename in ("record.json", "scope.json"):
         remove_file(directory / filename)
     try:
@@ -191,6 +200,8 @@ def remove_session(data_root: Path, session_id: str) -> None:
 
 def prune_expired(data_root: Path, now: datetime) -> None:
     """Remove only expired or malformed Session Ledger state files."""
+    if not state_paths_are_safe(data_root):
+        return
     sessions = state_directory(data_root) / "sessions"
     try:
         directories = list(sessions.iterdir())
@@ -214,6 +225,8 @@ def active_plan_id(
     data_root: Path, session_id: str, workspace_hash: str, now: datetime
 ) -> str:
     """Return the explicit plan id only when it matches the active workspace."""
+    if not state_paths_are_safe(data_root, session_id):
+        return DEFAULT_PLAN_ID
     scope = read_json(scope_path(data_root, session_id))
     if not scope or not is_current(scope, now):
         return DEFAULT_PLAN_ID
@@ -231,7 +244,7 @@ def refresh_plan_scope(
     data_root: Path, session_id: str, workspace_hash: str, plan_id: str, now: datetime
 ) -> None:
     """Extend the active explicit-plan marker after a successful compaction."""
-    if plan_id == DEFAULT_PLAN_ID:
+    if plan_id == DEFAULT_PLAN_ID or not state_paths_are_safe(data_root, session_id):
         return
     scope = read_json(scope_path(data_root, session_id))
     if (
@@ -292,15 +305,17 @@ def load_current_record(
     cwd = payload.get("cwd")
     if not isinstance(session_id, str) or not isinstance(cwd, str):
         return None
+    if not state_paths_are_safe(data_root, session_id):
+        return None
     workspace_hash = canonical_workspace_hash(cwd)
     record = read_json(record_path(data_root, session_id))
-    if not record or not is_current(record, now):
-        return None
-    if record.get("workspace_hash") != workspace_hash:
-        return None
-    if record.get("plan_id") != active_plan_id(data_root, session_id, workspace_hash, now):
-        return None
-    if not isinstance(record.get("compact_summary"), str):
+    if (
+        not record
+        or not is_current(record, now)
+        or record.get("workspace_hash") != workspace_hash
+        or record.get("plan_id") != active_plan_id(data_root, session_id, workspace_hash, now)
+        or not isinstance(record.get("compact_summary"), str)
+    ):
         return None
     return record
 
@@ -354,6 +369,8 @@ def begin_plan(
     root = data_root or data_directory()
     current_time = now or utc_now()
     if not root or not session_id:
+        return False
+    if not state_paths_are_safe(root, session_id):
         return False
     workspace_hash = canonical_workspace_hash(cwd or os.getcwd())
     prune_expired(root, current_time)
