@@ -227,6 +227,18 @@ def test_ledger_writes_only_to_plugin_data_not_the_project(tmp_path: Path) -> No
     assert ledger.record_path(data_root, "session-one").exists()
 
 
+def test_symlinked_state_directory_fails_open_without_writing_outside(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    outside = tmp_path / "outside"
+    data_root.mkdir()
+    outside.mkdir()
+    ledger.state_directory(data_root).symlink_to(outside, target_is_directory=True)
+
+    assert not ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    assert list(outside.iterdir()) == []
+
+
 def test_hook_emits_session_start_json_and_clear_all_is_local(tmp_path: Path, monkeypatch, capsys) -> None:
     ledger = load_ledger()
     data_root = tmp_path / "plugin-data"

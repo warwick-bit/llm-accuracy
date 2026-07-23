@@ -88,7 +88,11 @@ def scope_path(data_root: Path, session_id: str) -> Path:
 
 def secure_directory(path: Path) -> None:
     """Create a state directory with owner-only POSIX permissions."""
+    if path.is_symlink():
+        raise OSError("Session Ledger state directory must not be a symlink")
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if path.is_symlink():
+        raise OSError("Session Ledger state directory must not be a symlink")
     if os.name == "posix":
         path.chmod(0o700)
         if path.stat().st_mode & 0o077:
@@ -272,8 +276,11 @@ def write_compact_summary(
         "summary_truncated": summary_truncated,
         "workspace_hash": workspace_hash,
     }
-    write_json_atomic(record_path(root, session_id), record)
-    refresh_plan_scope(root, session_id, workspace_hash, plan_id, current_time)
+    try:
+        write_json_atomic(record_path(root, session_id), record)
+        refresh_plan_scope(root, session_id, workspace_hash, plan_id, current_time)
+    except OSError:
+        return False
     return True
 
 
