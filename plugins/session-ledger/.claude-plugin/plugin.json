@@ -1,0 +1,10 @@
+{
+  "name": "session-ledger",
+  "displayName": "Session Ledger",
+  "description": "Optional local continuity ledger for one Claude Code session across compaction.",
+  "version": "0.1.0",
+  "defaultEnabled": false,
+  "author": {
+    "name": "Warwick"
+  }
+}

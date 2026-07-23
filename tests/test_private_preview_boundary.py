@@ -14,6 +14,22 @@ def test_current_plugin_satisfies_boundary() -> None:
     assert boundary_violations(ROOT / "plugins" / "llm-accuracy") == []
 
 
+def test_session_ledger_plugin_satisfies_its_local_only_boundary() -> None:
+    assert boundary_violations(
+        ROOT / "plugins" / "session-ledger", profile="session-ledger"
+    ) == []
+
+
+def test_session_ledger_profile_still_rejects_external_verification_artifacts(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "verify-number.py").write_text("pass\n", encoding="utf-8")
+
+    assert boundary_violations(tmp_path, profile="session-ledger") == [
+        "excluded artifact: verify-number.py"
+    ]
+
+
 def test_session_ledger_extension_is_rejected(tmp_path: Path) -> None:
     (tmp_path / "session_ledger.py").write_text("pass\n", encoding="utf-8")
 

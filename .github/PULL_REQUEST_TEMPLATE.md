@@ -10,7 +10,7 @@
 ## Privacy and preview boundary
 
 - [ ] No credentials, customer data, raw prompts, provider payloads, or private logs are included.
-- [ ] The change does not add telemetry, server-side storage, prompt/tool-output persistence, or a session ledger.
+- [ ] The change does not add telemetry, server-side storage, prompt/tool-output persistence, or alter Session Ledger's reviewed local-only, same-session boundary.
 - [ ] Any new accuracy claim is bounded and backed by current evidence.
 
 ## Follow-up
