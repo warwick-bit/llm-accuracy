@@ -39,6 +39,7 @@ MAX_TRANSCRIPT_BYTES = 200 * 1024
 MAX_LEDGER_BYTES = 64 * 1024
 STATE_DIRECTORY_NAME = "session-ledger"
 DEFAULT_PLAN_ID = "default"
+MINIMUM_CONTAINED_HOOK_TEXT_CHARS = 24
 
 
 def utc_now() -> datetime:
@@ -294,6 +295,19 @@ def read_transcript_tail(transcript_path: object) -> str:
         return ""
 
 
+def text_content(content: list[object]) -> str:
+    """Return the text blocks in one transcript message without tool content."""
+    text_blocks: list[str] = []
+    for block in content:
+        if isinstance(block, str):
+            text_blocks.append(block)
+        elif isinstance(block, dict) and block.get("type") in {None, "text"}:
+            text = block.get("text")
+            if isinstance(text, str):
+                text_blocks.append(text)
+    return "\n".join(text_blocks)
+
+
 def message_text_entries(entry: object, raw_line: str) -> list[dict[str, str]]:
     """Return user/assistant text entries only, excluding tool payloads."""
     if not isinstance(entry, dict):
@@ -301,27 +315,17 @@ def message_text_entries(entry: object, raw_line: str) -> list[dict[str, str]]:
     message = entry.get("message")
     if not isinstance(message, dict):
         return []
-    content = message.get("content")
     role = message.get("role")
     if role not in {"user", "assistant"}:
         return []
-    if isinstance(content, str):
-        return [{"role": role, "text": content, "fingerprint": digest(raw_line)}]
-    if not isinstance(content, list):
+    content = message.get("content")
+    if isinstance(content, str) and content:
+        text = content
+    elif isinstance(content, list):
+        text = text_content(content)
+    else:
         return []
-    entries: list[dict[str, str]] = []
-    for index, block in enumerate(content):
-        if isinstance(block, str):
-            entries.append(
-                {"role": role, "text": block, "fingerprint": digest(f"{raw_line}\n{index}")}
-            )
-        elif isinstance(block, dict) and block.get("type") in {None, "text"}:
-            text = block.get("text")
-            if isinstance(text, str):
-                entries.append(
-                    {"role": role, "text": text, "fingerprint": digest(f"{raw_line}\n{index}")}
-                )
-    return entries
+    return [{"role": role, "text": text, "fingerprint": digest(raw_line)}] if text else []
 
 
 def transcript_entries(transcript: str) -> list[dict[str, str]]:
@@ -361,28 +365,49 @@ def is_hook_entry(entry: dict[str, str]) -> bool:
     return entry["fingerprint"].startswith("hook:")
 
 
+def normalized_text(value: str) -> str:
+    """Return text normalized only enough to compare host renderings."""
+    return " ".join(value.split())
+
+
+def matches_hook_text(transcript_entry: dict[str, str], hook_entry: dict[str, str]) -> bool:
+    """Return whether one transcript rendering corresponds to direct hook text."""
+    if transcript_entry["role"] != hook_entry["role"]:
+        return False
+    transcript_text = normalized_text(transcript_entry["text"])
+    hook_text = normalized_text(hook_entry["text"])
+    if not transcript_text or not hook_text:
+        return False
+    return transcript_text == hook_text or (
+        len(hook_text) >= MINIMUM_CONTAINED_HOOK_TEXT_CHARS and hook_text in transcript_text
+    )
+
+
 def merged_entries(
     existing: list[dict[str, str]], discovered: list[dict[str, str]]
 ) -> list[dict[str, str]]:
     """Append unseen text while avoiding a direct-hook/transcript duplicate."""
     fingerprints = {entry["fingerprint"] for entry in existing}
-    hook_counts: dict[tuple[str, str], int] = {}
-    for entry in existing + discovered:
-        if is_hook_entry(entry):
-            key = (entry["role"], entry["text"])
-            hook_counts[key] = hook_counts.get(key, 0) + 1
-
-    suppressed_transcript_counts: dict[tuple[str, str], int] = {}
+    hook_entries = [entry for entry in existing + discovered if is_hook_entry(entry)]
+    consumed_hook_fingerprints: set[str] = set()
     additions: list[dict[str, str]] = []
     for entry in discovered:
         fingerprint = entry["fingerprint"]
         if fingerprint in fingerprints:
             continue
-        key = (entry["role"], entry["text"])
-        suppressed_count = suppressed_transcript_counts.get(key, 0)
-        if not is_hook_entry(entry) and suppressed_count < hook_counts.get(key, 0):
-            suppressed_transcript_counts[key] = suppressed_count + 1
-            continue
+        if not is_hook_entry(entry):
+            matching_hook = next(
+                (
+                    candidate
+                    for candidate in hook_entries
+                    if candidate["fingerprint"] not in consumed_hook_fingerprints
+                    and matches_hook_text(entry, candidate)
+                ),
+                None,
+            )
+            if matching_hook:
+                consumed_hook_fingerprints.add(matching_hook["fingerprint"])
+                continue
         additions.append(entry)
         fingerprints.add(fingerprint)
     return bounded_entries(existing + additions)
@@ -532,6 +557,10 @@ def initialize_session(
     session_id, workspace_hash, plan_id = identity
     try:
         with session_lock(root, session_id):
+            identity = session_identity(payload, root, current_time)
+            if not identity:
+                return False
+            _, workspace_hash, plan_id = identity
             existing = load_current_record(payload, data_root=root, now=current_time)
             if existing:
                 return True
@@ -550,7 +579,7 @@ def update_ledger(
     """Append newly discovered session text from a transient transcript tail."""
     root = data_root or data_directory()
     current_time = now or utc_now()
-    if not root or not initialize_session(payload, data_root=root, now=current_time):
+    if not root:
         return False
     identity = session_identity(payload, root, current_time)
     if not identity:
@@ -558,26 +587,36 @@ def update_ledger(
     session_id, workspace_hash, plan_id = identity
     try:
         with session_lock(root, session_id):
-            existing = load_current_record(payload, data_root=root, now=current_time)
-            if not existing:
-                return False
-            transcript = read_transcript_tail(payload.get("transcript_path"))
-            discovered = transcript_entries(transcript) + hook_payload_entries(payload, transcript)
-            entries = merged_entries(valid_entries(existing), discovered)
-            if entries == valid_entries(existing):
-                return True
-            write_json_atomic(
-                record_path(root, session_id),
-                record_for(
-                    workspace_hash=workspace_hash,
-                    plan_id=plan_id,
-                    now=current_time,
-                    previous=existing,
-                    changes={"entries": entries},
-                ),
-            )
+            return update_current_ledger(payload, root, current_time)
     except OSError:
         return False
+
+
+def update_current_ledger(payload: dict[str, Any], root: Path, current_time: datetime) -> bool:
+    """Update one ledger while its session lock is held."""
+    identity = session_identity(payload, root, current_time)
+    if not identity:
+        return False
+    session_id, workspace_hash, plan_id = identity
+    existing = load_current_record(payload, data_root=root, now=current_time)
+    if not existing:
+        existing = record_for(workspace_hash=workspace_hash, plan_id=plan_id, now=current_time)
+    transcript = read_transcript_tail(payload.get("transcript_path"))
+    discovered = transcript_entries(transcript) + hook_payload_entries(payload, transcript)
+    current_entries = valid_entries(existing)
+    entries = merged_entries(current_entries, discovered)
+    changed = entries != current_entries
+    if changed:
+        existing = record_for(
+            workspace_hash=workspace_hash,
+            plan_id=plan_id,
+            now=current_time,
+            previous=existing,
+            changes={"entries": entries},
+        )
+    if record_path(root, session_id).exists() and not changed:
+        return True
+    write_json_atomic(record_path(root, session_id), existing)
     return True
 
 
@@ -590,8 +629,6 @@ def write_compact_summary(
     summary = payload.get("compact_summary")
     if not root or not isinstance(summary, str):
         return False
-    if not initialize_session(payload, data_root=root, now=current_time):
-        return False
     identity = session_identity(payload, root, current_time)
     if not identity:
         return False
@@ -599,9 +636,15 @@ def write_compact_summary(
     compact_summary, summary_truncated = bounded_summary(summary)
     try:
         with session_lock(root, session_id):
+            identity = session_identity(payload, root, current_time)
+            if not identity:
+                return False
+            _, workspace_hash, plan_id = identity
             existing = load_current_record(payload, data_root=root, now=current_time)
             if not existing:
-                return False
+                existing = record_for(
+                    workspace_hash=workspace_hash, plan_id=plan_id, now=current_time
+                )
             write_json_atomic(
                 record_path(root, session_id),
                 record_for(

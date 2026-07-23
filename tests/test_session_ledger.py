@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType
@@ -337,6 +338,68 @@ def test_direct_hook_text_is_not_duplicated_when_the_transcript_catches_up(
     assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
         ("user", prompt)
     ]
+
+
+def test_direct_hook_text_is_not_duplicated_when_transcript_wraps_and_splits_it(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    prompt = "Decision: preserve this long direct message exactly once after the transcript catches up."
+    wrapped = f"<user_message>{prompt}</user_message>"
+    transcript.write_text(
+        json.dumps(
+            {
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "<user_message>"},
+                        {"type": "text", "text": prompt},
+                        {"type": "text", "text": "</user_message>"},
+                    ],
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    hook_payload = {**transcript_payload(transcript), "prompt": prompt}
+
+    assert ledger.update_ledger(hook_payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(transcript_payload(transcript), data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("user", prompt)
+    ]
+    assert wrapped not in json.dumps(record)
+
+
+def test_mutating_hooks_hold_one_session_lock_across_read_modify_write(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    lock_entries = 0
+
+    @contextmanager
+    def counted_lock(*_args):
+        nonlocal lock_entries
+        lock_entries += 1
+        yield
+
+    monkeypatch.setattr(ledger, "session_lock", counted_lock)
+
+    assert ledger.update_ledger(
+        {**compact_payload(), "prompt": "Decision: make the update atomic."},
+        data_root=data_root,
+        now=NOW,
+    )
+    assert lock_entries == 1
+
+    lock_entries = 0
+    assert ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    assert lock_entries == 1
 
 
 def test_rolling_record_keeps_newest_complete_entries_within_its_byte_limit() -> None:
