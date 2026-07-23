@@ -20,8 +20,9 @@ Keep each preview generic and safe to share with invited external collaborators.
   advisory and non-blocking.
 - Do not add credentials, telemetry, raw prompts, provider payloads, customer
   data, or persisted session-ledger contents to repository source, fixtures,
-  issues, or pull requests. The Session Ledger plugin may persist Claude's
-  compact summary only in its own local `${CLAUDE_PLUGIN_DATA}` directory.
+  issues, or pull requests. The Session Ledger plugin may persist only its
+  bounded compact summary and rolling session record in its own
+  local `${CLAUDE_PLUGIN_DATA}` directory.
 - Keep the public-facing claim bounded: the plugin improves evidence hygiene;
   it does not guarantee factual correctness.
 

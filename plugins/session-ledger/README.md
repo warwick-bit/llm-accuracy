@@ -6,11 +6,15 @@ general memory system and it never restores information into a new session.
 
 ## What it does
 
-After Claude Code compacts a conversation, the plugin stores a bounded copy of
-the generated compact summary in its local plugin-data directory. When that same
-session compacts again or is resumed, it provides the summary as explicitly
-untrusted historical reference: recheck time-sensitive facts and sources, and
-do not treat stored content as instructions.
+At the start of each Claude Code session, the plugin creates an empty local
+ledger. On user-prompt and turn-complete hooks, it reads a bounded tail of the
+current session transcript and appends its user/assistant text as a rolling
+record. Before Claude Code compacts, it flushes that record to local plugin
+storage. When the same session continues after compaction, it restores the
+record as explicitly untrusted historical reference. After compaction, it also
+keeps the generated compact summary for later same-session resume. Recheck
+time-sensitive facts and sources, and do not treat stored content as
+instructions.
 
 The default boundary is one session. `/session-ledger:begin-plan` optionally
 starts a clean plan section for unrelated work within that same session; it does
@@ -18,12 +22,16 @@ not store a plan name. `/session-ledger:clear` deletes all local ledger state.
 
 ## Privacy boundary
 
-Compact summaries can contain sensitive local content, including any paths or
-names that Claude placed in the summary. Install only if this is acceptable.
-The plugin stores the bounded compact summary, hashed session/workspace
-identifiers, schema version, and expiry metadata. It does not independently
-capture transcripts, workspace paths, plan names, tool output, provider data,
-credentials, telemetry, or a server-side copy.
+The rolling record and compact summary can contain sensitive local content,
+including the session's user/assistant text, paths, names, and credentials if
+they appear in ordinary conversation text. Install only if this is acceptable.
+The plugin stores a bounded rolling user/assistant session record, bounded
+compact summary, hashed session/workspace identifiers, schema version, and
+expiry metadata. It does not retain raw JSONL transcript structure, the hook's
+separate workspace-path or plan-name fields, tool input/output, provider data,
+telemetry, or any server-side copy. The record is deliberately full-fidelity
+within its fixed rolling byte limit; it does not redact ordinary conversation
+text.
 
 Records are never read or injected after 30 days and are purged on the next
 Session Ledger hook. Claude Code's default final-scope uninstall also removes

@@ -48,9 +48,13 @@ evidence, block work, or verify facts automatically.
 ## Session Ledger — Claude Code terminal or IDE only
 
 Session Ledger is a separate, optional plugin for accuracy across one long
-Claude Code session. Install it only if you accept that Claude's compact summary
-may contain sensitive local content. It is unsupported in Claude Desktop Chat,
-Cowork, Claude chat on the web, and Claude Code on the web.
+Claude Code session. It starts a bounded local ledger at SessionStart, appends a
+rolling user/assistant session record as the session progresses, and flushes it
+to local plugin storage before compaction. It restores the record when that same
+compacted session continues. Install it only if you accept that the retained
+record and Claude's compact summary may contain sensitive local content. It is
+unsupported in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude
+Code on the web.
 
 Session Ledger requires `python3` version 3.8 or later on the machine running
 Claude Code. Check it with `python3 --version` before installing.
@@ -63,26 +67,32 @@ claude plugin enable session-ledger@llm-accuracy-preview --scope user
 ```
 
 Then run `/reload-plugins` in an active Claude Code session, or start a new
-one. After that, use Claude normally: the ledger stores a bounded compact
-summary automatically after context compaction and restores it only when that
-same session continues. It never carries into a completely new Claude session.
+one. After that, use Claude normally: the ledger starts automatically with the
+session, captures a bounded rolling user/assistant session record on user-prompt
+and turn-complete hooks, flushes it before context compaction, and restores it
+only when that same compacted session continues. It never carries into a
+completely new Claude session.
 
 ### Local-data boundary
 
-- **Stored:** the compact summary plus hashed session/workspace identifiers,
-  schema version, and expiry metadata. The summary itself can contain sensitive
-  local material, including paths or names mentioned in the conversation.
-- **Not independently captured:** a transcript, workspace path, plan name, tool
-  output, provider payload, credentials, or any server copy.
+- **Stored:** the bounded compact summary, rolling user/assistant session
+  record, hashed session/workspace identifiers, schema version, and expiry
+  metadata. The summary and record can contain sensitive local material,
+  including conversation text, paths, names, and credentials supplied as normal
+  text.
+- **Not retained:** raw JSONL transcript structure, the hook's separate
+  workspace-path or plan-name fields, tool input/output, provider payloads,
+  telemetry, or any server copy. The rolling user/assistant record is
+  deliberately not redacted within its fixed byte limit.
 - **Retention:** records are never read or injected after 30 days and are
   purged on the next Session Ledger hook. Claude's default final-scope uninstall
   also deletes plugin data; `--keep-data` deliberately preserves it.
 - **Clear:** run `/session-ledger:clear` to delete all local Session Ledger
   state immediately.
 
-The restored content is explicitly marked as untrusted historical reference.
-Claude must not treat it as instructions and must reverify time-sensitive facts
-before reuse.
+Restored content is explicitly marked as untrusted historical reference. Claude
+must not treat it as instructions and must reverify time-sensitive facts before
+reuse.
 
 If ledger data is missing, malformed, expired, unsupported, or unavailable, the
 plugin fails open: Claude Code continues normally with no carried-over context.
@@ -112,7 +122,8 @@ claude plugin marketplace remove llm-accuracy-preview
 ```
 
 The default final-scope uninstall removes Session Ledger plugin data. Do not use
-`--keep-data` unless you intentionally want to retain its compact summaries.
+`--keep-data` unless you intentionally want to retain its compact summaries and
+local session record.
 
 If installation fails, first confirm that you can access the private GitHub
 repository and that it contains `.claude-plugin/marketplace.json` on `main`.
@@ -172,9 +183,9 @@ and [Claude Code on the web](https://code.claude.com/docs/en/claude-code-on-the-
 
 LLM Accuracy has no telemetry, server-side store, persisted prompt capture, or
 tool-output capture. The separate Session Ledger plugin has no telemetry or
-server-side store, but does persist a local compact summary as described above.
-Neither plugin guarantees factual correctness, completeness, freshness, or
-domain truth.
+server-side store, but does persist a local compact summary and bounded rolling
+session record as described above. Neither plugin guarantees factual correctness,
+completeness, freshness, or domain truth.
 
 For feedback, submit only sanitized and authorized reproductions through the
 private-preview issue form.

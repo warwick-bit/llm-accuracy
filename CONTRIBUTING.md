@@ -18,5 +18,5 @@ Keep the preview generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
 
 Session Ledger source must not include any captured ledger content. Use only
-synthetic compact summaries in tests and preserve its local-only, 30-day,
-same-session boundary.
+synthetic compact summaries and synthetic session records in tests, and preserve
+its local-only, 30-day, same-session boundary.

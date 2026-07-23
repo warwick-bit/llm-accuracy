@@ -36,10 +36,10 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
     manifest = load_json("plugins/session-ledger/.claude-plugin/plugin.json")
 
     assert manifest["name"] == "session-ledger"
-    assert manifest["version"] == "0.1.0"
+    assert manifest["version"] == "0.1.5"
     assert manifest["defaultEnabled"] is False
     assert not (LEDGER / ".codex-plugin").exists()
-    assert "Compact summaries can contain sensitive local content" in (
+    assert "rolling record and compact summary can contain sensitive local content" in (
         (LEDGER / "README.md").read_text(encoding="utf-8")
     )
 

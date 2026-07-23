@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType
@@ -43,6 +44,25 @@ def session_start_payload(
     return {"cwd": cwd, "session_id": session_id, "source": source}
 
 
+def transcript_payload(
+    transcript_path: Path, *, session_id: str = "session-one", cwd: str = "/work/project"
+) -> dict[str, str]:
+    return {"cwd": cwd, "session_id": session_id, "transcript_path": str(transcript_path)}
+
+
+def write_transcript(path: Path, *texts: str) -> None:
+    entries = [
+        {
+            "message": {
+                "role": "assistant",
+                "content": [{"type": "text", "text": text}],
+            }
+        }
+        for text in texts
+    ]
+    path.write_text("\n".join(json.dumps(entry) for entry in entries), encoding="utf-8")
+
+
 def test_post_compact_persists_only_hashed_identifiers(tmp_path: Path) -> None:
     ledger = load_ledger()
     data_root = tmp_path / "plugin-data"
@@ -56,13 +76,14 @@ def test_post_compact_persists_only_hashed_identifiers(tmp_path: Path) -> None:
     record = json.loads(ledger.record_path(data_root, "session-one").read_text())
     rendered = json.dumps(record)
     assert record["compact_summary"] == payload["compact_summary"]
-    assert record["schema_version"] == 1
+    assert record["schema_version"] == ledger.SCHEMA_VERSION
     assert "session-one" not in rendered
     assert "/work/project" not in rendered
     assert record["expires_at"] == "2026-08-22T05:45:00Z"
     if os.name == "posix":
         assert data_root.stat().st_mode & 0o077 == 0
         assert ledger.record_path(data_root, "session-one").stat().st_mode & 0o077 == 0
+        assert ledger.lock_path(data_root, "session-one").stat().st_mode & 0o077 == 0
 
 
 def test_same_session_compaction_restores_untrusted_historical_context(tmp_path: Path) -> None:
@@ -125,6 +146,7 @@ def test_expired_and_malformed_records_are_treated_as_absent(tmp_path: Path) -> 
     ) is None
     assert not ledger.record_path(data_root, "session-one").exists()
     assert not ledger.session_directory(data_root, "session-one").exists()
+    assert not ledger.lock_path(data_root, "session-one").exists()
 
     path = ledger.record_path(data_root, "session-one")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -186,13 +208,26 @@ def test_active_plan_scope_is_refreshed_with_each_compaction(tmp_path: Path) -> 
 
 def test_hook_commands_include_the_script_and_action() -> None:
     hooks = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))["hooks"]
+    capture = hooks["UserPromptSubmit"][0]["hooks"][0]
+    stop = hooks["Stop"][0]["hooks"][0]
+    pre_compact = hooks["PreCompact"][0]["hooks"][0]
     post_compact = hooks["PostCompact"][0]["hooks"][0]
     session_start = hooks["SessionStart"][0]["hooks"][0]
 
-    assert post_compact["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" post-compact'
-    assert session_start["command"] == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" session-start'
-    assert "args" not in post_compact
-    assert "args" not in session_start
+    for hook, action in (
+        (capture, "capture"),
+        (stop, "capture"),
+        (pre_compact, "pre-compact"),
+        (post_compact, "post-compact"),
+        (session_start, "session-start"),
+    ):
+        assert hook["command"] == "python3"
+        assert hook["args"] == [
+            "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+            action,
+            "--plugin-data",
+            "${CLAUDE_PLUGIN_DATA}",
+        ]
 
 
 def test_hook_source_uses_python_3_8_compatible_utc_timezone() -> None:
@@ -201,6 +236,265 @@ def test_hook_source_uses_python_3_8_compatible_utc_timezone() -> None:
     ast.parse(source, feature_version=(3, 8))
     assert "from datetime import UTC" not in source
     assert "timezone.utc" in source
+
+
+def test_session_start_initializes_an_empty_same_session_ledger(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+
+    assert ledger.initialize_session(
+        session_start_payload(source="startup"), data_root=data_root, now=NOW
+    )
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert record["compact_summary"] == ""
+    assert record["entries"] == []
+    assert record["schema_version"] == ledger.SCHEMA_VERSION
+
+
+def test_hook_cli_uses_the_host_provided_plugin_data_path(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    monkeypatch.delenv(ledger.DATA_ENVIRONMENT_VARIABLE, raising=False)
+    monkeypatch.setattr(
+        ledger.sys, "stdin", io.StringIO(json.dumps(session_start_payload(source="startup")))
+    )
+
+    assert ledger.main(["session-start", "--plugin-data", str(data_root)]) == 0
+
+    assert capsys.readouterr().out == ""
+    assert ledger.record_path(data_root, "session-one").exists()
+
+
+def test_continuous_capture_keeps_a_bounded_full_fidelity_session_record(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    write_transcript(
+        transcript,
+        "Unlabelled prose is retained in the local ledger.",
+        "Decision: retain a bounded local fact ledger.",
+        "Status: capture runs after each completed turn.",
+        "M plugins/session-ledger/hooks/session-ledger.py",
+        "Sensitive-but-synthetic ordinary conversation text is retained by choice.",
+    )
+    payload = transcript_payload(transcript)
+
+    assert ledger.initialize_session(payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    entries = record["entries"]
+    rendered = json.dumps(record)
+    assert [entry["text"] for entry in entries] == [
+        "Unlabelled prose is retained in the local ledger.",
+        "Decision: retain a bounded local fact ledger.",
+        "Status: capture runs after each completed turn.",
+        "M plugins/session-ledger/hooks/session-ledger.py",
+        "Sensitive-but-synthetic ordinary conversation text is retained by choice.",
+    ]
+    assert "bounded local fact ledger" in rendered
+    assert "Unlabelled prose is retained" in rendered
+    assert "Sensitive-but-synthetic ordinary conversation text" in rendered
+
+
+def test_direct_hook_text_is_captured_before_the_transcript_catches_up(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    payload = {
+        "cwd": "/work/project",
+        "last_assistant_message": "Status: the direct final reply is retained.",
+        "prompt": "Decision: keep the direct submitted prompt.",
+        "session_id": "session-one",
+    }
+
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("user", "Decision: keep the direct submitted prompt."),
+        ("assistant", "Status: the direct final reply is retained."),
+    ]
+
+
+def test_direct_hook_text_is_not_duplicated_when_the_transcript_catches_up(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    prompt = "Decision: preserve this message once."
+    transcript.write_text(
+        json.dumps({"message": {"role": "user", "content": prompt}}), encoding="utf-8"
+    )
+    hook_payload = {**transcript_payload(transcript), "prompt": prompt}
+
+    assert ledger.update_ledger(hook_payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(transcript_payload(transcript), data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("user", prompt)
+    ]
+
+
+def test_direct_hook_text_is_not_duplicated_when_transcript_wraps_and_splits_it(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    prompt = "Decision: preserve this long direct message exactly once after the transcript catches up."
+    wrapped = f"<user_message>{prompt}</user_message>"
+    transcript.write_text(
+        json.dumps(
+            {
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "<user_message>"},
+                        {"type": "text", "text": prompt},
+                        {"type": "text", "text": "</user_message>"},
+                    ],
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    hook_payload = {**transcript_payload(transcript), "prompt": prompt}
+
+    assert ledger.update_ledger(hook_payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(transcript_payload(transcript), data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("user", prompt)
+    ]
+    assert wrapped not in json.dumps(record)
+
+
+def test_mutating_hooks_hold_one_session_lock_across_read_modify_write(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    lock_entries = 0
+
+    @contextmanager
+    def counted_lock(*_args):
+        nonlocal lock_entries
+        lock_entries += 1
+        yield
+
+    monkeypatch.setattr(ledger, "session_lock", counted_lock)
+
+    assert ledger.update_ledger(
+        {**compact_payload(), "prompt": "Decision: make the update atomic."},
+        data_root=data_root,
+        now=NOW,
+    )
+    assert lock_entries == 1
+
+    lock_entries = 0
+    assert ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    assert lock_entries == 1
+
+
+def test_rolling_record_keeps_newest_complete_entries_within_its_byte_limit() -> None:
+    ledger = load_ledger()
+    entries = [
+        {
+            "role": "assistant",
+            "text": f"Synthetic entry {index}: " + "x" * 2048,
+            "fingerprint": str(index),
+        }
+        for index in range(48)
+    ]
+
+    bounded = ledger.bounded_entries(entries)
+
+    assert sum(ledger.entry_size(entry) for entry in bounded) <= ledger.MAX_LEDGER_BYTES
+    assert bounded[-1]["fingerprint"] == "47"
+    assert bounded[0]["fingerprint"] != "0"
+
+
+def test_precompact_flushes_the_current_ledger_before_summary_persistence(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    write_transcript(transcript, "Decision: preserve the current working boundary.")
+    payload = transcript_payload(transcript)
+    monkeypatch.setenv(ledger.DATA_ENVIRONMENT_VARIABLE, str(data_root))
+    monkeypatch.setattr(ledger.sys, "stdin", io.StringIO(json.dumps(payload)))
+
+    assert ledger.main(["pre-compact"]) == 0
+    assert capsys.readouterr().out == ""
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("assistant", "Decision: preserve the current working boundary.")
+    ]
+
+    monkeypatch.setattr(
+        ledger.sys,
+        "stdin",
+        io.StringIO(json.dumps({**payload, "compact_summary": "Synthetic compact result."})),
+    )
+    assert ledger.main(["post-compact"]) == 0
+    monkeypatch.setattr(
+        ledger.sys,
+        "stdin",
+        io.StringIO(json.dumps({**payload, "source": "compact"})),
+    )
+    assert ledger.main(["session-start"]) == 0
+    resumed_context = json.loads(capsys.readouterr().out)["hookSpecificOutput"][
+        "additionalContext"
+    ]
+    assert "preserve the current working boundary" in resumed_context
+    assert "Synthetic compact result." in resumed_context
+
+
+def test_tool_blocks_and_symlinked_transcripts_are_never_captured(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    tool_entry = {
+        "message": {
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "tool_use",
+                    "name": "Write",
+                    "input": {"content": "Decision: do not retain tool input."},
+                }
+            ]
+        }
+    }
+    transcript.write_text(json.dumps(tool_entry), encoding="utf-8")
+    payload = transcript_payload(transcript)
+
+    assert ledger.initialize_session(payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert record["entries"] == []
+
+    ignored_role = {
+        "message": {
+            "role": "tool",
+            "content": "This tool-shaped text must not be captured.",
+        }
+    }
+    transcript.write_text(json.dumps(ignored_role), encoding="utf-8")
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert record["entries"] == []
+
+    link = tmp_path / "linked-session.jsonl"
+    link.symlink_to(transcript)
+    assert ledger.read_transcript_tail(str(link)) == ""
 
 
 def test_summary_is_bounded_and_cannot_break_untrusted_context_delimiters(tmp_path: Path) -> None:
@@ -246,6 +540,35 @@ def test_symlinked_state_directory_fails_open_without_writing_outside(tmp_path: 
 
     assert not ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
     assert list(outside.iterdir()) == []
+
+
+def test_symlinked_lock_directory_fails_open_without_writing_outside(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    outside = tmp_path / "outside"
+    data_root.mkdir()
+    outside.mkdir()
+    ledger.state_directory(data_root).mkdir()
+    (ledger.state_directory(data_root) / "locks").symlink_to(
+        outside, target_is_directory=True
+    )
+
+    assert not ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    assert list(outside.iterdir()) == []
+
+
+def test_symlinked_lock_file_fails_open_without_following_its_target(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    outside = tmp_path / "outside"
+    data_root.mkdir()
+    outside.write_text("unchanged", encoding="utf-8")
+    lock = ledger.lock_path(data_root, "session-one")
+    lock.parent.mkdir(parents=True)
+    lock.symlink_to(outside)
+
+    assert not ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    assert outside.read_text(encoding="utf-8") == "unchanged"
 
 
 def test_symlinked_state_directory_is_never_read_or_pruned(tmp_path: Path) -> None:

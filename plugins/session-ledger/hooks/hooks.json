@@ -1,11 +1,68 @@
 {
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+              "capture",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+              "capture",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+              "pre-compact",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ],
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PostCompact": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" post-compact",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+              "post-compact",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ],
             "timeout": 5
           }
         ]
@@ -16,7 +73,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" session-start",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+              "session-start",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ],
             "timeout": 5
           }
         ]
