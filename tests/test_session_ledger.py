@@ -240,8 +240,25 @@ def test_hook_emits_session_start_json_and_clear_all_is_local(tmp_path: Path, mo
     assert ledger.main(["session-start"]) == 0
     output = json.loads(capsys.readouterr().out)
     assert output["hookSpecificOutput"]["hookEventName"] == "SessionStart"
-    assert ledger.clear_all(data_root)
+    assert ledger.main(["clear"]) == 0
+    assert capsys.readouterr().out == "Cleared local Session Ledger state.\n"
     assert not ledger.state_directory(data_root).exists()
+
+
+def test_clear_reports_unconfirmed_deletion_without_blocking(tmp_path: Path, monkeypatch, capsys) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    monkeypatch.setenv(ledger.DATA_ENVIRONMENT_VARIABLE, str(data_root))
+
+    def refuse_delete(_: Path) -> None:
+        raise OSError("synthetic deletion failure")
+
+    monkeypatch.setattr(ledger.shutil, "rmtree", refuse_delete)
+
+    assert ledger.main(["clear"]) == 0
+    assert capsys.readouterr().out == "Could not confirm local Session Ledger state was cleared.\n"
+    assert ledger.state_directory(data_root).exists()
 
 
 def test_main_fails_open_for_an_invalid_hook_action() -> None:

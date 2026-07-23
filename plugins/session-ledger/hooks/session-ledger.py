@@ -369,9 +369,12 @@ def clear_all(data_root: Path | None = None) -> bool:
     target = state_directory(root)
     if target.is_symlink():
         return False
-    if target.exists():
-        shutil.rmtree(target)
-    return True
+    try:
+        if target.exists():
+            shutil.rmtree(target)
+    except OSError:
+        return False
+    return not target.exists()
 
 
 def hook_payload() -> dict[str, Any] | None:
@@ -415,8 +418,11 @@ def main(arguments: list[str] | None = None) -> int:
         elif options.action == "begin-plan":
             if begin_plan(options.session_id or ""):
                 print("Started a fresh Session Ledger plan boundary for this session.")
-        elif options.action == "clear" and clear_all():
-            print("Cleared local Session Ledger state.")
+        elif options.action == "clear":
+            if clear_all():
+                print("Cleared local Session Ledger state.")
+            else:
+                print("Could not confirm local Session Ledger state was cleared.")
     except (Exception, SystemExit):
         return 0
     return 0
