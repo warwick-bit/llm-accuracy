@@ -275,6 +275,46 @@ def test_continuous_capture_keeps_a_bounded_full_fidelity_session_record(tmp_pat
     assert "Sensitive-but-synthetic ordinary conversation text" in rendered
 
 
+def test_direct_hook_text_is_captured_before_the_transcript_catches_up(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    payload = {
+        "cwd": "/work/project",
+        "last_assistant_message": "Status: the direct final reply is retained.",
+        "prompt": "Decision: keep the direct submitted prompt.",
+        "session_id": "session-one",
+    }
+
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("user", "Decision: keep the direct submitted prompt."),
+        ("assistant", "Status: the direct final reply is retained."),
+    ]
+
+
+def test_direct_hook_text_is_not_duplicated_when_the_transcript_catches_up(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    prompt = "Decision: preserve this message once."
+    transcript.write_text(
+        json.dumps({"message": {"role": "user", "content": prompt}}), encoding="utf-8"
+    )
+    hook_payload = {**transcript_payload(transcript), "prompt": prompt}
+
+    assert ledger.update_ledger(hook_payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(transcript_payload(transcript), data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [(entry["role"], entry["text"]) for entry in record["entries"]] == [
+        ("user", prompt)
+    ]
+
+
 def test_rolling_record_keeps_newest_complete_entries_within_its_byte_limit() -> None:
     ledger = load_ledger()
     entries = [

@@ -340,12 +340,52 @@ def transcript_entries(transcript: str) -> list[dict[str, str]]:
     return entries
 
 
+def hook_payload_entries(payload: dict[str, Any], transcript: str) -> list[dict[str, str]]:
+    """Capture hook-provided text when it has not reached the transcript yet."""
+    transcript_fingerprint = digest(transcript)
+    entries: list[dict[str, str]] = []
+    for role, field in (("user", "prompt"), ("assistant", "last_assistant_message")):
+        text = payload.get(field)
+        if isinstance(text, str) and text:
+            entries.append(
+                {
+                    "role": role,
+                    "text": text,
+                    "fingerprint": f"hook:{digest(f'{role}\n{text}\n{transcript_fingerprint}')}",
+                }
+            )
+    return entries
+
+
+def is_hook_entry(entry: dict[str, str]) -> bool:
+    """Return whether an entry came directly from an event payload."""
+    return entry["fingerprint"].startswith("hook:")
+
+
 def merged_entries(
     existing: list[dict[str, str]], discovered: list[dict[str, str]]
 ) -> list[dict[str, str]]:
-    """Append unseen text entries and retain a fixed rolling byte tail."""
+    """Append unseen text while avoiding a direct-hook/transcript duplicate."""
     fingerprints = {entry["fingerprint"] for entry in existing}
-    additions = [entry for entry in discovered if entry["fingerprint"] not in fingerprints]
+    hook_counts: dict[tuple[str, str], int] = {}
+    for entry in existing + discovered:
+        if is_hook_entry(entry):
+            key = (entry["role"], entry["text"])
+            hook_counts[key] = hook_counts.get(key, 0) + 1
+
+    suppressed_transcript_counts: dict[tuple[str, str], int] = {}
+    additions: list[dict[str, str]] = []
+    for entry in discovered:
+        fingerprint = entry["fingerprint"]
+        if fingerprint in fingerprints:
+            continue
+        key = (entry["role"], entry["text"])
+        suppressed_count = suppressed_transcript_counts.get(key, 0)
+        if not is_hook_entry(entry) and suppressed_count < hook_counts.get(key, 0):
+            suppressed_transcript_counts[key] = suppressed_count + 1
+            continue
+        additions.append(entry)
+        fingerprints.add(fingerprint)
     return bounded_entries(existing + additions)
 
 
@@ -522,9 +562,8 @@ def update_ledger(
             existing = load_current_record(payload, data_root=root, now=current_time)
             if not existing:
                 return False
-            discovered = transcript_entries(
-                read_transcript_tail(payload.get("transcript_path"))
-            )
+            transcript = read_transcript_tail(payload.get("transcript_path"))
+            discovered = transcript_entries(transcript) + hook_payload_entries(payload, transcript)
             entries = merged_entries(valid_entries(existing), discovered)
             if entries == valid_entries(existing):
                 return True
