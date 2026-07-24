@@ -3,6 +3,8 @@
 Session Ledger is an optional Claude Code terminal/IDE plugin for preserving
 accuracy-relevant carryover through compaction in one long session. It is not a
 general memory system and it never restores information into a new session.
+It requires `python3` 3.9 or later on the machine running Claude Code
+(CI-tested on 3.9-3.13).
 
 ## What it does
 
@@ -46,7 +48,8 @@ replaced with `[REDACTED:<pattern>]` labels before entries and compact
 summaries are persisted. This is pattern matching, not a guarantee: secrets
 that do not match a known shape — and sensitive prose in general — are still
 stored verbatim. An unterminated private-key header additionally masks the
-remainder of that message.
+remainder of that message, and enabling redaction later does not rewrite
+entries that were already stored.
 
 Records are never read or injected after 30 days and are purged on the next
 Session Ledger hook. Claude Code's default final-scope uninstall also removes

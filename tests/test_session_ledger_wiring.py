@@ -355,3 +355,16 @@ def test_clear_skill_command_deletes_state_and_reports_it(tmp_path: Path) -> Non
     assert result.stderr == ""
     assert result.stdout == "Cleared local Session Ledger state.\n"
     assert not (data_root / "session-ledger").exists()
+
+
+@posix_only
+def test_clear_skill_command_reports_failure_without_plugin_data(
+    tmp_path: Path,
+) -> None:
+    result = run_skill("clear", data_root=None, session_id=None)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    assert (
+        result.stdout == "Could not confirm local Session Ledger state was cleared.\n"
+    )

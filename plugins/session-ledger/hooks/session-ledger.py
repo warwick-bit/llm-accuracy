@@ -321,6 +321,8 @@ def bounded_entries(
         if size > entry_cap:
             entry = truncated_entry(entry, entry_cap)
             size = entry_size(entry)
+            if size > entry_cap:
+                continue
         if size > limit or total_bytes + size > limit:
             continue
         selected.append(entry)
@@ -460,21 +462,34 @@ def matches_hook_text(
         return False
     transcript_text = normalized_text(transcript_entry["text"])
     hook_text = hook_entry["text"]
-    if hook_text.endswith(ENTRY_TRUNCATION_MARKER):
+    truncated = hook_text.endswith(ENTRY_TRUNCATION_MARKER)
+    if truncated:
         hook_text = hook_text[: -len(ENTRY_TRUNCATION_MARKER)]
     hook_text = normalized_text(hook_text)
     if not transcript_text or not hook_text:
         return False
-    return transcript_text == hook_text or (
-        len(hook_text) >= MINIMUM_CONTAINED_HOOK_TEXT_CHARS
-        and hook_text in transcript_text
-    )
+    if transcript_text == hook_text:
+        return True
+    if (
+        len(hook_text) < MINIMUM_CONTAINED_HOOK_TEXT_CHARS
+        or hook_text not in transcript_text
+    ):
+        return False
+    # Containment alone can wrongly consume a longer message that merely
+    # quotes the hook text; require the hook text to dominate the rendering
+    # unless the stored copy was truncated (its prefix is strong evidence).
+    return truncated or len(hook_text) * 2 >= len(transcript_text)
 
 
 def merged_entries(
     existing: list[dict[str, str]], discovered: list[dict[str, str]]
 ) -> list[dict[str, str]]:
-    """Append unseen text while avoiding a direct-hook/transcript duplicate."""
+    """Append unseen text while avoiding a direct-hook/transcript duplicate.
+
+    Deliberately asymmetric: hook entries are never text-matched against stored
+    transcript entries, because an identical later hook delivery may be a
+    genuine repeat and dropping it would lose real conversation.
+    """
     fingerprints = {entry["fingerprint"] for entry in existing}
     hook_entries = [entry for entry in existing + discovered if is_hook_entry(entry)]
     consumed_hook_fingerprints: set[str] = set()
@@ -511,6 +526,46 @@ def remove_file(path: Path) -> None:
         return
 
 
+def remove_unheld_lock(path: Path) -> None:
+    """Remove a lock file only when no live session holds it."""
+    if fcntl is None:
+        remove_file(path)
+        return
+    if path.is_symlink() or not path.is_file():
+        return
+    try:
+        descriptor = os.open(path, os.O_RDWR | getattr(os, "O_NOFOLLOW", 0))
+    except OSError:
+        return
+    try:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return
+        # A racer opening between this unlink and the release re-creates the
+        # path with a fresh inode; that residual window is accepted for this
+        # local advisory lock.
+        remove_file(path)
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+    finally:
+        os.close(descriptor)
+
+
+def prune_orphan_locks(data_root: Path, sessions: Path) -> None:
+    """Remove lock files that have no session directory and no live holder."""
+    locks = state_directory(data_root) / "locks"
+    if locks.is_symlink():
+        return
+    try:
+        lock_files = list(locks.iterdir())
+    except OSError:
+        return
+    for lock_file in lock_files:
+        if (sessions / lock_file.name).is_dir():
+            continue
+        remove_unheld_lock(lock_file)
+
+
 def remove_session(data_root: Path, session_id: str) -> None:
     """Delete the ledger state for one session only."""
     if not state_paths_are_safe(data_root, session_id):
@@ -522,7 +577,7 @@ def remove_session(data_root: Path, session_id: str) -> None:
         directory.rmdir()
     except OSError:
         return
-    remove_file(lock_path(data_root, session_id))
+    remove_unheld_lock(lock_path(data_root, session_id))
 
 
 def prune_expired(data_root: Path, now: datetime) -> None:
@@ -533,7 +588,7 @@ def prune_expired(data_root: Path, now: datetime) -> None:
     try:
         directories = list(sessions.iterdir())
     except OSError:
-        return
+        directories = []
     for directory in directories:
         if directory.is_symlink() or not directory.is_dir():
             continue
@@ -546,7 +601,7 @@ def prune_expired(data_root: Path, now: datetime) -> None:
             directory.rmdir()
         except OSError:
             continue
-        remove_file(state_directory(data_root) / "locks" / directory.name)
+    prune_orphan_locks(data_root, sessions)
 
 
 def active_plan_id(
