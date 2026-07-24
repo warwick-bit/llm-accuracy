@@ -55,6 +55,7 @@ def clean_environment() -> dict[str, str]:
             "CLAUDE_PLUGIN_ROOT",
             "CLAUDE_PLUGIN_DATA",
             "CLAUDE_SESSION_ID",
+            "SESSION_LEDGER_REDACT",
         }
     }
 
@@ -64,12 +65,14 @@ def run_hook(
     stdin_text: str,
     *,
     data_root: Path | None,
+    extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run one shipped hook command exactly as the host would."""
     environment = clean_environment()
     environment["CLAUDE_PLUGIN_ROOT"] = str(PLUGIN_ROOT)
     if data_root is not None:
         environment["CLAUDE_PLUGIN_DATA"] = str(data_root)
+    environment.update(extra_env or {})
     return subprocess.run(
         ["/bin/sh", "-c", hook_command(event)],
         input=stdin_text,
@@ -276,6 +279,31 @@ def test_missing_plugin_data_environment_fails_open(tmp_path: Path) -> None:
     assert result.stderr == ""
     assert result.stdout == ""
     assert not list(tmp_path.rglob("record.json"))
+
+
+@posix_only
+def test_capture_command_applies_opt_in_redaction_from_the_environment(
+    tmp_path: Path,
+) -> None:
+    data_root = tmp_path / "plugin-data"
+    payload = {
+        "session_id": "wiring-session",
+        "cwd": str(tmp_path),
+        "transcript_path": str(tmp_path / "missing-transcript.jsonl"),
+        "prompt": "Key AKIAIOSFODNN7EXAMPLE was pasted here.",
+    }
+
+    result = run_hook(
+        "UserPromptSubmit",
+        json.dumps(payload),
+        data_root=data_root,
+        extra_env={"SESSION_LEDGER_REDACT": "1"},
+    )
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    entries = read_entries(data_root)
+    assert entries[0]["text"] == "Key [REDACTED:aws-access-key-id] was pasted here."
 
 
 @posix_only

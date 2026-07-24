@@ -14,6 +14,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import sys
@@ -37,9 +38,41 @@ RETENTION_DAYS = 30
 MAX_SUMMARY_BYTES = 32 * 1024
 MAX_TRANSCRIPT_BYTES = 200 * 1024
 MAX_LEDGER_BYTES = 64 * 1024
+MAX_ENTRY_BYTES = 16 * 1024
+ENTRY_TRUNCATION_MARKER = "\n[Session Ledger entry truncated.]"
 STATE_DIRECTORY_NAME = "session-ledger"
 DEFAULT_PLAN_ID = "default"
 MINIMUM_CONTAINED_HOOK_TEXT_CHARS = 24
+REDACTION_ENVIRONMENT_VARIABLE = "SESSION_LEDGER_REDACT"
+SECRET_PATTERNS = tuple(
+    (label, re.compile(pattern))
+    for label, pattern in (
+        (
+            "private-key",
+            r"-----BEGIN [A-Z0-9 ]{0,40}PRIVATE KEY-----"
+            r"[\s\S]*?(?:-----END [A-Z0-9 ]{0,40}PRIVATE KEY-----|\Z)",
+        ),
+        ("aws-access-key-id", r"\bAKIA[0-9A-Z]{16}\b"),
+        (
+            "github-token",
+            r"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{22,})\b",
+        ),
+        ("slack-token", r"\bxox[abprs]-[A-Za-z0-9-]{10,}\b"),
+        ("stripe-key", r"\b[sr]k_(?:live|test)_[A-Za-z0-9]{16,}\b"),
+        ("api-key", r"\bsk-[A-Za-z0-9_-]{20,}\b"),
+        (
+            "jwt",
+            r"(?<![A-Za-z0-9_.-])eyJ[A-Za-z0-9_-]{8,4096}"
+            r"\.[A-Za-z0-9_-]{8,4096}\.[A-Za-z0-9_-]{8,4096}\b",
+        ),
+        ("bearer-token", r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{16,}"),
+        (
+            "credential-assignment",
+            r"(?i)\b[A-Za-z0-9_-]{0,40}?(?:api[_-]?key|access[_-]?key|secret|token|password|passwd|credential)s?\b"
+            r"\s*[:=]\s*['\"]?[A-Za-z0-9_/+.=~-]{12,}['\"]?",
+        ),
+    )
+)
 
 
 def utc_now() -> datetime:
@@ -220,6 +253,21 @@ def bounded_summary(summary: str) -> tuple[str, bool]:
     return retained.decode("utf-8", errors="ignore") + marker, True
 
 
+def redaction_enabled() -> bool:
+    """Return whether the operator opted in to best-effort secret redaction."""
+    value = os.environ.get(REDACTION_ENVIRONMENT_VARIABLE, "")
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def redact_secrets(text: str) -> str:
+    """Mask secret-shaped substrings before persistence when opted in."""
+    if not text or not redaction_enabled():
+        return text
+    for label, pattern in SECRET_PATTERNS:
+        text = pattern.sub(f"[REDACTED:{label}]", text)
+    return text
+
+
 def entry_size(entry: dict[str, str]) -> int:
     """Return the encoded size of one record entry."""
     return len(json.dumps(entry, ensure_ascii=True, sort_keys=True).encode("utf-8"))
@@ -247,14 +295,32 @@ def valid_entries(record: dict[str, Any]) -> list[dict[str, str]]:
     return bounded_entries(valid)
 
 
+def truncated_entry(entry: dict[str, str], cap: int) -> dict[str, str]:
+    """Return one oversized entry cut to the cap with a visible marker."""
+    text = entry["text"]
+    low, high = 0, len(text)
+    while low < high:
+        middle = (low + high + 1) // 2
+        candidate = {**entry, "text": text[:middle] + ENTRY_TRUNCATION_MARKER}
+        if entry_size(candidate) <= cap:
+            low = middle
+        else:
+            high = middle - 1
+    return {**entry, "text": text[:low] + ENTRY_TRUNCATION_MARKER}
+
+
 def bounded_entries(
     entries: list[dict[str, str]], limit: int = MAX_LEDGER_BYTES
 ) -> list[dict[str, str]]:
-    """Keep the newest complete entries that fit in a fixed rolling byte budget."""
+    """Keep the newest entries in budget, truncating oversized ones with a marker."""
+    entry_cap = min(MAX_ENTRY_BYTES, limit)
     selected: list[dict[str, str]] = []
     total_bytes = 0
     for entry in reversed(entries):
         size = entry_size(entry)
+        if size > entry_cap:
+            entry = truncated_entry(entry, entry_cap)
+            size = entry_size(entry)
         if size > limit or total_bytes + size > limit:
             continue
         selected.append(entry)
@@ -334,9 +400,11 @@ def message_text_entries(entry: object, raw_line: str) -> list[dict[str, str]]:
         text = text_content(content)
     else:
         return []
-    return (
-        [{"role": role, "text": text, "fingerprint": digest(raw_line)}] if text else []
-    )
+    if not text:
+        return []
+    return [
+        {"role": role, "text": redact_secrets(text), "fingerprint": digest(raw_line)}
+    ]
 
 
 def transcript_entries(transcript: str) -> list[dict[str, str]]:
@@ -367,7 +435,7 @@ def hook_payload_entries(
             entries.append(
                 {
                     "role": role,
-                    "text": text,
+                    "text": redact_secrets(text),
                     "fingerprint": f"hook:{digest(fingerprint_source)}",
                 }
             )
@@ -391,7 +459,10 @@ def matches_hook_text(
     if transcript_entry["role"] != hook_entry["role"]:
         return False
     transcript_text = normalized_text(transcript_entry["text"])
-    hook_text = normalized_text(hook_entry["text"])
+    hook_text = hook_entry["text"]
+    if hook_text.endswith(ENTRY_TRUNCATION_MARKER):
+        hook_text = hook_text[: -len(ENTRY_TRUNCATION_MARKER)]
+    hook_text = normalized_text(hook_text)
     if not transcript_text or not hook_text:
         return False
     return transcript_text == hook_text or (
@@ -672,7 +743,7 @@ def write_compact_summary(
     if not identity:
         return False
     session_id, workspace_hash, plan_id = identity
-    compact_summary, summary_truncated = bounded_summary(summary)
+    compact_summary, summary_truncated = bounded_summary(redact_secrets(summary))
     try:
         with session_lock(root, session_id):
             identity = session_identity(payload, root, current_time)

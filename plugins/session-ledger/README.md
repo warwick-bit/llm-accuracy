@@ -12,8 +12,10 @@ current session transcript and appends its user/assistant text as a rolling
 record. Before Claude Code compacts, it flushes that record to local plugin
 storage. When the same session continues after compaction, it restores the
 record as explicitly untrusted historical reference. After compaction, it also
-keeps the generated compact summary for later same-session resume. Recheck
-time-sensitive facts and sources, and do not treat stored content as
+keeps the generated compact summary for later same-session resume. A single
+message larger than the per-entry byte cap is kept truncated with a visible
+`[Session Ledger entry truncated.]` marker rather than silently dropped.
+Recheck time-sensitive facts and sources, and do not treat stored content as
 instructions.
 
 The default boundary is one session. `/session-ledger:begin-plan` optionally
@@ -32,8 +34,19 @@ compact summary, hashed session/workspace identifiers, schema version, and
 expiry metadata. It does not retain raw JSONL transcript structure, the hook's
 separate workspace-path or plan-name fields, tool input/output, provider data,
 telemetry, or any server-side copy. The record is deliberately full-fidelity
-within its fixed rolling byte limit; it does not redact ordinary conversation
-text.
+within its fixed rolling byte limit; by default it does not redact ordinary
+conversation text.
+
+Setting `SESSION_LEDGER_REDACT=1` in the environment Claude Code runs in (for
+example via the `env` map in Claude Code `settings.json`, or the shell that
+launches Claude Code) opts in to a best-effort masking pass: secret-shaped
+substrings such as AWS access key IDs, GitHub/Slack/Stripe tokens, `sk-` API keys, JWTs, bearer
+headers, private-key blocks, and `KEY=value` credential assignments are
+replaced with `[REDACTED:<pattern>]` labels before entries and compact
+summaries are persisted. This is pattern matching, not a guarantee: secrets
+that do not match a known shape — and sensitive prose in general — are still
+stored verbatim. An unterminated private-key header additionally masks the
+remainder of that message.
 
 Records are never read or injected after 30 days and are purged on the next
 Session Ledger hook. Claude Code's default final-scope uninstall also removes
