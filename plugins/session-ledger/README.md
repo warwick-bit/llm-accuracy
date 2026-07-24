@@ -48,8 +48,10 @@ replaced with `[REDACTED:<pattern>]` labels before entries and compact
 summaries are persisted. This is pattern matching, not a guarantee: secrets
 that do not match a known shape — and sensitive prose in general — are still
 stored verbatim. An unterminated private-key header additionally masks the
-remainder of that message, and enabling redaction later does not rewrite
-entries that were already stored.
+remainder of that message. Enabling redaction later also
+masks previously stored text whenever the record is re-injected or
+re-persisted; raw text already on disk is rewritten the next time the record
+changes.
 
 Records are never read or injected after 30 days and are purged on the next
 Session Ledger hook. Claude Code's default final-scope uninstall also removes

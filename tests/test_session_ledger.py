@@ -1013,3 +1013,84 @@ def test_oversized_message_survives_persist_and_reload_truncated(
     )
     reloaded = json.loads(ledger.record_path(data_root, "session-one").read_text())
     assert reloaded["entries"] == record["entries"]
+
+
+def test_late_enabled_redaction_covers_previously_stored_text(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ledger = load_ledger()
+    monkeypatch.delenv(ledger.REDACTION_ENVIRONMENT_VARIABLE, raising=False)
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    write_transcript(transcript, "Synthetic AWS key AKIAIOSFODNN7EXAMPLE in prose.")
+    assert ledger.update_ledger(
+        transcript_payload(transcript), data_root=data_root, now=NOW
+    )
+    assert ledger.write_compact_summary(
+        compact_payload(summary="Header was Bearer aaaabbbbccccddddeeee for the API."),
+        data_root=data_root,
+        now=NOW,
+    )
+    stored = ledger.record_path(data_root, "session-one").read_text()
+    assert "AKIAIOSFODNN7EXAMPLE" in stored
+
+    monkeypatch.setenv(ledger.REDACTION_ENVIRONMENT_VARIABLE, "1")
+    context = ledger.session_start_context(
+        session_start_payload(source="compact"), data_root=data_root, now=NOW
+    )
+    assert context is not None
+    assert "AKIAIOSFODNN7EXAMPLE" not in context
+    assert "aaaabbbbccccddddeeee" not in context
+    assert "[REDACTED:aws-access-key-id]" in context
+    assert "[REDACTED:bearer-token]" in context
+
+    payload = {**transcript_payload(transcript), "prompt": "Synthetic new prompt."}
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+    rewritten = ledger.record_path(data_root, "session-one").read_text()
+    assert "AKIAIOSFODNN7EXAMPLE" not in rewritten
+    assert "aaaabbbbccccddddeeee" not in rewritten
+    assert "[REDACTED:aws-access-key-id]" in rewritten
+    assert "[REDACTED:bearer-token]" in rewritten
+
+
+def test_identical_hook_redelivery_is_not_duplicated() -> None:
+    ledger = load_ledger()
+    text = "Decision: keep this exact sentence for later verification."
+    stored = [{"role": "assistant", "text": text, "fingerprint": "line-1"}]
+
+    redelivered = {"role": "assistant", "text": text, "fingerprint": "hook:redeliver"}
+    merged = ledger.merged_entries(stored, [redelivered])
+    assert [entry["fingerprint"] for entry in merged] == ["line-1"]
+
+    genuine_repeat = {"role": "assistant", "text": text, "fingerprint": "line-2"}
+    merged = ledger.merged_entries(stored, [genuine_repeat])
+    assert [entry["fingerprint"] for entry in merged] == ["line-1", "line-2"]
+
+    with_reply = stored + [
+        {
+            "role": "user",
+            "text": "Synthetic follow-up question.",
+            "fingerprint": "line-3",
+        }
+    ]
+    repeat_via_hook = {"role": "assistant", "text": text, "fingerprint": "hook:repeat"}
+    merged = ledger.merged_entries(with_reply, [repeat_via_hook])
+    assert [entry["fingerprint"] for entry in merged] == [
+        "line-1",
+        "line-3",
+        "hook:repeat",
+    ]
+
+
+def test_truncated_stored_entry_absorbs_full_hook_redelivery() -> None:
+    ledger = load_ledger()
+    long_text = "q" * (ledger.MAX_ENTRY_BYTES * 2)
+    stored = ledger.bounded_entries(
+        [{"role": "assistant", "text": long_text, "fingerprint": "line-1"}]
+    )
+    assert stored[0]["text"].endswith(ledger.ENTRY_TRUNCATION_MARKER)
+
+    redelivered = {"role": "assistant", "text": long_text, "fingerprint": "hook:again"}
+    merged = ledger.merged_entries(stored, [redelivered])
+
+    assert [entry["fingerprint"] for entry in merged] == ["line-1"]

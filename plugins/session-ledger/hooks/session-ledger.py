@@ -291,7 +291,9 @@ def valid_entries(record: dict[str, Any]) -> list[dict[str, str]]:
             and isinstance(fingerprint, str)
             and text
         ):
-            valid.append({"role": role, "text": text, "fingerprint": fingerprint})
+            valid.append(
+                {"role": role, "text": redact_secrets(text), "fingerprint": fingerprint}
+            )
     return bounded_entries(valid)
 
 
@@ -340,14 +342,18 @@ def record_for(
 ) -> dict[str, Any]:
     """Build the current schema without retaining raw session identifiers."""
     prior = previous or {}
+    compact_summary, rebound_truncated = bounded_summary(
+        redact_secrets(prior.get("compact_summary", ""))
+    )
     record = {
-        "compact_summary": prior.get("compact_summary", ""),
+        "compact_summary": compact_summary,
         "created_at": prior.get("created_at", timestamp(now)),
         "expires_at": timestamp(expires_at(now)),
         "entries": valid_entries(prior),
         "plan_id": plan_id,
         "schema_version": SCHEMA_VERSION,
-        "summary_truncated": bool(prior.get("summary_truncated", False)),
+        "summary_truncated": bool(prior.get("summary_truncated", False))
+        or rebound_truncated,
         "workspace_hash": workspace_hash,
     }
     record.update(changes or {})
@@ -481,14 +487,39 @@ def matches_hook_text(
     return truncated or len(hook_text) * 2 >= len(transcript_text)
 
 
+def matches_stored_text(
+    stored_entry: dict[str, str], hook_entry: dict[str, str]
+) -> bool:
+    """Return whether a direct hook delivery repeats an already-stored entry."""
+    if stored_entry["role"] != hook_entry["role"]:
+        return False
+    stored_text = stored_entry["text"]
+    truncated = stored_text.endswith(ENTRY_TRUNCATION_MARKER)
+    if truncated:
+        stored_text = stored_text[: -len(ENTRY_TRUNCATION_MARKER)]
+    stored_text = normalized_text(stored_text)
+    hook_text = normalized_text(hook_entry["text"])
+    if not stored_text or not hook_text:
+        return False
+    if truncated:
+        return len(
+            stored_text
+        ) >= MINIMUM_CONTAINED_HOOK_TEXT_CHARS and hook_text.startswith(stored_text)
+    return stored_text == hook_text
+
+
 def merged_entries(
     existing: list[dict[str, str]], discovered: list[dict[str, str]]
 ) -> list[dict[str, str]]:
-    """Append unseen text while avoiding a direct-hook/transcript duplicate.
+    """Append unseen text while avoiding duplicate renderings of one message.
 
-    Deliberately asymmetric: hook entries are never text-matched against stored
-    transcript entries, because an identical later hook delivery may be a
-    genuine repeat and dropping it would lose real conversation.
+    Transcript entries consume a matching provisional hook entry (the hook copy
+    arrived first); a direct hook delivery that repeats the FINAL stored entry
+    is treated as a re-delivery and skipped — real re-delivery only ever
+    repeats the current last message, and matching older entries would drop a
+    genuine repeat whose transcript line has not landed yet. Containment stays
+    one-directional so a longer message that quotes an earlier one is never
+    consumed.
     """
     fingerprints = {entry["fingerprint"] for entry in existing}
     hook_entries = [entry for entry in existing + discovered if is_hook_entry(entry)]
@@ -497,6 +528,12 @@ def merged_entries(
     for entry in discovered:
         fingerprint = entry["fingerprint"]
         if fingerprint in fingerprints:
+            continue
+        if (
+            is_hook_entry(entry)
+            and existing
+            and matches_stored_text(existing[-1], entry)
+        ):
             continue
         if not is_hook_entry(entry):
             matching_hook = next(
@@ -874,7 +911,7 @@ def session_start_context(
             escaped_for_context(valid_entries(record)),
             "END JSON-ESCAPED SESSION RECORD",
             "BEGIN JSON-ESCAPED COMPACT SUMMARY",
-            escaped_for_context(record["compact_summary"]),
+            escaped_for_context(redact_secrets(record["compact_summary"])),
             "END JSON-ESCAPED COMPACT SUMMARY",
         )
     )
