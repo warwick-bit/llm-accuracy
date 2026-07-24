@@ -14,6 +14,8 @@ general accuracy hygiene rather than a claim of universal factual correctness.
 
 - access a provider, database, or external source of truth;
 - verify a specific domain metric or business definition;
+- perform a deterministic check of a drafted answer; its reminders are
+  advisory only;
 - collect telemetry, persist prompts or tool output, or send data to a server;
   or
 - guarantee that an answer is complete, current, or correct. It does not guarantee factual correctness.
