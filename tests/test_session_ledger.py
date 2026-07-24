@@ -767,3 +767,71 @@ def test_main_fails_open_for_an_invalid_hook_action() -> None:
     ledger = load_ledger()
 
     assert ledger.main(["unsupported-action"]) == 0
+
+
+def test_begin_plan_reports_success_and_the_carryover_discard(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    monkeypatch.delenv(ledger.DATA_ENVIRONMENT_VARIABLE, raising=False)
+    ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+
+    assert (
+        ledger.main(
+            [
+                "begin-plan",
+                "--session-id",
+                "session-one",
+                "--plugin-data",
+                str(data_root),
+            ]
+        )
+        == 0
+    )
+
+    assert capsys.readouterr().out == (
+        "Started a fresh Session Ledger plan boundary for this session; "
+        "prior in-session carryover was discarded.\n"
+    )
+    assert not ledger.record_path(data_root, "session-one").exists()
+    assert ledger.scope_path(data_root, "session-one").exists()
+
+
+def test_begin_plan_reports_failure_instead_of_a_silent_no_op(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    ledger = load_ledger()
+    monkeypatch.delenv(ledger.DATA_ENVIRONMENT_VARIABLE, raising=False)
+
+    assert ledger.main(["begin-plan", "--session-id", "session-one"]) == 0
+    assert capsys.readouterr().out == (
+        "Could not confirm a Session Ledger plan boundary was started.\n"
+    )
+
+    # setenv so monkeypatch restores the key after main() mutates it below.
+    monkeypatch.setenv(ledger.DATA_ENVIRONMENT_VARIABLE, str(tmp_path / "decoy"))
+    assert (
+        ledger.main(["begin-plan", "--plugin-data", str(tmp_path / "plugin-data")]) == 0
+    )
+    assert capsys.readouterr().out == (
+        "Could not confirm a Session Ledger plan boundary was started.\n"
+    )
+
+
+def test_begin_plan_failure_never_discards_the_record_without_a_boundary(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+
+    def refuse_write(path: Path, payload: dict[str, object]) -> None:
+        raise OSError("synthetic scope write failure")
+
+    monkeypatch.setattr(ledger, "write_json_atomic", refuse_write)
+
+    assert not ledger.begin_plan(
+        "session-one", data_root=data_root, cwd="/work/project", now=NOW
+    )
+    assert ledger.record_path(data_root, "session-one").exists()

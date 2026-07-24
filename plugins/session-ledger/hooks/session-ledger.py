@@ -778,8 +778,10 @@ def begin_plan(
     }
     try:
         with session_lock(root, session_id):
-            remove_file(record_path(root, session_id))
+            # Scope first: a failure part-way may leave the old record behind,
+            # but must never discard it without the new boundary in place.
             write_json_atomic(scope_path(root, session_id), scope)
+            remove_file(record_path(root, session_id))
     except OSError:
         return False
     return True
@@ -841,10 +843,15 @@ def run_hook_action(action: str) -> None:
 
 
 def run_local_action(action: str, session_id: str) -> None:
-    """Run an explicitly invoked local-maintenance action."""
+    """Run an explicitly invoked local-maintenance action, reporting both outcomes."""
     if action == "begin-plan":
         if begin_plan(session_id):
-            print("Started a fresh Session Ledger plan boundary for this session.")
+            print(
+                "Started a fresh Session Ledger plan boundary for this session; "
+                "prior in-session carryover was discarded."
+            )
+        else:
+            print("Could not confirm a Session Ledger plan boundary was started.")
         return
     if clear_all():
         print("Cleared local Session Ledger state.")
