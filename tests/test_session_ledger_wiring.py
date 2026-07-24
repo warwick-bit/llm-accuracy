@@ -3,7 +3,8 @@
 The behaviour tests in test_session_ledger.py import the module and call
 functions directly, which leaves CLI parsing, stdin handling, interpreter
 invocation, and the hooks.json contract uncovered. These tests execute the
-exact command strings shipped in hooks.json through a POSIX shell, the same
+exact command strings shipped in hooks.json — and the inline commands embedded
+in the begin-plan and clear SKILL.md files — through a POSIX shell, the same
 way Claude Code runs them.
 """
 
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -43,6 +45,20 @@ def hook_command(event: str) -> str:
     return hooks[0]["command"]
 
 
+def clean_environment() -> dict[str, str]:
+    """Return the ambient environment minus every plugin-contract variable."""
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if key
+        not in {
+            "CLAUDE_PLUGIN_ROOT",
+            "CLAUDE_PLUGIN_DATA",
+            "CLAUDE_SESSION_ID",
+        }
+    }
+
+
 def run_hook(
     event: str,
     stdin_text: str,
@@ -50,17 +66,43 @@ def run_hook(
     data_root: Path | None,
 ) -> subprocess.CompletedProcess[str]:
     """Run one shipped hook command exactly as the host would."""
-    environment = {
-        key: value
-        for key, value in os.environ.items()
-        if key not in {"CLAUDE_PLUGIN_ROOT", "CLAUDE_PLUGIN_DATA"}
-    }
+    environment = clean_environment()
     environment["CLAUDE_PLUGIN_ROOT"] = str(PLUGIN_ROOT)
     if data_root is not None:
         environment["CLAUDE_PLUGIN_DATA"] = str(data_root)
     return subprocess.run(
         ["/bin/sh", "-c", hook_command(event)],
         input=stdin_text,
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=30,
+    )
+
+
+def skill_command(name: str) -> str:
+    """Return the one inline command embedded in a skill's SKILL.md."""
+    source = (PLUGIN_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+    commands = re.findall(r"!`([^`]+)`", source)
+    assert len(commands) == 1, f"{name} skill must embed exactly one inline command"
+    return commands[0]
+
+
+def run_skill(
+    name: str,
+    *,
+    data_root: Path | None,
+    session_id: str | None,
+) -> subprocess.CompletedProcess[str]:
+    """Run one skill's embedded command exactly as skill preprocessing would."""
+    environment = clean_environment()
+    environment["CLAUDE_PLUGIN_ROOT"] = str(PLUGIN_ROOT)
+    if data_root is not None:
+        environment["CLAUDE_PLUGIN_DATA"] = str(data_root)
+    if session_id is not None:
+        environment["CLAUDE_SESSION_ID"] = session_id
+    return subprocess.run(
+        ["/bin/sh", "-c", skill_command(name)],
         capture_output=True,
         text=True,
         env=environment,
@@ -234,3 +276,54 @@ def test_missing_plugin_data_environment_fails_open(tmp_path: Path) -> None:
     assert result.stderr == ""
     assert result.stdout == ""
     assert not list(tmp_path.rglob("record.json"))
+
+
+@posix_only
+def test_begin_plan_skill_command_starts_a_boundary(tmp_path: Path) -> None:
+    data_root = tmp_path / "plugin-data"
+
+    result = run_skill("begin-plan", data_root=data_root, session_id="wiring-session")
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    assert "Started a fresh Session Ledger plan boundary" in result.stdout
+    assert len(list(data_root.glob("session-ledger/sessions/*/scope.json"))) == 1
+
+
+@posix_only
+@pytest.mark.parametrize("missing", ["plugin-data", "session-id"])
+def test_begin_plan_skill_command_reports_failure_when_env_is_missing(
+    tmp_path: Path, missing: str
+) -> None:
+    data_root = None if missing == "plugin-data" else tmp_path / "plugin-data"
+    session_id = None if missing == "session-id" else "wiring-session"
+
+    result = run_skill("begin-plan", data_root=data_root, session_id=session_id)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    assert (
+        result.stdout
+        == "Could not confirm a Session Ledger plan boundary was started.\n"
+    )
+    assert not list(tmp_path.rglob("scope.json"))
+
+
+@posix_only
+def test_clear_skill_command_deletes_state_and_reports_it(tmp_path: Path) -> None:
+    data_root = tmp_path / "plugin-data"
+    payload = {
+        "session_id": "wiring-session",
+        "cwd": str(tmp_path),
+        "transcript_path": str(tmp_path / "missing-transcript.jsonl"),
+        "prompt": "Synthetic wiring prompt.",
+    }
+    run_hook("UserPromptSubmit", json.dumps(payload), data_root=data_root)
+    assert record_file(data_root) is not None
+
+    result = run_skill("clear", data_root=data_root, session_id="wiring-session")
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    assert result.stdout == "Cleared local Session Ledger state.\n"
+    assert not (data_root / "session-ledger").exists()
