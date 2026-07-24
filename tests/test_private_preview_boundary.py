@@ -15,9 +15,12 @@ def test_current_plugin_satisfies_boundary() -> None:
 
 
 def test_session_ledger_plugin_satisfies_its_local_only_boundary() -> None:
-    assert boundary_violations(
-        ROOT / "plugins" / "session-ledger", profile="session-ledger"
-    ) == []
+    assert (
+        boundary_violations(
+            ROOT / "plugins" / "session-ledger", profile="session-ledger"
+        )
+        == []
+    )
 
 
 def test_session_ledger_profile_still_rejects_external_verification_artifacts(
@@ -33,17 +36,13 @@ def test_session_ledger_profile_still_rejects_external_verification_artifacts(
 def test_session_ledger_extension_is_rejected(tmp_path: Path) -> None:
     (tmp_path / "session_ledger.py").write_text("pass\n", encoding="utf-8")
 
-    assert boundary_violations(tmp_path) == [
-        "excluded artifact: session_ledger.py"
-    ]
+    assert boundary_violations(tmp_path) == ["excluded artifact: session_ledger.py"]
 
 
 def test_non_text_artifact_is_rejected_cleanly(tmp_path: Path) -> None:
     (tmp_path / "icon.png").write_bytes(b"\xff\xd8\xff")
 
-    assert boundary_violations(tmp_path) == [
-        "unexpected non-text artifact: icon.png"
-    ]
+    assert boundary_violations(tmp_path) == ["unexpected non-text artifact: icon.png"]
 
 
 def test_symlink_is_rejected_before_its_target_is_read(tmp_path: Path) -> None:

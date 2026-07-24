@@ -57,7 +57,9 @@ def parse_timestamp(value: object) -> datetime | None:
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(
+            timezone.utc
+        )
     except ValueError:
         return None
 
@@ -235,12 +237,19 @@ def valid_entries(record: dict[str, Any]) -> list[dict[str, str]]:
         role = entry.get("role")
         text = entry.get("text")
         fingerprint = entry.get("fingerprint")
-        if isinstance(role, str) and isinstance(text, str) and isinstance(fingerprint, str) and text:
+        if (
+            isinstance(role, str)
+            and isinstance(text, str)
+            and isinstance(fingerprint, str)
+            and text
+        ):
             valid.append({"role": role, "text": text, "fingerprint": fingerprint})
     return bounded_entries(valid)
 
 
-def bounded_entries(entries: list[dict[str, str]], limit: int = MAX_LEDGER_BYTES) -> list[dict[str, str]]:
+def bounded_entries(
+    entries: list[dict[str, str]], limit: int = MAX_LEDGER_BYTES
+) -> list[dict[str, str]]:
     """Keep the newest complete entries that fit in a fixed rolling byte budget."""
     selected: list[dict[str, str]] = []
     total_bytes = 0
@@ -325,7 +334,9 @@ def message_text_entries(entry: object, raw_line: str) -> list[dict[str, str]]:
         text = text_content(content)
     else:
         return []
-    return [{"role": role, "text": text, "fingerprint": digest(raw_line)}] if text else []
+    return (
+        [{"role": role, "text": text, "fingerprint": digest(raw_line)}] if text else []
+    )
 
 
 def transcript_entries(transcript: str) -> list[dict[str, str]]:
@@ -343,7 +354,9 @@ def transcript_entries(transcript: str) -> list[dict[str, str]]:
     return entries
 
 
-def hook_payload_entries(payload: dict[str, Any], transcript: str) -> list[dict[str, str]]:
+def hook_payload_entries(
+    payload: dict[str, Any], transcript: str
+) -> list[dict[str, str]]:
     """Capture hook-provided text when it has not reached the transcript yet."""
     transcript_fingerprint = digest(transcript)
     entries: list[dict[str, str]] = []
@@ -371,7 +384,9 @@ def normalized_text(value: str) -> str:
     return " ".join(value.split())
 
 
-def matches_hook_text(transcript_entry: dict[str, str], hook_entry: dict[str, str]) -> bool:
+def matches_hook_text(
+    transcript_entry: dict[str, str], hook_entry: dict[str, str]
+) -> bool:
     """Return whether one transcript rendering corresponds to direct hook text."""
     if transcript_entry["role"] != hook_entry["role"]:
         return False
@@ -380,7 +395,8 @@ def matches_hook_text(transcript_entry: dict[str, str], hook_entry: dict[str, st
     if not transcript_text or not hook_text:
         return False
     return transcript_text == hook_text or (
-        len(hook_text) >= MINIMUM_CONTAINED_HOOK_TEXT_CHARS and hook_text in transcript_text
+        len(hook_text) >= MINIMUM_CONTAINED_HOOK_TEXT_CHARS
+        and hook_text in transcript_text
     )
 
 
@@ -522,7 +538,8 @@ def load_current_record(
         not record
         or not is_current(record, now)
         or record.get("workspace_hash") != workspace_hash
-        or record.get("plan_id") != active_plan_id(data_root, session_id, workspace_hash, now)
+        or record.get("plan_id")
+        != active_plan_id(data_root, session_id, workspace_hash, now)
         or not isinstance(record.get("compact_summary"), str)
     ):
         return None
@@ -540,11 +557,18 @@ def session_identity(
     if not state_paths_are_safe(root, session_id):
         return None
     workspace_hash = canonical_workspace_hash(cwd)
-    return session_id, workspace_hash, active_plan_id(root, session_id, workspace_hash, now)
+    return (
+        session_id,
+        workspace_hash,
+        active_plan_id(root, session_id, workspace_hash, now),
+    )
 
 
 def initialize_session(
-    payload: dict[str, Any], *, data_root: Path | None = None, now: datetime | None = None
+    payload: dict[str, Any],
+    *,
+    data_root: Path | None = None,
+    now: datetime | None = None,
 ) -> bool:
     """Create a local empty ledger for a session that has not been seen before."""
     root = data_root or data_directory()
@@ -567,7 +591,9 @@ def initialize_session(
                 return True
             write_json_atomic(
                 record_path(root, session_id),
-                record_for(workspace_hash=workspace_hash, plan_id=plan_id, now=current_time),
+                record_for(
+                    workspace_hash=workspace_hash, plan_id=plan_id, now=current_time
+                ),
             )
     except OSError:
         return False
@@ -575,7 +601,10 @@ def initialize_session(
 
 
 def update_ledger(
-    payload: dict[str, Any], *, data_root: Path | None = None, now: datetime | None = None
+    payload: dict[str, Any],
+    *,
+    data_root: Path | None = None,
+    now: datetime | None = None,
 ) -> bool:
     """Append newly discovered session text from a transient transcript tail."""
     root = data_root or data_directory()
@@ -593,7 +622,9 @@ def update_ledger(
         return False
 
 
-def update_current_ledger(payload: dict[str, Any], root: Path, current_time: datetime) -> bool:
+def update_current_ledger(
+    payload: dict[str, Any], root: Path, current_time: datetime
+) -> bool:
     """Update one ledger while its session lock is held."""
     identity = session_identity(payload, root, current_time)
     if not identity:
@@ -601,9 +632,13 @@ def update_current_ledger(payload: dict[str, Any], root: Path, current_time: dat
     session_id, workspace_hash, plan_id = identity
     existing = load_current_record(payload, data_root=root, now=current_time)
     if not existing:
-        existing = record_for(workspace_hash=workspace_hash, plan_id=plan_id, now=current_time)
+        existing = record_for(
+            workspace_hash=workspace_hash, plan_id=plan_id, now=current_time
+        )
     transcript = read_transcript_tail(payload.get("transcript_path"))
-    discovered = transcript_entries(transcript) + hook_payload_entries(payload, transcript)
+    discovered = transcript_entries(transcript) + hook_payload_entries(
+        payload, transcript
+    )
     current_entries = valid_entries(existing)
     entries = merged_entries(current_entries, discovered)
     changed = entries != current_entries
@@ -622,7 +657,10 @@ def update_current_ledger(payload: dict[str, Any], root: Path, current_time: dat
 
 
 def write_compact_summary(
-    payload: dict[str, Any], *, data_root: Path | None = None, now: datetime | None = None
+    payload: dict[str, Any],
+    *,
+    data_root: Path | None = None,
+    now: datetime | None = None,
 ) -> bool:
     """Retain the bounded summary after pre-compaction capture has completed."""
     root = data_root or data_directory()
@@ -676,7 +714,10 @@ def escaped_for_context(value: object) -> str:
 
 
 def session_start_context(
-    payload: dict[str, Any], *, data_root: Path | None = None, now: datetime | None = None
+    payload: dict[str, Any],
+    *,
+    data_root: Path | None = None,
+    now: datetime | None = None,
 ) -> str | None:
     """Return safe carryover only after compacting or resuming the same session."""
     root = data_root or data_directory()
@@ -714,7 +755,11 @@ def session_start_context(
 
 
 def begin_plan(
-    session_id: str, *, data_root: Path | None = None, cwd: str | None = None, now: datetime | None = None
+    session_id: str,
+    *,
+    data_root: Path | None = None,
+    cwd: str | None = None,
+    now: datetime | None = None,
 ) -> bool:
     """Start a fresh explicit plan section without retaining a plan name."""
     root = data_root or data_directory()

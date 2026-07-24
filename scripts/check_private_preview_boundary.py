@@ -10,9 +10,7 @@ from pathlib import Path
 
 
 ALLOWED_SUFFIXES = frozenset({".json", ".md", ".py", ".yaml", ".yml"})
-COMMON_FORBIDDEN_PATH_PREFIXES = (
-    "verify-number",
-)
+COMMON_FORBIDDEN_PATH_PREFIXES = ("verify-number",)
 ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES = COMMON_FORBIDDEN_PATH_PREFIXES + (
     "session_ledger",
     "session-ledger",
@@ -49,9 +47,10 @@ def artifact_violations(
     """Return boundary violations for one plugin artifact."""
     if path.is_symlink():
         return [f"symlink artifact: {relative}"]
-    if any(
-        part.lower().startswith(forbidden_prefixes) for part in relative.parts
-    ) or path.name.lower() in FORBIDDEN_FILE_NAMES:
+    if (
+        any(part.lower().startswith(forbidden_prefixes) for part in relative.parts)
+        or path.name.lower() in FORBIDDEN_FILE_NAMES
+    ):
         return [f"excluded artifact: {relative}"]
     if path.is_dir():
         return []
@@ -71,9 +70,7 @@ def artifact_violations(
     return violations
 
 
-def boundary_violations(
-    plugin: Path, *, profile: str = "accuracy-core"
-) -> list[str]:
+def boundary_violations(plugin: Path, *, profile: str = "accuracy-core") -> list[str]:
     """Return deterministic, safe-to-report boundary violations for a plugin tree."""
     forbidden_prefixes = forbidden_path_prefixes(profile)
     violations: list[str] = []

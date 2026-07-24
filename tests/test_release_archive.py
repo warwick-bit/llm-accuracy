@@ -61,10 +61,17 @@ def tracked_test_plugin(tmp_path: Path) -> Path:
     (plugin / "README.md").write_text("tracked source", encoding="utf-8")
 
     subprocess.run(["git", "init", "-q", str(repository)], check=True)
-    subprocess.run(["git", "-C", str(repository), "config", "user.email", "test@example.com"], check=True)
-    subprocess.run(["git", "-C", str(repository), "config", "user.name", "Test User"], check=True)
+    subprocess.run(
+        ["git", "-C", str(repository), "config", "user.email", "test@example.com"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(repository), "config", "user.name", "Test User"], check=True
+    )
     subprocess.run(["git", "-C", str(repository), "add", "plugins"], check=True)
-    subprocess.run(["git", "-C", str(repository), "commit", "-qm", "fixture"], check=True)
+    subprocess.run(
+        ["git", "-C", str(repository), "commit", "-qm", "fixture"], check=True
+    )
     return plugin
 
 

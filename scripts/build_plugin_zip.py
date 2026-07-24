@@ -53,7 +53,15 @@ def tracked_plugin_files(plugin: Path) -> list[Path]:
         raise ValueError("plugin source must be inside its Git worktree") from error
     for diff_args in (("diff",), ("diff", "--cached")):
         result = subprocess.run(
-            ["git", "-C", str(repository), *diff_args, "--quiet", "--", relative_plugin.as_posix()],
+            [
+                "git",
+                "-C",
+                str(repository),
+                *diff_args,
+                "--quiet",
+                "--",
+                relative_plugin.as_posix(),
+            ],
             check=False,
         )
         if result.returncode:
@@ -83,7 +91,9 @@ def archive_members(plugin: Path = PLUGIN) -> list[Path]:
     """Return deterministic, preview-safe tracked files for the release archive."""
     violations = boundary_violations(plugin)
     if violations:
-        raise ValueError("private-preview boundary check failed: " + "; ".join(violations))
+        raise ValueError(
+            "private-preview boundary check failed: " + "; ".join(violations)
+        )
     return [
         path
         for path in tracked_plugin_files(plugin)
