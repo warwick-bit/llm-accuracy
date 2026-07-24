@@ -3,15 +3,35 @@
 LLM Accuracy has different installation and capability paths across Claude
 products. Use the path below that matches where you work.
 
+## Preview validation status
+
+Platform capability and this preview's runtime evidence are separate:
+
+- **Claude Code terminal or IDE:** exact shipped hook commands and the automated
+  distribution suite were tested on 24 Jul 2026. A clean marketplace
+  installation smoke has not yet been recorded.
+- **Claude Desktop Chat:** not runtime-smoke-tested for this preview. The
+  skills-only description follows Anthropic's current plugin documentation.
+- **Claude Cowork:** not runtime-smoke-tested for this preview. The
+  skills-and-hooks description follows Anthropic's current plugin documentation.
+- **Claude chat on the web:** not runtime-smoke-tested for this preview. The
+  skills-only description follows Anthropic's current plugin documentation.
+- **Claude Code on the web:** untested and unsupported for this preview.
+
+Recheck the linked platform documentation and record a new tested-on date when
+claiming support after a release or host-runtime change.
+
 ## Claude Code terminal or IDE — full preview
 
-This is the recommended and fully supported private-preview path. It includes
-the self-audit skill and the targeted advisory hooks.
+This is the recommended private-preview path. It includes the self-audit skill
+and the targeted advisory hooks.
 
 ### Before you start
 
 - Use a current Claude Code installation. If `/plugin` is unavailable, update
   Claude Code first.
+- Have `python3` 3.9 or later and a POSIX-compatible hook shell. The preview's
+  exact command-launcher tests currently run on POSIX only.
 - Ask the preview maintainer to add your GitHub account as a collaborator on
   [`warwick-bit/llm-accuracy`](https://github.com/warwick-bit/llm-accuracy).
 - Install only if you trust the plugin source. It runs local advisory hook

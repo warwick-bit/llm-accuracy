@@ -58,7 +58,10 @@ CONTRACT = (
 
 
 def should_fire(prompt: str) -> bool:
-    if not prompt or any(marker in prompt for marker in BYPASS_MARKERS):
+    if not prompt:
+        return False
+    lowered = prompt.lower()
+    if any(marker in lowered for marker in BYPASS_MARKERS):
         return False
     p = prompt
     if LOOKUP.match(p):

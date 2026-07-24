@@ -19,7 +19,7 @@ def test_claude_plugin_manifest_identifies_the_preview() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.3.0"
+    assert claude["version"] == "0.3.1"
     assert "codex" not in str(claude).lower()
 
 
@@ -54,8 +54,9 @@ def test_preview_excludes_external_integrations_and_updater() -> None:
     assert not (PLUGIN / "references" / "contract-receipts.md").exists()
     assert not (PLUGIN / "hooks" / "codex_marketplace_autoupgrade.py").exists()
     assert not (PLUGIN / "hooks" / "session_ledger").exists()
+    assert not (PLUGIN / "hooks.json").exists()
     assert "codex_marketplace_autoupgrade.py" not in (
-        (PLUGIN / "hooks.json").read_text(encoding="utf-8")
+        (PLUGIN / "hooks" / "hooks.json").read_text(encoding="utf-8")
     )
 
 
@@ -75,6 +76,7 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     assert "stale summary after a long session" in root_readme
     assert "Never submit" in preview
     assert "does not guarantee" in plugin_readme
+    assert "deterministic check of a drafted answer" in plugin_readme
     assert "No session ledger, prompt history, or tool output" in plugin_readme
     assert "Claude Code terminal or IDE — full preview" in install_guide
     assert "Claude Desktop Chat — skills-only" in install_guide
@@ -84,3 +86,6 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     assert "Add marketplace" in install_guide
     assert "Claude Code on the web — pilot only" in install_guide
     assert "Session Ledger — Claude Code terminal or IDE only" in install_guide
+    assert "exact shipped hook commands" in install_guide
+    assert install_guide.count("not runtime-smoke-tested for this preview") == 3
+    assert "untested and unsupported for this preview" in install_guide

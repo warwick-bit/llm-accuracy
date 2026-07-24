@@ -5,7 +5,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import os; p=r'${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py'; os.execvp('python3', ['python3', p]) if os.path.exists(p) else None\""
+            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\"",
+            "timeout": 3,
+            "statusMessage": "Checking llm-accuracy analysis contract"
           }
         ]
       },
@@ -13,7 +15,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import os; p=r'${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py'; os.execvp('python3', ['python3', p]) if os.path.exists(p) else None\""
+            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\"",
+            "timeout": 3,
+            "statusMessage": "Checking llm-accuracy fusion evidence"
           }
         ]
       }
@@ -23,7 +27,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -c \"import os; p=r'${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py'; os.execvp('python3', ['python3', p]) if os.path.exists(p) else None\""
+            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\"",
+            "timeout": 3,
+            "statusMessage": "Checking llm-accuracy post-compaction accuracy"
           }
         ]
       }
