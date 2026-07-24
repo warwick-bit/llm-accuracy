@@ -928,3 +928,88 @@ def test_opt_in_redaction_masks_secret_shaped_text_before_persistence(
     assert "[REDACTED:jwt]" in record["entries"][2]["text"]
     assert "[REDACTED:credential-assignment]" in record["entries"][3]["text"]
     assert "[REDACTED:bearer-token]" in record["compact_summary"]
+
+
+def test_containment_dedupe_requires_the_hook_text_to_dominate() -> None:
+    ledger = load_ledger()
+    hook = {
+        "role": "assistant",
+        "text": "Synthetic repeated sentence body 123456.",
+        "fingerprint": "hook:1",
+    }
+    quoting = {
+        "role": "assistant",
+        "text": "Quoting: Synthetic repeated sentence body 123456. "
+        + "More analysis. " * 20,
+        "fingerprint": "line-9",
+    }
+
+    merged = ledger.merged_entries([hook], [quoting])
+
+    assert [entry["fingerprint"] for entry in merged] == ["hook:1", "line-9"]
+
+    wrapped = {
+        "role": "assistant",
+        "text": "> Synthetic repeated sentence body 123456.",
+        "fingerprint": "line-10",
+    }
+    merged = ledger.merged_entries([hook], [wrapped])
+    assert [entry["fingerprint"] for entry in merged] == ["hook:1"]
+
+
+def test_prune_preserves_a_held_lock_and_sweeps_orphans(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    if ledger.fcntl is None:  # non-POSIX runtimes fall back to plain removal
+        return
+    data_root = tmp_path / "plugin-data"
+    ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
+    lock = ledger.lock_path(data_root, "session-one")
+    descriptor = os.open(lock, os.O_RDWR)
+    try:
+        ledger.fcntl.flock(descriptor, ledger.fcntl.LOCK_EX)
+        ledger.prune_expired(data_root, NOW + timedelta(days=31))
+        assert lock.exists()
+    finally:
+        ledger.fcntl.flock(descriptor, ledger.fcntl.LOCK_UN)
+        os.close(descriptor)
+
+    ledger.prune_expired(data_root, NOW + timedelta(days=31))
+    assert not lock.exists()
+
+
+def test_hostile_entry_overhead_beyond_the_cap_is_dropped(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    hostile = {
+        "role": "assistant",
+        "text": "Synthetic tiny text.",
+        "fingerprint": "f" * (ledger.MAX_ENTRY_BYTES + 100),
+    }
+    keeper = {"role": "user", "text": "Synthetic keeper.", "fingerprint": "1"}
+
+    bounded = ledger.bounded_entries([hostile, keeper])
+
+    assert [entry["fingerprint"] for entry in bounded] == ["1"]
+    assert all(ledger.entry_size(entry) <= ledger.MAX_ENTRY_BYTES for entry in bounded)
+
+
+def test_oversized_message_survives_persist_and_reload_truncated(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    write_transcript(transcript, "w" * (ledger.MAX_ENTRY_BYTES * 3))
+
+    assert ledger.update_ledger(
+        transcript_payload(transcript), data_root=data_root, now=NOW
+    )
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    [entry] = record["entries"]
+    assert entry["text"].endswith(ledger.ENTRY_TRUNCATION_MARKER)
+    assert ledger.entry_size(entry) <= ledger.MAX_ENTRY_BYTES
+
+    assert ledger.update_ledger(
+        transcript_payload(transcript), data_root=data_root, now=NOW
+    )
+    reloaded = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert reloaded["entries"] == record["entries"]

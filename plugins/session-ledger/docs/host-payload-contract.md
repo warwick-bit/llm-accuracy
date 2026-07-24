@@ -53,16 +53,28 @@ session correctly recalled a reference string stated before compaction. The
 untrusted framing behaved as designed: a prompt phrased as a demand to repeat
 a "secret codeword" was refused; a neutral continuity question was answered.
 
-## Skill command context (documented, not yet live-verified)
+## Skill command context — observed live
 
-The `begin-plan` and `clear` skills embed an inline `` !`command` `` that runs
-as skill preprocessing. Per the official docs (code.claude.com/docs/en/skills
-and /plugins-reference, checked 2026-07-24): inline-command preprocessing runs
-when a skill is invoked; `${CLAUDE_SESSION_ID}` is a documented skill content
-substitution; `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` are
-documented plugin command substitutions. The docs are silent on whether these
-values are also present as *shell environment variables* during that
-execution, so the skill commands must stay honest on failure: if either value
-is missing, the script prints a "Could not confirm ..." line instead of
-silently doing nothing, and each SKILL.md tells the model to report that
-outcome. A live in-session verification of both skills is still pending.
+Verified on Claude Code 2.1.218, 2026-07-24, Linux (WSL2): isolated
+`CLAUDE_CONFIG_DIR`, plugin installed and enabled from this repo's local
+marketplace, skills invoked non-interactively via
+`claude -p "/session-ledger:begin-plan"` and `claude -p "/session-ledger:clear"`.
+
+- The inline `` !`command` `` in both SKILL.md files executes as host-side
+  preprocessing, before (and independent of) the model call — it ran even when
+  the model turn itself failed on authentication.
+- `${CLAUDE_SESSION_ID}`, `${CLAUDE_PLUGIN_ROOT}`, and `${CLAUDE_PLUGIN_DATA}`
+  all substituted with real values in the executed command line (observed: the
+  live session UUID, the plugin install path, and
+  `plugins/data/session-ledger-llm-accuracy-preview`).
+- Inline commands pass through the shell permission system. Without an allow
+  rule the command is NOT executed and the host injects a
+  `<local-command-stderr>` "requires approval" line into the command context —
+  visible to the model, so the SKILL.md honest-failure instructions apply.
+  With `Bash(python3:*)` allowed, the command runs.
+- `begin-plan` wrote a well-formed `scope.json` (schema 2, 32-hex plan id) for
+  the live session id. `clear` printed `Cleared local Session Ledger state.`
+  and removed all state; the invoking session's own capture hooks then created
+  a fresh empty record for that session, which is expected.
+- Command stdout is embedded in the expanded command content ahead of the
+  SKILL.md body text, so the model can compare it to the required phrases.

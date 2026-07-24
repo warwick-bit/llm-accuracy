@@ -76,7 +76,7 @@ record and Claude's compact summary may contain sensitive local content. It is
 unsupported in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude
 Code on the web.
 
-Session Ledger requires `python3` version 3.8 or later on the machine running
+Session Ledger requires `python3` version 3.9 or later (CI-tested 3.9-3.13) on the machine running
 Claude Code. Check it with `python3 --version` before installing.
 
 Install it after adding the marketplace:
