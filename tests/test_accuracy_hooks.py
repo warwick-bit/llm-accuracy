@@ -44,7 +44,9 @@ def test_analysis_hook_emits_advisory_context(monkeypatch, capsys) -> None:
 
     output = json.loads(capsys.readouterr().out)
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
-    assert "analysis contract" in output["hookSpecificOutput"]["additionalContext"].lower()
+    assert (
+        "analysis contract" in output["hookSpecificOutput"]["additionalContext"].lower()
+    )
 
 
 def test_fusion_hook_targets_source_conflicts_but_not_code_work() -> None:
@@ -78,7 +80,10 @@ def test_fusion_hook_emits_advisory_context(monkeypatch, capsys) -> None:
 
     output = json.loads(capsys.readouterr().out)
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
-    assert "fusion evidence trigger" in output["hookSpecificOutput"]["additionalContext"].lower()
+    assert (
+        "fusion evidence trigger"
+        in output["hookSpecificOutput"]["additionalContext"].lower()
+    )
 
 
 def test_post_compact_hook_emits_freshness_nudge(capsys) -> None:

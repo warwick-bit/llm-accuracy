@@ -67,7 +67,10 @@ def test_preview_docs_state_the_safety_boundary() -> None:
 
     assert "not open source" in root_readme.lower()
     assert "Do not submit credentials" in root_readme
-    assert "no command\nto run or system prompt to paste for matching prompts" in root_readme
+    assert (
+        "no command\nto run or system prompt to paste for matching prompts"
+        in root_readme
+    )
     assert "LLM Accuracy itself remains stateless" in root_readme
     assert "stale summary after a long session" in root_readme
     assert "Never submit" in preview
@@ -75,7 +78,9 @@ def test_preview_docs_state_the_safety_boundary() -> None:
     assert "No session ledger, prompt history, or tool output" in plugin_readme
     assert "Claude Code terminal or IDE — full preview" in install_guide
     assert "Claude Desktop Chat — skills-only" in install_guide
-    assert "Claude chat on the web — personal marketplace (skills only)" in install_guide
+    assert (
+        "Claude chat on the web — personal marketplace (skills only)" in install_guide
+    )
     assert "Add marketplace" in install_guide
     assert "Claude Code on the web — pilot only" in install_guide
     assert "Session Ledger — Claude Code terminal or IDE only" in install_guide
