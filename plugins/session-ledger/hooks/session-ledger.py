@@ -350,11 +350,12 @@ def hook_payload_entries(payload: dict[str, Any], transcript: str) -> list[dict[
     for role, field in (("user", "prompt"), ("assistant", "last_assistant_message")):
         text = payload.get(field)
         if isinstance(text, str) and text:
+            fingerprint_source = "\n".join((role, text, transcript_fingerprint))
             entries.append(
                 {
                     "role": role,
                     "text": text,
-                    "fingerprint": f"hook:{digest(f'{role}\n{text}\n{transcript_fingerprint}')}",
+                    "fingerprint": f"hook:{digest(fingerprint_source)}",
                 }
             )
     return entries

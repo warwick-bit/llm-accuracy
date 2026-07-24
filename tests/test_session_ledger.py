@@ -221,13 +221,11 @@ def test_hook_commands_include_the_script_and_action() -> None:
         (post_compact, "post-compact"),
         (session_start, "session-start"),
     ):
-        assert hook["command"] == "python3"
-        assert hook["args"] == [
-            "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
-            action,
-            "--plugin-data",
-            "${CLAUDE_PLUGIN_DATA}",
-        ]
+        assert hook["command"] == (
+            'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" '
+            f'{action} --plugin-data "${{CLAUDE_PLUGIN_DATA}}"'
+        )
+        assert "args" not in hook
 
 
 def test_hook_source_uses_python_3_8_compatible_utc_timezone() -> None:
