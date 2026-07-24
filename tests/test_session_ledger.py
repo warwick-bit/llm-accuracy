@@ -835,3 +835,96 @@ def test_begin_plan_failure_never_discards_the_record_without_a_boundary(
         "session-one", data_root=data_root, cwd="/work/project", now=NOW
     )
     assert ledger.record_path(data_root, "session-one").exists()
+
+
+def test_oversized_entry_is_truncated_with_a_marker_not_dropped() -> None:
+    ledger = load_ledger()
+    entries = [
+        {"role": "user", "text": "Synthetic short lead-in.", "fingerprint": "1"},
+        {
+            "role": "assistant",
+            "text": "y" * (ledger.MAX_ENTRY_BYTES * 2),
+            "fingerprint": "2",
+        },
+        {"role": "user", "text": "Synthetic short follow-up.", "fingerprint": "3"},
+    ]
+
+    bounded = ledger.bounded_entries(entries)
+
+    assert [entry["fingerprint"] for entry in bounded] == ["1", "2", "3"]
+    truncated = bounded[1]
+    assert truncated["text"].startswith("yyy")
+    assert truncated["text"].endswith(ledger.ENTRY_TRUNCATION_MARKER)
+    assert ledger.entry_size(truncated) <= ledger.MAX_ENTRY_BYTES
+    assert ledger.bounded_entries(bounded) == bounded
+
+
+def test_truncated_hook_entry_still_dedupes_its_transcript_rendering() -> None:
+    ledger = load_ledger()
+    long_text = "z" * (ledger.MAX_ENTRY_BYTES * 2)
+    stored = ledger.bounded_entries(
+        [{"role": "assistant", "text": long_text, "fingerprint": "hook:synthetic"}]
+    )
+    assert stored[0]["text"].endswith(ledger.ENTRY_TRUNCATION_MARKER)
+
+    merged = ledger.merged_entries(
+        stored, [{"role": "assistant", "text": long_text, "fingerprint": "line-1"}]
+    )
+
+    assert [entry["fingerprint"] for entry in merged] == ["hook:synthetic"]
+
+
+def test_redaction_is_off_by_default(tmp_path: Path, monkeypatch) -> None:
+    ledger = load_ledger()
+    monkeypatch.delenv(ledger.REDACTION_ENVIRONMENT_VARIABLE, raising=False)
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    write_transcript(transcript, "Synthetic AWS key AKIAIOSFODNN7EXAMPLE in prose.")
+
+    assert ledger.update_ledger(
+        transcript_payload(transcript), data_root=data_root, now=NOW
+    )
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert "AKIAIOSFODNN7EXAMPLE" in record["entries"][0]["text"]
+
+
+def test_opt_in_redaction_masks_secret_shaped_text_before_persistence(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ledger = load_ledger()
+    monkeypatch.setenv(ledger.REDACTION_ENVIRONMENT_VARIABLE, "1")
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "session.jsonl"
+    # Built at runtime so no credential-shaped literal appears in this file.
+    synthetic_password = "hunter2" * 2
+    synthetic_jwt = "eyJ" + "a" * 17 + "." + "b" * 20 + "." + "c" * 20
+    write_transcript(
+        transcript,
+        "Synthetic AWS key AKIAIOSFODNN7EXAMPLE in prose.",
+        "Config used DATABASE_PASSWORD" + "=" + synthetic_password + " today.",
+        "Auth used " + synthetic_jwt + " briefly.",
+    )
+    payload = {
+        **transcript_payload(transcript),
+        "prompt": f"My password = {synthetic_password} please remember it.",
+    }
+
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+    assert ledger.write_compact_summary(
+        compact_payload(summary="Header was Bearer aaaabbbbccccddddeeee for the API."),
+        data_root=data_root,
+        now=NOW,
+    )
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    stored_text = json.dumps(record)
+    assert "AKIAIOSFODNN7EXAMPLE" not in stored_text
+    assert synthetic_password not in stored_text
+    assert synthetic_jwt not in stored_text
+    assert "aaaabbbbccccddddeeee" not in stored_text
+    assert "[REDACTED:aws-access-key-id]" in record["entries"][0]["text"]
+    assert "[REDACTED:credential-assignment]" in record["entries"][1]["text"]
+    assert "[REDACTED:jwt]" in record["entries"][2]["text"]
+    assert "[REDACTED:credential-assignment]" in record["entries"][3]["text"]
+    assert "[REDACTED:bearer-token]" in record["compact_summary"]
