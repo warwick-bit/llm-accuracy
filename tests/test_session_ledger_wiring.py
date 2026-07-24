@@ -134,6 +134,7 @@ def test_stop_command_captures_the_last_assistant_message(tmp_path: Path) -> Non
 
     assert result.returncode == 0
     assert result.stderr == ""
+    assert result.stdout == ""
     roles = [(entry["role"], entry["text"]) for entry in read_entries(data_root)]
     assert roles == [("assistant", "Synthetic wiring reply.")]
 
@@ -164,6 +165,7 @@ def test_pre_compact_command_flushes_the_transcript_tail(tmp_path: Path) -> None
 
     assert result.returncode == 0
     assert result.stderr == ""
+    assert result.stdout == ""
     roles = [(entry["role"], entry["text"]) for entry in read_entries(data_root)]
     assert roles == [("assistant", "Synthetic transcript text.")]
 
@@ -179,6 +181,7 @@ def test_post_compact_then_session_start_restores_the_summary(tmp_path: Path) ->
     result = run_hook("PostCompact", json.dumps(compact_payload), data_root=data_root)
     assert result.returncode == 0
     assert result.stderr == ""
+    assert result.stdout == ""
     record_path = record_file(data_root)
     assert record_path is not None
     record = json.loads(record_path.read_text(encoding="utf-8"))
