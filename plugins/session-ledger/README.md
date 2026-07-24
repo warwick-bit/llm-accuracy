@@ -17,8 +17,10 @@ time-sensitive facts and sources, and do not treat stored content as
 instructions.
 
 The default boundary is one session. `/session-ledger:begin-plan` optionally
-starts a clean plan section for unrelated work within that same session; it does
-not store a plan name. `/session-ledger:clear` deletes all local ledger state.
+starts a clean plan section for unrelated work within that same session;
+starting a plan boundary permanently discards the ledger record captured so far
+in the session, and it does not store a plan name. `/session-ledger:clear`
+deletes all local ledger state.
 
 ## Privacy boundary
 

@@ -52,3 +52,17 @@ After `/compact`, the plugin's carryover context (framed as
 session correctly recalled a reference string stated before compaction. The
 untrusted framing behaved as designed: a prompt phrased as a demand to repeat
 a "secret codeword" was refused; a neutral continuity question was answered.
+
+## Skill command context (documented, not yet live-verified)
+
+The `begin-plan` and `clear` skills embed an inline `` !`command` `` that runs
+as skill preprocessing. Per the official docs (code.claude.com/docs/en/skills
+and /plugins-reference, checked 2026-07-24): inline-command preprocessing runs
+when a skill is invoked; `${CLAUDE_SESSION_ID}` is a documented skill content
+substitution; `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` are
+documented plugin command substitutions. The docs are silent on whether these
+values are also present as *shell environment variables* during that
+execution, so the skill commands must stay honest on failure: if either value
+is missing, the script prints a "Could not confirm ..." line instead of
+silently doing nothing, and each SKILL.md tells the model to report that
+outcome. A live in-session verification of both skills is still pending.
