@@ -319,26 +319,155 @@ def test_partial_result_sentinel_covers_every_declared_cursor_key() -> None:
             assert hook.collect_codes({key: absent}) == set(), (key, absent)
 
 
+def wrap(body: object) -> list[dict]:
+    """Deliver a body the way a host delivers an MCP tool result."""
+    text = body if isinstance(body, str) else json.dumps(body)
+    return [{"type": "text", "text": text}]
+
+
+# Negatives modelled on the response SHAPES seen across real MCP servers, kept
+# vendor-neutral on purpose: the contract under test is the host's delivery
+# shape and generic pagination vocabulary, not any one provider's payload.
+REAL_SHAPE_NEGATIVES = [
+    # Complete envelopes in every delivered shape.
+    wrap({"items": [{"id": 1}], "has_more": False}),
+    wrap({"results": [{"id": 1}], "hasNextPage": False, "cursor": "current-page"}),
+    wrap({"records": [{"id": 1}], "pagination_complete": True}),
+    wrap({"ok": True, "messages": [{"user": "U1"}], "response_metadata": {}}),
+    '{"data": [{"id": 1}], "has_more": false}',
+    {"status": "ok", "message": "connected", "authUrl": "https://example.test/auth"},
+    # Prose and markdown blocks, which many servers return instead of JSON.
+    wrap("# Report\n\nAll rows returned. Pagination uses has_more and next_cursor."),
+    wrap("No results found."),
+    "Query executed successfully. 42 rows.",
+    # A top-level JSON array is record content, never an envelope.
+    wrap([{"id": 1, "has_more": True}, {"id": 2, "truncated": True}]),
+    # GraphQL connections that are exhausted.
+    wrap(
+        {
+            "data": {
+                "org": {
+                    "repos": {
+                        "nodes": [{"id": 1}],
+                        "pageInfo": {"hasNextPage": False, "endCursor": "Y3Vyc29yOjE="},
+                    }
+                }
+            }
+        }
+    ),
+    wrap(
+        {
+            "data": {
+                "org": {
+                    "repos": {
+                        "pageInfo": {"hasNextPage": False, "hasPreviousPage": True}
+                    }
+                }
+            }
+        }
+    ),
+    # Adversarial business payloads: money, aggregates, series, flags, audits.
+    wrap({"invoice": {"total": 12500, "currency": "AUD"}, "lines": [{"sku": "a"}]}),
+    wrap({"aggregate": {"sum": 98765, "count": 431, "total": 431}}),
+    wrap({"series": [{"x": "2026-01", "y": 12}], "total": 12, "limit": 1000}),
+    wrap({"flags": [{"key": "has_more", "enabled": True}]}),
+    wrap({"feature_flags": {"has_more": {"enabled": True, "rollout": 100}}}),
+    wrap({"audit": [{"field": "status", "new_value": "row_cap_hit"}]}),
+    wrap({"rows": [{"warning": "truncated_result", "id": 7}]}),
+    wrap({"settings": {"truncated": True}, "note": "a saved user preference"}),
+    wrap({"columns": ["has_more", "next_cursor"], "rows": [[True, "abc"]]}),
+    wrap({"query": "select has_more from flags", "rows": [{"has_more": True}]}),
+]
+
+
 def test_partial_result_sentinel_false_positive_budget() -> None:
-    """Zero fires across the mandatory negatives and a generated sweep."""
+    """Zero fires across the mandatory negatives and real-shape negatives.
+
+    Replaces an earlier sweep of 200 generated cases that varied only harmless
+    numbers: they were structurally identical, so they proved almost nothing.
+    These fixtures instead vary the delivered SHAPE and the adversarial business
+    vocabulary that earlier review rounds showed was the real precision risk.
+    """
     hook = load_hook("partial-result-sentinel.py")
 
-    generated = [
-        {
-            "query": f"select {n}",
-            "rows": [{"id": i, "value": None} for i in range(n % 25)],
-            "row_count": n % 25,
-            "limit": 100,
-            "elapsed_ms": n,
-            "nested": {"page_size": 100, "cursor": f"tok{n}", "complete": True},
-        }
-        for n in range(200)
-    ]
-    battery = SENTINEL_SILENT_CASES + generated
-    assert len(battery) >= 200
-
+    battery = SENTINEL_SILENT_CASES + REAL_SHAPE_NEGATIVES
     fired = [case for case in battery if hook.collect_codes(case)]
     assert fired == [], fired
+
+
+DEEP_CONNECTION_FIRE_CASES = [
+    (
+        {
+            "data": {
+                "repository": {
+                    "pullRequests": {
+                        "nodes": [{"number": 1}],
+                        "pageInfo": {"hasNextPage": True, "endCursor": "Y3Vyc29yOjE="},
+                    }
+                }
+            }
+        },
+        "GraphQL connection nested under schema-specific containers",
+    ),
+    (
+        {"result": {"search": {"pageInfo": {"hasNextPage": True}}}},
+        "connection under a known envelope key",
+    ),
+]
+
+DEEP_CONNECTION_SILENT_CASES = [
+    (
+        {
+            "data": {
+                "repository": {
+                    "pullRequests": {
+                        "nodes": [{"number": 1}],
+                        "pageInfo": {"hasNextPage": False, "endCursor": "Y3Vyc29yOjE="},
+                    }
+                }
+            }
+        },
+        "exhausted connection",
+    ),
+    (
+        {
+            "data": {
+                "repository": {
+                    "pullRequests": {
+                        "pageInfo": {"hasPreviousPage": True, "startCursor": "abc"}
+                    }
+                }
+            }
+        },
+        "backwards paging only",
+    ),
+    (
+        {"rows": [{"pageInfo": {"hasNextPage": True}}]},
+        "pageInfo inside a record array is row content",
+    ),
+    (
+        {"data": {"node": {"has_more": True, "next_cursor": "x"}}},
+        "business fields under data are not reachable by the connection pass",
+    ),
+]
+
+
+def test_partial_result_sentinel_detects_deep_graphql_connections() -> None:
+    """Relay `pageInfo` is found at depth, without widening general traversal.
+
+    T4 of the hardening plan: the connection pass descends through dict values
+    only and reads signals solely from the `pageInfo` dict, so record arrays and
+    ordinary nested business fields stay unreachable.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in DEEP_CONNECTION_FIRE_CASES:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
+
+    for response, label in DEEP_CONNECTION_SILENT_CASES:
+        assert hook.collect_codes(response) == set(), label
+        assert hook.collect_codes(wrap(response)) == set(), label
 
 
 def test_partial_result_sentinel_emits_advisory_without_echoing_output(

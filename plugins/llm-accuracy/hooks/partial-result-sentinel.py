@@ -266,6 +266,37 @@ def host_truncation_codes(response: object) -> set[str]:
     return set()
 
 
+def connection_codes(envelope: dict) -> set[str]:
+    """Find GraphQL connection page info nested under arbitrary container keys.
+
+    A Relay connection puts its pagination flags in a dict named ``pageInfo``
+    that sits under schema-specific containers -- ``data.repository.
+    pullRequests.pageInfo`` -- which the envelope-key traversal cannot reach.
+
+    This pass descends through dict values ONLY. Record arrays are never walked,
+    so row content still cannot be read as pagination metadata, and signals are
+    read only out of the ``pageInfo`` dict itself. Widening the general traversal
+    instead is what produced false positives in earlier review rounds.
+    """
+    codes: set[str] = set()
+    queue: list[tuple[dict, int]] = [(envelope, 0)]
+    budget = MAX_ENVELOPES
+    while queue:
+        node, depth = queue.pop(0)
+        budget -= 1
+        if budget < 0:
+            break
+        for key, value in node.items():
+            if not isinstance(value, dict):
+                continue
+            if normalize(key) == "pageinfo":
+                for inner_key, inner_value in value.items():
+                    codes |= scalar_codes(inner_key, inner_value)
+            elif depth < MAX_DEPTH:
+                queue.append((value, depth + 1))
+    return codes
+
+
 def collect_codes(payload: object) -> set[str]:
     """Return every explicit partial-result code found in a tool result.
 
@@ -275,9 +306,10 @@ def collect_codes(payload: object) -> set[str]:
     pagination metadata.
     """
     codes: set[str] = host_truncation_codes(payload)
-    queue: list[tuple[dict, int]] = [
-        (envelope, 0) for envelope in host_envelopes(payload)
-    ]
+    envelopes = host_envelopes(payload)
+    for envelope in envelopes:
+        codes |= connection_codes(envelope)
+    queue: list[tuple[dict, int]] = [(envelope, 0) for envelope in envelopes]
     if not queue:
         return codes
     budget = MAX_ENVELOPES

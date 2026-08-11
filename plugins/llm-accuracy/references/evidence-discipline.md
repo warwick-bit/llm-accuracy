@@ -71,6 +71,34 @@ a result is complete, because many sources cap quietly. Treat unknown coverage a
 a data gap, not as a confirmed full set, and do not let a declared total that was
 never reconciled against the rows in hand stand in for one that was.
 
+### What the automated sentinel covers
+
+The `PostToolUse` sentinel is a narrow backstop for the rule above, not a
+substitute for it. It reads one tool result at a time and keeps no state, so it
+can never observe that a later page was fetched and can never certify coverage.
+
+It detects, in the response envelope only: boolean partiality flags (`has_more`,
+`hasNextPage`, `truncated`, `is_truncated`, `row_cap_hit`, and
+`pagination_complete: false`); populated next-page cursors, page tokens, offsets,
+`links.next`, and `@odata.nextLink`; exact machine warning codes in an envelope
+warning collection; a GraphQL Relay `pageInfo` block reached through nested
+dictionaries; and the host's own over-budget notice when it replaces an oversized
+result with a pointer to a file.
+
+It deliberately does NOT do the following, and you remain responsible for each:
+
+- **Compare a declared total against rows returned.** A bare total is ambiguous —
+  an invoice total, an aggregate, and a record count are indistinguishable — and
+  binding a total to the right list is not solvable generically. Reconciling a
+  total against rows in hand is your job, not the hook's.
+- **Read record content.** Row arrays are never inspected, so a column named
+  `has_more`, a cell whose value is `row_cap_hit`, or a `pageInfo` object nested
+  inside a record array will not raise a signal.
+- **Detect undeclared caps.** A source that silently truncates emits nothing to
+  detect.
+
+A signal is evidence of partiality. Its absence is not evidence of completeness.
+
 ## Boundary
 
 LLM Accuracy improves evidence hygiene. It does not independently establish
