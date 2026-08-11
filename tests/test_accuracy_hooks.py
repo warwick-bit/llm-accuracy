@@ -146,11 +146,26 @@ def test_fusion_hook_emits_advisory_context(monkeypatch, capsys) -> None:
     )
 
 
-def test_post_compact_hook_emits_freshness_nudge(capsys) -> None:
+def test_post_compact_hook_emits_freshness_nudge(monkeypatch, capsys) -> None:
     hook = load_hook("post-compact-accuracy.py")
+    monkeypatch.setattr(
+        hook.sys, "stdin", io.StringIO(json.dumps({"source": "compact"}))
+    )
 
     assert hook.main() == 0
 
     output = json.loads(capsys.readouterr().out)
-    assert output["hookSpecificOutput"]["hookEventName"] == "PostCompact"
+    assert output["hookSpecificOutput"]["hookEventName"] == "SessionStart"
     assert "re-read exact values" in output["hookSpecificOutput"]["additionalContext"]
+
+
+def test_post_compact_hook_is_silent_for_non_compact_sources(
+    monkeypatch, capsys
+) -> None:
+    hook = load_hook("post-compact-accuracy.py")
+    monkeypatch.setattr(
+        hook.sys, "stdin", io.StringIO(json.dumps({"source": "startup"}))
+    )
+
+    assert hook.main() == 0
+    assert capsys.readouterr().out == ""

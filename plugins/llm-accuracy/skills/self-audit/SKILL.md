@@ -25,7 +25,7 @@ or bot output review; route those to the relevant domain/plugin review skill.
 1. Identify the prior answer being audited. If the user did not provide enough
    context, ask for the missing answer or summarize the exact claim you can
    audit.
-2. Read `references/evidence-discipline.md` when the answer includes
+2. Read `${CLAUDE_PLUGIN_ROOT}/references/evidence-discipline.md` when the answer includes
    high-stakes facts, provider/customer/business claims, readiness claims, or
    exact values.
 3. Inventory load-bearing claims: numbers, dates, IDs, statuses, file paths,
@@ -44,7 +44,7 @@ or bot output review; route those to the relevant domain/plugin review skill.
 - Corrections: concise bullets for each unsupported, garbled, or overstated
   claim.
 - Supported claims: mention only material claims that survived re-checking.
-- Evidence: use the footer labels from `references/evidence-discipline.md`
+- Evidence: use the footer labels from `${CLAUDE_PLUGIN_ROOT}/references/evidence-discipline.md`
   when the audit depends on business/provider/customer or readiness evidence.
 - Confidence: High, Medium, or Low, with the body matching the confidence.
 

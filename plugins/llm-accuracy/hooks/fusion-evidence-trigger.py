@@ -59,8 +59,8 @@ CONTRACT = (
     "(3) do not convert failed queries, zero-row joins, capped rows, missing denominators, or "
     "redacted/permission-limited data into confirmed facts; (4) preserve disagreements in the "
     "answer; (5) if the runtime supports it and the answer is high-impact, run a second-model "
-    "challenge/synthesis pass focused only on unsupported claims and missing caveats. Benchmarks "
-    "support Fusion for evidence reconciliation only; do not generalize this trigger to routine "
+    "challenge/synthesis pass focused only on unsupported claims and missing caveats. Use this "
+    "protocol for evidence reconciliation only; do not generalize this trigger to routine "
     "code review. Mute with `# fusion-ok` or `CC_SKIP_FUSION_EVIDENCE=1`."
 )
 

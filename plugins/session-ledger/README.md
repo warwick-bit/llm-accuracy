@@ -53,6 +53,12 @@ masks previously stored text whenever the record is re-injected or
 re-persisted; raw text already on disk is rewritten the next time the record
 changes.
 
+The restored context injected after compaction is additionally bounded to fit
+Claude Code's hook-output limit: when the stored record renders larger than
+that limit, the injection keeps the newest entries within a reduced render
+budget, shortens the compact summary as needed, marks the restore truncated,
+and leaves the stored record on disk unchanged.
+
 Records are never read or injected after 30 days and are purged on the next
 Session Ledger hook. Claude Code's default final-scope uninstall also removes
 plugin data; `--keep-data` deliberately preserves it. Hooks are advisory,

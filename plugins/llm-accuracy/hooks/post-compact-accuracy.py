@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Claude-only PostCompact nudge for load-bearing accuracy checks."""
+"""Post-compaction accuracy nudge, injected via SessionStart(compact).
+
+Claude Code does not inject PostCompact hook output into context, so this
+nudge runs on the SessionStart event with the "compact" matcher instead.
+"""
 
 from __future__ import annotations
 
 import json
+import sys
 
 
 CONTEXT = (
@@ -16,11 +21,15 @@ CONTEXT = (
 
 def main() -> int:
     try:
+        payload = json.loads(sys.stdin.read() or "{}")
+        source = payload.get("source") if isinstance(payload, dict) else None
+        if source is not None and source != "compact":
+            return 0
         print(
             json.dumps(
                 {
                     "hookSpecificOutput": {
-                        "hookEventName": "PostCompact",
+                        "hookEventName": "SessionStart",
                         "additionalContext": CONTEXT,
                     }
                 }

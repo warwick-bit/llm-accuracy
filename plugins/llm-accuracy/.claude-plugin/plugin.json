@@ -1,8 +1,11 @@
 {
   "name": "llm-accuracy",
   "description": "Accuracy hygiene for Claude Code: evidence discipline, stale-memory checks, and self-audit.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": {
     "name": "Warwick"
-  }
+  },
+  "homepage": "https://github.com/warwick-bit/llm-accuracy",
+  "repository": "https://github.com/warwick-bit/llm-accuracy",
+  "license": "MIT"
 }

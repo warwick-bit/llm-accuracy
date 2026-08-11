@@ -24,7 +24,7 @@ EXPECTED_HANDLERS = {
         "fusion-evidence-trigger.py",
         "Checking llm-accuracy fusion evidence",
     ),
-    ("PostCompact", 0): (
+    ("SessionStart", 0): (
         "post-compact-accuracy.py",
         "Checking llm-accuracy post-compaction accuracy",
     ),
@@ -81,7 +81,8 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
 
     config = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))
     assert set(config) == {"hooks"}
-    assert set(config["hooks"]) == {"UserPromptSubmit", "PostCompact"}
+    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart"}
+    assert config["hooks"]["SessionStart"][0]["matcher"] == "compact"
 
     for key, (filename, status_message) in EXPECTED_HANDLERS.items():
         handler = hook_handler(*key)
@@ -184,11 +185,20 @@ def test_user_prompt_commands_fail_open_on_malformed_stdin(
 
 
 @posix_only
-def test_post_compact_command_emits_the_freshness_nudge() -> None:
-    result = run_hook("PostCompact", 0, "")
+def test_session_start_compact_command_emits_the_freshness_nudge() -> None:
+    result = run_hook("SessionStart", 0, json.dumps({"source": "compact"}))
 
     assert result.returncode == 0
     assert result.stderr == ""
     output = json.loads(result.stdout)["hookSpecificOutput"]
-    assert output["hookEventName"] == "PostCompact"
+    assert output["hookEventName"] == "SessionStart"
     assert "re-read exact values" in output["additionalContext"]
+
+
+@posix_only
+def test_session_start_command_is_silent_for_non_compact_sources() -> None:
+    result = run_hook("SessionStart", 0, json.dumps({"source": "startup"}))
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    assert result.stdout == ""

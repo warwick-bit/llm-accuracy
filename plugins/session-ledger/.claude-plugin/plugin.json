@@ -2,9 +2,12 @@
   "name": "session-ledger",
   "displayName": "Session Ledger",
   "description": "Optional local continuity ledger for one Claude Code session across compaction.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "defaultEnabled": false,
   "author": {
     "name": "Warwick"
-  }
+  },
+  "homepage": "https://github.com/warwick-bit/llm-accuracy",
+  "repository": "https://github.com/warwick-bit/llm-accuracy",
+  "license": "MIT"
 }
