@@ -9,8 +9,14 @@ nothing; only an explicit marker is reported.
 Detection is scoped to the response ENVELOPE. Record contents are never
 inspected, because a row may legitimately hold a column called ``has_more`` or a
 cell whose value is ``row_cap_hit``; treating row data as pagination metadata
-would fire on ordinary database results. Only envelope dictionaries are read,
-and record arrays are measured but never walked into.
+would fire on ordinary database results. Only envelope dictionaries are read;
+record arrays are never walked into.
+
+Declared record totals are deliberately NOT compared against returned rows. A
+bare total is ambiguous -- an invoice total, an aggregate, or a chart series all
+look identical to a record count -- and associating a total with the right list
+is not solvable generically. That comparison produced false positives in review
+and was removed rather than special-cased.
 
 Tool output is inspected in memory and is never echoed or persisted.
 """
@@ -53,6 +59,9 @@ CURSOR_KEYS = {
     "nextoffset",
     "continuationtoken",
     "paginghandle",
+    "odatanextlink",
+    "next",
+    "after",
 }
 
 # Exact machine warning codes, read only from envelope warning collections.
@@ -70,30 +79,9 @@ WARNING_CONTAINER_KEYS = {
     "resultwarnings",
 }
 
-# Authoritative record totals. Page and offset counts are deliberately excluded.
-TOTAL_KEYS = {
-    "total",
-    "totalcount",
-    "totalresults",
-    "totalrows",
-    "totalitems",
-    "totalrecords",
-}
-
-# Lists that actually hold the returned records, for the total comparison.
-RECORD_LIST_KEYS = {
-    "rows",
-    "results",
-    "items",
-    "records",
-    "data",
-    "entries",
-    "objects",
-    "users",
-    "values",
-}
-
 # Dict-valued keys that carry more envelope, rather than record content.
+# `data` is deliberately absent: it is just as often the returned record, and
+# traversing it reads business fields as pagination metadata.
 ENVELOPE_KEYS = {
     "result",
     "response",
@@ -105,7 +93,10 @@ ENVELOPE_KEYS = {
     "meta",
     "metadata",
     "cursor",
-    "data",
+    "structuredcontent",
+    "responsemetadata",
+    "links",
+    "next",
 }
 
 # Traversal bounds keep a pathological payload from stalling the hook.
@@ -126,8 +117,14 @@ ADVICE = (
 
 
 def normalize(key: str) -> str:
-    """Fold snake_case, camelCase, and kebab-case spellings onto one form."""
-    return key.replace("_", "").replace("-", "").lower()
+    """Fold snake_case, camelCase, kebab-case, and OData spellings onto one form.
+
+    `@` and `.` are stripped so an OData annotation such as `@odata.nextLink`
+    folds onto the same form as its plainer spellings.
+    """
+    for character in ("_", "-", "@", "."):
+        key = key.replace(character, "")
+    return key.lower()
 
 
 def populated_cursor(value: object) -> bool:
@@ -169,25 +166,6 @@ def warning_codes(node: dict) -> set[str]:
     return codes
 
 
-def total_mismatch_codes(node: dict) -> set[str]:
-    """Flag a declared record total that exceeds the records returned with it."""
-    totals = [
-        value
-        for key, value in node.items()
-        if normalize(key) in TOTAL_KEYS
-        and isinstance(value, int)
-        and not isinstance(value, bool)
-    ]
-    returned = [
-        len(value)
-        for key, value in node.items()
-        if normalize(key) in RECORD_LIST_KEYS and isinstance(value, list)
-    ]
-    if not totals or not returned:
-        return set()
-    return {PAGINATION_INCOMPLETE} if max(totals) > max(returned) else set()
-
-
 def embedded_envelopes(node: dict) -> list[dict]:
     """Parse MCP text content blocks whose body is a JSON envelope."""
     found: list[dict] = []
@@ -214,9 +192,8 @@ def embedded_envelopes(node: dict) -> list[dict]:
 def collect_codes(payload: object) -> set[str]:
     """Return every explicit partial-result code found in a result envelope.
 
-    Only envelope dictionaries are inspected. Record arrays are measured for the
-    total comparison but never walked into, so row content cannot be mistaken
-    for pagination metadata.
+    Only envelope dictionaries are inspected. Record arrays are never walked
+    into, so row content cannot be mistaken for pagination metadata.
     """
     if not isinstance(payload, dict):
         return set()
@@ -230,7 +207,6 @@ def collect_codes(payload: object) -> set[str]:
         if budget < 0:
             break
         codes |= warning_codes(node)
-        codes |= total_mismatch_codes(node)
         for key, value in node.items():
             codes |= scalar_codes(key, value)
             if (

@@ -181,7 +181,6 @@ SENTINEL_FIRE_CASES = [
     ({"partial_provider_response": True}, "partial_provider_response"),
     ({"source_warnings": ["pagination_incomplete"]}, "pagination_incomplete"),
     ({"source_warnings": ["truncated_result"]}, "truncated_result"),
-    ({"total_count": 3241, "rows": [{"id": 1}, {"id": 2}]}, "pagination_incomplete"),
     ({"page": {"hasMore": True}}, "pagination_incomplete"),
     (
         {"content": [{"type": "text", "text": '{"has_more": true, "data": [1]}'}]},
@@ -255,19 +254,6 @@ RECORD_CONTENT_MUST_NOT_FIRE = [
     {"data": [{"is_truncated": True}]},
 ]
 
-TOTAL_COMPARISON_CASES = [
-    ({"total": 500, "columns": ["a", "b"]}, set()),
-    ({"total_count": 3, "tags": ["x"]}, set()),
-    ({"total_count": 42, "rows": [{"i": n} for n in range(42)]}, set()),
-    ({"total_rows": 2, "rows": [1, 2], "columns": list(range(500))}, set()),
-    ({"total_count": 500, "rows": []}, {"pagination_incomplete"}),
-    ({"total_count": 500, "rows": [1, 2]}, {"pagination_incomplete"}),
-    (
-        {"total_count": 500, "rows": [1, 2], "columns": list(range(500))},
-        {"pagination_incomplete"},
-    ),
-]
-
 
 def test_partial_result_sentinel_ignores_record_content() -> None:
     """Row data must never be read as envelope pagination metadata.
@@ -282,14 +268,6 @@ def test_partial_result_sentinel_ignores_record_content() -> None:
         assert hook.collect_codes(response) == set(), response
 
 
-def test_partial_result_sentinel_compares_totals_against_record_lists() -> None:
-    """A declared total is compared with the records, not an arbitrary list."""
-    hook = load_hook("partial-result-sentinel.py")
-
-    for response, expected in TOTAL_COMPARISON_CASES:
-        assert hook.collect_codes(response) == expected, response
-
-
 def test_partial_result_sentinel_detects_numeric_next_offset() -> None:
     """A populated numeric next-page offset counts; zero and False do not."""
     hook = load_hook("partial-result-sentinel.py")
@@ -300,20 +278,30 @@ def test_partial_result_sentinel_detects_numeric_next_offset() -> None:
 
 
 def test_partial_result_sentinel_bound_is_order_independent() -> None:
-    """A signal is found regardless of where it sits among many siblings.
+    """A signal is found wherever it sits among many real envelope siblings.
 
-    Regression for the fresh audit: the previous node budget was consumed by
-    queued siblings, so a signal early in a wide payload was silently dropped
-    while the same signal late in the payload was detected.
+    Regression for the fresh audits: the earlier version of this test filled the
+    payload with keys that are not envelope keys, so nothing was ever queued and
+    the budget was never exercised. These fixtures use real ENVELOPE_KEYS so the
+    traversal budget is genuinely under test.
     """
     hook = load_hook("partial-result-sentinel.py")
 
-    filler = {f"meta{n}": {"note": n} for n in range(5000)}
-    signal_first = {"has_more": True, **filler}
-    signal_last = {**filler, "has_more": True}
+    def chain(depth: int, leaf: dict) -> dict:
+        node = leaf
+        for _ in range(depth):
+            node = {"result": node}
+        return node
+
+    signal_first = {"result": {"has_more": True}, "response": chain(4, {"note": 1})}
+    signal_last = {"response": chain(4, {"note": 1}), "result": {"has_more": True}}
+    deep_ok = chain(4, {"has_more": True})
+    too_deep = chain(40, {"has_more": True})
 
     assert hook.collect_codes(signal_first) == {"pagination_incomplete"}
     assert hook.collect_codes(signal_last) == {"pagination_incomplete"}
+    assert hook.collect_codes(deep_ok) == {"pagination_incomplete"}
+    assert hook.collect_codes(too_deep) == set()
 
 
 def test_partial_result_sentinel_covers_every_declared_cursor_key() -> None:
@@ -422,3 +410,50 @@ def test_partial_result_sentinel_survives_hostile_payloads() -> None:
     assert hook.collect_codes(deep) == set()
     assert hook.collect_codes({"tool_response": None}) == set()
     assert sentinel_advisory(hook, []) == ""
+
+
+PROVIDER_ENVELOPES = [
+    (
+        {
+            "content": [{"type": "text", "text": "1 row"}],
+            "structuredContent": {"has_more": True, "rows": [1]},
+        },
+        "MCP structuredContent",
+    ),
+    ({"response_metadata": {"next_cursor": "dXNlcjpXMDdRQzA1"}}, "Slack"),
+    ({"paging": {"next": {"after": "52"}}}, "HubSpot"),
+    ({"links": {"next": "https://api.example.test/records?page=2"}}, "JSON:API"),
+    ({"@odata.nextLink": "https://graph.example.test/v1/users?$skip=20"}, "OData"),
+    ({"pageInfo": {"hasNextPage": True}}, "GraphQL pageInfo at envelope level"),
+]
+
+
+def test_partial_result_sentinel_reads_real_provider_envelopes() -> None:
+    """Regression for the second fresh audit: real provider shapes must fire."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, provider in PROVIDER_ENVELOPES:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, provider
+
+
+AMBIGUOUS_TOTALS_MUST_NOT_FIRE = [
+    {"total": 500, "currency": "AUD", "items": [{"sku": "a"}, {"sku": "b"}]},
+    {"total": 500, "values": [100, 200]},
+    {"total_rows": 3, "rows": [1], "values": [10, 20, 30]},
+    {"total_count": 3241, "rows": [{"id": 1}, {"id": 2}]},
+    {"data": {"id": "feature-1", "has_more": True}},
+]
+
+
+def test_partial_result_sentinel_ignores_ambiguous_totals() -> None:
+    """A declared total is never treated as pagination evidence.
+
+    An invoice total, an aggregate, and a chart series are indistinguishable
+    from a record count, and associating a total with the right list is not
+    solvable generically, so the comparison was removed. A singleton `data`
+    record is likewise business content, not envelope metadata.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response in AMBIGUOUS_TOTALS_MUST_NOT_FIRE:
+        assert hook.collect_codes(response) == set(), response
