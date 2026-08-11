@@ -452,6 +452,88 @@ DEEP_CONNECTION_SILENT_CASES = [
 ]
 
 
+PAGE_INFO_MUST_NOT_FIRE = [
+    ({"page_info": {"views": 10, "next": "about-us"}}, "CMS nav slug named next"),
+    ({"page_info": {"after": "intro"}}, "ordering field named after"),
+    ({"pageInfo": {"title": "Home", "slug": "home"}}, "page metadata block"),
+    ({"rows": [{"pageInfo": {"hasNextPage": True}}]}, "page info inside a record"),
+]
+
+
+def test_partial_result_sentinel_reads_only_booleans_from_page_info() -> None:
+    """A page-info block declares partiality through booleans, never cursors.
+
+    Regression for a false positive introduced by the connection pass: the
+    cursor vocabulary was being applied inside `pageInfo`, so an ordinary
+    `page_info.next` page slug raised an advisory. A Relay page-info block never
+    signals a further page with `next` or `after`, so reading them there only
+    ever produced noise.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in PAGE_INFO_MUST_NOT_FIRE:
+        assert hook.collect_codes(response) == set(), label
+        assert hook.collect_codes(wrap(response)) == set(), label
+
+    assert hook.collect_codes({"pageInfo": {"hasNextPage": True}}) == {
+        "pagination_incomplete"
+    }
+
+
+RESUME_AND_LINK_FIRE_CASES = [
+    (
+        {"Items": [{"id": 1}], "LastEvaluatedKey": {"id": {"S": "a"}}},
+        "DynamoDB stopped early and returned a resume key",
+    ),
+    (
+        {
+            "done": False,
+            "nextRecordsUrl": "/services/data/v59.0/query/01g",
+            "records": [],
+        },
+        "Salesforce next records url",
+    ),
+    (
+        {
+            "results": [{"id": 1}],
+            "links": [{"rel": "self", "href": "a"}, {"rel": "next", "href": "b"}],
+        },
+        "HAL link collection with a next relation",
+    ),
+]
+
+RESUME_AND_LINK_SILENT_CASES = [
+    (
+        {"Items": [{"id": 1}], "LastEvaluatedKey": {}},
+        "empty resume key means exhausted",
+    ),
+    ({"Items": [{"id": 1}], "LastEvaluatedKey": None}, "absent resume key"),
+    ({"links": [{"rel": "self", "href": "a"}]}, "link collection without a next"),
+    ({"links": [{"rel": "author", "href": "a"}]}, "ordinary business relation"),
+    ({"links": [{"rel": "next", "href": ""}]}, "next relation with no target"),
+    ({"rows": [{"rel": "next", "href": "b"}]}, "record array is not a link collection"),
+]
+
+
+def test_partial_result_sentinel_reads_resume_keys_and_link_relations() -> None:
+    """Two provider families declare a further page without a scalar cursor.
+
+    DynamoDB returns a whole key object, and HAL-style APIs put the signal in a
+    link collection. Both are read narrowly: an empty resume key means the scan
+    finished, and a link entry only counts when it carries `rel: next` with a
+    target, which a record array cannot accidentally satisfy.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in RESUME_AND_LINK_FIRE_CASES:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
+
+    for response, label in RESUME_AND_LINK_SILENT_CASES:
+        assert hook.collect_codes(response) == set(), label
+        assert hook.collect_codes(wrap(response)) == set(), label
+
+
 def test_partial_result_sentinel_inspects_large_paginated_results() -> None:
     """A large result must still be inspected -- it is the likeliest to be partial.
 

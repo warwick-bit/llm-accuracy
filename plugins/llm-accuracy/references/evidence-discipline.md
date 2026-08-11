@@ -96,6 +96,15 @@ It deliberately does NOT do the following, and you remain responsible for each:
   inside a record array will not raise a signal.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
+- **Read flags whose names are ordinary business vocabulary.** Salesforce's
+  `done: false` and Jira's `isLast: false` do declare a further page, but the
+  same fields appear on task records, job statuses, and survey questions, where
+  firing would be wrong. They are left out deliberately; a paired cursor
+  (`nextRecordsUrl`, `nextPageToken`) is what gets detected instead.
+- **Infer partiality from offset arithmetic.** A classic `startAt` /
+  `maxResults` / `total` triple, or an Elasticsearch `hits.total` above the hits
+  returned, states partiality only by arithmetic on an ambiguous total. That is
+  the declared-total case above, and it stays yours to reconcile.
 
 A signal is evidence of partiality. Its absence is not evidence of completeness.
 

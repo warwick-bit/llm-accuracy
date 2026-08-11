@@ -68,9 +68,27 @@ CURSOR_KEYS = {
     "continuationtoken",
     "paginghandle",
     "odatanextlink",
+    "nextrecordsurl",
     "next",
     "after",
 }
+
+# Keys whose populated value is itself a resume token for the NEXT page, rather
+# than a scalar cursor. DynamoDB returns a whole key object; its presence is the
+# documented signal that a scan or query stopped early.
+RESUME_KEY_KEYS = {
+    "lastevaluatedkey",
+    "nextstartkey",
+}
+
+# Keys that hold a list of link objects, HAL / Atlas style, where a `next`
+# relation is the pagination signal. Only the link objects themselves are read;
+# this is never applied to record arrays.
+LINK_COLLECTION_KEYS = {
+    "links",
+    "link",
+}
+MAX_LINKS_SCANNED = 32
 
 # Exact machine warning codes, read only from envelope warning collections.
 WARNING_CODES = {
@@ -89,13 +107,16 @@ WARNING_CONTAINER_KEYS = {
 
 # Dict-valued keys that carry more envelope, rather than record content.
 # `data` is deliberately absent: it is just as often the returned record, and
-# traversing it reads business fields as pagination metadata.
+# traversing it reads business fields as pagination metadata. `pageInfo` is
+# absent too, and is owned by the connection pass instead: a Relay page-info
+# block declares partiality only through its booleans, so reading the cursor
+# vocabulary inside it turned an ordinary `page_info.next` page slug into a
+# false signal.
 ENVELOPE_KEYS = {
     "result",
     "response",
     "body",
     "page",
-    "pageinfo",
     "paging",
     "pagination",
     "meta",
@@ -164,15 +185,60 @@ def populated_cursor(value: object) -> bool:
     return False
 
 
-def scalar_codes(key: str, value: object) -> set[str]:
-    """Return signal codes implied by one envelope key/value pair."""
+def populated_resume_key(value: object) -> bool:
+    """Report whether a resume-key value actually carries a resume token."""
+    if isinstance(value, dict):
+        return bool(value)
+    if isinstance(value, str):
+        return bool(value.strip())
+    return False
+
+
+def link_collection_codes(key: str, value: object) -> set[str]:
+    """Read a HAL-style link collection for a `next` relation.
+
+    Scoped to keys that name a link collection, and every entry must look like a
+    link object. A record array cannot be mistaken for one, because records do
+    not carry a `rel` field.
+    """
+    if normalize(key) not in LINK_COLLECTION_KEYS or not isinstance(value, list):
+        return set()
+    for entry in value[:MAX_LINKS_SCANNED]:
+        if not isinstance(entry, dict):
+            continue
+        relation = entry.get("rel")
+        if not isinstance(relation, str) or relation.strip().lower() != "next":
+            continue
+        target = entry.get("href")
+        if isinstance(target, str) and target.strip():
+            return {PAGINATION_INCOMPLETE}
+    return set()
+
+
+def boolean_codes(key: str, value: object) -> set[str]:
+    """Return signal codes implied by an unambiguous boolean flag.
+
+    Only booleans whose NAME already states partiality count here. Cursor keys
+    are excluded on purpose: a key called `next` or `after` is only pagination
+    evidence in an envelope that is known to be a pagination block, and reading
+    them anywhere else turns ordinary strings into false signals.
+    """
     name = normalize(key)
     codes: set[str] = set()
     if value is True and name in TRUE_MEANS_PARTIAL:
         codes.add(TRUE_MEANS_PARTIAL[name])
     if value is False and name in FALSE_MEANS_PARTIAL:
         codes.add(FALSE_MEANS_PARTIAL[name])
+    return codes
+
+
+def scalar_codes(key: str, value: object) -> set[str]:
+    """Return signal codes implied by one envelope key/value pair."""
+    name = normalize(key)
+    codes: set[str] = boolean_codes(key, value)
     if name in CURSOR_KEYS and populated_cursor(value):
+        codes.add(PAGINATION_INCOMPLETE)
+    if name in RESUME_KEY_KEYS and populated_resume_key(value):
         codes.add(PAGINATION_INCOMPLETE)
     return codes
 
@@ -299,7 +365,7 @@ def connection_codes(envelope: dict) -> set[str]:
                 continue
             if normalize(key) == "pageinfo":
                 for inner_key, inner_value in value.items():
-                    codes |= scalar_codes(inner_key, inner_value)
+                    codes |= boolean_codes(inner_key, inner_value)
             elif depth < MAX_DEPTH:
                 queue.append((value, depth + 1))
     return codes
@@ -329,6 +395,7 @@ def collect_codes(payload: object) -> set[str]:
         codes |= warning_codes(node)
         for key, value in node.items():
             codes |= scalar_codes(key, value)
+            codes |= link_collection_codes(key, value)
             if (
                 isinstance(value, dict)
                 and normalize(key) in ENVELOPE_KEYS
