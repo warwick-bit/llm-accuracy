@@ -1,8 +1,8 @@
-name: Private-preview feedback
+name: Feedback
 description: Report a sanitized reproducible behaviour or installation problem.
-title: "[preview] "
+title: "[feedback] "
 labels:
-  - preview-feedback
+  - feedback
 body:
   - type: markdown
     attributes:
@@ -21,7 +21,7 @@ body:
     id: version
     attributes:
       label: Plugin version
-      placeholder: "0.3.0"
+      placeholder: "0.4.0"
     validations:
       required: true
   - type: textarea

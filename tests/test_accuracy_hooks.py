@@ -1,4 +1,4 @@
-"""Behaviour checks for the private-preview advisory hooks."""
+"""Behaviour checks for the advisory hooks."""
 
 from __future__ import annotations
 

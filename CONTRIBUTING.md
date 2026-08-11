@@ -1,7 +1,7 @@
-# Contributing to the Private Preview
+# Contributing
 
-This is an invite-only preview. Open a draft pull request for a scoped change,
-or use the private-preview issue form for a sanitized, reproducible problem.
+Open a draft pull request for a scoped change, or use the feedback issue form
+for a sanitized, reproducible problem.
 
 Never include credentials, customer data, raw prompts, provider responses, logs,
 or private transcripts. Replace names, IDs, amounts, dates, and examples with
@@ -14,15 +14,34 @@ python3 -m pytest -q
 find plugins -path '*/hooks/*.py' -print0 | xargs -0 -r python3 -m py_compile
 ```
 
-Keep the preview generic. The plugin may improve evidence hygiene, but it does
+Keep the plugins generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
+
+## Feedback
+
+Report a sanitized reproduction: the prompt shape, expected evidence boundary,
+actual behaviour, runtime, and plugin version. Replace all real names, IDs,
+amounts, dates, and provider responses with synthetic equivalents.
+
+Never submit:
+
+- credentials, tokens, or secrets;
+- customer, employee, or prospect data;
+- raw provider responses, logs, or locally persisted session-ledger contents; or
+- content you are not authorised to share.
+
+The plugins are advisory. Users remain responsible for reviewing outputs before
+using them in decisions or external communication.
+
+Maintainers may convert a reviewed, sanitized failure report into a synthetic
+regression fixture. No real-world report is copied verbatim into the test set.
 
 ## Downstream lineage
 
 The generic accuracy plugin is a sanitized downstream distribution of the
 maintainer's internal accuracy toolkit. Shared hook or evidence-doctrine changes
 must be compared in both directions and either backported or recorded as an
-intentional preview-specific divergence. Domain integrations, provider-specific
+intentional downstream divergence. Domain integrations, provider-specific
 markers, deterministic receipt tooling, and session continuity remain excluded
 from the generic plugin.
 

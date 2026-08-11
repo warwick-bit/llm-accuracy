@@ -1,7 +1,7 @@
 # LLM Accuracy Repository Guidance
 
-This private preview repository distributes standalone Claude Code plugins.
-Keep each preview generic and safe to share with invited external collaborators.
+This public repository distributes standalone Claude Code plugins.
+Keep each plugin generic and safe to share publicly.
 
 ## Before changing files
 
@@ -15,7 +15,7 @@ Keep each preview generic and safe to share with invited external collaborators.
 
 ## Packaging and privacy
 
-- Keep `.claude-plugin/plugin.json` versioned with the preview release.
+- Keep `.claude-plugin/plugin.json` versioned with each release.
 - Keep hook commands relative to `${CLAUDE_PLUGIN_ROOT}`; hooks must remain
   advisory and non-blocking.
 - Do not add credentials, telemetry, raw prompts, provider payloads, customer

@@ -3,37 +3,35 @@
 LLM Accuracy has different installation and capability paths across Claude
 products. Use the path below that matches where you work.
 
-## Preview validation status
+## Validation status
 
-Platform capability and this preview's runtime evidence are separate:
+Platform capability and this release's runtime evidence are separate:
 
 - **Claude Code terminal or IDE:** exact shipped hook commands and the automated
   distribution suite were tested on 24 Jul 2026. A clean marketplace
   installation smoke has not yet been recorded.
-- **Claude Desktop Chat:** not runtime-smoke-tested for this preview. The
+- **Claude Desktop Chat:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
-- **Claude Cowork:** not runtime-smoke-tested for this preview. The
+- **Claude Cowork:** not runtime-smoke-tested for this release. The
   skills-and-hooks description follows Anthropic's current plugin documentation.
-- **Claude chat on the web:** not runtime-smoke-tested for this preview. The
+- **Claude chat on the web:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
-- **Claude Code on the web:** untested and unsupported for this preview.
+- **Claude Code on the web:** untested and unsupported for this release.
 
 Recheck the linked platform documentation and record a new tested-on date when
 claiming support after a release or host-runtime change.
 
-## Claude Code terminal or IDE — full preview
+## Claude Code terminal or IDE — full plugin
 
-This is the recommended private-preview path. It includes the self-audit skill
+This is the recommended path. It includes the self-audit skill
 and the targeted advisory hooks.
 
 ### Before you start
 
 - Use a current Claude Code installation. If `/plugin` is unavailable, update
   Claude Code first.
-- Have `python3` 3.9 or later and a POSIX-compatible hook shell. The preview's
-  exact command-launcher tests currently run on POSIX only.
-- Ask the preview maintainer to add your GitHub account as a collaborator on
-  [`warwick-bit/llm-accuracy`](https://github.com/warwick-bit/llm-accuracy).
+- Have `python3` 3.9 or later and a POSIX-compatible hook shell. The
+  repository's exact command-launcher tests currently run on POSIX only.
 - Install only if you trust the plugin source. It runs local advisory hook
   commands in Claude Code.
 
@@ -43,7 +41,7 @@ Run these commands in your terminal:
 
 ```bash
 claude plugin marketplace add warwick-bit/llm-accuracy --scope user
-claude plugin install llm-accuracy@llm-accuracy-preview --scope user
+claude plugin install llm-accuracy@llm-accuracy --scope user
 ```
 
 Start or return to Claude Code, then run:
@@ -82,8 +80,8 @@ Claude Code. Check it with `python3 --version` before installing.
 Install it after adding the marketplace:
 
 ```bash
-claude plugin install session-ledger@llm-accuracy-preview --scope user
-claude plugin enable session-ledger@llm-accuracy-preview --scope user
+claude plugin install session-ledger@llm-accuracy --scope user
+claude plugin enable session-ledger@llm-accuracy --scope user
 ```
 
 Then run `/reload-plugins` in an active Claude Code session, or start a new
@@ -126,27 +124,27 @@ name or carrying data to another session.
 
 ### Update or remove
 
-To refresh the private marketplace, run:
+To refresh the marketplace, run:
 
 ```bash
-claude plugin marketplace update llm-accuracy-preview
+claude plugin marketplace update llm-accuracy
 ```
 
 Then run `/reload-plugins` in an active Claude Code session. To remove the
 plugins and local Session Ledger data:
 
 ```bash
-claude plugin uninstall session-ledger@llm-accuracy-preview --scope user
-claude plugin uninstall llm-accuracy@llm-accuracy-preview --scope user
-claude plugin marketplace remove llm-accuracy-preview
+claude plugin uninstall session-ledger@llm-accuracy --scope user
+claude plugin uninstall llm-accuracy@llm-accuracy --scope user
+claude plugin marketplace remove llm-accuracy
 ```
 
 The default final-scope uninstall removes Session Ledger plugin data. Do not use
 `--keep-data` unless you intentionally want to retain its compact summaries and
 local session record.
 
-If installation fails, first confirm that you can access the private GitHub
-repository and that it contains `.claude-plugin/marketplace.json` on `main`.
+If installation fails, first confirm the repository contains
+`.claude-plugin/marketplace.json` on `main`.
 
 ## Claude Desktop and Cowork — release ZIP
 
@@ -154,7 +152,7 @@ Download the latest `llm-accuracy-<version>.zip` asset from the
 [latest GitHub release](https://github.com/warwick-bit/llm-accuracy/releases/latest).
 In Claude Desktop or Cowork, open **Customize**, then **Plugins**, and upload
 the custom plugin file. Confirm that the self-audit skill appears before relying
-on the preview for consequential work.
+on the plugin for consequential work.
 
 ### Claude Desktop Chat — skills-only
 
@@ -162,7 +160,7 @@ In the **Chat** tab, LLM Accuracy's skills are available, including self-audit.
 The automatic advisory hooks do not run in chat, so use the skill when you want
 an explicit check of an earlier answer.
 
-### Claude Cowork — full preview
+### Claude Cowork — full plugin
 
 In **Cowork**, the plugin's skills and advisory hooks can run. The hook behavior
 is the same targeted, non-blocking behavior described for Claude Code terminal.
@@ -171,12 +169,11 @@ is the same targeted, non-blocking behavior described for Claude Code terminal.
 
 On a paid Claude plan, open **Customize**, then **Plugins**. Under **Personal
 plugins**, select **Add marketplace**, choose **Add from a repository**, and add
-`warwick-bit/llm-accuracy`. Use the GitHub account that the preview maintainer
-has added to the private repository, then install LLM Accuracy from the new
+`warwick-bit/llm-accuracy`, then install LLM Accuracy from the new
 marketplace.
 
 Chat exposes the plugin's skills, including self-audit, but does not run its
-advisory hooks. Team and Enterprise owners can instead connect the private
+advisory hooks. Team and Enterprise owners can instead connect the
 repository as an organization marketplace for controlled member distribution.
 
 ## Claude Code on the web — pilot only
@@ -186,13 +183,30 @@ plugins from a local machine do not carry into its fresh cloud environment.
 
 To pilot it, nominate a target coding repository and test a project-scoped
 marketplace declaration in that repository's `.claude/settings.json`. The cloud
-environment must be able to reach and authenticate to this private GitHub
-marketplace. Do not treat cloud behavior as supported until that smoke test has
-passed.
+environment must be able to reach this GitHub marketplace. Do not treat cloud
+behavior as supported until that smoke test has passed.
+
+## Migrating from the private preview
+
+The marketplace was renamed from `llm-accuracy-preview` to `llm-accuracy` for
+the public release. If you installed during the private preview, remove the old
+marketplace and reinstall:
+
+```bash
+claude plugin uninstall session-ledger@llm-accuracy-preview --scope user
+claude plugin uninstall llm-accuracy@llm-accuracy-preview --scope user
+claude plugin marketplace remove llm-accuracy-preview
+claude plugin marketplace add warwick-bit/llm-accuracy --scope user
+claude plugin install llm-accuracy@llm-accuracy --scope user
+```
+
+Session Ledger's local data directory is derived from the marketplace name, so
+preview-era ledger records do not carry over after the rename; the default
+final-scope uninstall above removes them.
 
 ## Platform references
 
-Claude's product behavior changes independently of this preview. For current
+Claude's product behavior changes independently of these plugins. For current
 details, see Anthropic's documentation for
 [Claude Code marketplaces](https://code.claude.com/docs/en/discover-plugins),
 [plugins in Claude](https://support.claude.com/en/articles/13837440-use-plugins-in-claude),
@@ -208,4 +222,4 @@ session record as described above. Neither plugin guarantees factual correctness
 completeness, freshness, or domain truth.
 
 For feedback, submit only sanitized and authorized reproductions through the
-private-preview issue form.
+feedback issue form.
