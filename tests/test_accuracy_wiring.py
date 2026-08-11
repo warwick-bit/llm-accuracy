@@ -210,46 +210,86 @@ def test_session_start_command_is_silent_for_non_compact_sources() -> None:
     assert result.stdout == ""
 
 
+def blocks(body: object) -> list[dict]:
+    """Wrap a body the way a Claude Code host delivers an MCP tool result.
+
+    Observed live against a registered MCP server: `tool_response` is a bare
+    list of content blocks whose text is the provider payload, not the provider
+    object itself.
+    """
+    text = body if isinstance(body, str) else json.dumps(body)
+    return [{"type": "text", "text": text}]
+
+
 SENTINEL_END_TO_END_CASES = [
     (
         {
             "hook_event_name": "PostToolUse",
             "tool_name": "mcp__slack__conversations_history",
-            "tool_response": {
-                "ok": True,
-                "messages": [{"user": "U1", "text": "hello"}],
-                "has_more": True,
-                "response_metadata": {"next_cursor": "bmV4dDoxMjM"},
-            },
+            "tool_response": blocks(
+                {
+                    "ok": True,
+                    "messages": [{"user": "U1", "text": "hello"}],
+                    "has_more": True,
+                    "response_metadata": {"next_cursor": "bmV4dDoxMjM"},
+                }
+            ),
         },
-        True,
-        "paginated provider response fires",
+        "pagination_incomplete",
+        "paginated provider response fires in the delivered shape",
     ),
     (
         {
             "hook_event_name": "PostToolUse",
             "tool_name": "mcp__slack__conversations_history",
-            "tool_response": {
-                "ok": True,
-                "messages": [{"user": "U1", "text": "hello"}],
-                "has_more": False,
-            },
+            "tool_response": blocks(
+                {
+                    "ok": True,
+                    "messages": [{"user": "U1", "text": "hello"}],
+                    "has_more": False,
+                }
+            ),
         },
-        False,
+        "",
         "complete provider response stays silent",
     ),
     (
         {
             "hook_event_name": "PostToolUse",
             "tool_name": "mcp__db__query",
-            "tool_response": {"rows": [{"feature": "paging", "has_more": True}]},
+            "tool_response": blocks(
+                {"rows": [{"feature": "paging", "has_more": True}]}
+            ),
         },
-        False,
+        "",
         "business row named has_more stays silent",
     ),
     (
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "mcp__hubspot__get_properties",
+            "tool_response": (
+                "Error: result (94,455 characters across 1 line) exceeds maximum "
+                "allowed tokens. Output has been saved to /tmp/tool-results/x.txt."
+            ),
+        },
+        "truncated_result",
+        "host over-budget notice fires",
+    ),
+    (
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "mcp__example__list_rows",
+            "tool_response": {
+                "structuredContent": {"rows": [{"id": 1}], "has_more": True}
+            },
+        },
+        "pagination_incomplete",
+        "MCP wire dict form still fires",
+    ),
+    (
         {"hook_event_name": "PostToolUse", "tool_name": "Bash"},
-        False,
+        "",
         "payload without a tool response stays silent",
     ),
 ]
@@ -258,16 +298,16 @@ SENTINEL_END_TO_END_CASES = [
 @posix_only
 def test_partial_result_sentinel_end_to_end_through_shipped_command() -> None:
     """Drive the exact hooks.json command through a shell, as the host does."""
-    for payload, should_fire, label in SENTINEL_END_TO_END_CASES:
+    for payload, expected_code, label in SENTINEL_END_TO_END_CASES:
         result = run_hook("PostToolUse", 0, json.dumps(payload))
 
         assert result.returncode == 0, label
         assert result.stderr == "", label
-        if should_fire:
+        if expected_code:
             emitted = json.loads(result.stdout)
             hook_output = emitted["hookSpecificOutput"]
             assert hook_output["hookEventName"] == "PostToolUse", label
-            assert "pagination_incomplete" in hook_output["additionalContext"], label
+            assert expected_code in hook_output["additionalContext"], label
         else:
             assert result.stdout == "", label
 

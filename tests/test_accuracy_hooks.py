@@ -436,6 +436,125 @@ def test_partial_result_sentinel_reads_real_provider_envelopes() -> None:
         assert hook.collect_codes(response) == {"pagination_incomplete"}, provider
 
 
+# The shapes a Claude Code host actually delivers as `tool_response`, observed
+# live in a running session against a registered MCP server. The provider's JSON
+# object is NOT what arrives.
+HOST_DELIVERY_FIRE_CASES = [
+    (
+        [{"type": "text", "text": '{"issues": [{"id": 1}], "hasNextPage": true}'}],
+        "pagination_incomplete",
+        "bare content-block list -- the production MCP shape",
+    ),
+    (
+        [
+            {"type": "text", "text": "A human-readable preamble."},
+            {"type": "text", "text": '{"rows": [{"id": 1}], "has_more": true}'},
+        ],
+        "pagination_incomplete",
+        "signal in a later content block",
+    ),
+    (
+        '{"rows": [{"id": 1}], "next_cursor": "page-two"}',
+        "pagination_incomplete",
+        "bare JSON string",
+    ),
+    (
+        "Error: result (94,455 characters across 1 line) exceeds maximum allowed "
+        "tokens. Output has been saved to /tmp/tool-results/example.txt.",
+        "truncated_result",
+        "host over-budget notice as a bare string",
+    ),
+    (
+        [
+            {
+                "type": "text",
+                "text": "Error: result (2,000,000 characters) exceeds maximum "
+                "allowed tokens. Output has been saved to /tmp/x.txt.",
+            }
+        ],
+        "truncated_result",
+        "host over-budget notice inside a content block",
+    ),
+]
+
+HOST_DELIVERY_SILENT_CASES = [
+    ([], "empty content-block list"),
+    ("", "empty string"),
+    ("Just some prose about has_more and next_cursor.", "bare prose string"),
+    (
+        [{"type": "text", "text": "no json here, has_more is discussed only"}],
+        "prose block",
+    ),
+    (
+        [{"type": "text", "text": '[{"id": 1, "has_more": true}]'}],
+        "top-level JSON array is record content",
+    ),
+    (
+        [{"type": "text", "text": '{"rows": [{"id": 1}], "has_more": false}'}],
+        "complete provider response",
+    ),
+    (
+        [{"type": "text", "text": '{"rows": [{"has_more": true}]}'}],
+        "row column named has_more",
+    ),
+    (
+        "The docs explain that a result which exceeds maximum allowed tokens "
+        "has been saved to a file for later reading.",
+        "prose mentioning the notice wording but not the host notice",
+    ),
+    ([{"type": "image", "data": "..."}], "non-text content block"),
+    ([None, 42, "loose"], "malformed block list"),
+]
+
+
+def test_partial_result_sentinel_reads_the_shape_the_host_delivers() -> None:
+    """Regression: the hook was a no-op for every real MCP result.
+
+    `collect_codes` previously returned immediately unless `tool_response` was a
+    dict. Observed live in a running Claude Code session, an MCP result arrives
+    as a bare list of content blocks or as a bare string, so the hook never fired
+    in production -- 446 real tool results across 13 servers produced zero
+    advisories, including payloads carrying `hasNextPage: true`.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, expected_code, label in HOST_DELIVERY_FIRE_CASES:
+        assert expected_code in hook.collect_codes(response), label
+
+    for response, label in HOST_DELIVERY_SILENT_CASES:
+        assert hook.collect_codes(response) == set(), label
+
+
+def test_partial_result_sentinel_host_truncation_notice_is_tightly_matched() -> None:
+    """The host notice must match on all three markers, not on loose wording."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    notice = (
+        "Error: result (94,455 characters across 1 line) exceeds maximum allowed "
+        "tokens. Output has been saved to /tmp/tool-results/example.txt."
+    )
+    assert hook.collect_codes(notice) == {"truncated_result"}
+
+    # Each marker removed in turn must silence it.
+    assert hook.collect_codes(notice.replace("Error:", "Notice:", 1)) == set()
+    assert (
+        hook.collect_codes(notice.replace("exceeds maximum allowed", "is under"))
+        == set()
+    )
+    assert (
+        hook.collect_codes(notice.replace("has been saved to", "was discarded at"))
+        == set()
+    )
+
+    # The markers must sit in the notice head, not anywhere in a long document.
+    buried = (
+        "Error: something failed.\n"
+        + ("filler. " * 400)
+        + ("exceeds maximum allowed tokens ... has been saved to /tmp/x.txt")
+    )
+    assert hook.collect_codes(buried) == set()
+
+
 AMBIGUOUS_TOTALS_MUST_NOT_FIRE = [
     {"total": 500, "currency": "AUD", "items": [{"sku": "a"}, {"sku": "b"}]},
     {"total": 500, "values": [100, 200]},

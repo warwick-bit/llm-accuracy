@@ -6,6 +6,14 @@ time and keeps no state, so it can never observe that a later page was fetched
 and can never certify that coverage is complete. Absence of a signal proves
 nothing; only an explicit marker is reported.
 
+The host does not hand this hook the provider's JSON object. Observed live in a
+running Claude Code session, ``tool_response`` for an MCP tool arrives either as
+a bare LIST of content blocks (``[{"type": "text", "text": "<json>"}]``) or as a
+bare STRING. A dict is the MCP wire form and is still accepted. Every shape is
+normalised to a list of envelope dictionaries before inspection; an earlier
+version rejected anything that was not already a dict, which made the hook a
+no-op for every real MCP result.
+
 Detection is scoped to the response ENVELOPE. Record contents are never
 inspected, because a row may legitimately hold a column called ``has_more`` or a
 cell whose value is ``row_cap_hit``; treating row data as pagination metadata
@@ -103,6 +111,16 @@ ENVELOPE_KEYS = {
 MAX_DEPTH = 6
 MAX_ENVELOPES = 256
 MAX_EMBEDDED_JSON_BYTES = 1_000_000
+MAX_CONTENT_BLOCKS = 32
+
+# The host replaces an over-budget MCP result with its own notice and saves the
+# real output to a file. That notice is the most explicit partiality evidence
+# available -- the model is provably not seeing the full result. Both markers
+# must appear within the notice head, so prose that merely discusses token
+# limits somewhere in a long document cannot trigger it.
+HOST_TRUNCATION_PREFIX = "error:"
+HOST_TRUNCATION_MARKERS = ("exceeds maximum allowed tokens", "has been saved to")
+MAX_TRUNCATION_NOTICE_SCAN = 600
 
 BYPASS_ENV = "CC_SKIP_PARTIAL_RESULT"
 
@@ -166,40 +184,102 @@ def warning_codes(node: dict) -> set[str]:
     return codes
 
 
-def embedded_envelopes(node: dict) -> list[dict]:
+def json_envelope(text: str) -> dict | None:
+    """Parse one text body that is a JSON envelope object, else return None.
+
+    A top-level JSON array is deliberately rejected: that is record content, and
+    walking it would read row fields as pagination metadata.
+    """
+    stripped = text.strip()
+    if not stripped.startswith("{") or len(stripped) > MAX_EMBEDDED_JSON_BYTES:
+        return None
+    try:
+        parsed = json.loads(stripped)
+    except (ValueError, RecursionError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def content_block_envelopes(blocks: object) -> list[dict]:
     """Parse MCP text content blocks whose body is a JSON envelope."""
     found: list[dict] = []
-    content = node.get("content")
-    blocks = content if isinstance(content, list) else []
-    for block in blocks:
+    if not isinstance(blocks, list):
+        return found
+    for block in blocks[:MAX_CONTENT_BLOCKS]:
         if not isinstance(block, dict):
             continue
         text = block.get("text")
         if not isinstance(text, str):
             continue
-        stripped = text.strip()
-        if not stripped.startswith("{") or len(stripped) > MAX_EMBEDDED_JSON_BYTES:
-            continue
-        try:
-            parsed = json.loads(stripped)
-        except (ValueError, RecursionError):
-            continue
-        if isinstance(parsed, dict):
+        parsed = json_envelope(text)
+        if parsed is not None:
             found.append(parsed)
     return found
 
 
-def collect_codes(payload: object) -> set[str]:
-    """Return every explicit partial-result code found in a result envelope.
+def embedded_envelopes(node: dict) -> list[dict]:
+    """Parse MCP text content blocks carried under a dict's ``content`` key."""
+    return content_block_envelopes(node.get("content"))
 
-    Only envelope dictionaries are inspected. Record arrays are never walked
-    into, so row content cannot be mistaken for pagination metadata.
+
+def host_envelopes(response: object) -> list[dict]:
+    """Normalise a host ``tool_response`` into the envelopes worth inspecting.
+
+    Live observation of a running Claude Code session: an MCP result is handed
+    over as a bare list of content blocks, or as a bare string. The dict form is
+    the MCP wire shape and is accepted unchanged.
     """
-    if not isinstance(payload, dict):
-        return set()
+    if isinstance(response, dict):
+        return [response]
+    if isinstance(response, list):
+        return content_block_envelopes(response)
+    if isinstance(response, str):
+        parsed = json_envelope(response)
+        return [parsed] if parsed is not None else []
+    return []
 
-    codes: set[str] = set()
-    queue: list[tuple[dict, int]] = [(payload, 0)]
+
+def response_texts(response: object) -> list[str]:
+    """Return the top-level text bodies the host delivered, bounded."""
+    if isinstance(response, str):
+        return [response]
+    if isinstance(response, list):
+        texts: list[str] = []
+        for block in response[:MAX_CONTENT_BLOCKS]:
+            if not isinstance(block, dict):
+                continue
+            text = block.get("text")
+            if isinstance(text, str):
+                texts.append(text)
+        return texts
+    return []
+
+
+def host_truncation_codes(response: object) -> set[str]:
+    """Detect the host's own over-budget notice standing in for a real result."""
+    for text in response_texts(response):
+        head = text[:MAX_TRUNCATION_NOTICE_SCAN].strip().lower()
+        if head.startswith(HOST_TRUNCATION_PREFIX) and all(
+            marker in head for marker in HOST_TRUNCATION_MARKERS
+        ):
+            return {TRUNCATED_RESULT}
+    return set()
+
+
+def collect_codes(payload: object) -> set[str]:
+    """Return every explicit partial-result code found in a tool result.
+
+    Accepts the shapes a host actually delivers -- a bare content-block list, a
+    bare string, or a dict. Only envelope dictionaries are inspected. Record
+    arrays are never walked into, so row content cannot be mistaken for
+    pagination metadata.
+    """
+    codes: set[str] = host_truncation_codes(payload)
+    queue: list[tuple[dict, int]] = [
+        (envelope, 0) for envelope in host_envelopes(payload)
+    ]
+    if not queue:
+        return codes
     budget = MAX_ENVELOPES
     while queue:
         node, depth = queue.pop(0)
