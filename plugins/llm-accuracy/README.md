@@ -42,7 +42,7 @@ gap from memory.
 ## Feedback boundary
 
 Use synthetic, authorised material in feedback and follow the repository's
-[contributing guide](../../CONTRIBUTING.md).
+[contributing guide](https://github.com/warwick-bit/llm-accuracy/blob/main/CONTRIBUTING.md).
 
 No session ledger, prompt history, or tool output is included or persisted by
 this plugin.

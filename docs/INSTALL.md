@@ -8,8 +8,9 @@ products. Use the path below that matches where you work.
 Platform capability and this release's runtime evidence are separate:
 
 - **Claude Code terminal or IDE:** exact shipped hook commands and the automated
-  distribution suite were tested on 24 Jul 2026. A clean marketplace
-  installation smoke has not yet been recorded.
+  distribution suite were re-tested on 11 Aug 2026. A clean isolated-profile
+  marketplace installation smoke (marketplace add plus both plugin installs)
+  was recorded on 11 Aug 2026.
 - **Claude Desktop Chat:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
 - **Claude Cowork:** not runtime-smoke-tested for this release. The
@@ -124,13 +125,23 @@ name or carrying data to another session.
 
 ### Update or remove
 
-To refresh the marketplace, run:
+To update to the latest released versions:
 
 ```bash
 claude plugin marketplace update llm-accuracy
+claude plugin update llm-accuracy@llm-accuracy --scope user
+claude plugin update session-ledger@llm-accuracy --scope user
 ```
 
-Then run `/reload-plugins` in an active Claude Code session. To remove the
+Run the `session-ledger` update only if that plugin is installed. Then run
+`/reload-plugins` in an active Claude Code session.
+
+Marketplace auto-update is off by default for third-party marketplaces like
+this one. To opt in, run `/plugin`, open **Marketplaces**, select
+`llm-accuracy`, and choose **Enable auto-update**. Claude Code then refreshes
+the marketplace and updates installed plugins in the background after a
+session starts, and prompts you to run `/reload-plugins` when versions
+changed. To remove the
 plugins and local Session Ledger data:
 
 ```bash
@@ -203,6 +214,14 @@ claude plugin install llm-accuracy@llm-accuracy --scope user
 Session Ledger's local data directory is derived from the marketplace name, so
 preview-era ledger records do not carry over after the rename; the default
 final-scope uninstall above removes them.
+
+If you also used Session Ledger during the preview, reinstall and enable it
+from the new marketplace:
+
+```bash
+claude plugin install session-ledger@llm-accuracy --scope user
+claude plugin enable session-ledger@llm-accuracy --scope user
+```
 
 ## Platform references
 

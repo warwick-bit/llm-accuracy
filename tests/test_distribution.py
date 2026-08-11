@@ -19,7 +19,8 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.4.0"
+    assert claude["version"] == "0.4.1"
+    assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
 
@@ -37,7 +38,8 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
     manifest = load_json("plugins/session-ledger/.claude-plugin/plugin.json")
 
     assert manifest["name"] == "session-ledger"
-    assert manifest["version"] == "0.2.0"
+    assert manifest["version"] == "0.2.1"
+    assert manifest["license"] == "MIT"
     assert manifest["defaultEnabled"] is False
     assert not (LEDGER / ".codex-plugin").exists()
     assert "rolling record and compact summary can contain sensitive local content" in (
