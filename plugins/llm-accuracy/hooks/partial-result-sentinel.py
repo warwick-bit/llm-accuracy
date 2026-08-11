@@ -6,8 +6,13 @@ time and keeps no state, so it can never observe that a later page was fetched
 and can never certify that coverage is complete. Absence of a signal proves
 nothing; only an explicit marker is reported.
 
-It reads structured markers, never free text, and emits fixed signal codes. Tool
-output is inspected in memory and is never echoed or persisted.
+Detection is scoped to the response ENVELOPE. Record contents are never
+inspected, because a row may legitimately hold a column called ``has_more`` or a
+cell whose value is ``row_cap_hit``; treating row data as pagination metadata
+would fire on ordinary database results. Only envelope dictionaries are read,
+and record arrays are measured but never walked into.
+
+Tool output is inspected in memory and is never echoed or persisted.
 """
 
 from __future__ import annotations
@@ -23,7 +28,7 @@ TRUNCATED_RESULT = "truncated_result"
 ROW_CAP_HIT = "row_cap_hit"
 PARTIAL_PROVIDER_RESPONSE = "partial_provider_response"
 
-# Keys whose value being exactly True is explicit evidence of partiality.
+# Envelope keys whose value being exactly True is evidence of partiality.
 TRUE_MEANS_PARTIAL = {
     "hasmore": PAGINATION_INCOMPLETE,
     "hasnextpage": PAGINATION_INCOMPLETE,
@@ -34,13 +39,13 @@ TRUE_MEANS_PARTIAL = {
     "partialproviderresponse": PARTIAL_PROVIDER_RESPONSE,
 }
 
-# Keys whose value being exactly False is explicit evidence of partiality.
+# Envelope keys whose value being exactly False is evidence of partiality.
 FALSE_MEANS_PARTIAL = {
     "paginationcomplete": PAGINATION_INCOMPLETE,
 }
 
-# Keys whose non-empty string value is explicit evidence of a further page.
-# A bare "cursor" is excluded: it usually identifies the current page.
+# Envelope keys whose populated value points at a further page. A bare "cursor"
+# is excluded: it usually identifies the page already returned.
 CURSOR_KEYS = {
     "nextcursor",
     "nextpagetoken",
@@ -50,15 +55,22 @@ CURSOR_KEYS = {
     "paginghandle",
 }
 
-# Exact machine warning codes, matched only as whole list/string values.
+# Exact machine warning codes, read only from envelope warning collections.
 WARNING_CODES = {
     PAGINATION_INCOMPLETE: PAGINATION_INCOMPLETE,
     TRUNCATED_RESULT: TRUNCATED_RESULT,
     ROW_CAP_HIT: ROW_CAP_HIT,
     PARTIAL_PROVIDER_RESPONSE: PARTIAL_PROVIDER_RESPONSE,
 }
+WARNING_CONTAINER_KEYS = {
+    "warnings",
+    "sourcewarnings",
+    "notices",
+    "datawarnings",
+    "resultwarnings",
+}
 
-# Authoritative record totals. Page/offset totals are deliberately excluded.
+# Authoritative record totals. Page and offset counts are deliberately excluded.
 TOTAL_KEYS = {
     "total",
     "totalcount",
@@ -68,9 +80,37 @@ TOTAL_KEYS = {
     "totalrecords",
 }
 
+# Lists that actually hold the returned records, for the total comparison.
+RECORD_LIST_KEYS = {
+    "rows",
+    "results",
+    "items",
+    "records",
+    "data",
+    "entries",
+    "objects",
+    "users",
+    "values",
+}
+
+# Dict-valued keys that carry more envelope, rather than record content.
+ENVELOPE_KEYS = {
+    "result",
+    "response",
+    "body",
+    "page",
+    "pageinfo",
+    "paging",
+    "pagination",
+    "meta",
+    "metadata",
+    "cursor",
+    "data",
+}
+
 # Traversal bounds keep a pathological payload from stalling the hook.
-MAX_DEPTH = 8
-MAX_NODES = 20000
+MAX_DEPTH = 6
+MAX_ENVELOPES = 256
 MAX_EMBEDDED_JSON_BYTES = 1_000_000
 
 BYPASS_ENV = "CC_SKIP_PARTIAL_RESULT"
@@ -90,23 +130,47 @@ def normalize(key: str) -> str:
     return key.replace("_", "").replace("-", "").lower()
 
 
+def populated_cursor(value: object) -> bool:
+    """Report whether a cursor-shaped value points at a further page."""
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    if isinstance(value, int):
+        return value > 0
+    return False
+
+
 def scalar_codes(key: str, value: object) -> set[str]:
-    """Return signal codes implied by one key/value pair."""
+    """Return signal codes implied by one envelope key/value pair."""
     name = normalize(key)
     codes: set[str] = set()
     if value is True and name in TRUE_MEANS_PARTIAL:
         codes.add(TRUE_MEANS_PARTIAL[name])
     if value is False and name in FALSE_MEANS_PARTIAL:
         codes.add(FALSE_MEANS_PARTIAL[name])
-    if name in CURSOR_KEYS and isinstance(value, str) and value.strip():
+    if name in CURSOR_KEYS and populated_cursor(value):
         codes.add(PAGINATION_INCOMPLETE)
-    if isinstance(value, str) and value.strip().lower() in WARNING_CODES:
-        codes.add(WARNING_CODES[value.strip().lower()])
+    return codes
+
+
+def warning_codes(node: dict) -> set[str]:
+    """Read exact warning codes from envelope warning collections only."""
+    codes: set[str] = set()
+    for key, value in node.items():
+        if normalize(key) not in WARNING_CONTAINER_KEYS:
+            continue
+        candidates = value if isinstance(value, list) else [value]
+        for candidate in candidates:
+            if isinstance(candidate, str):
+                code = WARNING_CODES.get(candidate.strip().lower())
+                if code:
+                    codes.add(code)
     return codes
 
 
 def total_mismatch_codes(node: dict) -> set[str]:
-    """Flag a declared record total that exceeds the rows present beside it."""
+    """Flag a declared record total that exceeds the records returned with it."""
     totals = [
         value
         for key, value in node.items()
@@ -114,57 +178,70 @@ def total_mismatch_codes(node: dict) -> set[str]:
         and isinstance(value, int)
         and not isinstance(value, bool)
     ]
-    if not totals:
+    returned = [
+        len(value)
+        for key, value in node.items()
+        if normalize(key) in RECORD_LIST_KEYS and isinstance(value, list)
+    ]
+    if not totals or not returned:
         return set()
-    longest = max(
-        (len(value) for value in node.values() if isinstance(value, list)),
-        default=None,
-    )
-    if longest is None or longest == 0:
-        return set()
-    return {PAGINATION_INCOMPLETE} if max(totals) > longest else set()
+    return {PAGINATION_INCOMPLETE} if max(totals) > max(returned) else set()
 
 
-def embedded_payloads(node: dict) -> list[object]:
-    """Parse MCP text content blocks that carry a JSON body."""
-    text = node.get("text")
-    if not isinstance(text, str):
-        return []
-    stripped = text.strip()
-    if not stripped.startswith(("{", "[")):
-        return []
-    if len(stripped) > MAX_EMBEDDED_JSON_BYTES:
-        return []
-    try:
-        return [json.loads(stripped)]
-    except (ValueError, RecursionError):
-        return []
+def embedded_envelopes(node: dict) -> list[dict]:
+    """Parse MCP text content blocks whose body is a JSON envelope."""
+    found: list[dict] = []
+    content = node.get("content")
+    blocks = content if isinstance(content, list) else []
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        text = block.get("text")
+        if not isinstance(text, str):
+            continue
+        stripped = text.strip()
+        if not stripped.startswith("{") or len(stripped) > MAX_EMBEDDED_JSON_BYTES:
+            continue
+        try:
+            parsed = json.loads(stripped)
+        except (ValueError, RecursionError):
+            continue
+        if isinstance(parsed, dict):
+            found.append(parsed)
+    return found
 
 
 def collect_codes(payload: object) -> set[str]:
-    """Walk a tool result and return every explicit partial-result code found."""
+    """Return every explicit partial-result code found in a result envelope.
+
+    Only envelope dictionaries are inspected. Record arrays are measured for the
+    total comparison but never walked into, so row content cannot be mistaken
+    for pagination metadata.
+    """
+    if not isinstance(payload, dict):
+        return set()
+
     codes: set[str] = set()
-    stack: list[tuple[object, int]] = [(payload, 0)]
-    seen = 0
-    while stack:
-        node, depth = stack.pop()
-        seen += 1
-        if seen > MAX_NODES or depth > MAX_DEPTH:
-            continue
-        if isinstance(node, dict):
-            codes |= total_mismatch_codes(node)
-            for key, value in node.items():
-                codes |= scalar_codes(key, value)
-                if isinstance(value, (dict, list)):
-                    stack.append((value, depth + 1))
-            for parsed in embedded_payloads(node):
-                stack.append((parsed, depth + 1))
-        elif isinstance(node, list):
-            for value in node:
-                if isinstance(value, str) and value.strip().lower() in WARNING_CODES:
-                    codes.add(WARNING_CODES[value.strip().lower()])
-                elif isinstance(value, (dict, list)):
-                    stack.append((value, depth + 1))
+    queue: list[tuple[dict, int]] = [(payload, 0)]
+    budget = MAX_ENVELOPES
+    while queue:
+        node, depth = queue.pop(0)
+        budget -= 1
+        if budget < 0:
+            break
+        codes |= warning_codes(node)
+        codes |= total_mismatch_codes(node)
+        for key, value in node.items():
+            codes |= scalar_codes(key, value)
+            if (
+                isinstance(value, dict)
+                and normalize(key) in ENVELOPE_KEYS
+                and depth < MAX_DEPTH
+            ):
+                queue.append((value, depth + 1))
+        if depth < MAX_DEPTH:
+            for parsed in embedded_envelopes(node):
+                queue.append((parsed, depth + 1))
     return codes
 
 
@@ -175,10 +252,7 @@ def main() -> int:
         payload = json.loads(sys.stdin.read() or "{}")
         if not isinstance(payload, dict):
             return 0
-        response = payload.get("tool_response")
-        if not isinstance(response, (dict, list)):
-            return 0
-        codes = collect_codes(response)
+        codes = collect_codes(payload.get("tool_response"))
         if not codes:
             return 0
         print(

@@ -244,6 +244,78 @@ def test_partial_result_sentinel_detects_explicit_signals() -> None:
         assert expected_code in codes, (response, codes)
 
 
+RECORD_CONTENT_MUST_NOT_FIRE = [
+    {"rows": [{"has_more": True}]},
+    {"rows": [{"next_cursor": "a-business-value"}]},
+    {"rows": [{"status": "row_cap_hit"}]},
+    {"rows": [{"truncated": True}, {"truncated": True}]},
+    {"results": [{"pagination_complete": False}]},
+    {"items": [{"text": '{"has_more": true}'}]},
+    {"records": [{"warnings": ["pagination_incomplete"]}]},
+    {"data": [{"is_truncated": True}]},
+]
+
+TOTAL_COMPARISON_CASES = [
+    ({"total": 500, "columns": ["a", "b"]}, set()),
+    ({"total_count": 3, "tags": ["x"]}, set()),
+    ({"total_count": 42, "rows": [{"i": n} for n in range(42)]}, set()),
+    ({"total_rows": 2, "rows": [1, 2], "columns": list(range(500))}, set()),
+    ({"total_count": 500, "rows": []}, {"pagination_incomplete"}),
+    ({"total_count": 500, "rows": [1, 2]}, {"pagination_incomplete"}),
+    (
+        {"total_count": 500, "rows": [1, 2], "columns": list(range(500))},
+        {"pagination_incomplete"},
+    ),
+]
+
+
+def test_partial_result_sentinel_ignores_record_content() -> None:
+    """Row data must never be read as envelope pagination metadata.
+
+    Regression for the fresh audit of PR #18: a database result whose column is
+    named `has_more`, or whose cell value is `row_cap_hit`, is ordinary content
+    and must not raise a partial-result advisory.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response in RECORD_CONTENT_MUST_NOT_FIRE:
+        assert hook.collect_codes(response) == set(), response
+
+
+def test_partial_result_sentinel_compares_totals_against_record_lists() -> None:
+    """A declared total is compared with the records, not an arbitrary list."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, expected in TOTAL_COMPARISON_CASES:
+        assert hook.collect_codes(response) == expected, response
+
+
+def test_partial_result_sentinel_detects_numeric_next_offset() -> None:
+    """A populated numeric next-page offset counts; zero and False do not."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    assert hook.collect_codes({"next_offset": 100}) == {"pagination_incomplete"}
+    assert hook.collect_codes({"next_offset": 0}) == set()
+    assert hook.collect_codes({"next_offset": False}) == set()
+
+
+def test_partial_result_sentinel_bound_is_order_independent() -> None:
+    """A signal is found regardless of where it sits among many siblings.
+
+    Regression for the fresh audit: the previous node budget was consumed by
+    queued siblings, so a signal early in a wide payload was silently dropped
+    while the same signal late in the payload was detected.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    filler = {f"meta{n}": {"note": n} for n in range(5000)}
+    signal_first = {"has_more": True, **filler}
+    signal_last = {**filler, "has_more": True}
+
+    assert hook.collect_codes(signal_first) == {"pagination_incomplete"}
+    assert hook.collect_codes(signal_last) == {"pagination_incomplete"}
+
+
 def test_partial_result_sentinel_covers_every_declared_cursor_key() -> None:
     """Each declared cursor key fires when populated and stays silent when not.
 
