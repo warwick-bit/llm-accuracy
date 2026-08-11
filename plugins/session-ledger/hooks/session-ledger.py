@@ -902,6 +902,25 @@ def context_text(entries: list[dict[str, str]], summary: str, truncated: bool) -
     return "\n".join(lines)
 
 
+def emitted_context_length(text: str) -> int:
+    """Return the exact serialized hook-response length the host receives.
+
+    JSON encoding re-escapes quotes, backslashes, and non-ASCII characters,
+    so the serialized response can be much longer than the inner text; the
+    host cap applies to the emitted output, not the decoded context.
+    """
+    return len(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "additionalContext": text,
+                    "hookEventName": "SessionStart",
+                }
+            }
+        )
+    )
+
+
 def bounded_context(entries: list[dict[str, str]], summary: str) -> str:
     """Fit the injected context under the host hook-output character cap.
 
@@ -912,13 +931,13 @@ def bounded_context(entries: list[dict[str, str]], summary: str) -> str:
     the compact summary as needed; the stored record is never modified.
     """
     text = context_text(entries, summary, False)
-    if len(text) <= HOST_CONTEXT_CHARACTER_BUDGET:
+    if emitted_context_length(text) <= HOST_CONTEXT_CHARACTER_BUDGET:
         return text
     entry_budget = RENDER_ENTRY_BYTES
     while True:
         rendered_entries = bounded_entries(entries, limit=entry_budget)
         text = context_text(rendered_entries, summary, True)
-        if len(text) <= HOST_CONTEXT_CHARACTER_BUDGET:
+        if emitted_context_length(text) <= HOST_CONTEXT_CHARACTER_BUDGET:
             return text
         if summary:
             summary = summary[: len(summary) // 2].rstrip()
