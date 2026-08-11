@@ -39,10 +39,10 @@ unsupported. This plugin therefore asks the model to recheck current evidence,
 label inference, and say when a source is unavailable instead of filling the
 gap from memory.
 
-## Preview boundary
+## Feedback boundary
 
-This is an invite-only private preview. Use synthetic, authorised material in
-feedback and follow the repository's [preview policy](../../PREVIEW.md).
+Use synthetic, authorised material in feedback and follow the repository's
+[contributing guide](../../CONTRIBUTING.md).
 
 No session ledger, prompt history, or tool output is included or persisted by
 this plugin.

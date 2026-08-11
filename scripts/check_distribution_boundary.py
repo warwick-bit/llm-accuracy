@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed when the private preview contains excluded artifacts."""
+"""Fail closed when a distributed plugin contains excluded artifacts."""
 
 from __future__ import annotations
 
@@ -33,12 +33,12 @@ FORBIDDEN_PYTHON_IMPORT = re.compile(
 
 
 def forbidden_path_prefixes(profile: str) -> tuple[str, ...]:
-    """Return the excluded path prefixes for one named preview profile."""
+    """Return the excluded path prefixes for one named distribution profile."""
     if profile == "accuracy-core":
         return ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
     if profile == "session-ledger":
         return COMMON_FORBIDDEN_PATH_PREFIXES
-    raise ValueError(f"unknown preview-boundary profile: {profile}")
+    raise ValueError(f"unknown distribution-boundary profile: {profile}")
 
 
 def artifact_violations(
@@ -95,7 +95,7 @@ def main() -> int:
     args = parser.parse_args()
     violations = boundary_violations(args.plugin, profile=args.profile)
     if violations:
-        print("Private-preview boundary violation:", file=sys.stderr)
+        print("Distribution boundary violation:", file=sys.stderr)
         print("\n".join(violations), file=sys.stderr)
         return 1
     return 0

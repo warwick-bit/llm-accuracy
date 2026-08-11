@@ -6,14 +6,13 @@ LLM Accuracy helps an LLM distinguish direct evidence from inference, recheck
 stale details, calibrate confidence, and audit its own prior answers. It does
 not guarantee truth, completeness, timeliness, or domain correctness.
 
-## Private preview
+## Licence and boundary
 
-This repository is an invite-only private preview. It is not open source and
-has no public licence. Do not submit credentials, customer data, provider
-payloads, or raw conversation transcripts in issues, pull requests, or test
-fixtures.
+This repository is public and MIT-licensed; see [LICENSE](LICENSE).
+Do not submit credentials, customer data, provider payloads, or raw
+conversation transcripts in issues, pull requests, or test fixtures.
 
-The preview includes only a generic core:
+The plugins cover only a generic core:
 
 - evidence and provenance discipline;
 - stale-memory rechecks and calibrated uncertainty;
@@ -31,28 +30,28 @@ accept that the retained record and compact summary can contain sensitive local
 content.
 
 Provider-specific verification integrations are intentionally out of scope.
-See [PREVIEW.md](PREVIEW.md) for participation rules and [SECURITY.md](SECURITY.md)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for feedback rules and [SECURITY.md](SECURITY.md)
 for responsible disclosure.
 
-## Install for preview participants
+## Install
 
-Choose the installation path that matches your Claude environment. Installation
-access to this private repository is limited to invited GitHub collaborators.
+Choose the installation path that matches your Claude environment.
 
-- **Claude Code in a terminal or IDE:** the full preview, including advisory
-  hooks. Follow the [terminal guide](docs/INSTALL.md#claude-code-terminal-or-ide-full-preview).
+- **Claude Code in a terminal or IDE:** the full plugin, including advisory
+  hooks. Follow the [terminal guide](docs/INSTALL.md#claude-code-terminal-or-ide--full-plugin).
 - **Claude Desktop Chat:** upload the release ZIP for skills-only use. The
   automatic advisory hooks do not run in chat.
-- **Claude Cowork:** upload the same ZIP for the full skills-and-hooks preview.
-- **Claude chat on the web:** add the private GitHub marketplace through
+- **Claude Cowork:** upload the same ZIP for the full skills-and-hooks
+  experience.
+- **Claude chat on the web:** add the GitHub marketplace through
   **Customize → Plugins** for skills-only use; Chat does not run the advisory
   hooks. Team and Enterprise owners can alternatively distribute it through an
   organization marketplace.
-- **Claude Code on the web:** not yet supported for this preview; it needs a
-  project-scoped cloud smoke test against a private marketplace.
+- **Claude Code on the web:** not yet supported; it still needs a
+  project-scoped cloud smoke test.
 
 See the complete [installation guide](docs/INSTALL.md), including activation,
-updates, removal, and troubleshooting. The first preview release must be
+updates, removal, and troubleshooting. The first public release must be
 validated in a clean supported runtime before relying on it for consequential
 work.
 

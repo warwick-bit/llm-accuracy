@@ -10,9 +10,9 @@ import zipfile
 from pathlib import Path
 
 try:
-    from scripts.check_private_preview_boundary import boundary_violations
+    from scripts.check_distribution_boundary import boundary_violations
 except ModuleNotFoundError:  # Direct script execution puts scripts/ on sys.path.
-    from check_private_preview_boundary import boundary_violations
+    from check_distribution_boundary import boundary_violations
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,12 +88,10 @@ def tracked_plugin_files(plugin: Path) -> list[Path]:
 
 
 def archive_members(plugin: Path = PLUGIN) -> list[Path]:
-    """Return deterministic, preview-safe tracked files for the release archive."""
+    """Return deterministic, boundary-safe tracked files for the release archive."""
     violations = boundary_violations(plugin)
     if violations:
-        raise ValueError(
-            "private-preview boundary check failed: " + "; ".join(violations)
-        )
+        raise ValueError("distribution boundary check failed: " + "; ".join(violations))
     return [
         path
         for path in tracked_plugin_files(plugin)

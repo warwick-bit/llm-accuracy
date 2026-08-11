@@ -1,10 +1,10 @@
-"""Regression tests for the private-preview distribution gate."""
+"""Regression tests for the distribution gate."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.check_private_preview_boundary import boundary_violations
+from scripts.check_distribution_boundary import boundary_violations
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,7 +46,7 @@ def test_non_text_artifact_is_rejected_cleanly(tmp_path: Path) -> None:
 
 
 def test_symlink_is_rejected_before_its_target_is_read(tmp_path: Path) -> None:
-    outside = tmp_path.parent / "outside-preview-artifact.md"
+    outside = tmp_path.parent / "outside-boundary-artifact.md"
     outside.write_text("private source", encoding="utf-8")
     (tmp_path / "linked.md").symlink_to(outside)
 

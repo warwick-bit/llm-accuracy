@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "llm-accuracy-preview",
-  "description": "Private preview of evidence-first accuracy hygiene and opt-in local session continuity for Claude Code.",
+  "name": "llm-accuracy",
+  "description": "Evidence-first accuracy hygiene and opt-in local session continuity for Claude Code.",
   "owner": {
     "name": "Warwick"
   },

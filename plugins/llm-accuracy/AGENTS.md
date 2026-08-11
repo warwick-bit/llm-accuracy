@@ -11,4 +11,4 @@ memory.
 
 For high-stakes factual claims, read `references/evidence-discipline.md` and
 separate direct evidence, inference, and unchecked material. The plugin has no
-provider-specific verification integration in this preview.
+provider-specific verification integration.
