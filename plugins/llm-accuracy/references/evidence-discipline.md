@@ -58,6 +58,19 @@ hide uncertainty in a footer. A single source usually caps confidence at
 medium; failed, empty, truncated, redacted, or permission-limited queries are
 caveats, not confirmed facts.
 
+## Partial results
+
+A page is not the set. When a result declares partiality — `has_more`, a next
+cursor or page token, `truncated`, a row cap, or a total that exceeds the rows
+returned — either keep paginating until the source is exhausted or report the
+answer as partial and name what was actually read: rows seen, pages fetched, and
+cursor state.
+
+Silence is not coverage. The absence of a partiality marker is not evidence that
+a result is complete, because many sources cap quietly. Treat unknown coverage as
+a data gap, not as a confirmed full set, and do not let a declared total that was
+never reconciled against the rows in hand stand in for one that was.
+
 ## Boundary
 
 LLM Accuracy improves evidence hygiene. It does not independently establish

@@ -28,6 +28,10 @@ EXPECTED_HANDLERS = {
         "post-compact-accuracy.py",
         "Checking llm-accuracy post-compaction accuracy",
     ),
+    ("PostToolUse", 0): (
+        "partial-result-sentinel.py",
+        "Checking llm-accuracy partial result signal",
+    ),
 }
 
 posix_only = pytest.mark.skipif(
@@ -48,6 +52,7 @@ def clean_environment() -> dict[str, str]:
     excluded = {
         "CC_SKIP_ANALYSIS",
         "CC_SKIP_FUSION_EVIDENCE",
+        "CC_SKIP_PARTIAL_RESULT",
         "CLAUDE_PLUGIN_ROOT",
     }
     return {key: value for key, value in os.environ.items() if key not in excluded}
@@ -81,8 +86,9 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
 
     config = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))
     assert set(config) == {"hooks"}
-    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart"}
+    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse"}
     assert config["hooks"]["SessionStart"][0]["matcher"] == "compact"
+    assert config["hooks"]["PostToolUse"][0]["matcher"] == "mcp__.*"
 
     for key, (filename, status_message) in EXPECTED_HANDLERS.items():
         handler = hook_handler(*key)
