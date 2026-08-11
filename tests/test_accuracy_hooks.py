@@ -452,6 +452,36 @@ DEEP_CONNECTION_SILENT_CASES = [
 ]
 
 
+def test_partial_result_sentinel_inspects_large_paginated_results() -> None:
+    """A large result must still be inspected -- it is the likeliest to be partial.
+
+    The parse bound was previously low enough that a multi-megabyte paginated
+    body was skipped in silence, which is the worst place to lose recall. The
+    bound now sits above anything a host delivers intact; oversized results are
+    replaced by the host notice and caught by that path instead.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    rows = [{"id": n, "name": f"row-{n}", "blob": "x" * 200} for n in range(20000)]
+    body = json.dumps({"rows": rows, "has_more": True})
+    assert len(body) > 4_000_000
+
+    assert hook.collect_codes(wrap(body)) == {"pagination_incomplete"}
+    complete = json.dumps({"rows": rows, "has_more": False})
+    assert hook.collect_codes(wrap(complete)) == set()
+
+
+def test_partial_result_sentinel_still_bounds_pathological_input() -> None:
+    """The parse bound remains, so an absurd body is skipped rather than parsed."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    oversized = (
+        '{"has_more": true, "pad": "' + "x" * (hook.MAX_EMBEDDED_JSON_BYTES) + '"}'
+    )
+    assert len(oversized) > hook.MAX_EMBEDDED_JSON_BYTES
+    assert hook.collect_codes(wrap(oversized)) == set()
+
+
 def test_partial_result_sentinel_detects_deep_graphql_connections() -> None:
     """Relay `pageInfo` is found at depth, without widening general traversal.
 

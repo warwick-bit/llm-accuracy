@@ -110,7 +110,15 @@ ENVELOPE_KEYS = {
 # Traversal bounds keep a pathological payload from stalling the hook.
 MAX_DEPTH = 6
 MAX_ENVELOPES = 256
-MAX_EMBEDDED_JSON_BYTES = 1_000_000
+# A text body larger than this is left unparsed, so a pathological payload
+# cannot stall the hook. The bound sits far above anything a host delivers
+# intact: measured across 458 real MCP text bodies the largest was 47,620
+# characters, because the host replaces anything over its own token budget with
+# a truncation notice, which is detected separately. Parsing a 5 MB body costs
+# about 45 ms against the 3 s hook timeout, so the headroom is deliberate --
+# a lower bound would silently skip inspection of exactly the large results
+# most likely to be paginated.
+MAX_EMBEDDED_JSON_BYTES = 8_000_000
 MAX_CONTENT_BLOCKS = 32
 
 # The host replaces an over-budget MCP result with its own notice and saves the
