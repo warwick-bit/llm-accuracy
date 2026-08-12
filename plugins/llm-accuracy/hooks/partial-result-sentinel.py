@@ -14,11 +14,21 @@ normalised to a list of envelope dictionaries before inspection; an earlier
 version rejected anything that was not already a dict, which made the hook a
 no-op for every real MCP result.
 
-Detection is scoped to the response ENVELOPE. Record contents are never
-inspected, because a row may legitimately hold a column called ``has_more`` or a
-cell whose value is ``row_cap_hit``; treating row data as pagination metadata
-would fire on ordinary database results. Only envelope dictionaries are read;
-record arrays are never walked into.
+Detection is scoped to the response ENVELOPE. Record contents inside a
+collection are never inspected, because a row may legitimately hold a column
+called ``has_more`` or a cell whose value is ``row_cap_hit``; treating row data
+as pagination metadata would fire on ordinary database results. Only envelope
+dictionaries are read; record arrays are never walked into.
+
+One record shape is beyond that protection and is accepted as a limit: a
+SINGULAR record returned as a bare JSON object, with no collection wrapping it,
+is structurally identical to a response envelope. PostgREST can return one, and
+if such a record carries a column named ``has_more`` it will raise an advisory.
+Nothing in a single stateless payload separates the two, and the shapes that
+could be used to guess -- whether a collection sits beside the flag -- would
+silence real envelopes. Measured across 8,499 real local tool results, a root
+partiality flag appeared 46 times and every one sat beside a collection; the
+singular-record shape appeared zero times.
 
 Declared record totals are deliberately NOT compared against returned rows. A
 bare total is ambiguous -- an invoice total, an aggregate, or a chart series all
@@ -130,8 +140,11 @@ CURSOR_OBJECT_TOKEN_FIELDS = {
 # returned, so only PAGING booleans are read inside one: `page.truncated` on a
 # document preview, or `response_metadata.truncated` on a rendering, describes
 # how it was rendered, not a result set that stopped early. A self-describing
-# cursor is still read inside them, because `next_cursor` states its own meaning
-# wherever it sits, which is why Slack's block needs no special case.
+# cursor is still read inside them, because a name like `next_cursor` states its
+# own meaning in any block that is reached, which is why Slack's block needs no
+# special case. It is only ever read where traversal reaches, though: at the
+# envelope root, or inside a block named by ENVELOPE_KEYS or by the pagination
+# rule below. A cursor buried under an unrecognised container is not found.
 GENERIC_CONTAINER_KEYS = {
     "page",
     "meta",
@@ -149,6 +162,12 @@ PAGINATION_CONTAINER_KEYS = {
     "pagination",
     "cursor",
 }
+# The set above names three spellings of one rule, and providers spell it more
+# ways than that -- Alexa returns its token under `paginationContext`. Any block
+# whose name begins with `pagination` is stating what it holds, so the rule is
+# written out rather than enumerated. A dict is the only thing traversed, so a
+# scalar such as `paginationEnabled: false` is unaffected.
+PAGINATION_CONTAINER_PREFIX = "pagination"
 
 # Exact machine warning codes, read only from envelope warning collections.
 WARNING_CODES = {
@@ -197,7 +216,9 @@ MAX_ENVELOPES = 256
 # a truncation notice, which is detected separately. Parsing a 5 MB body costs
 # about 45 ms against the 3 s hook timeout, so the headroom is deliberate --
 # a lower bound would silently skip inspection of exactly the large results
-# most likely to be paginated.
+# most likely to be paginated. The body is already a decoded string by this
+# point, so like MAX_INPUT_CHARS this counts characters rather than bytes; for
+# multi-byte text the effective byte ceiling is correspondingly higher.
 MAX_EMBEDDED_JSON_BYTES = 8_000_000
 MAX_CONTENT_BLOCKS = 32
 # One node can carry an unbounded number of fields; MAX_ENVELOPES bounds how
@@ -240,6 +261,18 @@ def normalize(key: str) -> str:
     for character in ("_", "-", "@", "."):
         key = key.replace(character, "")
     return key.lower()
+
+
+def is_pagination_container(name: str) -> bool:
+    """Report whether a normalised block name states that it holds pagination.
+
+    A block that names itself pagination is what makes a member as ordinary as
+    `next` or `after` readable as a cursor. Nothing else qualifies: a generic
+    `page` or `metadata` bag is excluded on purpose.
+    """
+    return name in PAGINATION_CONTAINER_KEYS or name.startswith(
+        PAGINATION_CONTAINER_PREFIX
+    )
 
 
 def populated_cursor(value: object) -> bool:
@@ -479,12 +512,14 @@ def collect_codes(payload: object) -> set[str]:
             codes |= scalar_codes(
                 key, value, in_pagination=in_pagination, paging_only=paging_only
             )
-            if isinstance(value, dict) and name in ENVELOPE_KEYS and depth < MAX_DEPTH:
+            paginated_block = is_pagination_container(name)
+            reachable = name in ENVELOPE_KEYS or paginated_block
+            if isinstance(value, dict) and reachable and depth < MAX_DEPTH:
                 queue.append(
                     (
                         value,
                         depth + 1,
-                        in_pagination or name in PAGINATION_CONTAINER_KEYS,
+                        in_pagination or paginated_block,
                         paging_only or name in GENERIC_CONTAINER_KEYS,
                     )
                 )

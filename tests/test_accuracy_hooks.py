@@ -559,7 +559,7 @@ NEW_PROVIDER_FIRE_CASES = [
 
 
 def test_partial_result_sentinel_reads_further_provider_declarations() -> None:
-    """Three more unambiguous declarations found by the third fresh audit."""
+    """Unambiguous provider declarations found by the third fresh audit."""
     hook = load_hook("partial-result-sentinel.py")
 
     for response, label in NEW_PROVIDER_FIRE_CASES:
@@ -719,9 +719,9 @@ def test_partial_result_sentinel_across_real_provider_page_shapes() -> None:
 
     The narrow fixtures elsewhere pin individual rules; this one guards against
     a rule change that satisfies its own test while silencing a provider nobody
-    happened to write a case for. The excluded pair is deliberate: Airtable's
-    bare `offset` and Reddit's `after` under `data` are both indistinguishable
-    from ordinary fields, and `data` is never traversed.
+    happened to write a case for. Every exclusion is deliberate: an ambiguous
+    page reference is indistinguishable from ordinary document navigation, and
+    `data` is never traversed because it is as often the record as an envelope.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -799,6 +799,53 @@ def test_partial_result_sentinel_reads_only_token_members_of_a_cursor_object() -
         "paging": {"next": {"after": "52", "link": "/x"}},
     }
     assert hook.collect_codes(wrap(hubspot)) == {"pagination_incomplete"}
+
+
+def test_partial_result_sentinel_reads_any_pagination_named_container() -> None:
+    """A block whose name begins `pagination` states what it holds.
+
+    Regression for the ninth fresh audit: Alexa returns its token under
+    `paginationContext`, which no envelope key reached, so an explicit further
+    page went undetected. The rule was already "blocks whose own name means
+    pagination"; only three spellings of it had been enumerated.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    alexa = {"paginationContext": {"nextToken": "opaque"}, "results": [{"id": 1}]}
+    assert hook.collect_codes(alexa) == {"pagination_incomplete"}
+    assert hook.collect_codes(wrap(alexa)) == {"pagination_incomplete"}
+    # A bare `next` becomes readable inside one, as in any pagination block.
+    contained = {"items": [{"id": 1}], "pagination_context": {"after": "52"}}
+    assert hook.collect_codes(wrap(contained)) == {"pagination_incomplete"}
+    # The prefix reaches dicts only, so an ordinary scalar is untouched.
+    assert hook.collect_codes(wrap({"rows": [], "paginationEnabled": False})) == set()
+    # And it does not turn a generic container into a pagination one.
+    assert hook.collect_codes(wrap({"page": {"next": "about-us"}})) == set()
+    assert hook.collect_codes(wrap({"metadata": {"next": "review-step-2"}})) == set()
+
+
+def test_partial_result_sentinel_reports_a_singular_record_as_a_known_limit() -> None:
+    """A bare singular record is indistinguishable from a response envelope.
+
+    Raised by the ninth fresh audit and accepted as a limit rather than fixed:
+    PostgREST can return one record as a bare object, so a business column named
+    `has_more` fires. The only available tell -- whether a collection sits
+    beside the flag -- would silence real envelopes: measured across 8,499 real
+    local tool results a root partiality flag appeared 46 times, always beside a
+    collection, and this shape appeared zero times. Pinned so a later round
+    cannot quietly trade the 46 for the 0.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    singular = {"id": 1, "name": "Feature preference", "has_more": True}
+    assert hook.collect_codes(wrap(singular)) == {"pagination_incomplete"}
+    # The shape this limit protects: a real envelope whose collection is nested,
+    # so no list sits beside the flag either.
+    nested = {"result": {"items": [{"id": 1}]}, "has_more": True}
+    assert hook.collect_codes(wrap(nested)) == {"pagination_incomplete"}
+    # Inside a collection the same column is still ignored, which is the
+    # protection that does hold.
+    assert hook.collect_codes(wrap({"rows": [singular]})) == set()
 
 
 def test_partial_result_sentinel_ignores_rendering_flags_in_response_metadata() -> None:
@@ -998,9 +1045,10 @@ def test_partial_result_sentinel_survives_hostile_payloads() -> None:
     assert sentinel_advisory(hook, []) == ""
 
 
-# Real provider envelopes always carry the records they are paging through, and
-# the fixtures say so: an ambiguous page reference only counts beside a returned
-# collection, because document navigation carries a link and no records.
+# Real provider envelopes carry the records they are paging through, and the
+# fixtures say so. The collection is not a gate -- a flag or a self-describing
+# cursor counts on its own -- it is here because that is the shape a real
+# response has, so these cases stay honest about what production delivers.
 PROVIDER_ENVELOPES = [
     (
         {

@@ -77,7 +77,8 @@ The `PostToolUse` sentinel is a narrow backstop for the rule above, not a
 substitute for it. It reads one tool result at a time and keeps no state, so it
 can never observe that a later page was fetched and can never certify coverage.
 
-It reads JSON only, and detects, in the response envelope: boolean partiality
+It reads JSON, plus one plain-text case named at the end of this list, and
+detects, in the response envelope: boolean partiality
 flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
 `row_cap_hit`, `incompleteSearch`, `incomplete_results`,
 `partial_provider_response`, and
@@ -88,7 +89,8 @@ flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
 wrapping one under a member that can carry a token, so that a cursor holding
 `{"value": null, "status": "exhausted"}` reads as exhausted); a bare `next` or
 `after` inside a block whose own name means
-pagination (`paging`, `pagination`, `cursor`); exact
+pagination (`paging`, `cursor`, or any name beginning `pagination`, which covers
+`pagination` itself and Alexa's `paginationContext`); exact
 machine warning codes in an envelope warning collection, as strings or as
 `{"code": ...}` objects; a GraphQL Relay `pageInfo` block reached through nested
 dictionaries; and the host's own over-budget notice when it replaces an
@@ -102,7 +104,21 @@ It deliberately does NOT do the following, and you remain responsible for each:
   total against rows in hand is your job, not the hook's.
 - **Read record content.** Row arrays are never inspected, so a column named
   `has_more`, a cell whose value is `row_cap_hit`, or a `pageInfo` object nested
-  inside a record array will not raise a signal.
+  inside a record array will not raise a signal. One record shape escapes that
+  protection and is accepted as a limit: a SINGULAR record returned as a bare
+  JSON object, with no collection around it, is structurally identical to a
+  response envelope — PostgREST can return one — so a business column named
+  `has_more` on such a record raises a false advisory. Guessing from whether a
+  collection sits beside the flag would silence real envelopes; measured across
+  8,499 real local tool results, a root partiality flag appeared 46 times and
+  every one sat beside a collection, while the singular-record shape appeared
+  zero times.
+- **Find a cursor under an unrecognised container.** A self-describing cursor is
+  read at the envelope root and inside the blocks traversal reaches — `result`,
+  `response`, `body`, `page`, `meta`, `metadata`, `response_metadata`, `links`,
+  `structuredContent`, and any pagination-named block. A cursor buried under a
+  schema-specific container the traversal does not know is not found; only a
+  Relay `pageInfo` block is chased to arbitrary depth.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
 - **Read result-set flags inside a generic block.** A `page`, `meta`,
