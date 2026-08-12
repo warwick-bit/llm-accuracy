@@ -104,11 +104,12 @@ subagent transcripts are covered too, because the record carries its session:
 
     --exclude-session <session-id> [--exclude-session <session-id> ...]
 
-The match is a SUBSTRING of the recorded session id, not an equality test, so a
-short unambiguous prefix is enough and a parent id also excludes the sessions
-recorded under it. The cost is that a very short fragment can exclude more than
-you meant; pass enough of the id to be unambiguous. Measured on the real corpus,
-a full id excluded exactly the 67 results it should, with no collisions.
+The match is a SUBSTRING of the recorded session id on each record -- never a
+filename or a path -- so a short unambiguous prefix is enough and a parent id
+also excludes the sessions recorded under it. The cost is that a very short
+fragment can exclude more than you meant; pass enough of the id to be
+unambiguous. Measured on the real corpus, a full id excluded exactly the 67
+results it should, with no collisions.
 """
 
 from __future__ import annotations
@@ -211,14 +212,14 @@ def load_hook(path: Path, name: str = "sentinel_under_measurement") -> Hook:
     return module
 
 
-def transcript_paths(
-    roots: Iterable[Path], exclude_sessions: frozenset[str] = frozenset()
-) -> Iterator[Path]:
-    """Yield each transcript file once, skipping excluded sessions by path.
+def transcript_paths(roots: Iterable[Path]) -> Iterator[Path]:
+    """Yield each transcript file once. Roots may overlap or repeat.
 
-    Roots may overlap or repeat, so a file is yielded at most once. The path
-    check is a coarse first pass; the authoritative exclusion is per record,
-    because a subagent transcript is named for the agent, not its parent session.
+    Deliberately does no session filtering. An earlier version skipped whole
+    files whose PATH contained an excluded fragment, which could drop an
+    unrelated transcript entirely -- taking real detections with it -- because a
+    path and a session id are different things that happen to be strings.
+    Exclusion belongs at the record, where the session is actually recorded.
     """
     seen: set[Path] = set()
     for root in roots:
@@ -229,12 +230,6 @@ def transcript_paths(
             if resolved in seen:
                 continue
             seen.add(resolved)
-            parts = set(path.parts)
-            if any(
-                session and (session in path.name or session in parts)
-                for session in exclude_sessions
-            ):
-                continue
             yield path
 
 
@@ -529,7 +524,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         payloads = list(
             tool_results(
-                transcript_paths(roots, excluded),
+                transcript_paths(roots),
                 mcp_only=args.scope == "mcp",
                 exclude_sessions=excluded,
             )

@@ -147,13 +147,14 @@ def test_scores_a_corpus_per_signal_code(tmp_path: Path) -> None:
     assert codes == {"pagination_incomplete": 1, "truncated_result": 2}
 
 
-def test_excludes_a_session_by_its_recorded_id_not_its_filename(
-    tmp_path: Path,
-) -> None:
+def test_excludes_a_session_only_by_its_recorded_id(tmp_path: Path) -> None:
     """A subagent transcript is named for the agent, not its parent session.
 
-    Filtering on the filename alone leaves a session's own subagent payloads in
-    the corpus, so the self-contamination control has to read the record.
+    So exclusion has to read the record. And it must read ONLY the record:
+    round nine found that filtering paths as well let an unrelated transcript
+    whose PATH happened to contain the fragment be skipped whole, taking real
+    detections with it. A path and a session id are different things that
+    happen to be strings.
     """
     fires = wrap({"rows": [{"id": 1}], "has_more": True})
     write_transcript(tmp_path / "other.jsonl", [fires], session="keep-me")
@@ -162,8 +163,7 @@ def test_excludes_a_session_by_its_recorded_id_not_its_filename(
     everything = list(tool_results(transcript_paths([tmp_path])))
     without_mine = list(
         tool_results(
-            transcript_paths([tmp_path], frozenset({"abc123"})),
-            exclude_sessions=frozenset({"abc123"}),
+            transcript_paths([tmp_path]), exclude_sessions=frozenset({"abc123"})
         )
     )
 
@@ -176,6 +176,30 @@ def test_excludes_a_session_by_its_recorded_id_not_its_filename(
         tool_results(transcript_paths([tmp_path]), exclude_sessions=frozenset({"e"}))
     )
     assert over_broad == []
+
+
+def test_a_path_that_contains_the_fragment_is_not_excluded(tmp_path: Path) -> None:
+    """Round nine: an unrelated transcript was skipped whole on a path collision.
+
+    The fragment identifies a session, and only a record says which session it
+    belongs to. A filename that happens to contain the same characters is not
+    evidence of anything, and skipping the file took its detections with it.
+    """
+    fires = wrap({"rows": [{"id": 1}], "has_more": True})
+    write_transcript(tmp_path / "target.jsonl", [fires], session="mine-fragment-123")
+    write_transcript(
+        tmp_path / "unrelated-fragment.jsonl", [fires, fires], session="keep-session"
+    )
+
+    kept = list(
+        tool_results(
+            transcript_paths([tmp_path]), exclude_sessions=frozenset({"fragment"})
+        )
+    )
+
+    # Only the session whose RECORDED id contains the fragment is excluded; the
+    # unrelated file keeps both of its results despite the matching filename.
+    assert len(kept) == 2
 
 
 def test_overlapping_transcript_roots_do_not_double_count(tmp_path: Path) -> None:
