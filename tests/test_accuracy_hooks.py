@@ -1032,14 +1032,16 @@ PAGE_INFO_MUST_NOT_FIRE = [
 ]
 
 
-def test_partial_result_sentinel_reads_only_booleans_from_page_info() -> None:
-    """A page-info block declares partiality through booleans, never cursors.
+def test_partial_result_sentinel_reads_no_ambiguous_cursor_in_page_info() -> None:
+    """A page-info block is not a pagination block, so a bare `next` is content.
 
-    Regression for a false positive introduced by the Relay pass: the
+    Regression for a false positive introduced by the Relay pass: the AMBIGUOUS
     cursor vocabulary was being applied inside `pageInfo`, so an ordinary
     `page_info.next` page slug raised an advisory. A Relay page-info block never
     signals a further page with `next` or `after`, so reading them there only
-    ever produced noise.
+    ever produced noise. A SELF-DESCRIBING cursor is a different mechanism and is
+    still read there, as it is in any block traversal reaches -- see the case at
+    the end of the connection test.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -1119,8 +1121,9 @@ def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() 
         assert hook.collect_codes(response) == set(), label
         assert hook.collect_codes(wrap(response)) == set(), label
 
-    # Where traversal reaches it, a page-info block still declares partiality,
-    # so a GraphQL result delivered in an ordinary envelope still works.
+    # Where traversal reaches it, a page-info block still declares partiality.
+    # That means directly at the root or directly under a recognised key -- a raw
+    # GraphQL `{"data": ...}` body stays silent even when wrapped in `result`.
     assert hook.collect_codes(wrap({"pageInfo": {"hasNextPage": True}})) == {
         "pagination_incomplete"
     }
