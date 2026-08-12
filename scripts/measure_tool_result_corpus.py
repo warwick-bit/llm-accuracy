@@ -10,8 +10,7 @@ transcripts, through the hook and counts what fires.
 
 SCOPE. The sentinel is wired to `mcp__.*`, so only MCP results are in scope. A
 transcript records a result under a top-level `toolUseResult` with a
-`tool_use_id`, and the
-assistant turn that issued it names the tool; the two are joined to recover the
+`tool_use_id`, and the assistant turn that issued it names the tool; the two are joined to recover the
 name. This matters more than it sounds: built-in tool results outnumber MCP ones
 by roughly twenty to one locally, so scoring everything reports a denominator
 that is mostly out of scope. `--scope all` is available for a deliberately wider
@@ -52,8 +51,9 @@ can still open a file, open a socket, spawn a thread, write below Python to file
 descriptor 1, or defer a finalizer past any capture by holding a reference.
 
 So: measure a hook you would run anyway. If this ever needs to measure a hook
-that is not trusted, the fix is isolation, not another check -- run the hook in a SANDBOXED
-subprocess with restricted filesystem and network permissions, and read only its
+that is not trusted, the fix is isolation, not another check -- run the hook in
+a SANDBOXED subprocess with restricted filesystem and network permissions, and
+read only its
 structured summary. A bare subprocess captures its output but does not stop it
 writing a file or opening a socket.
 
