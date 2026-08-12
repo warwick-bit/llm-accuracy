@@ -22,10 +22,10 @@ are recorded only inside `message.content[].content` and are not collected, so
 SAFETY. The corpus is real tool output and may contain anything a tool returned.
 The guarantee is precise, and narrower than it first looks:
 
-    THIS SCRIPT never writes a value derived from the CORPUS. Every report it
-    prints goes through `safe_summary`, which accepts a fixed set of labels,
-    this script's own canonical signal codes, and integers -- nothing else, in
-    either the text or the JSON path.
+    THIS SCRIPT never writes corpus CONTENT or any corpus-supplied value. What
+    it emits is its own canonical strings plus aggregate integer counts, and
+    those counts are of course derived from the corpus -- that is the output.
+    Every report goes through `safe_summary` in both the text and JSON paths.
 
 Errors are the one other thing it prints, and they are about the command line
 rather than the corpus: a bad `--hook` path is named so the mistake is fixable.
@@ -41,6 +41,14 @@ to Python's `sys.stdout`/`sys.stderr` during the call is captured and dropped.
 The hook's returned object is also released before the capture closes, on every
 branch including the one where it raised, so an ordinary finalizer runs inside
 it.
+
+`safe_summary` additionally refuses anything it does not own -- non-exact dicts,
+`str`/`int` subclasses, forged labels -- but that is defence in depth rather than
+a sandbox. Nothing in this repo can reach it with such an object: transcript JSON
+decodes to built-ins, `_codes_for` canonicalises whatever the hook returns, and
+`main` builds the summary from its own literals, `len()` and a `Counter`. Review
+attacked it directly for three rounds and found nothing reachable from a
+transcript, so it is deliberately not hardened further.
 
 What the guarantee does NOT extend to is the HOOK's own behaviour. A hook is
 arbitrary imported code running in this process, and no in-process check can
@@ -95,6 +103,12 @@ payloads into its own transcript, which then enters the corpus. Exclude it by id
 subagent transcripts are covered too, because the record carries its session:
 
     --exclude-session <session-id> [--exclude-session <session-id> ...]
+
+The match is a SUBSTRING of the recorded session id, not an equality test, so a
+short unambiguous prefix is enough and a parent id also excludes the sessions
+recorded under it. The cost is that a very short fragment can exclude more than
+you meant; pass enough of the id to be unambiguous. Measured on the real corpus,
+a full id excluded exactly the 67 results it should, with no collisions.
 """
 
 from __future__ import annotations

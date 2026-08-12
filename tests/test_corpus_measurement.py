@@ -169,6 +169,13 @@ def test_excludes_a_session_by_its_recorded_id_not_its_filename(
 
     assert len(everything) == 3
     assert len(without_mine) == 1
+    # The match is a substring of the recorded id, not an equality test, so a
+    # short unambiguous prefix works and a parent id covers what it recorded.
+    # The cost is documented: too short a fragment excludes more than intended.
+    over_broad = list(
+        tool_results(transcript_paths([tmp_path]), exclude_sessions=frozenset({"e"}))
+    )
+    assert over_broad == []
 
 
 def test_overlapping_transcript_roots_do_not_double_count(tmp_path: Path) -> None:
