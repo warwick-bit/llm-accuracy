@@ -84,7 +84,8 @@ flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
 `partial_provider_response`, and
 `pagination_complete: false`); cursors whose NAME states its own meaning
 (`next_cursor`, `nextPageToken`, `nextPageCursor`, `next_offset`, `nextToken`,
-`next_marker`, `next_page_url`, `continuationToken`, `pagingHandle`,
+`next_marker`, `next_page_url`, `next_page_uri`, `continuationToken`,
+`pagingHandle`,
 `@odata.nextLink`, `nextRecordsUrl` — each accepting a bare value, or an object
 wrapping one under a member that can carry a token, so that a cursor holding
 `{"value": null, "status": "exhausted"}` reads as exhausted); a bare `next` or
@@ -117,8 +118,9 @@ It deliberately does NOT do the following, and you remain responsible for each:
   zero times.
 - **Find a cursor under an unrecognised container.** A self-describing cursor is
   read at the envelope root and inside the blocks traversal reaches — `result`,
-  `response`, `body`, `page`, `meta`, `metadata`, `response_metadata`, `links`,
-  `structuredContent`, and any pagination-named block. A cursor buried under a
+  `response`, `body`, `page`, `paging`, `pagination`, `cursor`, `meta`,
+  `metadata`, `response_metadata`, `links`, `structuredContent`, and any other
+  pagination-named block. A cursor buried under a
   schema-specific container the traversal does not know is not found; only a
   Relay `pageInfo` block is chased under container names the traversal does not
   know, and that chase stops at the same depth bound as everything else (6).

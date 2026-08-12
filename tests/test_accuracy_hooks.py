@@ -806,14 +806,25 @@ def test_partial_result_sentinel_reads_only_token_members_of_a_cursor_object() -
 
 
 def test_partial_result_sentinel_reads_any_pagination_named_container() -> None:
-    """A block whose name begins `pagination` states what it holds.
+    """A `pagination`-named block is reached; only an enumerated one is trusted.
 
     Regression for the ninth fresh audit: Alexa returns its token under
     `paginationContext`, which no envelope key reached, so an explicit further
-    page went undetected. The rule was already "blocks whose own name means
-    pagination"; only three spellings of it had been enumerated.
+    page went undetected. And for the tenth, which found the first fix went too
+    far: granting every `pagination*` name pagination CONTEXT made a
+    `paginationLabels` block's button copy read as a cursor. The prefix now
+    grants traversal alone, so a self-describing cursor inside any such block is
+    found, while a bare `next` or `after` counts only inside one of the
+    enumerated PAGINATION_CONTAINER_KEYS.
     """
     hook = load_hook("partial-result-sentinel.py")
+
+    # Every enumerated container makes a bare `next`/`after` a cursor.
+    for container in sorted(hook.PAGINATION_CONTAINER_KEYS):
+        enumerated = {"apps": [{"id": "AP1"}], container: {"next": "page-token"}}
+        assert hook.collect_codes(wrap(enumerated)) == {"pagination_incomplete"}, (
+            container
+        )
 
     alexa = {"paginationContext": {"nextToken": "opaque"}, "results": [{"id": 1}]}
     assert hook.collect_codes(alexa) == {"pagination_incomplete"}
