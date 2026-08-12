@@ -675,7 +675,7 @@ PROVIDER_PAGE_MATRIX = [
 
 # Documented exclusions: the page reference is real, but its name and shape are
 # indistinguishable from ordinary document content, so it is not read. Measured
-# across 459 real MCP results, none of these mechanisms ever fired, while each
+# across 459 real tool results, none of these mechanisms ever fired, while each
 # of them produced false positives in review.
 PROVIDER_PAGE_EXCLUDED = [
     ({"records": [{"id": 1}], "offset": "itrX"}, "Airtable's bare offset"),
@@ -851,7 +851,9 @@ def test_partial_result_sentinel_leaves_a_providers_own_content_array_alone() ->
     assert hook.collect_codes([image]) == set()
     assert hook.collect_codes({"content": [image]}) == set()
     # On a real text block, and as a bare string, the notice still fires.
-    assert hook.collect_codes([{"type": "text", "text": notice}]) == {"truncated_result"}
+    assert hook.collect_codes([{"type": "text", "text": notice}]) == {
+        "truncated_result"
+    }
     assert hook.collect_codes(notice) == {"truncated_result"}
 
 

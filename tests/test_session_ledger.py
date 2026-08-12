@@ -1118,7 +1118,9 @@ def test_restore_context_fits_the_host_hook_output_limit(tmp_path: Path) -> None
     )
 
     assert context is not None
-    assert ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+    assert (
+        ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+    )
     assert ledger.CONTEXT_TRUNCATION_NOTICE in context
     assert "Synthetic entry 7" in context
     record = json.loads(ledger.record_path(data_root, "session-one").read_text())
@@ -1157,5 +1159,7 @@ def test_escape_heavy_restore_stays_under_the_serialized_budget(
     )
 
     assert context is not None
-    assert ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+    assert (
+        ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+    )
     assert ledger.CONTEXT_TRUNCATION_NOTICE in context

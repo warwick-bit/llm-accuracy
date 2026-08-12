@@ -100,10 +100,24 @@ collection, a ``next_page`` object, or a bare root ``next`` holding a url.
 Nothing in a single stateless payload separates them, and successive attempts to
 infer it -- from absolute urls, from a sibling collection, from a record count
 -- each produced false advisories on ordinary documents. Measured across 459
-real MCP tool results, those ambiguous mechanisms never fired at all, while
+real tool results, those ambiguous mechanisms never fired at all, while
 boolean flags, self-describing cursor names and the host notice accounted for
 every real detection. So the ambiguous forms are excluded, and a bare ``next``
 or ``after`` is read only inside a block whose own name means pagination.
+
+
+A NOTE ON THE COUNTS ABOVE. The figures in the thousands were taken over ALL
+local tool results, not the MCP-scoped subset this hook is actually wired to.
+Locally that subset was about 6% of the total -- 553 MCP results inside 9,682,
+a dated snapshot of a corpus that keeps growing -- so those denominators
+overstate how much IN-SCOPE evidence each conclusion
+rests on. The conclusions themselves are unaffected: the wider corpus is a
+superset, so a mechanism that fired zero times across all of it fired zero times
+across the MCP part, and a same-snapshot control that lost nothing across all of
+it lost nothing across the MCP part. Re-measured MCP-scoped, the hook fires on 44
+of 553 results, and scoring the wider corpus returns the same 44 -- no built-in
+result fires at all. Reproduce with `scripts/measure_tool_result_corpus.py`,
+which now scopes to `mcp__.*` by default.
 
 Tool output is inspected in memory and is never echoed or persisted.
 """
