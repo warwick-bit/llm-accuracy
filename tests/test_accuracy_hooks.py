@@ -795,7 +795,8 @@ def test_partial_result_sentinel_leaves_a_providers_own_content_array_alone() ->
     Regression for the thirteenth fresh audit: every traversed envelope had its
     `content` key reparsed as MCP content blocks, so a CMS article quoting a
     JSON example in one of its blocks raised `pagination_incomplete`. Content
-    blocks are now read at depth 0 only, and only when the block type is `text`.
+    blocks are read only off `tool_response` itself, and only when the block type
+    is `text`; depth cannot tell the two apart, as round fourteen then showed.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -825,6 +826,8 @@ def test_partial_result_sentinel_leaves_a_providers_own_content_array_alone() ->
     assert hook.collect_codes(json.dumps(message)) == set()
     nested = {"result": {"content": [{"type": "text", "text": '{"has_more": true}'}]}}
     assert hook.collect_codes(wrap(nested)) == set()
+    # Provider content carried inside a dict-wire body is still the provider's.
+    assert hook.collect_codes({"content": wrap(message)}) == set()
     # The protocol's own blocks at the boundary are still read, in both the dict
     # wire form and the list the host actually delivers.
     wire = {"content": [{"type": "text", "text": '{"rows": [], "has_more": true}'}]}
@@ -833,6 +836,18 @@ def test_partial_result_sentinel_leaves_a_providers_own_content_array_alone() ->
     # A block without the text type is not a text block, whatever it carries.
     untyped = [{"text": '{"rows": [], "has_more": true}'}]
     assert hook.collect_codes(untyped) == set()
+    # The host's over-budget notice obeys the same rule. Round fifteen found it
+    # read off an image block that merely carried a `text` property.
+    notice = (
+        "Error: result (94,455 characters across 1 line) exceeds maximum "
+        "allowed tokens. Output has been saved to /tmp/tool-results/x.txt."
+    )
+    image = {"type": "image", "mimeType": "image/png", "data": "AA==", "text": notice}
+    assert hook.collect_codes([image]) == set()
+    assert hook.collect_codes({"content": [image]}) == set()
+    # On a real text block, and as a bare string, the notice still fires.
+    assert hook.collect_codes([{"type": "text", "text": notice}]) == {"truncated_result"}
+    assert hook.collect_codes(notice) == {"truncated_result"}
 
 
 def test_partial_result_sentinel_reads_only_token_members_of_a_cursor_object() -> None:

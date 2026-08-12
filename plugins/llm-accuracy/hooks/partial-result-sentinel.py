@@ -19,8 +19,9 @@ collection are never inspected, because a row may legitimately hold a column
 called ``has_more`` or a cell whose value is ``row_cap_hit``; treating row data
 as pagination metadata would fire on ordinary database results. Record arrays
 are never walked into. Two lists are read, and both are protocol rather than
-record: the MCP content blocks of ``tool_response`` itself in its dict wire
-form, and only when a block declares ``type: "text"``; and an envelope warning
+record: the MCP content blocks of ``tool_response`` itself -- the bare list the
+host usually delivers, or the ``content`` field of its dict wire form -- and only
+when a block declares ``type: "text"``; and an envelope warning
 collection, read for exact machine codes. Any other ``content`` array belongs to
 the provider -- an Anthropic Messages response and a CMS article both carry one
 of identical shape -- and is left alone. Depth is not what separates them: a
@@ -452,6 +453,8 @@ def response_texts(response: object) -> list[str]:
         texts: list[str] = []
         for block in blocks[:MAX_CONTENT_BLOCKS]:
             if not isinstance(block, dict):
+                continue
+            if block.get("type") != "text":
                 continue
             text = block.get("text")
             if isinstance(text, str):
