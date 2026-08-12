@@ -97,24 +97,6 @@ CURSOR_KEYS = {
     "nextrecordsurl",
 }
 
-# Keys whose NAME suggests pagination but whose bare value is ordinary content:
-# a CMS `next_page` holds a title or a slug, an Azure `nextLink` label could be
-# a chapter name. They count only when the value has the SHAPE of a page
-# reference too -- a link object, or a url or path string.
-SHAPE_QUALIFIED_CURSOR_KEYS = {
-    "nextlink",
-}
-
-# `next_page` is read only as an absolute url. Zendesk returns one; a document's
-# `next_page` holds a title, a slug, or an object naming the next section.
-ABSOLUTE_URL_CURSOR_KEYS = {
-    "nextpage",
-}
-
-# Keys that mean "the next page" only inside a pagination container. `next` and
-# `after` are ordinary English at the root of a business object -- a meeting
-# with an `after` field, a report with a `next` section -- so they count only
-# under a container such as `links`, `paging`, or `response_metadata`.
 CONTAINED_CURSOR_KEYS = {
     "next",
     "after",
@@ -124,6 +106,16 @@ CONTAINED_CURSOR_KEYS = {
 # blocks whose own name means pagination qualify. `page`, `meta` and `metadata`
 # are deliberately absent: they are generic containers, and a CMS `page.next`
 # slug or a workflow's `metadata.next` step is ordinary business content.
+# Envelope keys that are generic containers rather than response metadata. A
+# `page` or `metadata` block belongs to the thing being returned, so only PAGING
+# booleans are read inside one: `page.truncated` on a document preview describes
+# how it was rendered, not a result set that stopped early.
+GENERIC_CONTAINER_KEYS = {
+    "page",
+    "meta",
+    "metadata",
+}
+
 PAGINATION_CONTAINER_KEYS = {
     "paging",
     "pagination",
@@ -224,34 +216,6 @@ def normalize(key: str) -> str:
     return key.lower()
 
 
-def absolute_url(value: object) -> bool:
-    """Report whether a value is an absolute http(s) URL.
-
-    This is what separates a real root-level `next` from an ordinary one.
-    Django REST Framework puts an absolute next-page URL at the root of a page
-    response, while a business object's `next` holds a title, a slug, or a
-    relative path.
-    """
-    if not isinstance(value, str):
-        return False
-    candidate = value.strip().lower()
-    for scheme in ("http://", "https://"):
-        if not candidate.startswith(scheme):
-            continue
-        host = candidate[len(scheme) :].split("/", 1)[0]
-        if host:
-            return True
-    return False
-
-
-def url_like(value: object) -> bool:
-    """Report whether a value has the shape of a link, absolute or rooted."""
-    if not isinstance(value, str):
-        return False
-    candidate = value.strip().lower()
-    return candidate.startswith(("http://", "https://", "/"))
-
-
 def populated_cursor(value: object) -> bool:
     """Report whether a cursor-shaped value points at a further page.
 
@@ -266,18 +230,13 @@ def populated_cursor(value: object) -> bool:
     if isinstance(value, int):
         return value > 0
     if isinstance(value, dict):
-        for field in ("href", "uri", "url", "path", "offset"):
-            target = value.get(field)
-            if isinstance(target, str) and target.strip():
-                return True
-            if isinstance(target, bool):
-                continue
-            if isinstance(target, int) and target > 0:
-                return True
+        # The KEY already states this is the next page, so any populated object
+        # under it is a cursor -- providers wrap the token differently.
+        return bool(value)
     return False
 
 
-def boolean_codes(key: str, value: object) -> set[str]:
+def boolean_codes(key: str, value: object, *, paging_only: bool = False) -> set[str]:
     """Return signal codes implied by an unambiguous boolean flag.
 
     Only booleans whose NAME already states partiality count here. Cursor keys
@@ -287,14 +246,17 @@ def boolean_codes(key: str, value: object) -> set[str]:
     """
     name = normalize(key)
     codes: set[str] = set()
-    if value is True and name in TRUE_MEANS_PARTIAL:
-        codes.add(TRUE_MEANS_PARTIAL[name])
+    true_means = PAGE_INFO_TRUE_MEANS_PARTIAL if paging_only else TRUE_MEANS_PARTIAL
+    if value is True and name in true_means:
+        codes.add(true_means[name])
     if value is False and name in FALSE_MEANS_PARTIAL:
         codes.add(FALSE_MEANS_PARTIAL[name])
     return codes
 
 
-def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set[str]:
+def scalar_codes(
+    key: str, value: object, *, in_pagination: bool = False, paging_only: bool = False
+) -> set[str]:
     """Return signal codes implied by one envelope key/value pair.
 
     `in_pagination` says whether this key sits inside a block whose own name
@@ -302,12 +264,8 @@ def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set
     `after` readable as a cursor; outside such a block it is not read at all.
     """
     name = normalize(key)
-    codes: set[str] = boolean_codes(key, value)
+    codes: set[str] = boolean_codes(key, value, paging_only=paging_only)
     if name in CURSOR_KEYS and populated_cursor(value):
-        codes.add(PAGINATION_INCOMPLETE)
-    if name in SHAPE_QUALIFIED_CURSOR_KEYS and url_like(value):
-        codes.add(PAGINATION_INCOMPLETE)
-    if name in ABSOLUTE_URL_CURSOR_KEYS and absolute_url(value):
         codes.add(PAGINATION_INCOMPLETE)
     if in_pagination and name in CONTAINED_CURSOR_KEYS and populated_cursor(value):
         codes.add(PAGINATION_INCOMPLETE)
@@ -468,30 +426,35 @@ def collect_codes(payload: object) -> set[str]:
     envelopes = host_envelopes(payload)
     for envelope in envelopes:
         codes |= connection_codes(envelope)
-    queue: list[tuple[dict, int, bool]] = [(env, 0, False) for env in envelopes]
+    queue: list[tuple[dict, int, bool, bool]] = [
+        (env, 0, False, False) for env in envelopes
+    ]
     if not queue:
         return codes
     budget = MAX_ENVELOPES
     while queue:
-        node, depth, in_pagination = queue.pop(0)
+        node, depth, in_pagination, paging_only = queue.pop(0)
         budget -= 1
         if budget < 0:
             break
         codes |= warning_codes(node)
         for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
             name = normalize(key)
-            codes |= scalar_codes(key, value, in_pagination=in_pagination)
+            codes |= scalar_codes(
+                key, value, in_pagination=in_pagination, paging_only=paging_only
+            )
             if isinstance(value, dict) and name in ENVELOPE_KEYS and depth < MAX_DEPTH:
                 queue.append(
                     (
                         value,
                         depth + 1,
                         in_pagination or name in PAGINATION_CONTAINER_KEYS,
+                        paging_only or name in GENERIC_CONTAINER_KEYS,
                     )
                 )
         if depth < MAX_DEPTH:
             for parsed in embedded_envelopes(node):
-                queue.append((parsed, depth + 1, in_pagination))
+                queue.append((parsed, depth + 1, in_pagination, paging_only))
     return codes
 
 

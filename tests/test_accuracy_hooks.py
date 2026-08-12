@@ -552,10 +552,6 @@ NEW_PROVIDER_FIRE_CASES = [
     ({"files": [{"id": "f1"}], "incompleteSearch": True}, "Drive incomplete search"),
     ({"nextToken": "opaque", "items": []}, "AWS next token"),
     ({"entries": [], "limit": 100, "next_marker": "opaque"}, "Box marker paging"),
-    (
-        {"value": [{"id": 1}], "nextLink": "/api/books?$after=opaque"},
-        "Azure next link",
-    ),
 ]
 
 
@@ -641,15 +637,6 @@ def test_partial_result_sentinel_anchors_the_host_notice_on_its_prefix() -> None
 PROVIDER_PAGE_MATRIX = [
     ({"object": "list", "results": [{"id": 1}], "has_more": True}, "Notion"),
     ({"data": [{"id": 1}], "meta": {"next_token": "7140"}}, "X/Twitter v2"),
-    (
-        {
-            "users": [{"id": 1}],
-            "next_page": "https://x.test/api/users?page=2",
-            "previous_page": None,
-            "count": 100,
-        },
-        "Zendesk",
-    ),
     ({"values": [{"id": 1}], "nextPageToken": "tok"}, "Jira platform"),
     ({"files": [{"id": 1}], "nextPageToken": "tok"}, "Google Drive"),
     (
@@ -692,6 +679,18 @@ PROVIDER_PAGE_EXCLUDED = [
         "a Django REST Framework page, whose bare next is ordinary English",
     ),
     (
+        {"title": "Q1 chapter 1", "next_page": "https://docs.example.test/q1/ch2"},
+        "a url-shaped next_page, which Zendesk and a document both return",
+    ),
+    (
+        {"title": "Q1 chapter 1", "nextLink": "/reports/q1/chapter-2"},
+        "a url-shaped nextLink, which Azure and a document both return",
+    ),
+    (
+        {"page": {"title": "Annual report", "truncated": True}},
+        "rendering truncation inside a generic page container",
+    ),
+    (
         {"Items": [{"id": 1}], "LastEvaluatedKey": {"pk": {"S": "a"}}},
         "a DynamoDB resume key, which a business object can also carry",
     ),
@@ -715,6 +714,37 @@ def test_partial_result_sentinel_across_real_provider_page_shapes() -> None:
 
     for response, provider in PROVIDER_PAGE_EXCLUDED:
         assert hook.collect_codes(response) == set(), provider
+
+
+def test_partial_result_sentinel_reads_only_paging_flags_in_a_generic_block() -> None:
+    """A `page` or `metadata` block describes the thing returned, not the result.
+
+    Regression for the sixth fresh audit: `page.truncated` on a document preview
+    raised `truncated_result`. Inside a generic container only PAGING booleans
+    are read, which is the same distinction already drawn for `pageInfo`.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    assert hook.collect_codes({"page": {"title": "Annual", "truncated": True}}) == set()
+    assert hook.collect_codes({"metadata": {"row_cap_hit": True}}) == set()
+    assert hook.collect_codes({"page": {"hasMore": True}}) == {"pagination_incomplete"}
+    # At the envelope root the same flag IS about the result set.
+    assert hook.collect_codes({"rows": [], "truncated": True}) == {"truncated_result"}
+
+
+def test_partial_result_sentinel_accepts_an_object_valued_cursor() -> None:
+    """A self-describing cursor name may wrap its token in an object.
+
+    Regression for the sixth fresh audit. The KEY already states this is the
+    next page, so any populated object under it counts; an empty one does not.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    items = [{"id": 1}]
+    assert hook.collect_codes({"items": items, "next_cursor": {"value": "p2"}}) == {
+        "pagination_incomplete"
+    }
+    assert hook.collect_codes({"items": items, "next_cursor": {}}) == set()
 
 
 def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:

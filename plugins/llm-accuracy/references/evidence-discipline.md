@@ -83,8 +83,8 @@ flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
 `pagination_complete: false`); cursors whose NAME states its own meaning
 (`next_cursor`, `nextPageToken`, `nextPageCursor`, `next_offset`, `nextToken`,
 `next_marker`, `next_page_url`, `continuationToken`, `pagingHandle`,
-`@odata.nextLink`, `nextRecordsUrl`, a url-shaped `nextLink`, an absolute-url
-`next_page`); a bare `next` or `after` inside a block whose own name means
+`@odata.nextLink`, `nextRecordsUrl` — each accepting a bare value or an object
+wrapping one); a bare `next` or `after` inside a block whose own name means
 pagination (`paging`, `pagination`, `cursor`, `response_metadata`); exact
 machine warning codes in an envelope warning collection, as strings or as
 `{"code": ...}` objects; a GraphQL Relay `pageInfo` block reached through nested
@@ -102,6 +102,11 @@ It deliberately does NOT do the following, and you remain responsible for each:
   inside a record array will not raise a signal.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
+- **Read result-set flags inside a generic block.** A `page`, `meta`, or
+  `metadata` block describes the thing being returned, so only paging flags are
+  read there: a `page.truncated` on a document preview says how it was rendered,
+  not that a result set stopped early. The same flag at the envelope root is
+  read normally.
 - **Read a page reference whose name and shape are ordinary content.** This is
   the largest exclusion, and it is deliberate. A document that links to its next
   chapter is structurally identical to an API page that links to its next page:
@@ -110,8 +115,9 @@ It deliberately does NOT do the following, and you remain responsible for each:
   separates them, and every attempt to infer it — from absolute urls, from a
   sibling collection, from a record count — produced false advisories on
   ordinary documents. So JSON:API and Confluence `links.next`, HAL link
-  collections, Asana's `next_page` object, Django REST Framework's root `next`,
-  and DynamoDB's `LastEvaluatedKey` are not read. Measured across 459 real MCP
+  collections, Asana's `next_page` object, a url-shaped `next_page` or
+  `nextLink` (Zendesk and Azure return one, and so does a document), Django REST
+  Framework's root `next`, and DynamoDB's `LastEvaluatedKey` are not read. Measured across 459 real MCP
   tool results, none of these mechanisms ever fired, while each produced false
   positives in review; the flags and self-describing cursor names above account
   for every real detection.
