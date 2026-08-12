@@ -37,9 +37,12 @@ git show <old-sha>:plugins/llm-accuracy/hooks/partial-result-sentinel.py \
 python3 scripts/measure_tool_result_corpus.py --compare-hook /tmp/old-sentinel.py
 ```
 
-The corpus is your own local transcripts and never leaves the process: the script
-reports counts and signal-code names only. Do not paste corpus contents into an
-issue, a pull request, or a commit message.
+The corpus is your own local transcripts. The script reports counts and
+signal-code names only, and refuses to print anything else, so ordinary use does
+not surface payload values. That boundary assumes the hook you point it at is one
+you trust: a hook is arbitrary imported code and can still write a file or open a
+socket regardless. Do not paste corpus contents into an issue, a pull request, or
+a commit message.
 
 ## Feedback
 

@@ -284,6 +284,69 @@ def test_a_hook_that_raises_or_prints_the_payload_cannot_reach_the_report(
     assert PAYLOAD_MARKER not in capsys.readouterr().out
 
 
+def test_an_exception_raised_while_iterating_the_result_cannot_escape() -> None:
+    """The guard has to cover iteration, not just the call.
+
+    Round two: the try/except wrapped `collect_codes(payload)` only, so a
+    returned object that raised from `__iter__` carried its message -- and any
+    payload the hook had put in it -- straight out to the traceback.
+    """
+
+    class Bomb(list):
+        def __iter__(self):
+            raise RuntimeError(PAYLOAD_MARKER)
+
+    _, counts = score(["a payload"], SimpleNamespace(collect_codes=lambda _: Bomb()))
+
+    assert counts == {"<hook-error>": 1}
+
+
+def test_a_code_that_only_compares_equal_is_replaced_by_the_canonical_one() -> None:
+    """Equality is not identity, and only identity is safe to print.
+
+    Round two: a `str` subclass comparing equal to a known code passed the
+    vocabulary check, was kept, and rendered its payload through `__str__`.
+    """
+
+    class Sneaky(str):
+        def __str__(self) -> str:
+            return PAYLOAD_MARKER
+
+    _, counts = score(
+        ["a payload"],
+        SimpleNamespace(collect_codes=lambda _: {Sneaky("pagination_incomplete")}),
+    )
+    report = render_report({"results": 1, "codes": counts})
+
+    assert counts == {"pagination_incomplete": 1}
+    assert PAYLOAD_MARKER not in report
+    assert type(next(iter(counts))) is str
+
+
+def test_a_swap_between_two_unknown_codes_is_flagged_rather_than_missed() -> None:
+    """Unknown codes collapse to one placeholder, so a swap between them hides.
+
+    Round two: the observation-level control caught a known-to-known swap but
+    not an unknown-to-unknown one. It cannot distinguish them without printing
+    them, so it reports how many observations are in that state instead: a
+    non-zero `unrecognised` means the vocabulary is stale and `lost`/`gained`
+    cannot be read at face value.
+    """
+    known = compare(
+        ["a payload"],
+        SimpleNamespace(collect_codes=lambda _: {"pagination_incomplete"}),
+        SimpleNamespace(collect_codes=lambda _: {"truncated_result"}),
+    )
+    unknown = compare(
+        ["a payload"],
+        SimpleNamespace(collect_codes=lambda _: {"legacy_partial_a"}),
+        SimpleNamespace(collect_codes=lambda _: {"legacy_partial_b"}),
+    )
+
+    assert (known["lost"], known["gained"], known["unrecognised"]) == (1, 1, 0)
+    assert unknown["unrecognised"] == 1
+
+
 def test_the_report_refuses_unknown_fields_codes_and_free_text() -> None:
     """The safety property is enforced at one chokepoint, not merely intended."""
     with pytest.raises(CorpusError):

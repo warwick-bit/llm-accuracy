@@ -102,7 +102,7 @@ oversized result with a pointer to a file.
 
 The counts cited below in the thousands were taken over ALL local tool results,
 not the MCP-scoped subset this hook is wired to — locally about 6% of the total,
-553 inside 9,682. They therefore overstate how much in-scope evidence each
+553 inside 9,682, a dated snapshot of a corpus that keeps growing. They therefore overstate how much in-scope evidence each
 conclusion rests on. The conclusions hold, because the wider corpus is a
 superset: a mechanism that fired zero times across all of it fired zero times
 across the MCP part. Re-measured MCP-scoped, the hook fires on 44 of 553 results,

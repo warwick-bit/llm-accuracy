@@ -106,10 +106,11 @@ every real detection. So the ambiguous forms are excluded, and a bare ``next``
 or ``after`` is read only inside a block whose own name means pagination.
 
 
-A NOTE ON THE COUNTS BELOW. The figures in the thousands were taken over ALL
+A NOTE ON THE COUNTS ABOVE. The figures in the thousands were taken over ALL
 local tool results, not the MCP-scoped subset this hook is actually wired to.
-Locally that subset is about 6% of the total -- 553 MCP results inside 9,682 --
-so those denominators overstate how much IN-SCOPE evidence each conclusion
+Locally that subset was about 6% of the total -- 553 MCP results inside 9,682,
+a dated snapshot of a corpus that keeps growing -- so those denominators
+overstate how much IN-SCOPE evidence each conclusion
 rests on. The conclusions themselves are unaffected: the wider corpus is a
 superset, so a mechanism that fired zero times across all of it fired zero times
 across the MCP part, and a same-snapshot control that lost nothing across all of

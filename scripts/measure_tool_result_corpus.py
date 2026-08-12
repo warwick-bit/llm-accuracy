@@ -9,12 +9,16 @@ measures instead: it replays real tool results, captured from local host
 transcripts, through the hook and counts what fires.
 
 SCOPE. The sentinel is wired to `mcp__.*`, so only MCP results are in scope. A
-transcript records a result under `toolUseResult` with a `tool_use_id`, and the
+transcript records a result under a top-level `toolUseResult` with a
+`tool_use_id`, and the
 assistant turn that issued it names the tool; the two are joined to recover the
 name. This matters more than it sounds: built-in tool results outnumber MCP ones
 by roughly twenty to one locally, so scoring everything reports a denominator
 that is mostly out of scope. `--scope all` is available for a deliberately wider
-negative corpus, and labels itself as such.
+negative corpus, and labels itself as such. "All" means every record carrying a
+top-level `toolUseResult`; some built-in results are recorded only inside
+`message.content[].content` and are not collected, so `all` is a wider corpus
+rather than an exhaustive one.
 
 SAFETY, AND ITS LIMITS. The corpus is real tool output and may contain anything a
 tool returned. Counts and signal codes are the only things emitted, and the codes
@@ -53,6 +57,11 @@ there would be a false all-clear.
 `lost` is what the change stopped detecting. For a precision fix claiming to cost
 no recall, `lost` must be 0. That is evidence about THIS corpus, not proof of
 recall in general: a shape absent here is unmeasured, not absent in the world.
+
+`unrecognised` must also be 0 to read `lost`/`gained` at face value. Codes outside
+the known vocabulary all collapse to one placeholder, so a swap between two
+UNKNOWN codes is invisible; a non-zero count means this script's vocabulary is
+behind the hook's and must be updated before the comparison means anything.
 
 SELF-CONTAMINATION. A session working ON the sentinel writes its own test
 payloads into its own transcript, which then enters the corpus. Exclude it by id;
@@ -93,6 +102,11 @@ SIGNAL_CODES = frozenset(
         "partial_provider_response",
     }
 )
+# Canonical instances OWNED BY THIS SCRIPT. A hook may return a `str` subclass
+# that compares equal to a known code while rendering something else through
+# `__str__`, so a recognised code is replaced by this script's own literal rather
+# than kept. Equality is not identity, and only identity is safe to print.
+CANONICAL_CODE = {code: str(code) for code in SIGNAL_CODES}
 UNRECOGNISED_CODE = "<unrecognised-code>"
 HOOK_ERROR_CODE = "<hook-error>"
 UNRESOLVED_TOOL = "<unresolved>"
@@ -111,6 +125,7 @@ REPORT_LABELS = frozenset(
         "candidate_observations",
         "lost",
         "gained",
+        "unrecognised",
     }
 )
 
@@ -261,14 +276,20 @@ def _codes_for(payload: object, hook: Hook) -> set[str]:
     try:
         with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
             found = hook.collect_codes(payload)
+            # Iteration happens INSIDE the guard on purpose. A returned object
+            # can raise from `__iter__`, and that exception carries whatever the
+            # hook put in it -- which is how the payload escaped once already.
+            if not isinstance(found, (set, frozenset, list, tuple)):
+                return {UNRECOGNISED_CODE}
+            codes = {
+                CANONICAL_CODE.get(code, UNRECOGNISED_CODE)
+                if isinstance(code, str)
+                else UNRECOGNISED_CODE
+                for code in found
+            }
     except BaseException:  # noqa: BLE001 - a hook is arbitrary code; never trust it
         return {HOOK_ERROR_CODE}
-    if not isinstance(found, (set, frozenset, list, tuple)):
-        return {UNRECOGNISED_CODE}
-    return {
-        code if isinstance(code, str) and code in SIGNAL_CODES else UNRECOGNISED_CODE
-        for code in found
-    }
+    return codes
 
 
 def score(
@@ -300,8 +321,17 @@ def compare(payloads: list[object], baseline: Hook, candidate: Hook) -> dict[str
     """
     before, _ = score(payloads, baseline)
     after, _ = score(payloads, candidate)
+    # Every code outside the known vocabulary collapses to one placeholder, so
+    # two DIFFERENT unknown codes are indistinguishable here and a swap between
+    # them would read as no change. Rather than guess, say how many observations
+    # are in that state: a non-zero count means the vocabulary is out of date and
+    # `lost`/`gained` cannot be trusted for those observations.
+    unrecognised = sum(
+        1 for _, code in before | after if code in (UNRECOGNISED_CODE, HOOK_ERROR_CODE)
+    )
     return {
         "results": len(payloads),
+        "unrecognised": unrecognised,
         "baseline_firing": len({index for index, _ in before}),
         "candidate_firing": len({index for index, _ in after}),
         "baseline_observations": len(before),
