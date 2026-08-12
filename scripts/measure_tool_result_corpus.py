@@ -4,44 +4,59 @@
 The partial-result sentinel makes two kinds of mistake: it can miss a genuinely
 partial result, or it can fire on ordinary business data. Argument alone cannot
 settle which mechanisms are worth their precision cost, because both failures are
-invisible in a fixture suite that was written by the same person as the rule. So
-this measures instead: it replays a corpus of REAL tool results, captured from
-local host transcripts, through the hook and reports how often each signal fires.
+invisible in a fixture suite written by the same person as the rule. So this
+measures instead: it replays real tool results, captured from local host
+transcripts, through the hook and counts what fires.
 
-Every mechanism removed from the sentinel during review was removed on evidence
-produced this way -- it fired zero times across thousands of real results while
-causing reproduced false positives.
+SCOPE. The sentinel is wired to `mcp__.*`, so only MCP results are in scope. A
+transcript records a result under `toolUseResult` with a `tool_use_id`, and the
+assistant turn that issued it names the tool; the two are joined to recover the
+name. This matters more than it sounds: built-in tool results outnumber MCP ones
+by roughly twenty to one locally, so scoring everything reports a denominator
+that is mostly out of scope. `--scope all` is available for a deliberately wider
+negative corpus, and labels itself as such.
 
-SAFETY. The corpus is real tool output and may contain anything a tool returned.
-This script therefore emits COUNTS and normalised KEY NAMES only. Payload values
-never leave the process: no record content, no prose, no identifiers, no field
-values. `render_report` is the only formatting path and is covered by a test that
-asserts payload values cannot reach it.
+SAFETY, AND ITS LIMITS. The corpus is real tool output and may contain anything a
+tool returned. Counts and signal codes are the only things emitted, and the codes
+are checked against a vocabulary this script owns: a hook that returned a
+payload-derived string would be counted as `<unrecognised-code>`, never printed.
+A hook that raises is counted as `<hook-error>` and its message is discarded,
+because an exception message can carry payload. Hook output printed through
+Python's `sys.stdout`/`sys.stderr` is captured and dropped.
+
+What that does NOT cover: a hook is arbitrary imported code. It can write files,
+open sockets, or write to file descriptor 1 below Python. Measure a hook you
+trust; this boundary protects against a hook that is careless, not one that is
+hostile.
 
 TWO MODES.
 
 Absolute, "how often does this fire":
 
-    python3 scripts/measure_tool_result_corpus.py \\
-        --hook plugins/llm-accuracy/hooks/partial-result-sentinel.py
+    python3 scripts/measure_tool_result_corpus.py
 
 Same-snapshot control, "what did this change cost", which is the one that
-matters. A raw count compared against a count taken earlier is NOT a control: the
-corpus grows while you work, because every session appends to it, so an unchanged
-hook can appear to gain detections. Score both versions over ONE snapshot:
+matters. A count compared against a count taken earlier is NOT a control: the
+corpus grows while you work, because every concurrent session appends to it, so
+an unchanged hook can appear to gain detections. Score both versions over ONE
+snapshot:
 
     git show <old-sha>:plugins/llm-accuracy/hooks/partial-result-sentinel.py \\
         > /tmp/old-sentinel.py
-    python3 scripts/measure_tool_result_corpus.py \\
-        --hook plugins/llm-accuracy/hooks/partial-result-sentinel.py \\
-        --compare-hook /tmp/old-sentinel.py
+    python3 scripts/measure_tool_result_corpus.py --compare-hook /tmp/old-sentinel.py
 
-`lost` is what the change stopped detecting. For a precision fix that claims to
-cost nothing, `lost` must be 0.
+The unit compared is an OBSERVATION, one (result, signal code) pair, not merely
+whether a result fired. A rule change that swaps one code for another leaves the
+firing count identical while changing every observation, and reporting `lost: 0`
+there would be a false all-clear.
 
-SELF-CONTAMINATION. A session that works ON the sentinel writes its own test
-payloads into its own transcript, which then enters the corpus. Exclude the
-sessions doing the work before drawing a conclusion:
+`lost` is what the change stopped detecting. For a precision fix claiming to cost
+no recall, `lost` must be 0. That is evidence about THIS corpus, not proof of
+recall in general: a shape absent here is unmeasured, not absent in the world.
+
+SELF-CONTAMINATION. A session working ON the sentinel writes its own test
+payloads into its own transcript, which then enters the corpus. Exclude it by id;
+subagent transcripts are covered too, because the record carries its session:
 
     --exclude-session <session-id> [--exclude-session <session-id> ...]
 """
@@ -50,125 +65,295 @@ from __future__ import annotations
 
 import argparse
 import collections
+import contextlib
 import importlib.util
+import io
 import json
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import Path
-from types import ModuleType
+from typing import Protocol
 
 
 DEFAULT_TRANSCRIPT_ROOT = Path.home() / ".claude" / "projects"
 
-# A transcript line records a tool result under this key. Anything else on the
-# line is conversation, which this script never reads.
+# A transcript line records a tool result under this key, and the matching
+# assistant turn names the tool. Everything else on the line is conversation.
 TOOL_RESULT_KEY = "toolUseResult"
+SESSION_KEY = "sessionId"
+MCP_TOOL_PREFIX = "mcp__"
+
+# The vocabulary this script is willing to print. A hook returns a set of codes;
+# anything outside this set is a payload-derived string as far as the report is
+# concerned, and is counted under a fixed placeholder instead of being rendered.
+SIGNAL_CODES = frozenset(
+    {
+        "pagination_incomplete",
+        "truncated_result",
+        "row_cap_hit",
+        "partial_provider_response",
+    }
+)
+UNRECOGNISED_CODE = "<unrecognised-code>"
+HOOK_ERROR_CODE = "<hook-error>"
+UNRESOLVED_TOOL = "<unresolved>"
+
+RENDERABLE = SIGNAL_CODES | {UNRECOGNISED_CODE, HOOK_ERROR_CODE}
+REPORT_LABELS = frozenset(
+    {
+        "scope",
+        "results",
+        "firing",
+        "observations",
+        "codes",
+        "baseline_firing",
+        "candidate_firing",
+        "baseline_observations",
+        "candidate_observations",
+        "lost",
+        "gained",
+    }
+)
 
 
-def load_hook(path: Path, name: str = "sentinel_under_measurement") -> ModuleType:
+class CorpusError(Exception):
+    """A caller error worth reporting without a traceback."""
+
+
+class Hook(Protocol):
+    """What this script needs from a hook: one function, returning codes.
+
+    Deliberately narrower than "a module". A test can substitute a hostile stub
+    to attack the safety boundary, which is the only way to prove the boundary
+    holds against a hook that is not the shipped one.
+    """
+
+    def collect_codes(self, payload: object) -> object: ...
+
+
+def load_hook(path: Path, name: str = "sentinel_under_measurement") -> Hook:
     """Import a hook module from a file path, without installing it."""
     spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise ValueError(f"not an importable module: {path}")
+        raise CorpusError(f"not an importable module: {path}")
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except OSError as error:
+        raise CorpusError(f"cannot read hook: {path}") from error
     return module
 
 
 def transcript_paths(
-    roots: list[Path], exclude_sessions: frozenset[str] = frozenset()
+    roots: Iterable[Path], exclude_sessions: frozenset[str] = frozenset()
 ) -> Iterator[Path]:
-    """Yield transcript files, skipping any whose name names an excluded session."""
+    """Yield each transcript file once, skipping excluded sessions by path.
+
+    Roots may overlap or repeat, so a file is yielded at most once. The path
+    check is a coarse first pass; the authoritative exclusion is per record,
+    because a subagent transcript is named for the agent, not its parent session.
+    """
+    seen: set[Path] = set()
     for root in roots:
         if not root.exists():
             continue
         for path in sorted(root.rglob("*.jsonl")):
-            if any(session and session in path.name for session in exclude_sessions):
+            resolved = path.resolve() if hasattr(path, "resolve") else path
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            parts = set(path.parts)
+            if any(
+                session and (session in path.name or session in parts)
+                for session in exclude_sessions
+            ):
                 continue
             yield path
 
 
-def tool_results(paths: Iterator[Path]) -> Iterator[object]:
-    """Yield each tool result payload found in the given transcripts.
+def _records(path: Path) -> list[dict]:
+    """Parse one transcript into records, skipping anything unreadable.
 
-    Unreadable files and unparseable lines are skipped rather than raised: a
-    corpus is a pile of other sessions' logs, and one truncated line mid-write
-    should not abort a measurement over thousands of results.
+    A corpus is a pile of other sessions' logs, and one truncated line mid-write
+    must not abort a measurement over thousands of results. `RecursionError` is
+    caught alongside `ValueError` because the JSON decoder raises it on a deeply
+    nested array, which would otherwise escape and end the run.
+    """
+    try:
+        lines = path.read_text(errors="replace").splitlines()
+    except OSError:
+        return []
+    records: list[dict] = []
+    for line in lines:
+        try:
+            record = json.loads(line)
+        except (ValueError, RecursionError):
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+    return records
+
+
+def _content_blocks(record: Mapping) -> list[dict]:
+    message = record.get("message")
+    if not isinstance(message, Mapping):
+        return []
+    content = message.get("content")
+    if not isinstance(content, list):
+        return []
+    return [block for block in content if isinstance(block, dict)]
+
+
+def _tool_names(records: Iterable[Mapping]) -> dict[str, str]:
+    """Map tool_use id to tool name, so a result can be scoped to its tool."""
+    names: dict[str, str] = {}
+    for record in records:
+        for block in _content_blocks(record):
+            block_id = block.get("id")
+            if block.get("type") == "tool_use" and block_id:
+                names[str(block_id)] = str(block.get("name") or "")
+    return names
+
+
+def tool_results(
+    paths: Iterable[Path],
+    *,
+    mcp_only: bool = True,
+    exclude_sessions: frozenset[str] = frozenset(),
+) -> Iterator[object]:
+    """Yield tool result payloads, scoped to the tools the hook actually runs on.
+
+    A result names only its `tool_use_id`; the tool name lives on the assistant
+    turn that issued it, so each transcript is read once to build that map before
+    results are emitted. A result whose name cannot be resolved is treated as out
+    of scope under `mcp_only`, because guessing would silently widen the
+    denominator this script exists to keep honest.
     """
     for path in paths:
-        try:
-            lines = path.read_text(errors="replace").splitlines()
-        except OSError:
-            continue
-        for line in lines:
-            try:
-                record = json.loads(line)
-            except ValueError:
-                continue
-            if not isinstance(record, dict):
-                continue
+        records = _records(path)
+        names = _tool_names(records)
+        for record in records:
             payload = record.get(TOOL_RESULT_KEY)
-            if payload is not None:
-                yield payload
+            if payload is None:
+                continue
+            session = record.get(SESSION_KEY)
+            if isinstance(session, str) and any(
+                excluded and excluded in session for excluded in exclude_sessions
+            ):
+                continue
+            if mcp_only:
+                tool = UNRESOLVED_TOOL
+                for block in _content_blocks(record):
+                    if block.get("type") == "tool_result":
+                        tool = names.get(str(block.get("tool_use_id", "")), tool)
+                if not tool.startswith(MCP_TOOL_PREFIX):
+                    continue
+            yield payload
 
 
-def score(payloads: list[object], hook: ModuleType) -> tuple[list[int], dict[str, int]]:
-    """Return the indices of firing payloads, and a count per signal code.
+def _codes_for(payload: object, hook: Hook) -> set[str]:
+    """Return the hook's codes for one payload, sanitised and quarantined.
 
-    Indices rather than payloads: the caller needs to compare two scorings of the
-    same snapshot, and an index says which result differed without carrying the
-    result itself.
+    Three things are deliberately thrown away: a code outside the known
+    vocabulary, which could be a payload-derived string; an exception message,
+    which could quote the payload; and anything the hook printed.
     """
-    firing: list[int] = []
-    codes: collections.Counter[str] = collections.Counter()
+    sink = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
+            found = hook.collect_codes(payload)
+    except BaseException:  # noqa: BLE001 - a hook is arbitrary code; never trust it
+        return {HOOK_ERROR_CODE}
+    if not isinstance(found, (set, frozenset, list, tuple)):
+        return {UNRECOGNISED_CODE}
+    return {
+        code if isinstance(code, str) and code in SIGNAL_CODES else UNRECOGNISED_CODE
+        for code in found
+    }
+
+
+def score(
+    payloads: list[object], hook: Hook
+) -> tuple[set[tuple[int, str]], dict[str, int]]:
+    """Return every (result index, signal code) observation, and a count per code.
+
+    An OBSERVATION rather than a verdict per result: two hooks can fire on the
+    same results while reporting different codes, and a per-result comparison
+    would call that unchanged. Counts are per code as well, not per combination,
+    so a result carrying two signals adds one to each.
+    """
+    observations: set[tuple[int, str]] = set()
+    counts: collections.Counter[str] = collections.Counter()
     for index, payload in enumerate(payloads):
-        found = hook.collect_codes(payload)
-        if found:
-            firing.append(index)
-            codes[",".join(sorted(found))] += 1
-    return firing, dict(codes)
+        for code in _codes_for(payload, hook):
+            observations.add((index, code))
+            counts[code] += 1
+    return observations, dict(counts)
 
 
-def compare(
-    payloads: list[object], baseline: ModuleType, candidate: ModuleType
-) -> dict[str, int]:
+def compare(payloads: list[object], baseline: Hook, candidate: Hook) -> dict[str, int]:
     """Score one snapshot with two hook versions and report the difference.
 
-    This is the control that a raw count cannot give. `lost` is the number of
-    results the baseline detected and the candidate does not; `gained` is the
-    reverse. A precision fix claiming to cost no recall must show `lost` of 0.
+    This is the control a raw count cannot give. `lost` counts observations the
+    baseline made and the candidate does not; `gained` is the reverse. A
+    precision fix claiming to cost no recall must show `lost` of 0 -- which is
+    evidence about this corpus, not proof about shapes it never contained.
     """
     before, _ = score(payloads, baseline)
     after, _ = score(payloads, candidate)
     return {
         "results": len(payloads),
-        "baseline_firing": len(before),
-        "candidate_firing": len(after),
-        "lost": len(set(before) - set(after)),
-        "gained": len(set(after) - set(before)),
+        "baseline_firing": len({index for index, _ in before}),
+        "candidate_firing": len({index for index, _ in after}),
+        "baseline_observations": len(before),
+        "candidate_observations": len(after),
+        "lost": len(before - after),
+        "gained": len(after - before),
     }
 
 
-def render_report(summary: Mapping[str, object]) -> str:
-    """Render a summary as text. Counts and code names only, by construction.
+def safe_summary(summary: Mapping[str, object]) -> dict[str, object]:
+    """Return the summary if every key and value is safe to print, else raise.
 
-    Every value written here is an int or a signal-code string produced by the
-    hook's own closed vocabulary. No payload-derived value reaches this function,
-    which is what keeps a corpus of real tool output safe to measure.
+    The single chokepoint. Both the text report and `--json` go through it, so
+    neither can become the path that leaks a payload value. Labels come from a
+    fixed set, code names from the known vocabulary, and every leaf is an int.
     """
-    lines: list[str] = []
+    checked: dict[str, object] = {}
     for key, value in summary.items():
+        if key not in REPORT_LABELS:
+            raise CorpusError(f"refusing to report an unknown field: {key!r}")
+        if isinstance(value, Mapping):
+            for name, count in value.items():
+                if name not in RENDERABLE:
+                    raise CorpusError(f"refusing to report an unknown code: {name!r}")
+                if not isinstance(count, int) or isinstance(count, bool):
+                    raise CorpusError(f"refusing to report a non-count for {name!r}")
+            checked[key] = dict(value)
+        elif isinstance(value, str):
+            if value not in {"mcp", "all"}:
+                raise CorpusError(f"refusing to report free text for {key!r}")
+            checked[key] = value
+        elif isinstance(value, int) and not isinstance(value, bool):
+            checked[key] = value
+        else:
+            raise CorpusError(f"refusing to report a non-count value for {key!r}")
+    return checked
+
+
+def render_report(summary: Mapping[str, object]) -> str:
+    """Render a checked summary as text. Counts and code names only."""
+    lines: list[str] = []
+    for key, value in safe_summary(summary).items():
         if isinstance(value, Mapping):
             lines.append(f"{key}:")
             for name, count in sorted(value.items()):
-                lines.append(f"  {count:8d}  {str(name)}")
-        elif isinstance(value, int):
+                lines.append(f"  {count:8d}  {name}")
+        else:
             lines.append(f"{key}: {value}")
-        else:  # pragma: no cover - only ints and code counts are ever summarised
-            raise TypeError(f"refusing to render a non-count value for {key!r}")
     return "\n".join(lines)
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument(
         "--hook",
@@ -193,27 +378,48 @@ def main(argv: list[str] | None = None) -> int:
         "--exclude-session",
         action="append",
         default=[],
-        help="skip transcripts naming this session id (repeatable)",
+        help="skip results recorded by this session id (repeatable)",
+    )
+    parser.add_argument(
+        "--scope",
+        choices=("mcp", "all"),
+        default="mcp",
+        help="mcp: only results the hook is wired to; all: a wider negative corpus",
     )
     parser.add_argument("--json", action="store_true", help="emit JSON")
-    args = parser.parse_args(argv)
+    return parser
 
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
     roots = args.transcript_root or [DEFAULT_TRANSCRIPT_ROOT]
-    paths = transcript_paths(roots, frozenset(args.exclude_session))
-    payloads = list(tool_results(paths))
+    excluded = frozenset(args.exclude_session)
 
-    candidate = load_hook(args.hook, "candidate_hook")
-    summary: dict[str, object] = {}
-    if args.compare_hook is not None:
-        baseline = load_hook(args.compare_hook, "baseline_hook")
-        summary.update(compare(payloads, baseline, candidate))
-    else:
-        firing, codes = score(payloads, candidate)
-        summary["results"] = len(payloads)
-        summary["firing"] = len(firing)
-        summary["codes"] = codes
+    try:
+        payloads = list(
+            tool_results(
+                transcript_paths(roots, excluded),
+                mcp_only=args.scope == "mcp",
+                exclude_sessions=excluded,
+            )
+        )
+        candidate = load_hook(args.hook, "candidate_hook")
+        summary: dict[str, object] = {"scope": args.scope}
+        if args.compare_hook is not None:
+            baseline = load_hook(args.compare_hook, "baseline_hook")
+            summary.update(compare(payloads, baseline, candidate))
+        else:
+            observations, counts = score(payloads, candidate)
+            summary["results"] = len(payloads)
+            summary["firing"] = len({index for index, _ in observations})
+            summary["observations"] = len(observations)
+            summary["codes"] = counts
+        checked = safe_summary(summary)
+    except CorpusError as error:
+        print(f"error: {error}")
+        return 2
 
-    print(json.dumps(summary, indent=2) if args.json else render_report(summary))
+    print(json.dumps(checked, indent=2) if args.json else render_report(checked))
     return 0
 
 

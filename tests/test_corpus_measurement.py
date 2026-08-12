@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from scripts.measure_tool_result_corpus import (
+    CorpusError,
     compare,
     load_hook,
+    main,
     render_report,
+    safe_summary,
     score,
     tool_results,
     transcript_paths,
@@ -21,22 +25,63 @@ ROOT = Path(__file__).resolve().parents[1]
 SENTINEL = ROOT / "plugins" / "llm-accuracy" / "hooks" / "partial-result-sentinel.py"
 
 # A canary placed inside record content. If any measurement path echoed payload
-# values, this prose would appear in the rendered report.
+# values, this prose would appear in the rendered output.
 PAYLOAD_MARKER = "this prose belongs to a record and must not be reported"
-
-
-def write_transcript(path: Path, payloads: list[object]) -> None:
-    """Write payloads in the shape a host transcript records them."""
-    lines = [json.dumps({"toolUseResult": payload}) for payload in payloads]
-    # Conversation lines and a truncated line, which the reader must skip.
-    lines.insert(0, json.dumps({"type": "user", "message": {"content": "hello"}}))
-    lines.append('{"toolUseResult": {"has_more": tr')
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def wrap(body: object) -> list[dict]:
     """Deliver a body the way a host delivers an MCP tool result."""
     return [{"type": "text", "text": json.dumps(body)}]
+
+
+def transcript_lines(
+    payloads: list[object],
+    *,
+    tool: str = "mcp__example__list_things",
+    session: str = "session-one",
+) -> list[str]:
+    """Build the record pair a host writes: the tool_use, then its result."""
+    lines = [json.dumps({"type": "user", "message": {"content": "hello"}})]
+    for index, payload in enumerate(payloads):
+        call_id = f"toolu_{index}"
+        lines.append(
+            json.dumps(
+                {
+                    "type": "assistant",
+                    "sessionId": session,
+                    "message": {
+                        "content": [
+                            {"type": "tool_use", "id": call_id, "name": tool},
+                        ]
+                    },
+                }
+            )
+        )
+        lines.append(
+            json.dumps(
+                {
+                    "type": "user",
+                    "sessionId": session,
+                    "toolUseResult": payload,
+                    "message": {
+                        "content": [
+                            {"type": "tool_result", "tool_use_id": call_id},
+                        ]
+                    },
+                }
+            )
+        )
+    return lines
+
+
+def write_transcript(path: Path, payloads: list[object], **kwargs: str) -> None:
+    lines = transcript_lines(payloads, **kwargs)
+    lines.append('{"toolUseResult": {"has_more": tr')  # a truncated mid-write line
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def collect(root: Path, **kwargs: object) -> list[object]:
+    return list(tool_results(transcript_paths([root]), **kwargs))  # type: ignore[arg-type]
 
 
 def test_reads_tool_results_and_skips_conversation_and_bad_lines(
@@ -50,52 +95,124 @@ def test_reads_tool_results_and_skips_conversation_and_bad_lines(
         ],
     )
 
-    found = list(tool_results(transcript_paths([tmp_path])))
-
-    assert len(found) == 2
+    assert len(collect(tmp_path)) == 2
 
 
-def test_scores_a_corpus_by_signal_code(tmp_path: Path) -> None:
+def test_scopes_to_the_tools_the_hook_is_actually_wired_to(tmp_path: Path) -> None:
+    """Production runs the sentinel on `mcp__.*` only.
+
+    Scoring every tool result reports a denominator that is mostly out of scope --
+    built-in results outnumber MCP ones heavily -- which overstates how much
+    relevant evidence a measurement rests on.
+    """
+    fires = wrap({"rows": [{"id": 1}], "has_more": True})
+    write_transcript(tmp_path / "mcp.jsonl", [fires], tool="mcp__example__list")
+    write_transcript(tmp_path / "builtin.jsonl", [fires, fires], tool="Read")
+
+    assert len(collect(tmp_path)) == 1
+    assert len(collect(tmp_path, mcp_only=False)) == 3
+
+
+def test_a_result_whose_tool_cannot_be_resolved_is_out_of_mcp_scope(
+    tmp_path: Path,
+) -> None:
+    orphan = {
+        "type": "user",
+        "toolUseResult": wrap({"rows": [], "has_more": True}),
+        "message": {"content": [{"type": "tool_result", "tool_use_id": "missing"}]},
+    }
+    (tmp_path / "orphan.jsonl").write_text(json.dumps(orphan) + "\n", encoding="utf-8")
+
+    assert collect(tmp_path) == []
+    assert len(collect(tmp_path, mcp_only=False)) == 1
+
+
+def test_scores_a_corpus_per_signal_code(tmp_path: Path) -> None:
     write_transcript(
         tmp_path / "session-a.jsonl",
         [
-            wrap({"rows": [{"id": 1}], "has_more": True}),
+            wrap({"rows": [{"id": 1}], "has_more": True, "truncated": True}),
             wrap({"rows": [{"id": 2}], "truncated": True}),
             wrap({"rows": [{"id": 3, "has_more": True}]}),
         ],
     )
-    payloads = list(tool_results(transcript_paths([tmp_path])))
 
-    firing, codes = score(payloads, load_hook(SENTINEL))
+    observations, codes = score(collect(tmp_path), load_hook(SENTINEL))
 
-    # The third is record content, so it must not count.
-    assert firing == [0, 1]
-    assert codes == {"pagination_incomplete": 1, "truncated_result": 1}
+    # The third is record content, so it must not count. The first carries two
+    # signals, which count once each rather than as one combined bucket.
+    assert {index for index, _ in observations} == {0, 1}
+    assert codes == {"pagination_incomplete": 1, "truncated_result": 2}
 
 
-def test_excludes_named_sessions_so_a_corpus_cannot_measure_its_own_work(
+def test_excludes_a_session_by_its_recorded_id_not_its_filename(
     tmp_path: Path,
 ) -> None:
+    """A subagent transcript is named for the agent, not its parent session.
+
+    Filtering on the filename alone leaves a session's own subagent payloads in
+    the corpus, so the self-contamination control has to read the record.
+    """
     fires = wrap({"rows": [{"id": 1}], "has_more": True})
-    write_transcript(tmp_path / "other-session.jsonl", [fires])
-    write_transcript(tmp_path / "mine-abc123.jsonl", [fires, fires])
+    write_transcript(tmp_path / "other.jsonl", [fires], session="keep-me")
+    write_transcript(tmp_path / "agent-42.jsonl", [fires, fires], session="mine-abc123")
 
     everything = list(tool_results(transcript_paths([tmp_path])))
     without_mine = list(
-        tool_results(transcript_paths([tmp_path], frozenset({"abc123"})))
+        tool_results(
+            transcript_paths([tmp_path], frozenset({"abc123"})),
+            exclude_sessions=frozenset({"abc123"}),
+        )
     )
 
     assert len(everything) == 3
     assert len(without_mine) == 1
 
 
-def test_compare_reports_what_a_change_cost_over_one_snapshot(tmp_path: Path) -> None:
-    """The control a raw count cannot give.
+def test_overlapping_transcript_roots_do_not_double_count(tmp_path: Path) -> None:
+    write_transcript(tmp_path / "session-a.jsonl", [wrap({"rows": []})])
 
-    The corpus grows while a session works on the hook, so comparing today's
-    count against yesterday's can show a gain from an unchanged hook. Scoring
-    both versions over ONE snapshot is what actually isolates the change.
+    assert len(list(transcript_paths([tmp_path, tmp_path]))) == 1
+
+
+def test_a_deeply_nested_line_does_not_abort_the_measurement(tmp_path: Path) -> None:
+    """The JSON decoder raises RecursionError, not ValueError, on deep nesting."""
+    good = transcript_lines([wrap({"rows": [], "has_more": True})])
+    deep = '{"toolUseResult":' + "[" * 20000 + "0" + "]" * 20000 + "}"
+    (tmp_path / "session-a.jsonl").write_text(
+        "\n".join([deep, *good]) + "\n", encoding="utf-8"
+    )
+
+    assert len(collect(tmp_path)) == 1
+
+
+def test_compare_counts_observations_so_a_code_swap_cannot_read_as_unchanged(
+    tmp_path: Path,
+) -> None:
+    """`lost: 0` must not be reachable by exchanging one signal for another.
+
+    Comparing only whether each result fired would call a rule that swapped
+    `pagination_incomplete` for `truncated_result` a no-op, which is exactly the
+    kind of change a control is supposed to surface.
     """
+    write_transcript(
+        tmp_path / "session-a.jsonl", [wrap({"rows": [], "has_more": True})]
+    )
+    payloads = collect(tmp_path)
+    baseline = SimpleNamespace(collect_codes=lambda _: {"pagination_incomplete"})
+    swapped = SimpleNamespace(collect_codes=lambda _: {"truncated_result"})
+    same = SimpleNamespace(collect_codes=lambda _: {"pagination_incomplete"})
+
+    unchanged = compare(payloads, baseline, same)
+    swap = compare(payloads, baseline, swapped)
+
+    assert unchanged["lost"] == 0 and unchanged["gained"] == 0
+    assert swap["baseline_firing"] == swap["candidate_firing"] == 1
+    assert swap["lost"] == 1
+    assert swap["gained"] == 1
+
+
+def test_compare_detects_a_narrowed_rule(tmp_path: Path) -> None:
     write_transcript(
         tmp_path / "session-a.jsonl",
         [
@@ -103,10 +220,9 @@ def test_compare_reports_what_a_change_cost_over_one_snapshot(tmp_path: Path) ->
             wrap({"rows": [{"id": 2}], "row_cap_hit": True}),
         ],
     )
-    payloads = list(tool_results(transcript_paths([tmp_path])))
+    payloads = collect(tmp_path)
     baseline = load_hook(SENTINEL, "baseline")
     candidate = load_hook(SENTINEL, "candidate")
-    # A candidate that no longer reports one of the two codes.
     setattr(
         candidate,
         "TRUE_MEANS_PARTIAL",
@@ -117,62 +233,109 @@ def test_compare_reports_what_a_change_cost_over_one_snapshot(tmp_path: Path) ->
         },
     )
 
-    unchanged = compare(payloads, baseline, load_hook(SENTINEL, "same"))
     narrowed = compare(payloads, baseline, candidate)
 
-    assert unchanged == {
-        "results": 2,
-        "baseline_firing": 2,
-        "candidate_firing": 2,
-        "lost": 0,
-        "gained": 0,
-    }
     assert narrowed["lost"] == 1
     assert narrowed["gained"] == 0
 
 
-def test_report_carries_counts_and_code_names_but_never_payload_content(
+def test_a_hook_returning_payload_derived_codes_cannot_reach_the_report(
     tmp_path: Path,
 ) -> None:
-    """The safety property. A corpus of real tool output stays inside the process.
+    """The safety property, attacked the way it would actually fail.
 
-    Every rendered value is an int or a signal code from the hook's own closed
-    vocabulary, so no record content, prose, identifier, or field value can be
-    written out. This test drives the real path end to end with a marked payload
-    and asserts the marker never surfaces.
+    A hook is arbitrary imported code. If it returns a string built from the
+    payload, the count must still be printable, so the code is checked against a
+    vocabulary this script owns and anything else becomes a fixed placeholder.
     """
+    write_transcript(tmp_path / "session-a.jsonl", [wrap({"note": PAYLOAD_MARKER})])
+    payloads = collect(tmp_path)
+    leaky = SimpleNamespace(
+        collect_codes=lambda payload: {json.loads(payload[0]["text"])["note"]}
+    )
+
+    observations, codes = score(payloads, leaky)
+    report = render_report({"results": len(payloads), "codes": codes})
+
+    assert codes == {"<unrecognised-code>": 1}
+    assert observations == {(0, "<unrecognised-code>")}
+    assert PAYLOAD_MARKER not in report
+
+
+def test_a_hook_that_raises_or_prints_the_payload_cannot_reach_the_report(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An exception message and a stray print are both payload-carrying paths."""
+    write_transcript(tmp_path / "session-a.jsonl", [wrap({"note": PAYLOAD_MARKER})])
+    payloads = collect(tmp_path)
+
+    def explode(payload: object) -> set[str]:
+        raise RuntimeError(json.loads(payload[0]["text"])["note"])  # type: ignore[index]
+
+    def chatty(payload: object) -> set[str]:
+        print(json.loads(payload[0]["text"])["note"])  # type: ignore[index]
+        return set()
+
+    _, raised = score(payloads, SimpleNamespace(collect_codes=explode))
+    _, printed = score(payloads, SimpleNamespace(collect_codes=chatty))
+
+    assert raised == {"<hook-error>": 1}
+    assert printed == {}
+    assert PAYLOAD_MARKER not in capsys.readouterr().out
+
+
+def test_the_report_refuses_unknown_fields_codes_and_free_text() -> None:
+    """The safety property is enforced at one chokepoint, not merely intended."""
+    with pytest.raises(CorpusError):
+        safe_summary({"leaked": 1})
+    with pytest.raises(CorpusError):
+        safe_summary({"codes": {PAYLOAD_MARKER: 1}})
+    with pytest.raises(CorpusError):
+        safe_summary({"scope": PAYLOAD_MARKER})
+    with pytest.raises(CorpusError):
+        safe_summary({"results": PAYLOAD_MARKER})
+
+
+def test_json_output_goes_through_the_same_chokepoint(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`--json` must not become the path that bypasses the safety check."""
     write_transcript(
         tmp_path / "session-a.jsonl",
-        [
-            wrap(
-                {
-                    "rows": [{"note": PAYLOAD_MARKER}],
-                    "has_more": True,
-                    PAYLOAD_MARKER: PAYLOAD_MARKER,
-                }
-            )
-        ],
+        [wrap({"rows": [{"note": PAYLOAD_MARKER}], "has_more": True})],
     )
-    payloads = list(tool_results(transcript_paths([tmp_path])))
-    firing, codes = score(payloads, load_hook(SENTINEL))
 
-    report = render_report({"results": len(payloads), "firing": len(firing), **codes})
+    exit_code = main(
+        ["--transcript-root", str(tmp_path), "--hook", str(SENTINEL), "--json"]
+    )
 
-    assert PAYLOAD_MARKER not in report
-    assert "results: 1" in report
-    assert "firing: 1" in report
-    assert "pagination_incomplete" in report
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload == {
+        "scope": "mcp",
+        "results": 1,
+        "firing": 1,
+        "observations": 1,
+        "codes": {"pagination_incomplete": 1},
+    }
+    assert PAYLOAD_MARKER not in json.dumps(payload)
 
 
-def test_report_refuses_to_render_anything_that_is_not_a_count() -> None:
-    """The safety property is enforced, not merely intended."""
-    with pytest.raises(TypeError):
-        render_report({"leaked": "a payload value"})
+def test_main_reports_a_bad_hook_path_without_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    not_a_module = tmp_path / "corpus.txt"
+    not_a_module.write_text("not python\n", encoding="utf-8")
+
+    exit_code = main(["--transcript-root", str(tmp_path), "--hook", str(not_a_module)])
+
+    assert exit_code == 2
+    assert capsys.readouterr().out.startswith("error:")
 
 
 def test_load_hook_rejects_a_path_that_is_not_a_module(tmp_path: Path) -> None:
     not_a_module = tmp_path / "corpus.txt"
     not_a_module.write_text("not python\n", encoding="utf-8")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(CorpusError):
         load_hook(not_a_module)
