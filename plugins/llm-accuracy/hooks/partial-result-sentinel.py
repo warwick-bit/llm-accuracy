@@ -103,23 +103,47 @@ CONTAINED_CURSOR_KEYS = {
     "after",
 }
 
-# Envelope keys that establish a pagination context for the keys above. Only
-# blocks whose own name means pagination qualify. `page`, `meta` and `metadata`
-# are deliberately absent: they are generic containers, and a CMS `page.next`
-# slug or a workflow's `metadata.next` step is ordinary business content.
-# Envelope keys that are generic containers rather than response metadata. A
-# `page` or `metadata` block belongs to the thing being returned, so only PAGING
-# booleans are read inside one: `page.truncated` on a document preview describes
-# how it was rendered, not a result set that stopped early.
+# Members of a cursor OBJECT that can actually carry the token. The cursor key
+# already states the block is a page reference, but the block still carries
+# unrelated metadata alongside the token, so only token-bearing members are
+# read: `{"value": null, "status": "exhausted"}` is an exhausted cursor, and
+# counting `status` as the token turned it into a further page.
+CURSOR_OBJECT_TOKEN_FIELDS = {
+    "token",
+    "value",
+    "cursor",
+    "after",
+    "offset",
+    "marker",
+    "key",
+    "id",
+    "href",
+    "uri",
+    "url",
+    "path",
+    "next",
+    "start",
+}
+
+# Envelope keys that are generic containers rather than pagination blocks. A
+# `page`, `metadata` or `response_metadata` block belongs to the thing being
+# returned, so only PAGING booleans are read inside one: `page.truncated` on a
+# document preview, or `response_metadata.truncated` on a rendering, describes
+# how it was rendered, not a result set that stopped early. A self-describing
+# cursor is still read inside them, because `next_cursor` states its own meaning
+# wherever it sits, which is why Slack's block needs no special case.
 GENERIC_CONTAINER_KEYS = {
     "page",
     "meta",
     "metadata",
+    "responsemetadata",
 }
 
-# Only blocks whose own name means pagination. `response_metadata` is absent:
-# it is a generic metadata bag, and Slack's use of it needs no help, because
-# `next_cursor` states its own meaning wherever it sits.
+# Envelope keys that establish a pagination context for CONTAINED_CURSOR_KEYS.
+# Only blocks whose own name means pagination qualify. `page`, `meta`,
+# `metadata` and `response_metadata` are deliberately absent: they are generic
+# containers, and a CMS `page.next` slug or a workflow's `metadata.next` step is
+# ordinary business content.
 PAGINATION_CONTAINER_KEYS = {
     "paging",
     "pagination",
@@ -231,15 +255,20 @@ def populated_cursor(value: object) -> bool:
     if isinstance(value, int):
         return value > 0
     if isinstance(value, dict):
-        # The KEY already states this is the next page, so it does not matter
-        # which member carries the token -- providers wrap it differently. But
-        # something must actually be in there: `{}` and `{"value": null}` are an
-        # exhausted cursor, not a further page.
-        return any(
-            (isinstance(member, str) and member.strip())
-            or (isinstance(member, int) and not isinstance(member, bool) and member > 0)
-            for member in list(value.values())[:MAX_FIELDS_PER_NODE]
-        )
+        # The KEY already states this is the next page, but the block carries
+        # unrelated metadata beside the token, so only token-bearing members
+        # are read. `{}`, `{"value": null}` and `{"value": null, "status":
+        # "exhausted"}` are an exhausted cursor, not a further page.
+        for member_key, member in list(value.items())[:MAX_FIELDS_PER_NODE]:
+            if normalize(member_key) not in CURSOR_OBJECT_TOKEN_FIELDS:
+                continue
+            if isinstance(member, bool):
+                continue
+            if isinstance(member, str) and member.strip():
+                return True
+            if isinstance(member, int) and member > 0:
+                return True
+        return False
     return False
 
 

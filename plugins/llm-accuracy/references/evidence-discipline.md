@@ -84,8 +84,10 @@ flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
 `pagination_complete: false`); cursors whose NAME states its own meaning
 (`next_cursor`, `nextPageToken`, `nextPageCursor`, `next_offset`, `nextToken`,
 `next_marker`, `next_page_url`, `continuationToken`, `pagingHandle`,
-`@odata.nextLink`, `nextRecordsUrl` — each accepting a bare value or an object
-wrapping one); a bare `next` or `after` inside a block whose own name means
+`@odata.nextLink`, `nextRecordsUrl` — each accepting a bare value, or an object
+wrapping one under a member that can carry a token, so that a cursor holding
+`{"value": null, "status": "exhausted"}` reads as exhausted); a bare `next` or
+`after` inside a block whose own name means
 pagination (`paging`, `pagination`, `cursor`); exact
 machine warning codes in an envelope warning collection, as strings or as
 `{"code": ...}` objects; a GraphQL Relay `pageInfo` block reached through nested
@@ -103,11 +105,18 @@ It deliberately does NOT do the following, and you remain responsible for each:
   inside a record array will not raise a signal.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
-- **Read result-set flags inside a generic block.** A `page`, `meta`, or
-  `metadata` block describes the thing being returned, so only paging flags are
-  read there: a `page.truncated` on a document preview says how it was rendered,
+- **Read result-set flags inside a generic block.** A `page`, `meta`,
+  `metadata`, or `response_metadata` block describes the thing being returned,
+  so only paging flags are read there: a `page.truncated` on a document preview,
+  or a `response_metadata.truncated` on a rendering, says how it was rendered,
   not that a result set stopped early. The same flag at the envelope root is
-  read normally.
+  read normally, and a self-describing cursor such as
+  `response_metadata.next_cursor` is still read wherever it sits.
+- **Traverse a `data` wrapper.** A key called `data` is just as often the
+  returned record as an envelope, and walking into it reads business fields as
+  pagination metadata. So a supported flag that sits only under a dict-valued
+  `data` — `{"data": {"items": [...], "has_more": true}}` — raises nothing. The
+  same flag one level up, at the envelope root, is read normally.
 - **Read a page reference whose name and shape are ordinary content.** This is
   the largest exclusion, and it is deliberate. A document that links to its next
   chapter is structurally identical to an API page that links to its next page:

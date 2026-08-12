@@ -543,7 +543,6 @@ DEEP_CONNECTION_SILENT_CASES = [
 ]
 
 
-
 NEW_PROVIDER_FIRE_CASES = [
     (
         {"data": [], "next_page_url": "https://api.example.test/v2/x?page=2"},
@@ -636,9 +635,6 @@ def test_partial_result_sentinel_anchors_the_host_notice_on_its_prefix() -> None
     assert hook.collect_codes(real) == {"truncated_result"}
 
 
-
-
-
 PROVIDER_PAGE_MATRIX = [
     ({"object": "list", "results": [{"id": 1}], "has_more": True}, "Notion"),
     ({"data": [{"id": 1}], "meta": {"next_token": "7140"}}, "X/Twitter v2"),
@@ -680,7 +676,12 @@ PROVIDER_PAGE_EXCLUDED = [
         "Asana's next_page object, which a document's next section also uses",
     ),
     (
-        {"count": 9, "previous": None, "results": [{"id": 1}], "next": "https://x.test"},
+        {
+            "count": 9,
+            "previous": None,
+            "results": [{"id": 1}],
+            "next": "https://x.test",
+        },
         "a Django REST Framework page, whose bare next is ordinary English",
     ),
     (
@@ -700,7 +701,10 @@ PROVIDER_PAGE_EXCLUDED = [
         "a generic metadata bag holding a workflow step",
     ),
     (
-        {"title": "Quarterly report", "next": {"title": "Chapter 2", "truncated": True}},
+        {
+            "title": "Quarterly report",
+            "next": {"title": "Chapter 2", "truncated": True},
+        },
         "a root next object describing the next document",
     ),
     (
@@ -749,7 +753,8 @@ def test_partial_result_sentinel_accepts_an_object_valued_cursor() -> None:
     """A self-describing cursor name may wrap its token in an object.
 
     Regression for the sixth fresh audit. The KEY already states this is the
-    next page, so any populated object under it counts; an empty one does not.
+    next page, so a token wrapped under a token-bearing member counts; an empty
+    object does not.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -762,6 +767,64 @@ def test_partial_result_sentinel_accepts_an_object_valued_cursor() -> None:
     assert hook.collect_codes({"items": items, "next_cursor": {"value": None}}) == set()
     assert hook.collect_codes({"items": items, "next_cursor": {"value": ""}}) == set()
     assert hook.collect_codes({"items": items, "next_cursor": {"done": False}}) == set()
+
+
+def test_partial_result_sentinel_reads_only_token_members_of_a_cursor_object() -> None:
+    """A cursor object's unrelated metadata is not a page token.
+
+    Regression for the eighth fresh audit: every populated member counted, so an
+    explicitly exhausted cursor fired because it carried a `status` string
+    beside its null token. Delivered in the real host shape, which the existing
+    object-cursor negatives do not cover.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    exhausted = {
+        "items": [{"id": 1}],
+        "next_cursor": {"value": None, "status": "exhausted"},
+    }
+    assert hook.collect_codes(exhausted) == set()
+    assert hook.collect_codes(wrap(exhausted)) == set()
+    # A non-token member cannot stand in for the token on its own.
+    assert hook.collect_codes(wrap({"next_cursor": {"status": "exhausted"}})) == set()
+    assert hook.collect_codes(wrap({"next_cursor": {"expires_in": 0}})) == set()
+    # The token itself still fires through every member that can carry one.
+    for field in sorted(hook.CURSOR_OBJECT_TOKEN_FIELDS):
+        populated = {"items": [{"id": 1}], "next_cursor": {field: "p2", "status": "ok"}}
+        assert hook.collect_codes(wrap(populated)) == {"pagination_incomplete"}, field
+    # HubSpot's object cursor depends on this path, because `next` was removed
+    # from the traversed envelope keys.
+    hubspot = {
+        "results": [{"id": 1}],
+        "paging": {"next": {"after": "52", "link": "/x"}},
+    }
+    assert hook.collect_codes(wrap(hubspot)) == {"pagination_incomplete"}
+
+
+def test_partial_result_sentinel_ignores_rendering_flags_in_response_metadata() -> None:
+    """`response_metadata` is a generic bag, so only paging booleans count there.
+
+    Regression for the eighth fresh audit: `response_metadata` was removed from
+    the pagination containers but never added to the generic ones, so a
+    rendering flag inside it still raised `truncated_result`.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    rendering = {
+        "document": {"title": "Annual report"},
+        "response_metadata": {"rendering": "preview", "truncated": True},
+    }
+    assert hook.collect_codes(rendering) == set()
+    assert hook.collect_codes(wrap(rendering)) == set()
+    # A self-describing cursor in the same block is still read.
+    slack = {
+        "members": [{"id": "U1"}],
+        "response_metadata": {"next_cursor": "dXNlcjo="},
+    }
+    assert hook.collect_codes(wrap(slack)) == {"pagination_incomplete"}
+    # And a paging boolean is still read, because that one is about the result.
+    paging_flag = {"items": [{"id": 1}], "response_metadata": {"has_more": True}}
+    assert hook.collect_codes(wrap(paging_flag)) == {"pagination_incomplete"}
 
 
 def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:
@@ -808,7 +871,6 @@ def test_partial_result_sentinel_reads_only_booleans_from_page_info() -> None:
     assert hook.collect_codes({"pageInfo": {"hasNextPage": True}}) == {
         "pagination_incomplete"
     }
-
 
 
 def test_partial_result_sentinel_inspects_large_paginated_results() -> None:
