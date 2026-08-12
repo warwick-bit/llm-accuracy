@@ -77,6 +77,11 @@ CURSOR_KEYS = {
     "nextpagecursor",
     "nextoffset",
     "nextpageurl",
+    "nexttoken",
+    "nextmarker",
+    "nextlink",
+    "nextpage",
+    "continue",
     "continuationtoken",
     "paginghandle",
     "odatanextlink",
@@ -177,8 +182,9 @@ MAX_CONTENT_BLOCKS = 32
 MAX_FIELDS_PER_NODE = 4096
 # The host payload itself is bounded before it is parsed. Parsing is linear in
 # input size, and a 50 MB payload measured 4.05 s against the 3 s hook timeout,
-# so an oversized payload is dropped rather than parsed.
-MAX_INPUT_BYTES = 10_000_000
+# so an oversized payload is dropped rather than parsed. stdin is a text
+# stream, so this counts decoded characters rather than bytes.
+MAX_INPUT_CHARS = 10_000_000
 
 # The host replaces an over-budget MCP result with its own notice and saves the
 # real output to a file. That notice is the most explicit partiality evidence
@@ -213,11 +219,26 @@ def normalize(key: str) -> str:
     return key.lower()
 
 
+def absolute_url(value: object) -> bool:
+    """Report whether a value is an absolute http(s) URL.
+
+    This is what separates a real root-level `next` from an ordinary one.
+    Django REST Framework puts an absolute next-page URL at the root of a page
+    response, while a business object's `next` holds a title, a slug, or a
+    relative path.
+    """
+    if not isinstance(value, str):
+        return False
+    candidate = value.strip().lower()
+    return candidate.startswith("http://") or candidate.startswith("https://")
+
+
 def populated_cursor(value: object) -> bool:
     """Report whether a cursor-shaped value points at a further page.
 
-    A link object is accepted because JSON:API allows `next` to be an object
-    carrying an `href`, rather than a bare URL string.
+    An object is accepted because several APIs return one instead of a bare
+    URL: JSON:API's `next` carries an `href`, Asana's `next_page` carries an
+    `offset`, `path`, and `uri`.
     """
     if isinstance(value, bool):
         return False
@@ -226,8 +247,10 @@ def populated_cursor(value: object) -> bool:
     if isinstance(value, int):
         return value > 0
     if isinstance(value, dict):
-        target = value.get("href")
-        return isinstance(target, str) and bool(target.strip())
+        for field in ("href", "uri", "url", "path", "offset"):
+            target = value.get(field)
+            if isinstance(target, str) and target.strip():
+                return True
     return False
 
 
@@ -243,9 +266,10 @@ def populated_resume_key(value: object) -> bool:
 def link_collection_codes(key: str, value: object) -> set[str]:
     """Read a HAL-style link collection for a `next` relation.
 
-    Scoped to keys that name a link collection, and every entry must look like a
-    link object. A record array cannot be mistaken for one, because records do
-    not carry a `rel` field.
+    Scoped to keys that name a link collection, and the `next` relation must
+    target an absolute URL. Document navigation carries the same `rel: next`
+    with a relative path -- a chapter link -- so the relation alone is not
+    enough to tell an API page link from ordinary content.
     """
     if normalize(key) not in LINK_COLLECTION_KEYS or not isinstance(value, list):
         return set()
@@ -255,8 +279,7 @@ def link_collection_codes(key: str, value: object) -> set[str]:
         relation = entry.get("rel")
         if not isinstance(relation, str) or relation.strip().lower() != "next":
             continue
-        target = entry.get("href")
-        if isinstance(target, str) and target.strip():
+        if absolute_url(entry.get("href")):
             return {PAGINATION_INCOMPLETE}
     return set()
 
@@ -287,22 +310,25 @@ def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set
     """
     name = normalize(key)
     codes: set[str] = boolean_codes(key, value)
-    cursor_names = CURSOR_KEYS | (CONTAINED_CURSOR_KEYS if in_pagination else set())
-    if name in cursor_names and populated_cursor(value):
+    if name in CURSOR_KEYS and populated_cursor(value):
         codes.add(PAGINATION_INCOMPLETE)
-    if name in RESUME_KEY_KEYS and populated_resume_key(value):
-        codes.add(PAGINATION_INCOMPLETE)
+    if name in CONTAINED_CURSOR_KEYS:
+        # Inside a pagination block, any populated value is a cursor. Outside
+        # one, only an absolute URL is unambiguous enough to act on.
+        ambiguous = populated_cursor(value) if in_pagination else absolute_url(value)
+        if ambiguous:
+            codes.add(PAGINATION_INCOMPLETE)
     return codes
 
 
 def warning_codes(node: dict) -> set[str]:
     """Read exact warning codes from envelope warning collections only."""
     codes: set[str] = set()
-    for key, value in node.items():
+    for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
         if normalize(key) not in WARNING_CONTAINER_KEYS:
             continue
         candidates = value if isinstance(value, list) else [value]
-        for candidate in candidates:
+        for candidate in candidates[:MAX_FIELDS_PER_NODE]:
             if isinstance(candidate, str):
                 code = WARNING_CODES.get(candidate.strip().lower())
                 if code:
@@ -369,9 +395,10 @@ def response_texts(response: object) -> list[str]:
     """Return the top-level text bodies the host delivered, bounded."""
     if isinstance(response, str):
         return [response]
-    if isinstance(response, list):
+    blocks = response.get("content") if isinstance(response, dict) else response
+    if isinstance(blocks, list):
         texts: list[str] = []
-        for block in response[:MAX_CONTENT_BLOCKS]:
+        for block in blocks[:MAX_CONTENT_BLOCKS]:
             if not isinstance(block, dict):
                 continue
             text = block.get("text")
@@ -456,10 +483,17 @@ def collect_codes(payload: object) -> set[str]:
         if budget < 0:
             break
         codes |= warning_codes(node)
-        for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
+        fields = list(node.items())[:MAX_FIELDS_PER_NODE]
+        # A resume token means "the scan stopped early" only when there is a
+        # returned collection for it to resume. Beside no collection at all, the
+        # same key name is ordinary business content.
+        has_records = any(isinstance(value, list) for _, value in fields)
+        for key, value in fields:
             name = normalize(key)
             codes |= scalar_codes(key, value, in_pagination=in_pagination)
             codes |= link_collection_codes(key, value)
+            if has_records and name in RESUME_KEY_KEYS and populated_resume_key(value):
+                codes.add(PAGINATION_INCOMPLETE)
             if isinstance(value, dict) and name in ENVELOPE_KEYS and depth < MAX_DEPTH:
                 queue.append(
                     (
@@ -478,8 +512,8 @@ def main() -> int:
     if os.environ.get(BYPASS_ENV):
         return 0
     try:
-        raw = sys.stdin.read(MAX_INPUT_BYTES + 1)
-        if len(raw) > MAX_INPUT_BYTES:
+        raw = sys.stdin.read(MAX_INPUT_CHARS + 1)
+        if len(raw) > MAX_INPUT_CHARS:
             return 0
         payload = json.loads(raw or "{}")
         if not isinstance(payload, dict):

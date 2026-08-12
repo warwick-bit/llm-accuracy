@@ -357,11 +357,35 @@ def test_partial_result_sentinel_drops_an_oversized_payload_before_parsing(
 
     oversized = (
         '{"tool_response": {"has_more": true, "pad": "'
-        + ("x" * hook.MAX_INPUT_BYTES)
+        + ("x" * hook.MAX_INPUT_CHARS)
         + '"}}'
     )
-    assert len(oversized) > hook.MAX_INPUT_BYTES
+    assert len(oversized) > hook.MAX_INPUT_CHARS
     monkeypatch.setattr(hook.sys, "stdin", io.StringIO(oversized))
+
+    assert hook.main() == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_partial_result_sentinel_never_parses_an_oversized_payload(
+    monkeypatch, capsys
+) -> None:
+    """The oversized payload is dropped unread, not parsed and then discarded.
+
+    The third fresh audit noted that asserting silence alone would also pass if
+    the payload were parsed first, which is exactly the cost being avoided. This
+    fails if `json.loads` is reached at all.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+    monkeypatch.delenv("CC_SKIP_PARTIAL_RESULT", raising=False)
+
+    def explode(*args, **kwargs):
+        raise AssertionError("oversized payload reached json.loads")
+
+    monkeypatch.setattr(hook.json, "loads", explode)
+    monkeypatch.setattr(
+        hook.sys, "stdin", io.StringIO("x" * (hook.MAX_INPUT_CHARS + 1))
+    )
 
     assert hook.main() == 0
     assert capsys.readouterr().out == ""
@@ -523,6 +547,19 @@ AMBIGUOUS_CURSOR_AT_ROOT_MUST_NOT_FIRE = [
     ({"next": "Quarterly review", "owner": "Ops"}, "report section named next"),
     ({"after": "Lunch", "agenda": "Board meeting"}, "agenda field named after"),
     ({"next": "chapter-two", "title": "Chapter one"}, "document navigation"),
+    ({"next": "/accounts/?page=5", "results": []}, "relative path is not enough"),
+]
+
+ROOT_URL_CURSOR_MUST_FIRE = [
+    (
+        {
+            "count": 1023,
+            "next": "https://api.example.test/accounts/?page=5",
+            "previous": None,
+            "results": [],
+        },
+        "Django REST Framework page response",
+    ),
 ]
 
 AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE = [
@@ -541,9 +578,13 @@ def test_partial_result_sentinel_reads_bare_next_only_inside_a_container() -> No
 
     Regression for a false positive found by the third fresh audit: a business
     object whose root carries `next` or `after` -- an agenda, a report section,
-    a document's navigation -- raised a partial-result advisory. Those names now
-    count only under a pagination container, which is where every real API puts
-    them.
+    a document's navigation -- raised a partial-result advisory.
+
+    Inside a pagination container any populated value counts. At the root, where
+    real APIs do sometimes put a next-page link, only an ABSOLUTE url counts:
+    Django REST Framework returns one there, while business content holds a
+    title, a slug, or a relative path. An earlier version of this test claimed
+    every real API nests these names inside a container, which DRF disproves.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -553,6 +594,10 @@ def test_partial_result_sentinel_reads_bare_next_only_inside_a_container() -> No
 
     for response, label in AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE:
         assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+
+    for response, label in ROOT_URL_CURSOR_MUST_FIRE:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
 
 
 def test_partial_result_sentinel_covers_every_contained_cursor_key() -> None:
@@ -577,6 +622,24 @@ NEW_PROVIDER_FIRE_CASES = [
         "next page url",
     ),
     ({"files": [{"id": "f1"}], "incompleteSearch": True}, "Drive incomplete search"),
+    ({"nextToken": "opaque", "items": []}, "AWS next token"),
+    ({"entries": [], "limit": 100, "next_marker": "opaque"}, "Box marker paging"),
+    ({"value": [], "nextLink": "/api/books?$after=opaque"}, "Azure next link"),
+    (
+        {
+            "data": [],
+            "next_page": {
+                "offset": "opaque",
+                "path": "/tasks?offset=opaque",
+                "uri": "https://app.example.test/api/tasks",
+            },
+        },
+        "Asana next-page object",
+    ),
+    (
+        {"kind": "PodList", "metadata": {"continue": "opaque"}, "items": []},
+        "Kubernetes list continue token",
+    ),
 ]
 
 
@@ -694,7 +757,10 @@ RESUME_AND_LINK_FIRE_CASES = [
     (
         {
             "results": [{"id": 1}],
-            "links": [{"rel": "self", "href": "a"}, {"rel": "next", "href": "b"}],
+            "links": [
+                {"rel": "self", "href": "https://api.example.test/x?page=1"},
+                {"rel": "next", "href": "https://api.example.test/x?page=2"},
+            ],
         },
         "HAL link collection with a next relation",
     ),
@@ -706,9 +772,17 @@ RESUME_AND_LINK_SILENT_CASES = [
         "empty resume key means exhausted",
     ),
     ({"Items": [{"id": 1}], "LastEvaluatedKey": None}, "absent resume key"),
-    ({"links": [{"rel": "self", "href": "a"}]}, "link collection without a next"),
-    ({"links": [{"rel": "author", "href": "a"}]}, "ordinary business relation"),
+    ({"links": [{"rel": "self", "href": "https://x.test"}]}, "no next relation"),
+    ({"links": [{"rel": "author", "href": "https://x.test"}]}, "business relation"),
     ({"links": [{"rel": "next", "href": ""}]}, "next relation with no target"),
+    (
+        {"title": "Chapter 1", "links": [{"rel": "next", "href": "/chapter-2"}]},
+        "document navigation carries rel: next with a relative path",
+    ),
+    (
+        {"evaluation": "Q3 review", "last_evaluated_key": {"score": 4}},
+        "resume-key name with no returned collection beside it",
+    ),
     ({"rows": [{"rel": "next", "href": "b"}]}, "record array is not a link collection"),
 ]
 
@@ -717,9 +791,12 @@ def test_partial_result_sentinel_reads_resume_keys_and_link_relations() -> None:
     """Two provider families declare a further page without a scalar cursor.
 
     DynamoDB returns a whole key object, and HAL-style APIs put the signal in a
-    link collection. Both are read narrowly: an empty resume key means the scan
-    finished, and a link entry only counts when it carries `rel: next` with a
-    target, which a record array cannot accidentally satisfy.
+    link collection. Both are read narrowly. A resume key counts only beside a
+    returned collection, so a business object carrying the same name stays
+    silent. A link entry counts only when its `next` relation targets an
+    ABSOLUTE url: document navigation carries the identical `rel: next` with a
+    relative path, which disproves the earlier claim that records simply do not
+    carry `rel`.
     """
     hook = load_hook("partial-result-sentinel.py")
 

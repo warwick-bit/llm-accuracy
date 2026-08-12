@@ -77,13 +77,18 @@ The `PostToolUse` sentinel is a narrow backstop for the rule above, not a
 substitute for it. It reads one tool result at a time and keeps no state, so it
 can never observe that a later page was fetched and can never certify coverage.
 
-It detects, in the response envelope only: boolean partiality flags (`has_more`,
-`hasNextPage`, `truncated`, `is_truncated`, `row_cap_hit`, and
-`pagination_complete: false`); populated next-page cursors, page tokens, offsets,
-`links.next`, and `@odata.nextLink`; exact machine warning codes in an envelope
-warning collection; a GraphQL Relay `pageInfo` block reached through nested
-dictionaries; and the host's own over-budget notice when it replaces an oversized
-result with a pointer to a file.
+It reads JSON only, and detects, in the response envelope: boolean partiality
+flags (`has_more`, `hasNextPage`, `truncated`, `is_truncated`, `row_cap_hit`,
+`incompleteSearch`, and `pagination_complete: false`); populated next-page
+cursors, tokens, markers and links (`next_cursor`, `nextPageToken`, `nextToken`,
+`next_marker`, `nextLink`, `@odata.nextLink`, `next_page`, `continue`,
+`nextRecordsUrl`, and a bare `next`/`after` inside a pagination block or an
+absolute url at the root); a resume object such as DynamoDB's
+`LastEvaluatedKey` beside a returned collection; a HAL link collection whose
+`next` relation targets an absolute url; exact machine warning codes in an
+envelope warning collection; a GraphQL Relay `pageInfo` block reached through
+nested dictionaries; and the host's own over-budget notice when it replaces an
+oversized result with a pointer to a file.
 
 It deliberately does NOT do the following, and you remain responsible for each:
 
@@ -102,9 +107,17 @@ It deliberately does NOT do the following, and you remain responsible for each:
   questions, and job statuses, where firing would be wrong. They are left out
   deliberately; a paired unambiguous signal (`nextRecordsUrl`, `nextPageToken`)
   is what gets detected instead. For the same reason a bare `next` or `after`
-  counts only inside a block whose own name means pagination — `paging`,
-  `pagination`, `cursor`, `links`, `response_metadata` — never under a generic
-  `page` or `metadata` container.
+  is read as a cursor only inside a block whose own name means pagination —
+  `paging`, `pagination`, `cursor`, `links`, `response_metadata`, never a
+  generic `page` or `metadata` container — or, at the root, only when its value
+  is an absolute url, which is what separates a Django REST Framework page link
+  from a slug or a section title.
+- **Report backward pagination.** `hasPreviousPage: true` proves the current
+  page omits earlier records, and is still excluded: it is true of every page
+  after the first in an ordinary forward walk, so acting on it would raise an
+  advisory on each page of a walk the caller is already completing.
+- **Parse anything but JSON.** An XML response, such as S3's native
+  `ListBucketResult` with `<IsTruncated>true</IsTruncated>`, is not inspected.
 - **Infer partiality from offset arithmetic.** A classic `startAt` /
   `maxResults` / `total` triple, or an Elasticsearch `hits.total` above the hits
   returned, states partiality only by arithmetic on an ambiguous total. That is
