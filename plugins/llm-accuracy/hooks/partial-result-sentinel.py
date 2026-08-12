@@ -28,18 +28,31 @@ of identical shape -- and is left alone. Depth is not what separates them: a
 provider envelope decoded from the bare list the host usually delivers also
 begins at depth 0, so the test is whether the object IS the wire form.
 
-A Relay ``pageInfo`` block is read two ways. Where the envelope traversal
-already reaches it -- the envelope root, or a known envelope key -- it is a
-generic container, so only its paging booleans count. And a connection nested
-under schema-specific container names is found by a separate pass, because a
-GraphQL passthrough server returns ``data.repository.pullRequests.pageInfo``
-verbatim. That pass recognises a connection ONLY in its spec shape: a
-``pageInfo`` dict beside an ``edges`` or ``nodes`` LIST. An earlier version
-descended on ``pageInfo`` alone and could not tell a keyed record collection
-from a GraphQL container -- ``{"pages_by_slug": {"home": {"pageInfo": {...}}}}``
-is a complete map of records whose ``pageInfo`` describes document navigation,
-and it fired. Protecting record ARRAYS was never enough, because a provider may
-key its records by id instead: Firebase returns keyed objects.
+A Relay ``pageInfo`` block is read only where the envelope traversal already
+reaches it -- the envelope root, or a known envelope key -- where it is a
+generic container, so only its paging booleans count.
+
+A connection nested under SCHEMA-SPECIFIC container names is NOT found, and that
+gap is deliberate and hard-won. Two passes tried. The first descended dict
+values under any name looking for ``pageInfo``; it fired on
+``{"pages_by_slug": {"home": {"pageInfo": {...}}}}``, a keyed map of records
+whose page info describes document navigation. The second required the Relay
+spec sibling, an ``edges``/``nodes`` LIST beside the page info; it fired on
+``{"pages_by_slug": {"home": {"nodes": [...blocks...], "page_info": {...}}}}``,
+an ordinary CMS record whose ``nodes`` are document blocks. That second shape is
+structurally IDENTICAL to a GitHub connection, so no discriminator exists:
+rejecting it would reject the real thing.
+
+The cost of the gap was measured before accepting it, on a same-snapshot
+control: 9,231 real local tool results scored by the hook with and without the
+pass produced IDENTICAL detection sets, 29 each, nothing lost. No ``pageInfo``
+block appeared anywhere in that corpus. The case for keeping it was a GraphQL passthrough
+server such as ``blurrah/mcp-graphql``, which returns raw GraphQL JSON and would
+produce ``data.repository.pullRequests.pageInfo``; that is a real possibility
+but not an observed one, and it was weighed against a reproduced precision
+defect with no available fix. A GraphQL result delivered inside an ordinary
+envelope still works, because ``pageInfo`` is reached there. Do not restore the
+chase without new evidence -- it was removed, restored, and removed again.
 
 That leaves a second accepted limit, of the same kind as the singular record: a
 NAMESPACE COLLISION. If a provider keys a record with a name this hook
@@ -183,15 +196,6 @@ GENERIC_CONTAINER_KEYS = {
     "metadata",
     "responsemetadata",
     "pageinfo",
-}
-
-# A Relay connection carries its records beside its page info. That sibling is
-# the whole recogniser: `{"pages_by_slug": {"home": {"pageInfo": {...}}}}` is a
-# keyed map of records whose `pageInfo` describes document navigation, and an
-# earlier version that descended on `pageInfo` alone fired on it.
-RELAY_RECORD_KEYS = {
-    "edges",
-    "nodes",
 }
 
 # Envelope keys that establish a pagination context for CONTAINED_CURSOR_KEYS.
@@ -504,63 +508,13 @@ def host_truncation_codes(response: object) -> set[str]:
     return set()
 
 
-def paging_boolean_codes(block: dict) -> set[str]:
-    """Read paging flags out of a page-info block, and nothing else."""
-    codes: set[str] = set()
-    for key, value in list(block.items())[:MAX_FIELDS_PER_NODE]:
-        name = normalize(key)
-        if value is True and name in PAGE_INFO_TRUE_MEANS_PARTIAL:
-            codes.add(PAGE_INFO_TRUE_MEANS_PARTIAL[name])
-        if value is False and name in FALSE_MEANS_PARTIAL:
-            codes.add(FALSE_MEANS_PARTIAL[name])
-    return codes
-
-
-def relay_codes(envelope: dict) -> set[str]:
-    """Find a Relay connection nested under schema-specific container names.
-
-    A connection sits at a path only its schema knows --
-    ``data.repository.pullRequests.pageInfo`` -- which the envelope-key
-    traversal cannot reach, and a GraphQL passthrough MCP server returns exactly
-    that. So this pass descends dict values under any name, but it recognises a
-    connection ONLY in its spec shape: a ``pageInfo`` dict sitting beside an
-    ``edges`` or ``nodes`` LIST. That sibling is what an earlier version lacked,
-    when descending on ``pageInfo`` alone made a keyed record map look paginated.
-
-    Lists are never entered, so record content stays unread either way, and only
-    the paging booleans of the ``pageInfo`` block itself are read.
-    """
-    codes: set[str] = set()
-    queue: list[tuple[dict, int]] = [(envelope, 0)]
-    budget = MAX_ENVELOPES
-    while queue:
-        node, depth = queue.pop(0)
-        budget -= 1
-        if budget < 0:
-            break
-        fields = list(node.items())[:MAX_FIELDS_PER_NODE]
-        connection = any(
-            normalize(key) in RELAY_RECORD_KEYS and isinstance(value, list)
-            for key, value in fields
-        )
-        for key, value in fields:
-            if not isinstance(value, dict):
-                continue
-            if connection and normalize(key) == "pageinfo":
-                codes |= paging_boolean_codes(value)
-            elif depth < MAX_DEPTH:
-                queue.append((value, depth + 1))
-    return codes
-
-
 def collect_codes(payload: object) -> set[str]:
     """Return every explicit partial-result code found in a tool result.
 
     Accepts the shapes a host actually delivers -- a bare content-block list, a
     bare string, or a dict. Record arrays are never walked into, so row content
     cannot be mistaken for pagination metadata. Signals come from envelope
-    dictionaries, plus the Relay pass, which crosses dict containers under any
-    name but reads only a `pageInfo` that sits beside an `edges`/`nodes` list.
+    dictionaries only; no pass crosses a container name it does not recognise.
     """
     codes: set[str] = host_truncation_codes(payload)
     envelopes = host_envelopes(payload)
@@ -571,8 +525,6 @@ def collect_codes(payload: object) -> set[str]:
     # list the host usually sends also starts at depth 0.
     if isinstance(payload, dict):
         envelopes = envelopes + embedded_envelopes(payload)
-    for envelope in envelopes:
-        codes |= relay_codes(envelope)
     queue: list[tuple[dict, int, bool, bool]] = [
         (env, 0, False, False) for env in envelopes
     ]

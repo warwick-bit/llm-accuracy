@@ -497,7 +497,11 @@ def test_partial_result_sentinel_false_positive_budget() -> None:
     assert fired == [], fired
 
 
-DEEP_CONNECTION_FIRE_CASES = [
+# A connection nested under schema-specific container names is NOT found. Two
+# passes tried and both fired on ordinary records; the second failed on a shape
+# structurally identical to the GitHub connection below, so no discriminator
+# exists. Kept as cases so the gap stays visible rather than becoming folklore.
+DEEP_CONNECTION_NOW_EXCLUDED = [
     (
         {
             "data": {
@@ -511,13 +515,6 @@ DEEP_CONNECTION_FIRE_CASES = [
         },
         "GraphQL connection nested under schema-specific containers",
     ),
-]
-
-# A page-info block with no record sibling is not a connection. Round sixteen
-# showed that descending on `pageInfo` alone could not tell a keyed record map
-# from a GraphQL container, so the sibling is now required and this shape is a
-# documented exclusion, kept as a case so the gap stays visible.
-DEEP_CONNECTION_NOW_EXCLUDED = [
     (
         {"result": {"search": {"pageInfo": {"hasNextPage": True}}}},
         "a connection one unknown container below a known envelope key",
@@ -1084,50 +1081,56 @@ def test_partial_result_sentinel_still_bounds_pathological_input() -> None:
     assert hook.collect_codes(wrap(oversized)) == set()
 
 
-def test_partial_result_sentinel_reads_page_info_only_in_a_connection() -> None:
-    """A `pageInfo` counts beside its records, or where traversal already goes.
+def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() -> None:
+    """`pageInfo` counts where the envelope traversal already goes, nowhere else.
 
-    Round sixteen: the pass that chased `pageInfo` under any container name
-    descended into keyed record collections, so
-    `{"pages_by_slug": {"home": {"pageInfo": {"hasNextPage": true}}}}` fired on
-    a complete map of records. Protecting record ARRAYS was not enough, because
-    a provider may key its records by id instead. Round seventeen then found a
-    real MCP server that returns raw GraphQL, so the pass is kept and narrowed
-    to the Relay spec shape: a `pageInfo` beside an `edges`/`nodes` list.
+    Rounds sixteen and eighteen killed two attempts to chase a connection under
+    schema-specific containers. The first descended on `pageInfo` alone and
+    fired on a keyed map of records. The second required the Relay spec sibling,
+    an `edges`/`nodes` list, and fired on a CMS record whose `nodes` are document
+    blocks -- a shape structurally identical to a real GitHub connection, so no
+    discriminator exists. A same-snapshot control over 9,231 real tool results
+    scored the hook with and without the chase and got identical detection sets,
+    29 each. The gap is accepted; do not restore it without new evidence.
     """
     hook = load_hook("partial-result-sentinel.py")
 
-    # The round-sixteen blocker, as a bare dict and as the host's content list.
-    keyed = {
+    # Round sixteen's blocker: a keyed record map.
+    keyed = {"pages_by_slug": {"home": {"pageInfo": {"hasNextPage": True}}}}
+    # Round eighteen's: the same, holding document blocks under `nodes`.
+    cms = {
         "pages_by_slug": {
             "home": {
                 "title": "Home",
-                "pageInfo": {"hasNextPage": True, "nextLabel": "About us"},
+                "nodes": [{"type": "heading", "text": "Welcome"}],
+                "page_info": {"has_next_page": True, "next_label": "About us"},
             }
         }
     }
-    assert hook.collect_codes(keyed) == set()
-    assert hook.collect_codes(wrap(keyed)) == set()
+    for response in (keyed, cms):
+        assert hook.collect_codes(response) == set()
+        assert hook.collect_codes(wrap(response)) == set()
 
-    # A real connection is still found under schema-specific containers.
-    for response, label in DEEP_CONNECTION_FIRE_CASES:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
-    # The gap this deliberately accepts, and the exhausted/backwards cases.
+    # The recall this deliberately gives up, and the already-silent cases.
     for response, label in DEEP_CONNECTION_NOW_EXCLUDED + DEEP_CONNECTION_SILENT_CASES:
         assert hook.collect_codes(response) == set(), label
         assert hook.collect_codes(wrap(response)) == set(), label
 
-    # Where traversal reaches it, a page-info block still declares partiality.
+    # Where traversal reaches it, a page-info block still declares partiality,
+    # so a GraphQL result delivered in an ordinary envelope still works.
     assert hook.collect_codes(wrap({"pageInfo": {"hasNextPage": True}})) == {
         "pagination_incomplete"
     }
     assert hook.collect_codes(wrap({"result": {"pageInfo": {"hasMore": True}}})) == {
         "pagination_incomplete"
     }
-    # And only through its paging booleans, never its rendering or cursors.
+    # Its rendering flags and ambiguous page slugs stay unread. A self-describing
+    # cursor inside it is still read, as it is in any reached block.
     assert hook.collect_codes(wrap({"pageInfo": {"truncated": True}})) == set()
     assert hook.collect_codes(wrap({"pageInfo": {"next": "about-us"}})) == set()
+    assert hook.collect_codes(wrap({"pageInfo": {"next_cursor": "p2"}})) == {
+        "pagination_incomplete"
+    }
 
 
 def test_partial_result_sentinel_pins_the_namespace_collision_limit() -> None:

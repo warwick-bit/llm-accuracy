@@ -95,10 +95,9 @@ self-describing cursor inside any other `pagination`-named block, which is
 traversed but does not make a bare `next` a cursor, because a `paginationLabels`
 block holds button copy rather than cursor state; exact
 machine warning codes in an envelope warning collection, as strings or as
-`{"code": ...}` objects; the paging booleans of a Relay `pageInfo` block, either
-where traversal already reaches it — the envelope root or a known envelope key —
-or nested under schema-specific containers when it sits beside an `edges`/`nodes`
-list; and the host's own over-budget notice when it replaces an
+`{"code": ...}` objects; the paging booleans of a Relay `pageInfo` block where
+traversal already reaches it — the envelope root or a known envelope key; and the
+host's own over-budget notice when it replaces an
 oversized result with a pointer to a file.
 
 It deliberately does NOT do the following, and you remain responsible for each:
@@ -131,18 +130,24 @@ It deliberately does NOT do the following, and you remain responsible for each:
   `metadata`, `response_metadata`, `pageInfo`, `links`, `structuredContent`, and
   any other pagination-named block. A cursor buried under a schema-specific
   container the traversal does not know is not found.
-- **Recognise a GraphQL connection outside its spec shape.** A Relay connection
-  sits at a path only its schema knows — `data.repository.pullRequests.pageInfo`
-  — which a GraphQL passthrough MCP server returns verbatim, so a separate pass
-  crosses dict containers under any name to find it. It recognises a connection
-  only as a `pageInfo` beside an `edges` or `nodes` LIST. An earlier version
-  descended on `pageInfo` alone and could not tell a keyed record collection
-  from a GraphQL container: `{"pages_by_slug": {"home": {"pageInfo":
-  {"hasNextPage": true}}}}` is a complete map of records whose `pageInfo`
-  describes document navigation, and it fired. So a connection whose page info
-  has no record sibling — `{"result": {"search": {"pageInfo": {...}}}}` — is not
-  found. A `pageInfo` at the envelope root or under a known envelope key is
-  still read as a generic container.
+- **Find a GraphQL connection under schema-specific containers.** A Relay
+  connection sits at a path only its schema knows —
+  `data.repository.pullRequests.pageInfo` — and two passes tried to reach it.
+  The first descended dict values under any name looking for `pageInfo`, and
+  fired on `{"pages_by_slug": {"home": {"pageInfo": {"hasNextPage": true}}}}`, a
+  keyed map of records whose page info describes document navigation. The second
+  required the Relay spec sibling, an `edges`/`nodes` list, and fired on
+  `{"pages_by_slug": {"home": {"nodes": [...blocks...], "page_info": {...}}}}` —
+  an ordinary CMS record structurally IDENTICAL to the GitHub connection, so no
+  discriminator exists. The gap is therefore accepted. Its cost was measured
+  first, on a same-snapshot control: 9,231 real local tool results scored with
+  and without the pass produced identical detection sets, 29 each, nothing lost.
+  No `pageInfo` block appeared anywhere in that corpus. The case for
+  keeping it was a GraphQL passthrough server such as `blurrah/mcp-graphql`,
+  which returns raw GraphQL JSON — a real possibility, but not an observed one,
+  weighed against a reproduced precision defect with no fix. A GraphQL result
+  delivered inside an ordinary envelope still works, because `pageInfo` is
+  reached there.
 - **Read a bare root `cursor`.** Square returns a populated root `cursor` only
   when a further page exists, but a bare `cursor` more often identifies the page
   already returned, and the name does not say which. A cursor whose name states
