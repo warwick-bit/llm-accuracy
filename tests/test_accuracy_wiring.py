@@ -28,6 +28,10 @@ EXPECTED_HANDLERS = {
         "post-compact-accuracy.py",
         "Checking llm-accuracy post-compaction accuracy",
     ),
+    ("PostToolUse", 0): (
+        "partial-result-sentinel.py",
+        "Checking llm-accuracy partial result signal",
+    ),
 }
 
 posix_only = pytest.mark.skipif(
@@ -48,6 +52,7 @@ def clean_environment() -> dict[str, str]:
     excluded = {
         "CC_SKIP_ANALYSIS",
         "CC_SKIP_FUSION_EVIDENCE",
+        "CC_SKIP_PARTIAL_RESULT",
         "CLAUDE_PLUGIN_ROOT",
     }
     return {key: value for key, value in os.environ.items() if key not in excluded}
@@ -81,8 +86,9 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
 
     config = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))
     assert set(config) == {"hooks"}
-    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart"}
+    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse"}
     assert config["hooks"]["SessionStart"][0]["matcher"] == "compact"
+    assert config["hooks"]["PostToolUse"][0]["matcher"] == "mcp__.*"
 
     for key, (filename, status_message) in EXPECTED_HANDLERS.items():
         handler = hook_handler(*key)
@@ -202,3 +208,163 @@ def test_session_start_command_is_silent_for_non_compact_sources() -> None:
     assert result.returncode == 0
     assert result.stderr == ""
     assert result.stdout == ""
+
+
+def blocks(body: object) -> list[dict]:
+    """Wrap a body the way a Claude Code host delivers an MCP tool result.
+
+    Observed live against a registered MCP server: `tool_response` is a bare
+    list of content blocks whose text is the provider payload, not the provider
+    object itself.
+    """
+    text = body if isinstance(body, str) else json.dumps(body)
+    return [{"type": "text", "text": text}]
+
+
+SENTINEL_END_TO_END_CASES = [
+    (
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "mcp__slack__conversations_history",
+            "tool_response": blocks(
+                {
+                    "ok": True,
+                    "messages": [{"user": "U1", "text": "hello"}],
+                    "has_more": True,
+                    "response_metadata": {"next_cursor": "bmV4dDoxMjM"},
+                }
+            ),
+        },
+        "pagination_incomplete",
+        "paginated provider response fires in the delivered shape",
+    ),
+    (
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "mcp__slack__conversations_history",
+            "tool_response": blocks(
+                {
+                    "ok": True,
+                    "messages": [{"user": "U1", "text": "hello"}],
+                    "has_more": False,
+                }
+            ),
+        },
+        "",
+        "complete provider response stays silent",
+    ),
+    (
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "mcp__db__query",
+            "tool_response": blocks(
+                {"rows": [{"feature": "paging", "has_more": True}]}
+            ),
+        },
+        "",
+        "business row named has_more stays silent",
+    ),
+    (
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "mcp__hubspot__get_properties",
+            "tool_response": (
+                "Error: result (94,455 characters across 1 line) exceeds maximum "
+                "allowed tokens. Output has been saved to /tmp/tool-results/x.txt."
+            ),
+        },
+        "truncated_result",
+        "host over-budget notice fires",
+    ),
+    (
+        {
+            "hook_event_name": "PostToolUse",
+            "tool_name": "mcp__example__list_rows",
+            "tool_response": {
+                "structuredContent": {"rows": [{"id": 1}], "has_more": True}
+            },
+        },
+        "pagination_incomplete",
+        "MCP wire dict form still fires",
+    ),
+    (
+        {"hook_event_name": "PostToolUse", "tool_name": "Bash"},
+        "",
+        "payload without a tool response stays silent",
+    ),
+]
+
+
+@posix_only
+def test_partial_result_sentinel_end_to_end_through_shipped_command() -> None:
+    """Drive the exact hooks.json command through a shell, as the host does."""
+    for payload, expected_code, label in SENTINEL_END_TO_END_CASES:
+        result = run_hook("PostToolUse", 0, json.dumps(payload))
+
+        assert result.returncode == 0, label
+        assert result.stderr == "", label
+        if expected_code:
+            emitted = json.loads(result.stdout)
+            hook_output = emitted["hookSpecificOutput"]
+            assert hook_output["hookEventName"] == "PostToolUse", label
+            assert expected_code in hook_output["additionalContext"], label
+        else:
+            assert result.stdout == "", label
+
+
+@posix_only
+def test_partial_result_sentinel_completes_within_its_declared_timeout() -> None:
+    """Run the shipped command under the timeout the manifest actually declares.
+
+    Other tests allow 10s, which cannot catch a regression that pushes the hook
+    past its real budget. The third fresh audit measured 4.05s on a 50 MB
+    payload, so the worst realistic inputs are driven here under the declared
+    limit: subprocess.run raises TimeoutExpired if the budget is blown.
+    """
+    declared = hook_handler("PostToolUse", 0)["timeout"]
+    assert isinstance(declared, int)
+    assert declared == 3
+
+    rows = [{"id": n, "name": f"row-{n}", "blob": "x" * 200} for n in range(20000)]
+    payloads = [
+        json.dumps(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "mcp__example__list_rows",
+                "tool_response": blocks({"rows": rows, "has_more": True}),
+            }
+        ),
+        json.dumps(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "mcp__example__wide",
+                "tool_response": {f"field_{n}": n for n in range(300000)},
+            }
+        ),
+    ]
+
+    for payload in payloads:
+        environment = clean_environment()
+        environment["CLAUDE_PLUGIN_ROOT"] = str(PLUGIN_ROOT)
+        command = hook_handler("PostToolUse", 0)["command"]
+        assert isinstance(command, str)
+        result = subprocess.run(
+            ["/bin/sh", "-c", command],
+            input=payload,
+            capture_output=True,
+            text=True,
+            env=environment,
+            timeout=declared,
+        )
+        assert result.returncode == 0
+        assert result.stderr == ""
+
+
+@posix_only
+def test_partial_result_sentinel_fails_safe_on_malformed_stdin() -> None:
+    """A non-JSON payload must exit clean and silent rather than erroring."""
+    result = run_hook("PostToolUse", 0, "not json at all")
+
+    assert result.returncode == 0
+    assert result.stdout == ""
+    assert result.stderr == ""

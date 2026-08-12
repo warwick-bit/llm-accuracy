@@ -22,6 +22,19 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\"",
+            "timeout": 3,
+            "statusMessage": "Checking llm-accuracy partial result signal"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "compact",
