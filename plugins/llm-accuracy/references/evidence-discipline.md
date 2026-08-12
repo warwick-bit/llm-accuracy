@@ -100,6 +100,15 @@ traversal already reaches it — the envelope root or a known envelope key; and 
 host's own over-budget notice when it replaces an
 oversized result with a pointer to a file.
 
+The counts cited below in the thousands were taken over ALL local tool results,
+not the MCP-scoped subset this hook is wired to — locally about 6% of the total,
+553 inside 9,682. They therefore overstate how much in-scope evidence each
+conclusion rests on. The conclusions hold, because the wider corpus is a
+superset: a mechanism that fired zero times across all of it fired zero times
+across the MCP part. Re-measured MCP-scoped, the hook fires on 44 of 553 results,
+and the wider corpus returns the same 44 — no built-in result fires at all.
+Reproduce with `scripts/measure_tool_result_corpus.py`.
+
 It deliberately does NOT do the following, and you remain responsible for each:
 
 - **Compare a declared total against rows returned.** A bare total is ambiguous —
@@ -186,7 +195,7 @@ It deliberately does NOT do the following, and you remain responsible for each:
   ordinary documents. So JSON:API and Confluence `links.next`, HAL link
   collections, Asana's `next_page` object, a url-shaped `next_page` or
   `nextLink` (Zendesk and Azure return one, and so does a document), Django REST
-  Framework's root `next`, and DynamoDB's `LastEvaluatedKey` are not read. Measured across 459 real MCP
+  Framework's root `next`, and DynamoDB's `LastEvaluatedKey` are not read. Measured across 459 real
   tool results, none of these mechanisms ever fired, while each produced false
   positives in review; the flags and self-describing cursor names above account
   for every real detection.
