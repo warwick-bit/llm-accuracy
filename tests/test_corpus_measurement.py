@@ -178,12 +178,18 @@ def test_excludes_a_session_only_by_its_recorded_id(tmp_path: Path) -> None:
     assert over_broad == []
 
 
-def test_a_path_that_contains_the_fragment_is_not_excluded(tmp_path: Path) -> None:
+def test_a_path_that_contains_the_fragment_is_not_excluded(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Round nine: an unrelated transcript was skipped whole on a path collision.
 
     The fragment identifies a session, and only a record says which session it
     belongs to. A filename that happens to contain the same characters is not
     evidence of anything, and skipping the file took its detections with it.
+
+    Driven through `main` on purpose. Round ten pointed out that composing the
+    pieces by hand would stay green if the path prefilter were reintroduced and
+    wired up in `main`, which is exactly the regression this pins.
     """
     fires = wrap({"rows": [{"id": 1}], "has_more": True})
     write_transcript(tmp_path / "target.jsonl", [fires], session="mine-fragment-123")
@@ -191,15 +197,24 @@ def test_a_path_that_contains_the_fragment_is_not_excluded(tmp_path: Path) -> No
         tmp_path / "unrelated-fragment.jsonl", [fires, fires], session="keep-session"
     )
 
-    kept = list(
-        tool_results(
-            transcript_paths([tmp_path]), exclude_sessions=frozenset({"fragment"})
-        )
+    exit_code = main(
+        [
+            "--transcript-root",
+            str(tmp_path),
+            "--hook",
+            str(SENTINEL),
+            "--exclude-session",
+            "fragment",
+            "--json",
+        ]
     )
 
+    report = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
     # Only the session whose RECORDED id contains the fragment is excluded; the
     # unrelated file keeps both of its results despite the matching filename.
-    assert len(kept) == 2
+    assert report["results"] == 2
+    assert report["firing"] == 2
 
 
 def test_overlapping_transcript_roots_do_not_double_count(tmp_path: Path) -> None:
