@@ -536,6 +536,61 @@ def test_the_chokepoint_replaces_rather_than_checks_every_printable_thing() -> N
     ) == ("scope: mcp\nresults: 2\ncodes:\n         1  row_cap_hit")
 
 
+def test_the_chokepoint_refuses_a_mapping_before_reading_it() -> None:
+    """Round seven: a `dict` subclass ran its own code when the report read it.
+
+    `Mapping.items()` is overridable, so calling it hands control to whatever
+    object arrived -- inside the function whose entire job is to be the one place
+    nothing unowned gets through. Both the summary and any nested counts must be
+    exact dicts, checked before anything is read out of them.
+    """
+
+    class Hostile(dict):
+        def items(self):  # type: ignore[override]
+            print(PAYLOAD_MARKER)
+            return super().items()
+
+    attacks: list[dict] = [
+        Hostile({"results": 1}),
+        {"codes": Hostile({"row_cap_hit": 1})},
+    ]
+    for renderer in (safe_summary, render_report):
+        for attack in attacks:
+            emitted = io.StringIO()
+            with (
+                contextlib.redirect_stdout(emitted),
+                contextlib.redirect_stderr(emitted),
+            ):
+                with pytest.raises(CorpusError):
+                    renderer(attack)
+            assert emitted.getvalue() == "", (renderer, attack)
+
+
+def test_a_finalizer_on_the_exception_path_also_runs_inside_the_capture() -> None:
+    """Round seven, non-blocking: the release was skipped when the hook raised.
+
+    The two escapes compose -- an object that raises from `__iter__` AND prints
+    from `__del__` -- so the drop now happens in a `finally` that is itself
+    inside the capture.
+    """
+
+    class Bomb(list):
+        def __iter__(self):  # type: ignore[override]
+            raise RuntimeError(PAYLOAD_MARKER)
+
+        def __del__(self) -> None:
+            print(PAYLOAD_MARKER)
+
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
+        _, counts = score(
+            ["a payload"], SimpleNamespace(collect_codes=lambda _: Bomb())
+        )
+
+    assert counts == {"<hook-error>": 1}
+    assert PAYLOAD_MARKER not in captured.getvalue()
+
+
 def test_the_chokepoint_refuses_without_repeating_what_it_refused() -> None:
     """A fail-closed check that prints the rejected value is not fail-closed."""
     with pytest.raises(CorpusError) as error:

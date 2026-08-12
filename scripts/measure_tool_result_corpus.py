@@ -39,7 +39,8 @@ because a `str` subclass can render anything through `__str__`; an exception
 becomes `<hook-error>` with its message discarded; and anything the hook prints
 to Python's `sys.stdout`/`sys.stderr` during the call is captured and dropped.
 The hook's returned object is also released before the capture closes, on every
-branch, so an ordinary finalizer runs inside it.
+branch including the one where it raised, so an ordinary finalizer runs inside
+it.
 
 What the guarantee does NOT extend to is the HOOK's own behaviour. A hook is
 arbitrary imported code running in this process, and no in-process check can
@@ -309,14 +310,16 @@ def _codes_for(payload: object, hook: Hook) -> set[str]:
     Three things are deliberately thrown away: a code outside the known
     vocabulary, which could be a payload-derived string; an exception message,
     which could quote the payload; and anything the hook printed.
+
+    The whole body sits inside the capture, including the `finally` that drops
+    the hook's object, so a finalizer runs while output is still redirected --
+    on the exception path as well as the ordinary one.
     """
     sink = io.StringIO()
-    try:
-        with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
+    with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
+        found: object = None
+        try:
             found = hook.collect_codes(payload)
-            # Iteration happens INSIDE the guard on purpose. A returned object
-            # can raise from `__iter__`, and that exception carries whatever the
-            # hook put in it -- which is how the payload escaped once already.
             if isinstance(found, (set, frozenset, list, tuple)):
                 codes = {
                     CANONICAL_CODE.get(code, UNRECOGNISED_CODE)
@@ -326,13 +329,14 @@ def _codes_for(payload: object, hook: Hook) -> set[str]:
                 }
             else:
                 codes = {UNRECOGNISED_CODE}
-            # Drop the hook's object on EVERY branch while the quarantine is
-            # still open. Under refcounting its `__del__` runs here rather than
-            # after the redirect closes, which is where a finalizer escaped once.
-            # An early return would have skipped this for a rejected return type.
+        except BaseException:  # noqa: BLE001 - a hook is arbitrary code
+            codes = {HOOK_ERROR_CODE}
+        finally:
+            # Under refcounting this runs the object's `__del__` here, rather
+            # than after the redirect closes, which is where a finalizer escaped
+            # once. A `__del__` that raises is unraisable and Python reports it
+            # on `sys.stderr`, which is still the sink at this point.
             del found
-    except BaseException:  # noqa: BLE001 - a hook is arbitrary code; never trust it
-        return {HOOK_ERROR_CODE}
     return codes
 
 
@@ -393,17 +397,26 @@ def safe_summary(summary: Mapping[str, object]) -> dict[str, object]:
 
     Nothing that arrives here is passed through. Labels, scope values and code
     names are all looked up and REPLACED by this script's own instances, and
-    counts must be exactly `int`. Checking without replacing is not enough: a
+    counts must be exactly `int`, and both the summary and any nested counts must
+    be exact dicts -- a `Mapping` subclass can override `items()` and run its own
+    code the moment this function reads it. Checking without replacing is not
+    enough either: a
     subclass of `str` or `int` can satisfy every `in` test and every `isinstance`
     and still render anything at all through `__format__`, `__str__` or
     `__repr__`. Refusals name the field, never the value they refused.
     """
+    # An exact dict, checked BEFORE anything is read out of it. A `Mapping`
+    # subclass can override `items()`, and calling it would run code this script
+    # does not own -- inside the function whose whole job is to be the one place
+    # nothing unowned gets through.
+    if type(summary) is not dict:
+        raise CorpusError("refusing to report from a non-dict summary")
     checked: dict[str, object] = {}
     for key, value in summary.items():
         label = CANONICAL_LABEL.get(key) if type(key) is str else None
         if label is None:
             raise CorpusError("refusing to report an unrecognised field")
-        if isinstance(value, Mapping):
+        if type(value) is dict:
             counts: dict[str, int] = {}
             for name, count in value.items():
                 code = CANONICAL_RENDERABLE.get(name) if type(name) is str else None
@@ -435,7 +448,7 @@ def render_report(summary: Mapping[str, object]) -> str:
     """
     lines: list[str] = []
     for key, value in safe_summary(summary).items():
-        if isinstance(value, Mapping):
+        if isinstance(value, dict):
             lines.append(f"{key}:")
             for name, count in sorted(value.items()):
                 lines.append(f"  {count:8d}  {name}")
