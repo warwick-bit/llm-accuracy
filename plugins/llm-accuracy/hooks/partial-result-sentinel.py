@@ -19,10 +19,13 @@ collection are never inspected, because a row may legitimately hold a column
 called ``has_more`` or a cell whose value is ``row_cap_hit``; treating row data
 as pagination metadata would fire on ordinary database results. Record arrays
 are never walked into. Two lists are read, and both are protocol rather than
-record: the MCP content blocks of the tool result itself, read at the wire
-boundary only and only when the block type says ``text``; and an envelope
-warning collection, read for exact machine codes. A provider's own ``content``
-array further down is its document body, not protocol, and is left alone.
+record: the MCP content blocks of ``tool_response`` itself in its dict wire
+form, and only when a block declares ``type: "text"``; and an envelope warning
+collection, read for exact machine codes. Any other ``content`` array belongs to
+the provider -- an Anthropic Messages response and a CMS article both carry one
+of identical shape -- and is left alone. Depth is not what separates them: a
+provider envelope decoded from the bare list the host usually delivers also
+begins at depth 0, so the test is whether the object IS the wire form.
 One pass is broader: the Relay connection pass descends
 dict values under any container name, to find a ``pageInfo`` block under a
 schema-specific path, but it reads signals out of that block alone and is
@@ -414,10 +417,11 @@ def content_block_envelopes(blocks: object) -> list[dict]:
 def embedded_envelopes(node: dict) -> list[dict]:
     """Parse MCP text content blocks carried under a dict's ``content`` key.
 
-    Only ever applied at the MCP wire boundary -- the dict form of the tool
-    result itself. A `content` key deeper inside a provider payload belongs to
-    the provider, not the protocol: a document API returns its body that way,
-    and reparsing it reads record content as an envelope.
+    Applied to ONE dict: ``tool_response`` itself when the host delivers the MCP
+    wire form. Every other envelope reaches this hook by being decoded out of a
+    text block, which makes it provider payload already, and a provider's own
+    ``content`` is its document body -- an Anthropic Messages response, a CMS
+    article. Reparsing that reads record content as an envelope.
     """
     return content_block_envelopes(node.get("content"))
 
@@ -520,6 +524,13 @@ def collect_codes(payload: object) -> set[str]:
     """
     codes: set[str] = host_truncation_codes(payload)
     envelopes = host_envelopes(payload)
+    # The protocol's content blocks exist on exactly one object: `tool_response`
+    # itself, in its dict wire form. Everything else here was decoded out of a
+    # text block and is provider payload, whose own `content` is a document
+    # body. Depth is not the test -- a provider envelope decoded from the bare
+    # list the host usually sends also starts at depth 0.
+    if isinstance(payload, dict):
+        envelopes = envelopes + embedded_envelopes(payload)
     for envelope in envelopes:
         codes |= connection_codes(envelope)
     queue: list[tuple[dict, int, bool, bool]] = [
@@ -552,12 +563,6 @@ def collect_codes(payload: object) -> set[str]:
                         paging_only or name in GENERIC_CONTAINER_KEYS,
                     )
                 )
-        # Depth 0 only: that is the MCP wire boundary, where a `content` list is
-        # the protocol's own content blocks. Below it, `content` is the
-        # provider's, and parsing it reads record content as an envelope.
-        if depth == 0:
-            for parsed in embedded_envelopes(node):
-                queue.append((parsed, depth + 1, in_pagination, paging_only))
     return codes
 
 

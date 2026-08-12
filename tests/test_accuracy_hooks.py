@@ -809,8 +809,20 @@ def test_partial_result_sentinel_leaves_a_providers_own_content_array_alone() ->
         ],
     }
     assert hook.collect_codes(wrap(article)) == set()
-    # Even when the provider happens to name its block type `text`, it is below
-    # the wire boundary, so it is still the document's content.
+    # Even when the provider happens to name its block type `text`, it is not
+    # the wire form, so it is still the document's content. Regression for the
+    # fourteenth audit: an Anthropic Messages response carries exactly this
+    # shape at its own root, and a depth test could not tell it apart, because
+    # a provider envelope decoded from the host's bare list also starts at 0.
+    message = {
+        "id": "msg_01Example",
+        "type": "message",
+        "role": "assistant",
+        "content": [{"type": "text", "text": '{"has_more": true, "eg": "quoted"}'}],
+        "stop_reason": "end_turn",
+    }
+    assert hook.collect_codes(wrap(message)) == set()
+    assert hook.collect_codes(json.dumps(message)) == set()
     nested = {"result": {"content": [{"type": "text", "text": '{"has_more": true}'}]}}
     assert hook.collect_codes(wrap(nested)) == set()
     # The protocol's own blocks at the boundary are still read, in both the dict
