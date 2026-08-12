@@ -95,9 +95,10 @@ self-describing cursor inside any other `pagination`-named block, which is
 traversed but does not make a bare `next` a cursor, because a `paginationLabels`
 block holds button copy rather than cursor state; exact
 machine warning codes in an envelope warning collection, as strings or as
-`{"code": ...}` objects; the paging booleans of a Relay `pageInfo` block that
-sits where traversal already reaches — at the envelope root or under a known
-envelope key; and the host's own over-budget notice when it replaces an
+`{"code": ...}` objects; the paging booleans of a Relay `pageInfo` block, either
+where traversal already reaches it — the envelope root or a known envelope key —
+or nested under schema-specific containers when it sits beside an `edges`/`nodes`
+list; and the host's own over-budget notice when it replaces an
 oversized result with a pointer to a file.
 
 It deliberately does NOT do the following, and you remain responsible for each:
@@ -108,35 +109,40 @@ It deliberately does NOT do the following, and you remain responsible for each:
   total against rows in hand is your job, not the hook's.
 - **Read record content.** Row arrays are never inspected, so a column named
   `has_more`, a cell whose value is `row_cap_hit`, or a `pageInfo` object nested
-  inside a record array will not raise a signal. Records keyed by id rather than
-  held in an array are equally safe, because no traversal descends under a
-  container name it does not recognise. One record shape escapes that
-  protection and is accepted as a limit: a SINGULAR record returned as a bare
+  inside a record array will not raise a signal. TWO record shapes escape that
+  protection and are accepted as limits. First, a SINGULAR record returned as a bare
   JSON object, with no collection around it, is structurally identical to a
   response envelope — PostgREST can return one — so a business column named
   `has_more` on such a record raises a false advisory. Guessing from whether a
   collection sits beside the flag would silence real envelopes; measured across
   8,499 real local tool results, a root partiality flag appeared 46 times and
   every one sat beside a collection, while the singular-record shape appeared
-  zero times.
+  zero times. Second, a NAMESPACE COLLISION: a provider that keys a record with
+  a name this hook recognises — a record stored under `next_cursor`, `paging` or
+  `warnings`, which Firebase's user-chosen keys permit — puts that record
+  exactly where envelope metadata would sit, so its fields are read as metadata.
+  The heuristics that could guess (are the sibling values all dicts? do the keys
+  look like ids?) would silence real envelopes; measured across 9,180 real local
+  tool results, no keyed map collided with a recognised name while all 26 real
+  detections came from genuine envelopes.
 - **Find a cursor under an unrecognised container.** A self-describing cursor is
   read at the envelope root and inside the blocks traversal reaches — `result`,
   `response`, `body`, `page`, `paging`, `pagination`, `cursor`, `meta`,
   `metadata`, `response_metadata`, `pageInfo`, `links`, `structuredContent`, and
   any other pagination-named block. A cursor buried under a schema-specific
   container the traversal does not know is not found.
-- **Chase a GraphQL connection under schema-specific containers.** A Relay
-  connection sits at a path only its schema knows —
-  `data.repository.pullRequests.pageInfo` — and an earlier version descended
-  dict values under any name to find it. That could not tell a keyed record
-  collection from a GraphQL container: `{"pages_by_slug": {"home": {"pageInfo":
+- **Recognise a GraphQL connection outside its spec shape.** A Relay connection
+  sits at a path only its schema knows — `data.repository.pullRequests.pageInfo`
+  — which a GraphQL passthrough MCP server returns verbatim, so a separate pass
+  crosses dict containers under any name to find it. It recognises a connection
+  only as a `pageInfo` beside an `edges` or `nodes` LIST. An earlier version
+  descended on `pageInfo` alone and could not tell a keyed record collection
+  from a GraphQL container: `{"pages_by_slug": {"home": {"pageInfo":
   {"hasNextPage": true}}}}` is a complete map of records whose `pageInfo`
-  describes document navigation, and it fired. Protecting record ARRAYS was not
-  enough, because a provider may key its records by id instead — Firebase
-  returns keyed objects. Measured across 9,059 real local tool results, no
-  `pageInfo` block appeared at all and the chase accounted for none of the 26
-  detections, so it was removed rather than narrowed again. A `pageInfo` at the
-  envelope root or under a known envelope key is still read.
+  describes document navigation, and it fired. So a connection whose page info
+  has no record sibling — `{"result": {"search": {"pageInfo": {...}}}}` — is not
+  found. A `pageInfo` at the envelope root or under a known envelope key is
+  still read as a generic container.
 - **Read a bare root `cursor`.** Square returns a populated root `cursor` only
   when a further page exists, but a bare `cursor` more often identifies the page
   already returned, and the name does not say which. A cursor whose name states

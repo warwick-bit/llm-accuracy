@@ -497,12 +497,7 @@ def test_partial_result_sentinel_false_positive_budget() -> None:
     assert fired == [], fired
 
 
-# A Relay connection nested under schema-specific container names is NO LONGER
-# detected. Round sixteen showed the chase that found it could not tell a keyed
-# record collection from a GraphQL container, and measurement showed it had
-# never fired on real data. These are now documented exclusions, kept as cases
-# so the gap stays visible rather than becoming folklore.
-DEEP_CONNECTION_NOW_EXCLUDED = [
+DEEP_CONNECTION_FIRE_CASES = [
     (
         {
             "data": {
@@ -516,6 +511,13 @@ DEEP_CONNECTION_NOW_EXCLUDED = [
         },
         "GraphQL connection nested under schema-specific containers",
     ),
+]
+
+# A page-info block with no record sibling is not a connection. Round sixteen
+# showed that descending on `pageInfo` alone could not tell a keyed record map
+# from a GraphQL container, so the sibling is now required and this shape is a
+# documented exclusion, kept as a case so the gap stays visible.
+DEEP_CONNECTION_NOW_EXCLUDED = [
     (
         {"result": {"search": {"pageInfo": {"hasNextPage": True}}}},
         "a connection one unknown container below a known envelope key",
@@ -558,7 +560,7 @@ DEEP_CONNECTION_SILENT_CASES = [
     ),
     (
         {"data": {"node": {"has_more": True, "next_cursor": "x"}}},
-        "business fields under data are not reachable by the connection pass",
+        "business fields under data are not reachable by the Relay pass either",
     ),
 ]
 
@@ -1035,7 +1037,7 @@ PAGE_INFO_MUST_NOT_FIRE = [
 def test_partial_result_sentinel_reads_only_booleans_from_page_info() -> None:
     """A page-info block declares partiality through booleans, never cursors.
 
-    Regression for a false positive introduced by the connection pass: the
+    Regression for a false positive introduced by the Relay pass: the
     cursor vocabulary was being applied inside `pageInfo`, so an ordinary
     `page_info.next` page slug raised an advisory. A Relay page-info block never
     signals a further page with `next` or `after`, so reading them there only
@@ -1082,20 +1084,20 @@ def test_partial_result_sentinel_still_bounds_pathological_input() -> None:
     assert hook.collect_codes(wrap(oversized)) == set()
 
 
-def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() -> None:
-    """`pageInfo` is read at the envelope root and under known envelope keys.
+def test_partial_result_sentinel_reads_page_info_only_in_a_connection() -> None:
+    """A `pageInfo` counts beside its records, or where traversal already goes.
 
     Round sixteen: the pass that chased `pageInfo` under any container name
     descended into keyed record collections, so
     `{"pages_by_slug": {"home": {"pageInfo": {"hasNextPage": true}}}}` fired on
     a complete map of records. Protecting record ARRAYS was not enough, because
-    a provider may key its records by id instead. The chase is gone; a
-    `pageInfo` block is now read only where the envelope traversal already goes,
-    and only for its paging booleans.
+    a provider may key its records by id instead. Round seventeen then found a
+    real MCP server that returns raw GraphQL, so the pass is kept and narrowed
+    to the Relay spec shape: a `pageInfo` beside an `edges`/`nodes` list.
     """
     hook = load_hook("partial-result-sentinel.py")
 
-    # The blocker, in both delivered shapes.
+    # The round-sixteen blocker, as a bare dict and as the host's content list.
     keyed = {
         "pages_by_slug": {
             "home": {
@@ -1107,12 +1109,14 @@ def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() 
     assert hook.collect_codes(keyed) == set()
     assert hook.collect_codes(wrap(keyed)) == set()
 
-    # The gap this deliberately accepts.
-    for response, label in DEEP_CONNECTION_NOW_EXCLUDED:
+    # A real connection is still found under schema-specific containers.
+    for response, label in DEEP_CONNECTION_FIRE_CASES:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
+    # The gap this deliberately accepts, and the exhausted/backwards cases.
+    for response, label in DEEP_CONNECTION_NOW_EXCLUDED + DEEP_CONNECTION_SILENT_CASES:
         assert hook.collect_codes(response) == set(), label
         assert hook.collect_codes(wrap(response)) == set(), label
-    for response, label in DEEP_CONNECTION_SILENT_CASES:
-        assert hook.collect_codes(response) == set(), label
 
     # Where traversal reaches it, a page-info block still declares partiality.
     assert hook.collect_codes(wrap({"pageInfo": {"hasNextPage": True}})) == {
@@ -1124,6 +1128,34 @@ def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() 
     # And only through its paging booleans, never its rendering or cursors.
     assert hook.collect_codes(wrap({"pageInfo": {"truncated": True}})) == set()
     assert hook.collect_codes(wrap({"pageInfo": {"next": "about-us"}})) == set()
+
+
+def test_partial_result_sentinel_pins_the_namespace_collision_limit() -> None:
+    """A record keyed with a recognised name IS read as envelope metadata.
+
+    Raised by the seventeenth fresh audit and accepted as a limit, alongside the
+    bare singular record: a provider that stores a record under `next_cursor`,
+    `paging` or `warnings` puts it exactly where envelope metadata would sit.
+    Firebase's user-chosen keys permit it. The heuristics that could guess --
+    are the sibling values all dicts, do the keys look like ids -- would silence
+    real envelopes; measured across 9,180 real local tool results no keyed map
+    collided with a recognised name, while all 26 real detections came from
+    genuine envelopes. Pinned so a later round cannot trade the 26 for the 0.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    collision = {
+        "next_cursor": {"id": "customer-17", "name": "Saved cursor preference"},
+        "customer-18": {"id": "customer-18", "name": "Ordinary customer"},
+    }
+    assert hook.collect_codes(wrap(collision)) == {"pagination_incomplete"}
+    # A keyed map whose keys are ordinary ids is unaffected, which is the case
+    # that actually occurs: zero collisions in the measured corpus.
+    ordinary = {
+        "customer-17": {"id": "customer-17", "has_more": True},
+        "customer-18": {"id": "customer-18", "name": "Ordinary customer"},
+    }
+    assert hook.collect_codes(wrap(ordinary)) == set()
 
 
 def test_partial_result_sentinel_emits_advisory_without_echoing_output(
