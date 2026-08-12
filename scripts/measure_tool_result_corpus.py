@@ -161,6 +161,13 @@ REPORT_LABELS = frozenset(
 )
 
 
+SCOPES = ("mcp", "all")
+# Canonical instances for every string this script is willing to print, so a
+# report renders THIS script's objects rather than whichever ones reached it.
+CANONICAL_LABEL = {label: str(label) for label in REPORT_LABELS}
+CANONICAL_SCOPE = {scope: str(scope) for scope in SCOPES}
+
+
 class CorpusError(Exception):
     """A caller error worth reporting without a traceback."""
 
@@ -379,52 +386,53 @@ def compare(payloads: list[object], baseline: Hook, candidate: Hook) -> dict[str
 
 
 def safe_summary(summary: Mapping[str, object]) -> dict[str, object]:
-    """Return the summary if every key and value is safe to print, else raise.
+    """Return a report built only from this script's own strings and plain ints.
 
     The single chokepoint. Both the text report and `--json` go through it, so
-    neither can become the path that leaks a payload value. Labels come from a
-    fixed set, counts are ints, and the only string a value may be is the scope.
+    neither can become the path that prints something from the corpus.
 
-    Code names are not merely CHECKED against the vocabulary, they are replaced
-    by this script's own instances. A `str` subclass can pass an `in` test and
-    still render something else through `__format__` or `__str__`, so checking
-    without replacing would leave this depending on `_codes_for` having already
-    canonicalised -- and a chokepoint that only holds because of an earlier stage
-    is not a chokepoint.
+    Nothing that arrives here is passed through. Labels, scope values and code
+    names are all looked up and REPLACED by this script's own instances, and
+    counts must be exactly `int`. Checking without replacing is not enough: a
+    subclass of `str` or `int` can satisfy every `in` test and every `isinstance`
+    and still render anything at all through `__format__`, `__str__` or
+    `__repr__`. Refusals name the field, never the value they refused.
     """
     checked: dict[str, object] = {}
     for key, value in summary.items():
-        if key not in REPORT_LABELS:
-            raise CorpusError(f"refusing to report an unknown field: {key!r}")
+        label = CANONICAL_LABEL.get(key) if type(key) is str else None
+        if label is None:
+            raise CorpusError("refusing to report an unrecognised field")
         if isinstance(value, Mapping):
             counts: dict[str, int] = {}
             for name, count in value.items():
-                canonical = (
-                    CANONICAL_RENDERABLE.get(name) if isinstance(name, str) else None
-                )
-                if canonical is None:
+                code = CANONICAL_RENDERABLE.get(name) if type(name) is str else None
+                if code is None:
                     raise CorpusError(
-                        f"refusing to report an unknown code under {key!r}"
+                        f"refusing to report an unknown code under {label}"
                     )
-                if not isinstance(count, int) or isinstance(count, bool):
-                    raise CorpusError(f"refusing to report a non-count under {key!r}")
-                counts[canonical] = count
-            checked[key] = counts
-        elif isinstance(value, str):
-            if value not in {"mcp", "all"}:
-                raise CorpusError(f"refusing to report free text for {key!r}")
-            checked[key] = value
-        # `bool` is a subclass of `int`, so it is excluded here and falls
-        # through to the refusal below rather than printing as 0 or 1.
-        elif isinstance(value, int) and not isinstance(value, bool):
-            checked[key] = value
+                if type(count) is not int:
+                    raise CorpusError(f"refusing to report a non-count under {label}")
+                counts[code] = count
+            checked[label] = counts
+        elif type(value) is str:
+            scope = CANONICAL_SCOPE.get(value)
+            if scope is None:
+                raise CorpusError(f"refusing to report free text for {label}")
+            checked[label] = scope
+        elif type(value) is int:
+            checked[label] = value
         else:
-            raise CorpusError(f"refusing to report a non-count value for {key!r}")
+            raise CorpusError(f"refusing to report an unsupported value for {label}")
     return checked
 
 
 def render_report(summary: Mapping[str, object]) -> str:
-    """Render a checked summary as text. Counts and code names only."""
+    """Render a checked summary as text: labels, scope, code names and counts.
+
+    Every one of those is a string this script owns or a plain int, because
+    `safe_summary` replaced whatever arrived with its own instances first.
+    """
     lines: list[str] = []
     for key, value in safe_summary(summary).items():
         if isinstance(value, Mapping):
@@ -478,7 +486,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--scope",
-        choices=("mcp", "all"),
+        choices=SCOPES,
         default="mcp",
         help="mcp: only results the hook is wired to; all: a wider negative corpus",
     )

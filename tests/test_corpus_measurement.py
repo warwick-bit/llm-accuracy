@@ -481,27 +481,59 @@ def test_a_rejected_return_type_still_releases_inside_the_capture() -> None:
     assert PAYLOAD_MARKER not in captured.getvalue()
 
 
-def test_the_chokepoint_canonicalises_and_does_not_merely_check() -> None:
-    """Round five: a lookalike key passed `safe_summary` and rendered payload.
+def test_the_chokepoint_replaces_rather_than_checks_every_printable_thing() -> None:
+    """Rounds five and six: `in` and `isinstance` are not enough, anywhere.
 
-    `_codes_for` already canonicalises what a hook returns, so the CLI was safe,
-    but that made the property depend on an earlier stage having run. A `str`
-    subclass passes an `in` test and can still render anything through
-    `__format__`, so the chokepoint replaces rather than checks -- otherwise it
-    is not a chokepoint.
+    A subclass of `str` or `int` satisfies every membership and instance test and
+    can still render anything through `__format__`, `__str__` or `__repr__`, and
+    a non-string object can forge a label through `__eq__`/`__hash__`. So labels,
+    scope values and code names are looked up and replaced by this script's own
+    instances, and counts must be exactly `int`. Round five fixed only the code
+    names, which left the other three open.
     """
 
-    class Sneaky(str):
+    class Str(str):
         def __format__(self, spec: str) -> str:
             return PAYLOAD_MARKER
 
         def __str__(self) -> str:
             return PAYLOAD_MARKER
 
-    checked = safe_summary({"scope": "mcp", "codes": {Sneaky("row_cap_hit"): 1}})
+        def __repr__(self) -> str:
+            return PAYLOAD_MARKER
 
-    assert type(next(iter(checked["codes"]))) is str  # type: ignore[index]
-    assert PAYLOAD_MARKER not in render_report(checked)
+    class Int(int):
+        def __format__(self, spec: str) -> str:
+            return PAYLOAD_MARKER
+
+    class ForgedLabel:
+        def __hash__(self) -> int:
+            return hash("results")
+
+        def __eq__(self, other: object) -> bool:
+            return other == "results"
+
+        def __str__(self) -> str:
+            return PAYLOAD_MARKER
+
+    attacks: list[dict] = [
+        {"scope": Str("mcp")},
+        {Str("results"): 1},
+        {ForgedLabel(): 1},
+        {"results": Int(7)},
+        {"codes": {"row_cap_hit": Int(1)}},
+        {"codes": {Str("row_cap_hit"): 1}},
+    ]
+    for attack in attacks:
+        with pytest.raises(CorpusError) as error:
+            render_report(attack)
+        assert PAYLOAD_MARKER not in str(error.value), attack
+
+    # And an ordinary summary still renders, so the check is not simply refusing
+    # everything.
+    assert render_report(
+        {"scope": "mcp", "results": 2, "codes": {"row_cap_hit": 1}}
+    ) == ("scope: mcp\nresults: 2\ncodes:\n         1  row_cap_hit")
 
 
 def test_the_chokepoint_refuses_without_repeating_what_it_refused() -> None:

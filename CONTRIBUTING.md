@@ -38,8 +38,8 @@ python3 scripts/measure_tool_result_corpus.py --compare-hook /tmp/old-sentinel.p
 ```
 
 The corpus is your own local transcripts. The script itself never writes a value
-derived from the corpus: every report it prints is a fixed label, one of its own
-signal codes, or an integer. Errors are the exception, and they are about the
+derived from the corpus: every report it prints is one of its own labels, its own
+signal codes, its own scope word, or a plain integer. Errors are the exception, and they are about the
 command line rather than the corpus — a bad `--hook` path is named so you can fix
 it. That guarantee covers the script, not the hook you
 point it at — a hook is arbitrary imported code in the same process, and no
