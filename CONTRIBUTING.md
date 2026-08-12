@@ -17,6 +17,30 @@ find plugins -path '*/hooks/*.py' -print0 | xargs -0 -r python3 -m py_compile
 Keep the plugins generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
 
+## Changing a detection rule
+
+A rule that decides whether output is partial has two failure directions, and a
+fixture suite written by the rule's own author can hide both. Before widening or
+narrowing one, measure it against real tool results:
+
+```bash
+python3 scripts/measure_tool_result_corpus.py --exclude-session <your-session-id>
+```
+
+To show what a change COST, score the old and new hook over one snapshot. A count
+compared against a count taken earlier is not a control: the corpus grows while
+you work, so an unchanged hook can appear to gain detections.
+
+```bash
+git show <old-sha>:plugins/llm-accuracy/hooks/partial-result-sentinel.py \
+    > /tmp/old-sentinel.py
+python3 scripts/measure_tool_result_corpus.py --compare-hook /tmp/old-sentinel.py
+```
+
+The corpus is your own local transcripts and never leaves the process: the script
+reports counts and signal-code names only. Do not paste corpus contents into an
+issue, a pull request, or a commit message.
+
 ## Feedback
 
 Report a sanitized reproduction: the prompt shape, expected evidence boundary,
