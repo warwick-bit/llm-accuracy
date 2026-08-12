@@ -48,7 +48,6 @@ TRUE_MEANS_PARTIAL = {
     "hasnextpage": PAGINATION_INCOMPLETE,
     "morerecords": PAGINATION_INCOMPLETE,
     "incompletesearch": PARTIAL_PROVIDER_RESPONSE,
-    "timedout": PARTIAL_PROVIDER_RESPONSE,
     "truncated": TRUNCATED_RESULT,
     "istruncated": TRUNCATED_RESULT,
     "rowcaphit": ROW_CAP_HIT,
@@ -93,17 +92,16 @@ CONTAINED_CURSOR_KEYS = {
     "after",
 }
 
-# Envelope keys that establish a pagination context for the keys above.
+# Envelope keys that establish a pagination context for the keys above. Only
+# blocks whose own name means pagination qualify. `page`, `meta` and `metadata`
+# are deliberately absent: they are generic containers, and a CMS `page.next`
+# slug or a workflow's `metadata.next` step is ordinary business content.
 PAGINATION_CONTAINER_KEYS = {
-    "page",
     "paging",
     "pagination",
     "cursor",
-    "meta",
-    "metadata",
     "responsemetadata",
     "links",
-    "next",
 }
 
 # Keys whose populated value is itself a resume token for the NEXT page, rather

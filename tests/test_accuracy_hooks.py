@@ -577,7 +577,6 @@ NEW_PROVIDER_FIRE_CASES = [
         "next page url",
     ),
     ({"files": [{"id": "f1"}], "incompleteSearch": True}, "Drive incomplete search"),
-    ({"took": 30, "timed_out": True, "hits": {"hits": []}}, "search timed out"),
 ]
 
 
@@ -590,7 +589,33 @@ def test_partial_result_sentinel_reads_further_provider_declarations() -> None:
         assert hook.collect_codes(wrap(response)), label
 
     assert hook.collect_codes({"files": [], "incompleteSearch": False}) == set()
-    assert hook.collect_codes({"took": 30, "timed_out": False}) == set()
+
+
+AMBIGUOUS_NAMES_MUST_NOT_FIRE = [
+    ({"tasks": [{"id": 1}], "done": False}, "Salesforce done, and every task list"),
+    ({"questions": [{"q": "a"}], "isLast": False}, "Jira isLast, and every survey"),
+    ({"job_id": "j1", "timed_out": True}, "search timed out, and every job record"),
+    ({"page": {"next": "about-us"}}, "generic page container holding a slug"),
+    ({"metadata": {"next": "review-step-2"}}, "generic metadata holding a step"),
+]
+
+
+def test_partial_result_sentinel_excludes_ambiguous_business_vocabulary() -> None:
+    """Names that are ordinary business vocabulary stay out, by decision.
+
+    `done`, `isLast` and `timed_out` really do declare partiality at Salesforce,
+    Jira and Elasticsearch, and are still excluded: the same field names sit on
+    task lists, survey questions and job records, where an advisory would be
+    wrong. Detection relies on the paired unambiguous signal instead --
+    `nextRecordsUrl`, `nextPageToken`. Generic containers are excluded for the
+    same reason: only a block whose own name means pagination can make a bare
+    `next` readable as a cursor.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in AMBIGUOUS_NAMES_MUST_NOT_FIRE:
+        assert hook.collect_codes(response) == set(), label
+        assert hook.collect_codes(wrap(response)) == set(), label
 
 
 HOST_NOTICE_LOOKALIKES = [

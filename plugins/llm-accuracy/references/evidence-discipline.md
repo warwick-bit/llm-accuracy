@@ -97,10 +97,14 @@ It deliberately does NOT do the following, and you remain responsible for each:
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
 - **Read flags whose names are ordinary business vocabulary.** Salesforce's
-  `done: false` and Jira's `isLast: false` do declare a further page, but the
-  same fields appear on task records, job statuses, and survey questions, where
-  firing would be wrong. They are left out deliberately; a paired cursor
-  (`nextRecordsUrl`, `nextPageToken`) is what gets detected instead.
+  `done: false`, Jira's `isLast: false`, and Elasticsearch's `timed_out: true`
+  do declare partiality, but the same fields appear on task records, survey
+  questions, and job statuses, where firing would be wrong. They are left out
+  deliberately; a paired unambiguous signal (`nextRecordsUrl`, `nextPageToken`)
+  is what gets detected instead. For the same reason a bare `next` or `after`
+  counts only inside a block whose own name means pagination — `paging`,
+  `pagination`, `cursor`, `links`, `response_metadata` — never under a generic
+  `page` or `metadata` container.
 - **Infer partiality from offset arithmetic.** A classic `startAt` /
   `maxResults` / `total` triple, or an Elasticsearch `hits.total` above the hits
   returned, states partiality only by arithmetic on an ambiguous total. That is
