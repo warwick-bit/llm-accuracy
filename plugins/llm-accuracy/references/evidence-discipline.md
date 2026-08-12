@@ -79,13 +79,14 @@ can never observe that a later page was fetched and can never certify coverage.
 
 It reads JSON only, and detects, in the response envelope: boolean partiality
 flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
-`row_cap_hit`, `incompleteSearch`, `partial_provider_response`, and
+`row_cap_hit`, `incompleteSearch`, `incomplete_results`,
+`partial_provider_response`, and
 `pagination_complete: false`); cursors whose NAME states its own meaning
 (`next_cursor`, `nextPageToken`, `nextPageCursor`, `next_offset`, `nextToken`,
 `next_marker`, `next_page_url`, `continuationToken`, `pagingHandle`,
 `@odata.nextLink`, `nextRecordsUrl` — each accepting a bare value or an object
 wrapping one); a bare `next` or `after` inside a block whose own name means
-pagination (`paging`, `pagination`, `cursor`, `response_metadata`); exact
+pagination (`paging`, `pagination`, `cursor`); exact
 machine warning codes in an envelope warning collection, as strings or as
 `{"code": ...}` objects; a GraphQL Relay `pageInfo` block reached through nested
 dictionaries; and the host's own over-budget notice when it replaces an
