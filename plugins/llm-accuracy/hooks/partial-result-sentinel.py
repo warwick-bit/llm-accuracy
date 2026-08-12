@@ -79,13 +79,19 @@ CURSOR_KEYS = {
     "nextpageurl",
     "nexttoken",
     "nextmarker",
-    "nextlink",
-    "nextpage",
-    "continue",
     "continuationtoken",
     "paginghandle",
     "odatanextlink",
     "nextrecordsurl",
+}
+
+# Keys whose NAME suggests pagination but whose bare value is ordinary content:
+# a CMS `next_page` holds a title or a slug, an Azure `nextLink` label could be
+# a chapter name. They count only when the value has the SHAPE of a page
+# reference too -- a link object, or a url or path string.
+SHAPE_QUALIFIED_CURSOR_KEYS = {
+    "nextlink",
+    "nextpage",
 }
 
 # Keys that mean "the next page" only inside a pagination container. `next` and
@@ -233,6 +239,14 @@ def absolute_url(value: object) -> bool:
     return candidate.startswith("http://") or candidate.startswith("https://")
 
 
+def url_like(value: object) -> bool:
+    """Report whether a value has the shape of a link, absolute or rooted."""
+    if not isinstance(value, str):
+        return False
+    candidate = value.strip().lower()
+    return candidate.startswith(("http://", "https://", "/"))
+
+
 def populated_cursor(value: object) -> bool:
     """Report whether a cursor-shaped value points at a further page.
 
@@ -311,6 +325,10 @@ def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set
     name = normalize(key)
     codes: set[str] = boolean_codes(key, value)
     if name in CURSOR_KEYS and populated_cursor(value):
+        codes.add(PAGINATION_INCOMPLETE)
+    if name in SHAPE_QUALIFIED_CURSOR_KEYS and (
+        isinstance(value, dict) and populated_cursor(value) or url_like(value)
+    ):
         codes.add(PAGINATION_INCOMPLETE)
     if name in CONTAINED_CURSOR_KEYS:
         # Inside a pagination block, any populated value is a cursor. Outside

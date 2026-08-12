@@ -636,10 +636,6 @@ NEW_PROVIDER_FIRE_CASES = [
         },
         "Asana next-page object",
     ),
-    (
-        {"kind": "PodList", "metadata": {"continue": "opaque"}, "items": []},
-        "Kubernetes list continue token",
-    ),
 ]
 
 
@@ -658,6 +654,10 @@ AMBIGUOUS_NAMES_MUST_NOT_FIRE = [
     ({"tasks": [{"id": 1}], "done": False}, "Salesforce done, and every task list"),
     ({"questions": [{"q": "a"}], "isLast": False}, "Jira isLast, and every survey"),
     ({"job_id": "j1", "timed_out": True}, "search timed out, and every job record"),
+    ({"step": 2, "continue": "user confirmed"}, "Kubernetes continue, and any wizard"),
+    ({"title": "Home", "next_page": "About Us"}, "a next_page holding a page title"),
+    ({"next_page": 3, "questions": []}, "a next_page holding a page number"),
+    ({"nextLink": "Chapter 2"}, "a nextLink holding a label"),
     ({"page": {"next": "about-us"}}, "generic page container holding a slug"),
     ({"metadata": {"next": "review-step-2"}}, "generic metadata holding a step"),
 ]
@@ -670,9 +670,15 @@ def test_partial_result_sentinel_excludes_ambiguous_business_vocabulary() -> Non
     Jira and Elasticsearch, and are still excluded: the same field names sit on
     task lists, survey questions and job records, where an advisory would be
     wrong. Detection relies on the paired unambiguous signal instead --
-    `nextRecordsUrl`, `nextPageToken`. Generic containers are excluded for the
-    same reason: only a block whose own name means pagination can make a bare
-    `next` readable as a cursor.
+    `nextRecordsUrl`, `nextPageToken`. Kubernetes' `continue` is excluded on the
+    same ground: its value is an opaque string, indistinguishable from a wizard
+    step. Generic containers are excluded too, because only a block whose own
+    name means pagination can make a bare `next` readable as a cursor.
+
+    Names that merely SUGGEST pagination must also carry the shape of a page
+    reference. A `next_page` holding a title, a slug, or a page number, and a
+    `nextLink` holding a label, are ordinary content; only a link object or a
+    url/path counts.
     """
     hook = load_hook("partial-result-sentinel.py")
 
