@@ -16,22 +16,39 @@ name. This matters more than it sounds: built-in tool results outnumber MCP ones
 by roughly twenty to one locally, so scoring everything reports a denominator
 that is mostly out of scope. `--scope all` is available for a deliberately wider
 negative corpus, and labels itself as such. "All" means every record carrying a
-top-level `toolUseResult`; some built-in results are recorded only inside
-`message.content[].content` and are not collected, so `all` is a wider corpus
-rather than an exhaustive one.
+top-level `toolUseResult`, including one recorded as null; some built-in results
+are recorded only inside `message.content[].content` and are not collected, so
+`all` is a wider corpus rather than an exhaustive one.
 
-SAFETY, AND ITS LIMITS. The corpus is real tool output and may contain anything a
-tool returned. Counts and signal codes are the only things emitted, and the codes
-are checked against a vocabulary this script owns: a hook that returned a
-payload-derived string would be counted as `<unrecognised-code>`, never printed.
-A hook that raises is counted as `<hook-error>` and its message is discarded,
-because an exception message can carry payload. Hook output printed through
-Python's `sys.stdout`/`sys.stderr` is captured and dropped.
+SAFETY. The corpus is real tool output and may contain anything a tool returned.
+The guarantee is precise, and narrower than it first looks:
 
-What that does NOT cover: a hook is arbitrary imported code. It can write files,
-open sockets, or write to file descriptor 1 below Python. Measure a hook you
-trust; this boundary protects against a hook that is careless, not one that is
-hostile.
+    THIS SCRIPT never writes a payload-derived value. Everything it prints goes
+    through `safe_summary`, which accepts a fixed set of labels, this script's
+    own canonical signal codes, and integers -- nothing else, in either the text
+    or the JSON path.
+
+To hold that up, four things the hook hands over are refused rather than trusted:
+a code outside the known vocabulary becomes `<unrecognised-code>`; a code that
+merely COMPARES equal to a known one is replaced by this script's own literal,
+because a `str` subclass can render anything through `__str__`; an exception
+becomes `<hook-error>` with its message discarded; and anything the hook prints
+to Python's `sys.stdout`/`sys.stderr` during the call is captured and dropped.
+The hook's returned object is also released before the capture closes, so an
+ordinary finalizer runs inside it.
+
+What the guarantee does NOT extend to is the HOOK's own behaviour. A hook is
+arbitrary imported code running in this process, and no in-process check can
+contain it. Three separate escapes were found by review before this was written
+down honestly -- an exception from `__iter__`, a `__str__` on a lookalike code,
+and a `__del__` finalizer printing after the capture closed -- which is the
+evidence for the general claim rather than an argument against a fourth. A hook
+can still open a file, open a socket, spawn a thread, write below Python to file
+descriptor 1, or defer a finalizer past any capture by holding a reference.
+
+So: measure a hook you would run anyway. If this ever needs to measure a hook
+that is not trusted, the fix is isolation, not another check -- run the hook in a
+subprocess and read only its structured summary.
 
 TWO MODES.
 
@@ -247,9 +264,9 @@ def tool_results(
         records = _records(path)
         names = _tool_names(records)
         for record in records:
-            payload = record.get(TOOL_RESULT_KEY)
-            if payload is None:
+            if TOOL_RESULT_KEY not in record:
                 continue
+            payload = record[TOOL_RESULT_KEY]
             session = record.get(SESSION_KEY)
             if isinstance(session, str) and any(
                 excluded and excluded in session for excluded in exclude_sessions
@@ -287,6 +304,10 @@ def _codes_for(payload: object, hook: Hook) -> set[str]:
                 else UNRECOGNISED_CODE
                 for code in found
             }
+            # Drop the hook's object while the quarantine is still open. Under
+            # refcounting its `__del__` runs here rather than after the redirect
+            # closes, which is where a finalizer's output escaped once.
+            del found
     except BaseException:  # noqa: BLE001 - a hook is arbitrary code; never trust it
         return {HOOK_ERROR_CODE}
     return codes

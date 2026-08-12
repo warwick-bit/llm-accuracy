@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -345,6 +347,64 @@ def test_a_swap_between_two_unknown_codes_is_flagged_rather_than_missed() -> Non
 
     assert (known["lost"], known["gained"], known["unrecognised"]) == (1, 1, 0)
     assert unknown["unrecognised"] == 1
+
+
+def test_an_ordinary_finalizer_runs_inside_the_capture() -> None:
+    """Round three: a `__del__` printed after the capture closed.
+
+    The hook's object is released while the redirect is still open, so under
+    refcounting its finalizer runs inside the quarantine. This closes the
+    careless case. It does not make the process safe against a hook that
+    deliberately defers finalization, which the docstring now says outright
+    rather than claiming a containment that no in-process check can provide.
+    """
+
+    class Finalizer(list):
+        def __init__(self) -> None:
+            super().__init__(["pagination_incomplete"])
+
+        def __del__(self) -> None:
+            print(PAYLOAD_MARKER)
+
+    captured_out, captured_err = io.StringIO(), io.StringIO()
+    with (
+        contextlib.redirect_stdout(captured_out),
+        contextlib.redirect_stderr(captured_err),
+    ):
+        _, counts = score(
+            ["a payload"], SimpleNamespace(collect_codes=lambda _: Finalizer())
+        )
+
+    assert counts == {"pagination_incomplete": 1}
+    assert PAYLOAD_MARKER not in captured_out.getvalue()
+    assert PAYLOAD_MARKER not in captured_err.getvalue()
+
+
+def test_a_null_tool_result_is_a_result_not_an_absent_key(tmp_path: Path) -> None:
+    """`toolUseResult: null` is a recorded result with a null payload.
+
+    Treating it as an absent key made `--scope all` quietly narrower than its
+    own description. It changes no current figure -- the corpus contains none --
+    but a denominator should mean what it says.
+    """
+    lines = [
+        json.dumps(
+            {
+                "message": {
+                    "content": [{"type": "tool_use", "id": "t1", "name": "mcp__p__get"}]
+                }
+            }
+        ),
+        json.dumps(
+            {
+                "toolUseResult": None,
+                "message": {"content": [{"type": "tool_result", "tool_use_id": "t1"}]},
+            }
+        ),
+    ]
+    (tmp_path / "session-a.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    assert collect(tmp_path) == [None]
 
 
 def test_the_report_refuses_unknown_fields_codes_and_free_text() -> None:

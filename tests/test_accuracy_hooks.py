@@ -851,7 +851,9 @@ def test_partial_result_sentinel_leaves_a_providers_own_content_array_alone() ->
     assert hook.collect_codes([image]) == set()
     assert hook.collect_codes({"content": [image]}) == set()
     # On a real text block, and as a bare string, the notice still fires.
-    assert hook.collect_codes([{"type": "text", "text": notice}]) == {"truncated_result"}
+    assert hook.collect_codes([{"type": "text", "text": notice}]) == {
+        "truncated_result"
+    }
     assert hook.collect_codes(notice) == {"truncated_result"}
 
 
