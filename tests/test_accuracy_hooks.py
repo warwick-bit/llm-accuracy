@@ -904,6 +904,69 @@ def test_partial_result_sentinel_gate_reads_counts_not_just_lists() -> None:
         assert hook.collect_codes(wrap(response)) == set(), label
 
 
+PROVIDER_PAGE_MATRIX = [
+    ({"object": "list", "results": [{"id": 1}], "has_more": True}, "Notion"),
+    ({"data": [{"id": 1}], "meta": {"next_token": "7140"}}, "X/Twitter v2"),
+    (
+        {
+            "users": [{"id": 1}],
+            "next_page": "https://x.test/api/users?page=2",
+            "previous_page": None,
+            "count": 100,
+        },
+        "Zendesk",
+    ),
+    (
+        {
+            "results": [{"id": 1}],
+            "_links": {"next": "/rest/api/content?limit=25&start=25"},
+        },
+        "Confluence",
+    ),
+    ({"values": [{"id": 1}], "nextPageToken": "tok"}, "Jira platform"),
+    (
+        {
+            "results": [{"id": 1}],
+            "links": [{"rel": "next", "href": "https://cloud.example.test/api?p=2"}],
+            "totalCount": 50,
+        },
+        "MongoDB Atlas",
+    ),
+    ({"files": [{"id": 1}], "nextPageToken": "tok"}, "Google Drive"),
+    (
+        {
+            "value": [{"id": 1}],
+            "@odata.nextLink": "https://graph.example.test/v1/u?$skip=20",
+        },
+        "Microsoft Graph",
+    ),
+]
+
+PROVIDER_PAGE_EXCLUDED = [
+    ({"records": [{"id": 1}], "offset": "itrX"}, "Airtable's bare offset"),
+    ({"data": {"after": "t3_x", "children": [{"id": 1}]}}, "Reddit's after under data"),
+]
+
+
+def test_partial_result_sentinel_across_real_provider_page_shapes() -> None:
+    """A breadth check over documented page responses from many providers.
+
+    The narrow fixtures elsewhere pin individual rules; this one guards against
+    a rule change that satisfies its own test while silencing a provider nobody
+    happened to write a case for. The excluded pair is deliberate: Airtable's
+    bare `offset` and Reddit's `after` under `data` are both indistinguishable
+    from ordinary fields, and `data` is never traversed.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, provider in PROVIDER_PAGE_MATRIX:
+        assert hook.collect_codes(response), provider
+        assert hook.collect_codes(wrap(response)), provider
+
+    for response, provider in PROVIDER_PAGE_EXCLUDED:
+        assert hook.collect_codes(response) == set(), provider
+
+
 def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:
     """A warning collection may carry objects, not only bare strings."""
     hook = load_hook("partial-result-sentinel.py")
@@ -1103,12 +1166,18 @@ def test_partial_result_sentinel_emits_advisory_without_echoing_output(
 
     assert hook.main() == 0
 
-    output = json.loads(capsys.readouterr().out)
+    captured = capsys.readouterr()
+    output = json.loads(captured.out)
     context = output["hookSpecificOutput"]["additionalContext"]
     assert output["hookSpecificOutput"]["hookEventName"] == "PostToolUse"
     assert "pagination_incomplete" in context
-    assert marker not in context
-    assert "person@example.test" not in context
+
+    # Checked against the COMPLETE streams, not only the advisory field: an
+    # earlier version searched `additionalContext` alone, which would have
+    # missed a leak printed anywhere else.
+    for stream in (captured.out, captured.err):
+        assert marker not in stream
+        assert "person@example.test" not in stream
 
 
 def test_partial_result_sentinel_is_silent_without_signals(monkeypatch, capsys) -> None:
