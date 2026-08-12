@@ -497,7 +497,12 @@ def test_partial_result_sentinel_false_positive_budget() -> None:
     assert fired == [], fired
 
 
-DEEP_CONNECTION_FIRE_CASES = [
+# A Relay connection nested under schema-specific container names is NO LONGER
+# detected. Round sixteen showed the chase that found it could not tell a keyed
+# record collection from a GraphQL container, and measurement showed it had
+# never fired on real data. These are now documented exclusions, kept as cases
+# so the gap stays visible rather than becoming folklore.
+DEEP_CONNECTION_NOW_EXCLUDED = [
     (
         {
             "data": {
@@ -513,7 +518,7 @@ DEEP_CONNECTION_FIRE_CASES = [
     ),
     (
         {"result": {"search": {"pageInfo": {"hasNextPage": True}}}},
-        "connection under a known envelope key",
+        "a connection one unknown container below a known envelope key",
     ),
 ]
 
@@ -1077,22 +1082,48 @@ def test_partial_result_sentinel_still_bounds_pathological_input() -> None:
     assert hook.collect_codes(wrap(oversized)) == set()
 
 
-def test_partial_result_sentinel_detects_deep_graphql_connections() -> None:
-    """Relay `pageInfo` is found at depth, without widening general traversal.
+def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() -> None:
+    """`pageInfo` is read at the envelope root and under known envelope keys.
 
-    T4 of the hardening plan: the connection pass descends through dict values
-    only and reads signals solely from the `pageInfo` dict, so record arrays and
-    ordinary nested business fields stay unreachable.
+    Round sixteen: the pass that chased `pageInfo` under any container name
+    descended into keyed record collections, so
+    `{"pages_by_slug": {"home": {"pageInfo": {"hasNextPage": true}}}}` fired on
+    a complete map of records. Protecting record ARRAYS was not enough, because
+    a provider may key its records by id instead. The chase is gone; a
+    `pageInfo` block is now read only where the envelope traversal already goes,
+    and only for its paging booleans.
     """
     hook = load_hook("partial-result-sentinel.py")
 
-    for response, label in DEEP_CONNECTION_FIRE_CASES:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
+    # The blocker, in both delivered shapes.
+    keyed = {
+        "pages_by_slug": {
+            "home": {
+                "title": "Home",
+                "pageInfo": {"hasNextPage": True, "nextLabel": "About us"},
+            }
+        }
+    }
+    assert hook.collect_codes(keyed) == set()
+    assert hook.collect_codes(wrap(keyed)) == set()
 
-    for response, label in DEEP_CONNECTION_SILENT_CASES:
+    # The gap this deliberately accepts.
+    for response, label in DEEP_CONNECTION_NOW_EXCLUDED:
         assert hook.collect_codes(response) == set(), label
         assert hook.collect_codes(wrap(response)) == set(), label
+    for response, label in DEEP_CONNECTION_SILENT_CASES:
+        assert hook.collect_codes(response) == set(), label
+
+    # Where traversal reaches it, a page-info block still declares partiality.
+    assert hook.collect_codes(wrap({"pageInfo": {"hasNextPage": True}})) == {
+        "pagination_incomplete"
+    }
+    assert hook.collect_codes(wrap({"result": {"pageInfo": {"hasMore": True}}})) == {
+        "pagination_incomplete"
+    }
+    # And only through its paging booleans, never its rendering or cursors.
+    assert hook.collect_codes(wrap({"pageInfo": {"truncated": True}})) == set()
+    assert hook.collect_codes(wrap({"pageInfo": {"next": "about-us"}})) == set()
 
 
 def test_partial_result_sentinel_emits_advisory_without_echoing_output(

@@ -95,8 +95,9 @@ self-describing cursor inside any other `pagination`-named block, which is
 traversed but does not make a bare `next` a cursor, because a `paginationLabels`
 block holds button copy rather than cursor state; exact
 machine warning codes in an envelope warning collection, as strings or as
-`{"code": ...}` objects; a GraphQL Relay `pageInfo` block reached through nested
-dictionaries; and the host's own over-budget notice when it replaces an
+`{"code": ...}` objects; the paging booleans of a Relay `pageInfo` block that
+sits where traversal already reaches — at the envelope root or under a known
+envelope key; and the host's own over-budget notice when it replaces an
 oversized result with a pointer to a file.
 
 It deliberately does NOT do the following, and you remain responsible for each:
@@ -107,7 +108,9 @@ It deliberately does NOT do the following, and you remain responsible for each:
   total against rows in hand is your job, not the hook's.
 - **Read record content.** Row arrays are never inspected, so a column named
   `has_more`, a cell whose value is `row_cap_hit`, or a `pageInfo` object nested
-  inside a record array will not raise a signal. One record shape escapes that
+  inside a record array will not raise a signal. Records keyed by id rather than
+  held in an array are equally safe, because no traversal descends under a
+  container name it does not recognise. One record shape escapes that
   protection and is accepted as a limit: a SINGULAR record returned as a bare
   JSON object, with no collection around it, is structurally identical to a
   response envelope — PostgREST can return one — so a business column named
@@ -119,11 +122,21 @@ It deliberately does NOT do the following, and you remain responsible for each:
 - **Find a cursor under an unrecognised container.** A self-describing cursor is
   read at the envelope root and inside the blocks traversal reaches — `result`,
   `response`, `body`, `page`, `paging`, `pagination`, `cursor`, `meta`,
-  `metadata`, `response_metadata`, `links`, `structuredContent`, and any other
-  pagination-named block. A cursor buried under a
-  schema-specific container the traversal does not know is not found; only a
-  Relay `pageInfo` block is chased under container names the traversal does not
-  know, and that chase stops at the same depth bound as everything else (6).
+  `metadata`, `response_metadata`, `pageInfo`, `links`, `structuredContent`, and
+  any other pagination-named block. A cursor buried under a schema-specific
+  container the traversal does not know is not found.
+- **Chase a GraphQL connection under schema-specific containers.** A Relay
+  connection sits at a path only its schema knows —
+  `data.repository.pullRequests.pageInfo` — and an earlier version descended
+  dict values under any name to find it. That could not tell a keyed record
+  collection from a GraphQL container: `{"pages_by_slug": {"home": {"pageInfo":
+  {"hasNextPage": true}}}}` is a complete map of records whose `pageInfo`
+  describes document navigation, and it fired. Protecting record ARRAYS was not
+  enough, because a provider may key its records by id instead — Firebase
+  returns keyed objects. Measured across 9,059 real local tool results, no
+  `pageInfo` block appeared at all and the chase accounted for none of the 26
+  detections, so it was removed rather than narrowed again. A `pageInfo` at the
+  envelope root or under a known envelope key is still read.
 - **Read a bare root `cursor`.** Square returns a populated root `cursor` only
   when a further page exists, but a bare `cursor` more often identifies the page
   already returned, and the name does not say which. A cursor whose name states

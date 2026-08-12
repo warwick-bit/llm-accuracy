@@ -27,10 +27,19 @@ the provider -- an Anthropic Messages response and a CMS article both carry one
 of identical shape -- and is left alone. Depth is not what separates them: a
 provider envelope decoded from the bare list the host usually delivers also
 begins at depth 0, so the test is whether the object IS the wire form.
-One pass is broader: the Relay connection pass descends
-dict values under any container name, to find a ``pageInfo`` block under a
-schema-specific path, but it reads signals out of that block alone and is
-bounded by ``MAX_DEPTH`` like everything else.
+
+A Relay ``pageInfo`` block is read where traversal already reaches it -- at the
+envelope root, or under a recognised envelope key -- and only for its paging
+booleans, never its cursor vocabulary. It is NOT chased under schema-specific
+container names. An earlier version did exactly that, descending dict values
+under any name, and it could not tell a keyed record collection from a GraphQL
+container: ``{"pages_by_slug": {"home": {"pageInfo": {...}}}}`` is a complete
+map of records whose ``pageInfo`` describes document navigation, and it fired.
+Protecting record ARRAYS was not enough, because a provider may key its records
+by id instead -- Firebase returns keyed objects. Measured across 9,059 real
+local tool results, no ``pageInfo`` block appeared at all and the chase
+accounted for none of the 26 detections, so the gap is documented rather than
+guessed at.
 
 One record shape is beyond that protection and is accepted as a limit: a
 SINGULAR record returned as a bare JSON object, with no collection wrapping it,
@@ -163,6 +172,7 @@ GENERIC_CONTAINER_KEYS = {
     "meta",
     "metadata",
     "responsemetadata",
+    "pageinfo",
 }
 
 # Envelope keys that establish a pagination context for CONTAINED_CURSOR_KEYS.
@@ -205,11 +215,11 @@ WARNING_CONTAINER_KEYS = {
 
 # Dict-valued keys that carry more envelope, rather than record content.
 # `data` is deliberately absent: it is just as often the returned record, and
-# traversing it reads business fields as pagination metadata. `pageInfo` is
-# absent too, and is owned by the connection pass instead: a Relay page-info
-# block declares partiality only through its booleans, so reading the cursor
-# vocabulary inside it turned an ordinary `page_info.next` page slug into a
-# false signal.
+# traversing it reads business fields as pagination metadata. `pageInfo` IS
+# here, and is a generic container below, so only its paging booleans are read:
+# a Relay page-info block declares partiality through those alone, and reading
+# the cursor vocabulary inside it turned an ordinary `page_info.next` page slug
+# into a false signal.
 ENVELOPE_KEYS = {
     "result",
     "response",
@@ -223,6 +233,7 @@ ENVELOPE_KEYS = {
     "structuredcontent",
     "responsemetadata",
     "links",
+    "pageinfo",
 }
 
 # Traversal bounds keep a pathological payload from stalling the hook.
@@ -474,48 +485,6 @@ def host_truncation_codes(response: object) -> set[str]:
     return set()
 
 
-def page_info_codes(block: dict) -> set[str]:
-    """Read paging flags out of a page-info block, and nothing else."""
-    codes: set[str] = set()
-    for key, value in list(block.items())[:MAX_FIELDS_PER_NODE]:
-        name = normalize(key)
-        if value is True and name in PAGE_INFO_TRUE_MEANS_PARTIAL:
-            codes.add(PAGE_INFO_TRUE_MEANS_PARTIAL[name])
-        if value is False and name in FALSE_MEANS_PARTIAL:
-            codes.add(FALSE_MEANS_PARTIAL[name])
-    return codes
-
-
-def connection_codes(envelope: dict) -> set[str]:
-    """Find GraphQL connection page info nested under arbitrary container keys.
-
-    A Relay connection puts its pagination flags in a dict named ``pageInfo``
-    that sits under schema-specific containers -- ``data.repository.
-    pullRequests.pageInfo`` -- which the envelope-key traversal cannot reach.
-
-    This pass descends through dict values ONLY. Record arrays are never walked,
-    so row content still cannot be read as pagination metadata, and signals are
-    read only out of the ``pageInfo`` dict itself. Widening the general traversal
-    instead is what produced false positives in earlier review rounds.
-    """
-    codes: set[str] = set()
-    queue: list[tuple[dict, int]] = [(envelope, 0)]
-    budget = MAX_ENVELOPES
-    while queue:
-        node, depth = queue.pop(0)
-        budget -= 1
-        if budget < 0:
-            break
-        for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
-            if not isinstance(value, dict):
-                continue
-            if normalize(key) == "pageinfo":
-                codes |= page_info_codes(value)
-            elif depth < MAX_DEPTH:
-                queue.append((value, depth + 1))
-    return codes
-
-
 def collect_codes(payload: object) -> set[str]:
     """Return every explicit partial-result code found in a tool result.
 
@@ -534,8 +503,6 @@ def collect_codes(payload: object) -> set[str]:
     # list the host usually sends also starts at depth 0.
     if isinstance(payload, dict):
         envelopes = envelopes + embedded_envelopes(payload)
-    for envelope in envelopes:
-        codes |= connection_codes(envelope)
     queue: list[tuple[dict, int, bool, bool]] = [
         (env, 0, False, False) for env in envelopes
     ]
