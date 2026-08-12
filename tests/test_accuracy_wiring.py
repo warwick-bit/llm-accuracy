@@ -313,6 +313,54 @@ def test_partial_result_sentinel_end_to_end_through_shipped_command() -> None:
 
 
 @posix_only
+def test_partial_result_sentinel_completes_within_its_declared_timeout() -> None:
+    """Run the shipped command under the timeout the manifest actually declares.
+
+    Other tests allow 10s, which cannot catch a regression that pushes the hook
+    past its real budget. The third fresh audit measured 4.05s on a 50 MB
+    payload, so the worst realistic inputs are driven here under the declared
+    limit: subprocess.run raises TimeoutExpired if the budget is blown.
+    """
+    declared = hook_handler("PostToolUse", 0)["timeout"]
+    assert isinstance(declared, int)
+    assert declared == 3
+
+    rows = [{"id": n, "name": f"row-{n}", "blob": "x" * 200} for n in range(20000)]
+    payloads = [
+        json.dumps(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "mcp__example__list_rows",
+                "tool_response": blocks({"rows": rows, "has_more": True}),
+            }
+        ),
+        json.dumps(
+            {
+                "hook_event_name": "PostToolUse",
+                "tool_name": "mcp__example__wide",
+                "tool_response": {f"field_{n}": n for n in range(300000)},
+            }
+        ),
+    ]
+
+    for payload in payloads:
+        environment = clean_environment()
+        environment["CLAUDE_PLUGIN_ROOT"] = str(PLUGIN_ROOT)
+        command = hook_handler("PostToolUse", 0)["command"]
+        assert isinstance(command, str)
+        result = subprocess.run(
+            ["/bin/sh", "-c", command],
+            input=payload,
+            capture_output=True,
+            text=True,
+            env=environment,
+            timeout=declared,
+        )
+        assert result.returncode == 0
+        assert result.stderr == ""
+
+
+@posix_only
 def test_partial_result_sentinel_fails_safe_on_malformed_stdin() -> None:
     """A non-JSON payload must exit clean and silent rather than erroring."""
     result = run_hook("PostToolUse", 0, "not json at all")

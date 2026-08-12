@@ -304,6 +304,69 @@ def test_partial_result_sentinel_bound_is_order_independent() -> None:
     assert hook.collect_codes(too_deep) == set()
 
 
+def test_partial_result_sentinel_traversal_budget_is_a_real_limit() -> None:
+    """Order independence holds within the budget, and not beyond it.
+
+    The third fresh audit showed the claim above is only true while the queue
+    stays inside MAX_ENVELOPES. Past that the position of the signal decides
+    whether it is seen, so the limit is pinned here rather than left implied.
+    This needs a payload with more envelope-keyed siblings than any real result
+    carries -- key spellings that all fold onto `result` -- so it bounds a
+    pathological input, not a realistic one.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    spellings = ["result", "RESULT", "_result", "re_sult", "res-ult", "resu_lt"]
+    padding = {}
+    while len(padding) <= hook.MAX_ENVELOPES:
+        for spelling in spellings:
+            padding[f"{spelling}{'_' * (len(padding) + 1)}"] = {"note": 1}
+            if len(padding) > hook.MAX_ENVELOPES:
+                break
+
+    signal = {"result": {"has_more": True}}
+    assert hook.collect_codes({**signal, **padding}) == {"pagination_incomplete"}
+    assert hook.collect_codes({**padding, **signal}) == set()
+
+
+def test_partial_result_sentinel_reads_a_bounded_number_of_content_blocks() -> None:
+    """Only the first MAX_CONTENT_BLOCKS blocks are read, and that is pinned."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    filler = [{"type": "text", "text": "no signal here"}]
+    signal = [{"type": "text", "text": '{"rows": [], "has_more": true}'}]
+
+    within = filler * (hook.MAX_CONTENT_BLOCKS - 1) + signal
+    beyond = filler * hook.MAX_CONTENT_BLOCKS + signal
+
+    assert hook.collect_codes(within) == {"pagination_incomplete"}
+    assert hook.collect_codes(beyond) == set()
+
+
+def test_partial_result_sentinel_drops_an_oversized_payload_before_parsing(
+    monkeypatch, capsys
+) -> None:
+    """The whole stdin payload is bounded, not just the embedded text.
+
+    Regression for the third fresh audit, which measured 4.05 s on a 50 MB
+    payload against a 3 s hook timeout. Parsing is linear in input size, so the
+    payload is now dropped unread rather than parsed.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+    monkeypatch.delenv("CC_SKIP_PARTIAL_RESULT", raising=False)
+
+    oversized = (
+        '{"tool_response": {"has_more": true, "pad": "'
+        + ("x" * hook.MAX_INPUT_BYTES)
+        + '"}}'
+    )
+    assert len(oversized) > hook.MAX_INPUT_BYTES
+    monkeypatch.setattr(hook.sys, "stdin", io.StringIO(oversized))
+
+    assert hook.main() == 0
+    assert capsys.readouterr().out == ""
+
+
 def test_partial_result_sentinel_covers_every_declared_cursor_key() -> None:
     """Each declared cursor key fires when populated and stays silent when not.
 
@@ -439,7 +502,11 @@ DEEP_CONNECTION_SILENT_CASES = [
                 }
             }
         },
-        "backwards paging only",
+        # Deliberate: hasPreviousPage says an EARLIER page exists, which is true
+        # of every page after the first in ordinary forward pagination. Firing
+        # on it would raise an advisory on each page of a walk the caller is
+        # already completing, so only forward partiality is reported.
+        "backwards paging is not reported",
     ),
     (
         {"rows": [{"pageInfo": {"hasNextPage": True}}]},
@@ -452,7 +519,113 @@ DEEP_CONNECTION_SILENT_CASES = [
 ]
 
 
+AMBIGUOUS_CURSOR_AT_ROOT_MUST_NOT_FIRE = [
+    ({"next": "Quarterly review", "owner": "Ops"}, "report section named next"),
+    ({"after": "Lunch", "agenda": "Board meeting"}, "agenda field named after"),
+    ({"next": "chapter-two", "title": "Chapter one"}, "document navigation"),
+]
+
+AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE = [
+    ({"results": [], "paging": {"next": {"after": "52"}}}, "HubSpot paging block"),
+    ({"data": [], "links": {"next": "https://api.example.test/x?page=2"}}, "JSON:API"),
+    (
+        {"links": {"self": "a", "next": {"href": "https://api.example.test/x?page=2"}}},
+        "JSON:API next as a link object",
+    ),
+    ({"cursor": {"after": "abc123"}}, "cursor block"),
+]
+
+
+def test_partial_result_sentinel_reads_bare_next_only_inside_a_container() -> None:
+    """`next` and `after` are ordinary English outside a pagination block.
+
+    Regression for a false positive found by the third fresh audit: a business
+    object whose root carries `next` or `after` -- an agenda, a report section,
+    a document's navigation -- raised a partial-result advisory. Those names now
+    count only under a pagination container, which is where every real API puts
+    them.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in AMBIGUOUS_CURSOR_AT_ROOT_MUST_NOT_FIRE:
+        assert hook.collect_codes(response) == set(), label
+        assert hook.collect_codes(wrap(response)) == set(), label
+
+    for response, label in AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+
+
+def test_partial_result_sentinel_covers_every_contained_cursor_key() -> None:
+    """Each contained cursor key fires in a container and stays silent at root.
+
+    Derived from the hook's own key set so a newly declared one cannot ship
+    without coverage on both sides of the boundary.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+    assert hook.CONTAINED_CURSOR_KEYS
+
+    for key in hook.CONTAINED_CURSOR_KEYS:
+        assert hook.collect_codes({"paging": {key: "page-two"}}) == {
+            "pagination_incomplete"
+        }, key
+        assert hook.collect_codes({key: "page-two"}) == set(), key
+
+
+NEW_PROVIDER_FIRE_CASES = [
+    (
+        {"data": [], "next_page_url": "https://api.example.test/v2/x?page=2"},
+        "next page url",
+    ),
+    ({"files": [{"id": "f1"}], "incompleteSearch": True}, "Drive incomplete search"),
+    ({"took": 30, "timed_out": True, "hits": {"hits": []}}, "search timed out"),
+]
+
+
+def test_partial_result_sentinel_reads_further_provider_declarations() -> None:
+    """Three more unambiguous declarations found by the third fresh audit."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in NEW_PROVIDER_FIRE_CASES:
+        assert hook.collect_codes(response), label
+        assert hook.collect_codes(wrap(response)), label
+
+    assert hook.collect_codes({"files": [], "incompleteSearch": False}) == set()
+    assert hook.collect_codes({"took": 30, "timed_out": False}) == set()
+
+
+HOST_NOTICE_LOOKALIKES = [
+    "Error: the runbook says this export exceeds maximum allowed tokens and "
+    "has been saved to the compliance archive.",
+    "Error: your upload exceeds maximum allowed tokens; a copy has been saved "
+    "to your drive.",
+    "Error: upstream 502 from provider",
+]
+
+
+def test_partial_result_sentinel_anchors_the_host_notice_on_its_prefix() -> None:
+    """Business prose about token limits is not the host's own notice.
+
+    Regression for the third fresh audit: matching on loose substrings fired on
+    ordinary returned prose. The match is anchored on the host's structural
+    prefix, which was identical across every real occurrence observed.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for text in HOST_NOTICE_LOOKALIKES:
+        assert hook.collect_codes(text) == set(), text
+
+    real = (
+        "Error: result (94,455 characters across 1 line) exceeds maximum "
+        "allowed tokens. Output has been saved to /tmp/tool-results/x.txt."
+    )
+    assert hook.collect_codes(real) == {"truncated_result"}
+
+
 PAGE_INFO_MUST_NOT_FIRE = [
+    (
+        {"document": {"pageInfo": {"truncated": True, "title": "Annual report"}}},
+        "page display metadata, not a result that stopped early",
+    ),
     ({"page_info": {"views": 10, "next": "about-us"}}, "CMS nav slug named next"),
     ({"page_info": {"after": "intro"}}, "ordering field named after"),
     ({"pageInfo": {"title": "Home", "slug": "home"}}, "page metadata block"),

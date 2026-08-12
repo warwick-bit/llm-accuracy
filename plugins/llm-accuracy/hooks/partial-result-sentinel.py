@@ -47,10 +47,21 @@ TRUE_MEANS_PARTIAL = {
     "hasmore": PAGINATION_INCOMPLETE,
     "hasnextpage": PAGINATION_INCOMPLETE,
     "morerecords": PAGINATION_INCOMPLETE,
+    "incompletesearch": PARTIAL_PROVIDER_RESPONSE,
+    "timedout": PARTIAL_PROVIDER_RESPONSE,
     "truncated": TRUNCATED_RESULT,
     "istruncated": TRUNCATED_RESULT,
     "rowcaphit": ROW_CAP_HIT,
     "partialproviderresponse": PARTIAL_PROVIDER_RESPONSE,
+}
+
+# Inside a page-info block, only the flags that describe PAGING count. A
+# `pageInfo.truncated` on a document describes how the page was rendered, not a
+# result that stopped early.
+PAGE_INFO_TRUE_MEANS_PARTIAL = {
+    "hasmore": PAGINATION_INCOMPLETE,
+    "hasnextpage": PAGINATION_INCOMPLETE,
+    "morerecords": PAGINATION_INCOMPLETE,
 }
 
 # Envelope keys whose value being exactly False is evidence of partiality.
@@ -58,19 +69,41 @@ FALSE_MEANS_PARTIAL = {
     "paginationcomplete": PAGINATION_INCOMPLETE,
 }
 
-# Envelope keys whose populated value points at a further page. A bare "cursor"
-# is excluded: it usually identifies the page already returned.
+# Keys whose populated value points at a further page, and whose NAME says so
+# on its own. A bare "cursor" is excluded: it usually identifies the page
+# already returned.
 CURSOR_KEYS = {
     "nextcursor",
     "nextpagetoken",
     "nextpagecursor",
     "nextoffset",
+    "nextpageurl",
     "continuationtoken",
     "paginghandle",
     "odatanextlink",
     "nextrecordsurl",
+}
+
+# Keys that mean "the next page" only inside a pagination container. `next` and
+# `after` are ordinary English at the root of a business object -- a meeting
+# with an `after` field, a report with a `next` section -- so they count only
+# under a container such as `links`, `paging`, or `response_metadata`.
+CONTAINED_CURSOR_KEYS = {
     "next",
     "after",
+}
+
+# Envelope keys that establish a pagination context for the keys above.
+PAGINATION_CONTAINER_KEYS = {
+    "page",
+    "paging",
+    "pagination",
+    "cursor",
+    "meta",
+    "metadata",
+    "responsemetadata",
+    "links",
+    "next",
 }
 
 # Keys whose populated value is itself a resume token for the NEXT page, rather
@@ -141,13 +174,21 @@ MAX_ENVELOPES = 256
 # most likely to be paginated.
 MAX_EMBEDDED_JSON_BYTES = 8_000_000
 MAX_CONTENT_BLOCKS = 32
+# One node can carry an unbounded number of fields; MAX_ENVELOPES bounds how
+# many dictionaries are visited, not how wide any one of them is.
+MAX_FIELDS_PER_NODE = 4096
+# The host payload itself is bounded before it is parsed. Parsing is linear in
+# input size, and a 50 MB payload measured 4.05 s against the 3 s hook timeout,
+# so an oversized payload is dropped rather than parsed.
+MAX_INPUT_BYTES = 10_000_000
 
 # The host replaces an over-budget MCP result with its own notice and saves the
 # real output to a file. That notice is the most explicit partiality evidence
-# available -- the model is provably not seeing the full result. Both markers
-# must appear within the notice head, so prose that merely discusses token
-# limits somewhere in a long document cannot trigger it.
-HOST_TRUNCATION_PREFIX = "error:"
+# available -- the model is provably not seeing the full result. The match is
+# anchored on the host's structural prefix and both markers must appear within
+# the notice head, so business prose that merely discusses token limits -- an
+# export runbook, a support reply -- cannot trigger it.
+HOST_TRUNCATION_PREFIX = "error: result ("
 HOST_TRUNCATION_MARKERS = ("exceeds maximum allowed tokens", "has been saved to")
 MAX_TRUNCATION_NOTICE_SCAN = 600
 
@@ -175,13 +216,20 @@ def normalize(key: str) -> str:
 
 
 def populated_cursor(value: object) -> bool:
-    """Report whether a cursor-shaped value points at a further page."""
+    """Report whether a cursor-shaped value points at a further page.
+
+    A link object is accepted because JSON:API allows `next` to be an object
+    carrying an `href`, rather than a bare URL string.
+    """
     if isinstance(value, bool):
         return False
     if isinstance(value, str):
         return bool(value.strip())
     if isinstance(value, int):
         return value > 0
+    if isinstance(value, dict):
+        target = value.get("href")
+        return isinstance(target, str) and bool(target.strip())
     return False
 
 
@@ -232,11 +280,17 @@ def boolean_codes(key: str, value: object) -> set[str]:
     return codes
 
 
-def scalar_codes(key: str, value: object) -> set[str]:
-    """Return signal codes implied by one envelope key/value pair."""
+def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set[str]:
+    """Return signal codes implied by one envelope key/value pair.
+
+    `in_pagination` says whether this key sits inside a pagination container,
+    which is what makes an ambiguous name like `next` or `after` readable as a
+    cursor rather than as ordinary business vocabulary.
+    """
     name = normalize(key)
     codes: set[str] = boolean_codes(key, value)
-    if name in CURSOR_KEYS and populated_cursor(value):
+    cursor_names = CURSOR_KEYS | (CONTAINED_CURSOR_KEYS if in_pagination else set())
+    if name in cursor_names and populated_cursor(value):
         codes.add(PAGINATION_INCOMPLETE)
     if name in RESUME_KEY_KEYS and populated_resume_key(value):
         codes.add(PAGINATION_INCOMPLETE)
@@ -340,6 +394,18 @@ def host_truncation_codes(response: object) -> set[str]:
     return set()
 
 
+def page_info_codes(block: dict) -> set[str]:
+    """Read paging flags out of a page-info block, and nothing else."""
+    codes: set[str] = set()
+    for key, value in list(block.items())[:MAX_FIELDS_PER_NODE]:
+        name = normalize(key)
+        if value is True and name in PAGE_INFO_TRUE_MEANS_PARTIAL:
+            codes.add(PAGE_INFO_TRUE_MEANS_PARTIAL[name])
+        if value is False and name in FALSE_MEANS_PARTIAL:
+            codes.add(FALSE_MEANS_PARTIAL[name])
+    return codes
+
+
 def connection_codes(envelope: dict) -> set[str]:
     """Find GraphQL connection page info nested under arbitrary container keys.
 
@@ -360,12 +426,11 @@ def connection_codes(envelope: dict) -> set[str]:
         budget -= 1
         if budget < 0:
             break
-        for key, value in node.items():
+        for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
             if not isinstance(value, dict):
                 continue
             if normalize(key) == "pageinfo":
-                for inner_key, inner_value in value.items():
-                    codes |= boolean_codes(inner_key, inner_value)
+                codes |= page_info_codes(value)
             elif depth < MAX_DEPTH:
                 queue.append((value, depth + 1))
     return codes
@@ -383,28 +448,31 @@ def collect_codes(payload: object) -> set[str]:
     envelopes = host_envelopes(payload)
     for envelope in envelopes:
         codes |= connection_codes(envelope)
-    queue: list[tuple[dict, int]] = [(envelope, 0) for envelope in envelopes]
+    queue: list[tuple[dict, int, bool]] = [(env, 0, False) for env in envelopes]
     if not queue:
         return codes
     budget = MAX_ENVELOPES
     while queue:
-        node, depth = queue.pop(0)
+        node, depth, in_pagination = queue.pop(0)
         budget -= 1
         if budget < 0:
             break
         codes |= warning_codes(node)
-        for key, value in node.items():
-            codes |= scalar_codes(key, value)
+        for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
+            name = normalize(key)
+            codes |= scalar_codes(key, value, in_pagination=in_pagination)
             codes |= link_collection_codes(key, value)
-            if (
-                isinstance(value, dict)
-                and normalize(key) in ENVELOPE_KEYS
-                and depth < MAX_DEPTH
-            ):
-                queue.append((value, depth + 1))
+            if isinstance(value, dict) and name in ENVELOPE_KEYS and depth < MAX_DEPTH:
+                queue.append(
+                    (
+                        value,
+                        depth + 1,
+                        in_pagination or name in PAGINATION_CONTAINER_KEYS,
+                    )
+                )
         if depth < MAX_DEPTH:
             for parsed in embedded_envelopes(node):
-                queue.append((parsed, depth + 1))
+                queue.append((parsed, depth + 1, in_pagination))
     return codes
 
 
@@ -412,7 +480,10 @@ def main() -> int:
     if os.environ.get(BYPASS_ENV):
         return 0
     try:
-        payload = json.loads(sys.stdin.read() or "{}")
+        raw = sys.stdin.read(MAX_INPUT_BYTES + 1)
+        if len(raw) > MAX_INPUT_BYTES:
+            return 0
+        payload = json.loads(raw or "{}")
         if not isinstance(payload, dict):
             return 0
         codes = collect_codes(payload.get("tool_response"))
