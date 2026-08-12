@@ -761,8 +761,9 @@ def test_partial_result_sentinel_reads_only_paging_flags_in_a_generic_block() ->
     """A `page` or `metadata` block describes the thing returned, not the result.
 
     Regression for the sixth fresh audit: `page.truncated` on a document preview
-    raised `truncated_result`. Inside a generic container only PAGING booleans
-    are read, which is the same distinction already drawn for `pageInfo`.
+    raised `truncated_result`. Inside a generic container the BOOLEAN vocabulary
+    narrows to the paging flags. It does not silence the other mechanisms: a
+    self-describing cursor there is still read.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -980,7 +981,7 @@ def test_partial_result_sentinel_reports_a_singular_record_as_a_known_limit() ->
 
 
 def test_partial_result_sentinel_ignores_rendering_flags_in_response_metadata() -> None:
-    """`response_metadata` is a generic bag, so only paging booleans count there.
+    """`response_metadata` is generic, so its BOOLEAN vocabulary narrows to paging.
 
     Regression for the eighth fresh audit: `response_metadata` was removed from
     the pagination containers but never added to the generic ones, so a
@@ -1091,7 +1092,9 @@ def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() 
     blocks -- a shape structurally identical to a real GitHub connection, so no
     discriminator exists. A same-snapshot control over 9,231 real tool results
     scored the hook with and without the chase and got identical detection sets,
-    29 each. The gap is accepted; do not restore it without new evidence.
+    29 each. The gap is accepted; do not restore it without new evidence. What
+    still works is a `pageInfo` directly at the root or directly under a
+    recognised key -- not a raw GraphQL `{"data": ...}` body, wrapped or not.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -1124,13 +1127,41 @@ def test_partial_result_sentinel_reads_page_info_only_where_traversal_reaches() 
     assert hook.collect_codes(wrap({"result": {"pageInfo": {"hasMore": True}}})) == {
         "pagination_incomplete"
     }
-    # Its rendering flags and ambiguous page slugs stay unread. A self-describing
-    # cursor inside it is still read, as it is in any reached block.
+    # Being generic narrows its BOOLEAN vocabulary to paging, and its ambiguous
+    # page slugs stay unread. A self-describing cursor is still read, as in any
+    # block traversal reaches -- generic is not the same as silent.
     assert hook.collect_codes(wrap({"pageInfo": {"truncated": True}})) == set()
     assert hook.collect_codes(wrap({"pageInfo": {"next": "about-us"}})) == set()
     assert hook.collect_codes(wrap({"pageInfo": {"next_cursor": "p2"}})) == {
         "pagination_incomplete"
     }
+
+
+def test_partial_result_sentinel_pins_the_stored_host_notice_limit() -> None:
+    """A stored COPY of the host notice is indistinguishable from a live one.
+
+    Raised by the nineteenth fresh audit and accepted as a limit. A log search,
+    a transcript reader or a ticket body that returns the notice verbatim is
+    byte-for-byte identical to the host having replaced the result. Weakening
+    the match would give up the most explicit and most common real partiality
+    evidence there is, so the collision is accepted. Unlike the other two limits
+    this one is plain text, not structure.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    stored = (
+        "Error: result (94,455 characters across 1 line) exceeds maximum "
+        "allowed tokens. Output has been saved to /tmp/tool-results/x.txt."
+    )
+    assert hook.collect_codes(stored) == {"truncated_result"}
+    assert hook.collect_codes(wrap(stored)) == {"truncated_result"}
+    # Prose that merely discusses token limits is not the notice: the match is
+    # anchored on the host's structural prefix, so this stays silent.
+    discussion = (
+        "Our export runbook explains that a result which exceeds maximum "
+        "allowed tokens has been saved to a file for later download."
+    )
+    assert hook.collect_codes(wrap(discussion)) == set()
 
 
 def test_partial_result_sentinel_pins_the_namespace_collision_limit() -> None:

@@ -108,8 +108,11 @@ It deliberately does NOT do the following, and you remain responsible for each:
   total against rows in hand is your job, not the hook's.
 - **Read record content.** Row arrays are never inspected, so a column named
   `has_more`, a cell whose value is `row_cap_hit`, or a `pageInfo` object nested
-  inside a record array will not raise a signal. TWO record shapes escape that
-  protection and are accepted as limits. First, a SINGULAR record returned as a bare
+  inside a record array will not raise a signal. The protection is structural:
+  traversal stops at any container name the hook does not recognise, and enters
+  no list except the protocol's own content blocks and a recognised warning
+  collection. So a record can only be read where it OCCUPIES a recognised
+  position, which is exactly TWO shapes, both accepted as limits. First, a SINGULAR record returned as a bare
   JSON object, with no collection around it, is structurally identical to a
   response envelope — PostgREST can return one — so a business column named
   `has_more` on such a record raises a false advisory. Guessing from whether a
@@ -146,14 +149,21 @@ It deliberately does NOT do the following, and you remain responsible for each:
   keeping it was a GraphQL passthrough server such as `blurrah/mcp-graphql`,
   which returns raw GraphQL JSON — a real possibility, but not an observed one,
   weighed against a reproduced precision defect with no fix. A GraphQL result
-  delivered inside an ordinary envelope still works, because `pageInfo` is
-  reached there.
+  delivered as a `pageInfo` directly at the envelope root, or directly under a
+  recognised key, still works; a raw GraphQL `{"data": ...}` body stays silent
+  even wrapped in `result`, because `data` is never traversed.
 - **Read a bare root `cursor`.** Square returns a populated root `cursor` only
   when a further page exists, but a bare `cursor` more often identifies the page
   already returned, and the name does not say which. A cursor whose name states
   it points forward — `next_cursor`, `nextPageToken` — is read as usual.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
+- **Read a stored copy of the host notice as a live one.** A tool returning the
+  host's own over-budget notice out of a log, a transcript, or a ticket body is
+  byte-for-byte indistinguishable from the host having replaced the result, so
+  it raises `truncated_result`. Weakening the match would give up the most
+  explicit and most common real partiality evidence there is, so this plain-text
+  collision is accepted alongside the two structured-record ones above.
 - **Read result-set flags inside a generic block.** A `page`, `meta`,
   `metadata`, or `response_metadata` block describes the thing being returned,
   so only paging flags are read there: a `page.truncated` on a document preview,

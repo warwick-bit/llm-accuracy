@@ -29,8 +29,12 @@ provider envelope decoded from the bare list the host usually delivers also
 begins at depth 0, so the test is whether the object IS the wire form.
 
 A Relay ``pageInfo`` block is read only where the envelope traversal already
-reaches it -- the envelope root, or a known envelope key -- where it is a
-generic container, so only its paging booleans count.
+reaches it: directly at the envelope root, or directly under a known envelope
+key. There it is a generic container, which narrows the BOOLEAN vocabulary to
+the paging flags -- ``pageInfo.truncated`` on a rendering is not a result that
+stopped early. It does not silence the other mechanisms: a self-describing
+cursor or an exact warning code inside that block is read as it is anywhere
+traversal reaches.
 
 A connection nested under SCHEMA-SPECIFIC container names is NOT found, and that
 gap is deliberate and hard-won. Two passes tried. The first descended dict
@@ -50,8 +54,10 @@ block appeared anywhere in that corpus. The case for keeping it was a GraphQL pa
 server such as ``blurrah/mcp-graphql``, which returns raw GraphQL JSON and would
 produce ``data.repository.pullRequests.pageInfo``; that is a real possibility
 but not an observed one, and it was weighed against a reproduced precision
-defect with no available fix. A GraphQL result delivered inside an ordinary
-envelope still works, because ``pageInfo`` is reached there. Do not restore the
+defect with no available fix. What still works is a ``pageInfo`` sitting
+directly at the envelope root or directly under a recognised key; a raw GraphQL
+``{"data": ...}`` body stays silent even wrapped in ``result``, because ``data``
+is never traversed. Do not restore the
 chase without new evidence -- it was removed, restored, and removed again.
 
 That leaves a second accepted limit, of the same kind as the singular record: a
@@ -73,6 +79,13 @@ could be used to guess -- whether a collection sits beside the flag -- would
 silence real envelopes. Measured across 8,499 real local tool results, a root
 partiality flag appeared 46 times and every one sat beside a collection; the
 singular-record shape appeared zero times.
+
+One further ambiguity is accepted, and it is plain text rather than structure. A
+tool that returns a STORED COPY of the host's own over-budget notice -- a log
+search, a transcript reader, a support-ticket body quoting it -- is byte-for-byte
+indistinguishable from the host having replaced the result. It raises
+``truncated_result``. Weakening the match would give up the most explicit and
+most common real partiality evidence there is, so the collision is accepted.
 
 Declared record totals are deliberately NOT compared against returned rows. A
 bare total is ambiguous -- an invoice total, an aggregate, or a chart series all
@@ -239,10 +252,11 @@ WARNING_CONTAINER_KEYS = {
 # Dict-valued keys that carry more envelope, rather than record content.
 # `data` is deliberately absent: it is just as often the returned record, and
 # traversing it reads business fields as pagination metadata. `pageInfo` IS
-# here, and is a generic container below, so only its paging booleans are read:
-# a Relay page-info block declares partiality through those alone, and reading
-# the cursor vocabulary inside it turned an ordinary `page_info.next` page slug
-# into a false signal.
+# here, and is a generic container below, which narrows its BOOLEAN vocabulary
+# to the paging flags: a Relay page-info block declares partiality through those,
+# and reading the AMBIGUOUS cursor vocabulary inside it turned an ordinary
+# `page_info.next` page slug into a false signal. A self-describing cursor there
+# is still read, as it is in any block traversal reaches.
 ENVELOPE_KEYS = {
     "result",
     "response",
