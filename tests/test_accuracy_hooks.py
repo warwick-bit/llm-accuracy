@@ -675,7 +675,7 @@ PROVIDER_PAGE_MATRIX = [
 
 # Documented exclusions: the page reference is real, but its name and shape are
 # indistinguishable from ordinary document content, so it is not read. Measured
-# across 459 real MCP results, none of these mechanisms ever fired, while each
+# across 459 real tool results, none of these mechanisms ever fired, while each
 # of them produced false positives in review.
 PROVIDER_PAGE_EXCLUDED = [
     ({"records": [{"id": 1}], "offset": "itrX"}, "Airtable's bare offset"),

@@ -82,10 +82,12 @@ there would be a false all-clear.
 no recall, `lost` must be 0. That is evidence about THIS corpus, not proof of
 recall in general: a shape absent here is unmeasured, not absent in the world.
 
-`unrecognised` must also be 0 to read `lost`/`gained` at face value. Codes outside
-the known vocabulary all collapse to one placeholder, so a swap between two
-UNKNOWN codes is invisible; a non-zero count means this script's vocabulary is
-behind the hook's and must be updated before the comparison means anything.
+`unrecognised` must also be 0 to read `lost`/`gained` at face value. It counts
+observations carrying either placeholder: a code outside the known vocabulary, or
+a hook that raised. Unknown codes all collapse to the same placeholder, so a swap
+between two of them is invisible, and a hook that fails is not measuring
+anything. Either way the comparison is not trustworthy until it reads 0 -- fix
+the hook, or update this script's vocabulary.
 
 SELF-CONTAMINATION. A session working ON the sentinel writes its own test
 payloads into its own transcript, which then enters the corpus. Exclude it by id;
@@ -136,6 +138,11 @@ HOOK_ERROR_CODE = "<hook-error>"
 UNRESOLVED_TOOL = "<unresolved>"
 
 RENDERABLE = SIGNAL_CODES | {UNRECOGNISED_CODE, HOOK_ERROR_CODE}
+# Canonical instances for everything printable, so the report renders THIS
+# script's strings rather than whichever object reached it. `_codes_for` already
+# canonicalises what a hook returns; doing it again here means the chokepoint
+# holds on its own rather than depending on an earlier stage having run.
+CANONICAL_RENDERABLE = {code: str(code) for code in RENDERABLE}
 REPORT_LABELS = frozenset(
     {
         "scope",
@@ -376,21 +383,33 @@ def safe_summary(summary: Mapping[str, object]) -> dict[str, object]:
 
     The single chokepoint. Both the text report and `--json` go through it, so
     neither can become the path that leaks a payload value. Labels come from a
-    fixed set, code names from the known vocabulary, and every leaf is an int.
+    fixed set, counts are ints, and the only string a value may be is the scope.
+
+    Code names are not merely CHECKED against the vocabulary, they are replaced
+    by this script's own instances. A `str` subclass can pass an `in` test and
+    still render something else through `__format__` or `__str__`, so checking
+    without replacing would leave this depending on `_codes_for` having already
+    canonicalised -- and a chokepoint that only holds because of an earlier stage
+    is not a chokepoint.
     """
     checked: dict[str, object] = {}
     for key, value in summary.items():
         if key not in REPORT_LABELS:
             raise CorpusError(f"refusing to report an unknown field: {key!r}")
         if isinstance(value, Mapping):
+            counts: dict[str, int] = {}
             for name, count in value.items():
-                if name not in RENDERABLE:
+                canonical = (
+                    CANONICAL_RENDERABLE.get(name) if isinstance(name, str) else None
+                )
+                if canonical is None:
                     raise CorpusError(
                         f"refusing to report an unknown code under {key!r}"
                     )
                 if not isinstance(count, int) or isinstance(count, bool):
                     raise CorpusError(f"refusing to report a non-count under {key!r}")
-            checked[key] = dict(value)
+                counts[canonical] = count
+            checked[key] = counts
         elif isinstance(value, str):
             if value not in {"mcp", "all"}:
                 raise CorpusError(f"refusing to report free text for {key!r}")

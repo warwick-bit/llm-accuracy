@@ -481,6 +481,29 @@ def test_a_rejected_return_type_still_releases_inside_the_capture() -> None:
     assert PAYLOAD_MARKER not in captured.getvalue()
 
 
+def test_the_chokepoint_canonicalises_and_does_not_merely_check() -> None:
+    """Round five: a lookalike key passed `safe_summary` and rendered payload.
+
+    `_codes_for` already canonicalises what a hook returns, so the CLI was safe,
+    but that made the property depend on an earlier stage having run. A `str`
+    subclass passes an `in` test and can still render anything through
+    `__format__`, so the chokepoint replaces rather than checks -- otherwise it
+    is not a chokepoint.
+    """
+
+    class Sneaky(str):
+        def __format__(self, spec: str) -> str:
+            return PAYLOAD_MARKER
+
+        def __str__(self) -> str:
+            return PAYLOAD_MARKER
+
+    checked = safe_summary({"scope": "mcp", "codes": {Sneaky("row_cap_hit"): 1}})
+
+    assert type(next(iter(checked["codes"]))) is str  # type: ignore[index]
+    assert PAYLOAD_MARKER not in render_report(checked)
+
+
 def test_the_chokepoint_refuses_without_repeating_what_it_refused() -> None:
     """A fail-closed check that prints the rejected value is not fail-closed."""
     with pytest.raises(CorpusError) as error:

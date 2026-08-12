@@ -37,9 +37,11 @@ git show <old-sha>:plugins/llm-accuracy/hooks/partial-result-sentinel.py \
 python3 scripts/measure_tool_result_corpus.py --compare-hook /tmp/old-sentinel.py
 ```
 
-The corpus is your own local transcripts. The script itself never writes a
-payload-derived value: everything it prints is a fixed label, one of its own
-signal codes, or an integer. That guarantee covers the script, not the hook you
+The corpus is your own local transcripts. The script itself never writes a value
+derived from the corpus: every report it prints is a fixed label, one of its own
+signal codes, or an integer. Errors are the exception, and they are about the
+command line rather than the corpus — a bad `--hook` path is named so you can fix
+it. That guarantee covers the script, not the hook you
 point it at — a hook is arbitrary imported code in the same process, and no
 in-process check can contain one. Measure a hook you would run anyway, and do not
 paste corpus contents into an issue, a pull request, or a commit message.
