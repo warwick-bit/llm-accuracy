@@ -23,10 +23,15 @@ are recorded only inside `message.content[].content` and are not collected, so
 SAFETY. The corpus is real tool output and may contain anything a tool returned.
 The guarantee is precise, and narrower than it first looks:
 
-    THIS SCRIPT never writes a payload-derived value. Everything it prints goes
-    through `safe_summary`, which accepts a fixed set of labels, this script's
-    own canonical signal codes, and integers -- nothing else, in either the text
-    or the JSON path.
+    THIS SCRIPT never writes a value derived from the CORPUS. Every report it
+    prints goes through `safe_summary`, which accepts a fixed set of labels,
+    this script's own canonical signal codes, and integers -- nothing else, in
+    either the text or the JSON path.
+
+Errors are the one other thing it prints, and they are about the command line
+rather than the corpus: a bad `--hook` path is named so the mistake is fixable.
+Argument-parsing failures print a fixed message, because argparse would otherwise
+echo the offending value back, and someone could paste anything there.
 
 To hold that up, four things the hook hands over are refused rather than trusted:
 a code outside the known vocabulary becomes `<unrecognised-code>`; a code that
@@ -34,8 +39,8 @@ merely COMPARES equal to a known one is replaced by this script's own literal,
 because a `str` subclass can render anything through `__str__`; an exception
 becomes `<hook-error>` with its message discarded; and anything the hook prints
 to Python's `sys.stdout`/`sys.stderr` during the call is captured and dropped.
-The hook's returned object is also released before the capture closes, so an
-ordinary finalizer runs inside it.
+The hook's returned object is also released before the capture closes, on every
+branch, so an ordinary finalizer runs inside it.
 
 What the guarantee does NOT extend to is the HOOK's own behaviour. A hook is
 arbitrary imported code running in this process, and no in-process check can
@@ -47,8 +52,10 @@ can still open a file, open a socket, spawn a thread, write below Python to file
 descriptor 1, or defer a finalizer past any capture by holding a reference.
 
 So: measure a hook you would run anyway. If this ever needs to measure a hook
-that is not trusted, the fix is isolation, not another check -- run the hook in a
-subprocess and read only its structured summary.
+that is not trusted, the fix is isolation, not another check -- run the hook in a SANDBOXED
+subprocess with restricted filesystem and network permissions, and read only its
+structured summary. A bare subprocess captures its output but does not stop it
+writing a file or opening a socket.
 
 TWO MODES.
 
@@ -95,9 +102,9 @@ import contextlib
 import importlib.util
 import io
 import json
-from collections.abc import Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from pathlib import Path
-from typing import Protocol
+from typing import NoReturn, Protocol
 
 
 DEFAULT_TRANSCRIPT_ROOT = Path.home() / ".claude" / "projects"
@@ -159,7 +166,7 @@ class Hook(Protocol):
     holds against a hook that is not the shipped one.
     """
 
-    def collect_codes(self, payload: object) -> object: ...
+    collect_codes: Callable[[object], object]
 
 
 def load_hook(path: Path, name: str = "sentinel_under_measurement") -> Hook:
@@ -296,17 +303,19 @@ def _codes_for(payload: object, hook: Hook) -> set[str]:
             # Iteration happens INSIDE the guard on purpose. A returned object
             # can raise from `__iter__`, and that exception carries whatever the
             # hook put in it -- which is how the payload escaped once already.
-            if not isinstance(found, (set, frozenset, list, tuple)):
-                return {UNRECOGNISED_CODE}
-            codes = {
-                CANONICAL_CODE.get(code, UNRECOGNISED_CODE)
-                if isinstance(code, str)
-                else UNRECOGNISED_CODE
-                for code in found
-            }
-            # Drop the hook's object while the quarantine is still open. Under
-            # refcounting its `__del__` runs here rather than after the redirect
-            # closes, which is where a finalizer's output escaped once.
+            if isinstance(found, (set, frozenset, list, tuple)):
+                codes = {
+                    CANONICAL_CODE.get(code, UNRECOGNISED_CODE)
+                    if isinstance(code, str)
+                    else UNRECOGNISED_CODE
+                    for code in found
+                }
+            else:
+                codes = {UNRECOGNISED_CODE}
+            # Drop the hook's object on EVERY branch while the quarantine is
+            # still open. Under refcounting its `__del__` runs here rather than
+            # after the redirect closes, which is where a finalizer escaped once.
+            # An early return would have skipped this for a rejected return type.
             del found
     except BaseException:  # noqa: BLE001 - a hook is arbitrary code; never trust it
         return {HOOK_ERROR_CODE}
@@ -376,14 +385,18 @@ def safe_summary(summary: Mapping[str, object]) -> dict[str, object]:
         if isinstance(value, Mapping):
             for name, count in value.items():
                 if name not in RENDERABLE:
-                    raise CorpusError(f"refusing to report an unknown code: {name!r}")
+                    raise CorpusError(
+                        f"refusing to report an unknown code under {key!r}"
+                    )
                 if not isinstance(count, int) or isinstance(count, bool):
-                    raise CorpusError(f"refusing to report a non-count for {name!r}")
+                    raise CorpusError(f"refusing to report a non-count under {key!r}")
             checked[key] = dict(value)
         elif isinstance(value, str):
             if value not in {"mcp", "all"}:
                 raise CorpusError(f"refusing to report free text for {key!r}")
             checked[key] = value
+        # `bool` is a subclass of `int`, so it is excluded here and falls
+        # through to the refusal below rather than printing as 0 or 1.
         elif isinstance(value, int) and not isinstance(value, bool):
             checked[key] = value
         else:
@@ -404,8 +417,21 @@ def render_report(summary: Mapping[str, object]) -> str:
     return "\n".join(lines)
 
 
+class QuietParser(argparse.ArgumentParser):
+    """An argument parser that does not echo the value it rejected.
+
+    argparse's default diagnostic quotes the offending argument, which is a value
+    someone could have pasted from anywhere. The mistake is still reported; the
+    value is not.
+    """
+
+    def error(self, message: str) -> NoReturn:
+        del message  # the whole point: the rejected value is not repeated
+        self.exit(2, "error: invalid arguments\n")
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
+    parser = QuietParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument(
         "--hook",
         type=Path,

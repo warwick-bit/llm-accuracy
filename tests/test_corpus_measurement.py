@@ -444,6 +444,51 @@ def test_json_output_goes_through_the_same_chokepoint(
     assert PAYLOAD_MARKER not in json.dumps(payload)
 
 
+def test_argument_errors_do_not_echo_the_value_they_rejected(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Round four: argparse quoted the offending value back.
+
+    Someone can paste anything into an argument, so the parser reports that the
+    arguments were invalid without repeating them.
+    """
+    with pytest.raises(SystemExit) as exit_info:
+        main(["--scope", PAYLOAD_MARKER])
+
+    captured = capsys.readouterr()
+    assert exit_info.value.code == 2
+    assert PAYLOAD_MARKER not in captured.out + captured.err
+    assert "invalid arguments" in captured.out + captured.err
+
+
+def test_a_rejected_return_type_still_releases_inside_the_capture() -> None:
+    """The early return for an unrecognised type skipped the release.
+
+    Round four, non-blocking: only the accepted-container branch dropped the
+    hook's object before the capture closed, so a finalizer on a rejected type
+    still printed outside it.
+    """
+
+    class Odd:
+        def __del__(self) -> None:
+            print(PAYLOAD_MARKER)
+
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(captured):
+        _, counts = score(["a payload"], SimpleNamespace(collect_codes=lambda _: Odd()))
+
+    assert counts == {"<unrecognised-code>": 1}
+    assert PAYLOAD_MARKER not in captured.getvalue()
+
+
+def test_the_chokepoint_refuses_without_repeating_what_it_refused() -> None:
+    """A fail-closed check that prints the rejected value is not fail-closed."""
+    with pytest.raises(CorpusError) as error:
+        safe_summary({"codes": {PAYLOAD_MARKER: 1}})
+
+    assert PAYLOAD_MARKER not in str(error.value)
+
+
 def test_main_reports_a_bad_hook_path_without_a_traceback(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
