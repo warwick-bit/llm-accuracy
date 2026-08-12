@@ -398,7 +398,22 @@ def test_partial_result_sentinel_covers_every_declared_cursor_key() -> None:
     ship without coverage.
     """
     hook = load_hook("partial-result-sentinel.py")
-    assert hook.CURSOR_KEYS
+    # Pin the membership, not only the behaviour of whatever is in the set: a
+    # loop derived from the set cannot notice a key being REMOVED from it.
+    assert hook.CURSOR_KEYS == {
+        "nextcursor",
+        "nextpagetoken",
+        "nextpagecursor",
+        "nextoffset",
+        "nextpageurl",
+        "nextpageuri",
+        "nexttoken",
+        "nextmarker",
+        "continuationtoken",
+        "paginghandle",
+        "odatanextlink",
+        "nextrecordsurl",
+    }
 
     for key in hook.CURSOR_KEYS:
         assert hook.collect_codes({key: "page-two"}) == {"pagination_incomplete"}, key
@@ -774,6 +789,40 @@ def test_partial_result_sentinel_accepts_an_object_valued_cursor() -> None:
     assert hook.collect_codes({"items": items, "next_cursor": {"done": False}}) == set()
 
 
+def test_partial_result_sentinel_leaves_a_providers_own_content_array_alone() -> None:
+    """A `content` array below the wire boundary is a document body, not protocol.
+
+    Regression for the thirteenth fresh audit: every traversed envelope had its
+    `content` key reparsed as MCP content blocks, so a CMS article quoting a
+    JSON example in one of its blocks raised `pagination_incomplete`. Content
+    blocks are now read at depth 0 only, and only when the block type is `text`.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    article = {
+        "document": {"id": "doc-1", "title": "Pagination guide"},
+        "content": [
+            {
+                "type": "paragraph",
+                "text": '{"has_more": true, "example": "quoted in the article"}',
+            }
+        ],
+    }
+    assert hook.collect_codes(wrap(article)) == set()
+    # Even when the provider happens to name its block type `text`, it is below
+    # the wire boundary, so it is still the document's content.
+    nested = {"result": {"content": [{"type": "text", "text": '{"has_more": true}'}]}}
+    assert hook.collect_codes(wrap(nested)) == set()
+    # The protocol's own blocks at the boundary are still read, in both the dict
+    # wire form and the list the host actually delivers.
+    wire = {"content": [{"type": "text", "text": '{"rows": [], "has_more": true}'}]}
+    assert hook.collect_codes(wire) == {"pagination_incomplete"}
+    assert hook.collect_codes(wire["content"]) == {"pagination_incomplete"}
+    # A block without the text type is not a text block, whatever it carries.
+    untyped = [{"text": '{"rows": [], "has_more": true}'}]
+    assert hook.collect_codes(untyped) == set()
+
+
 def test_partial_result_sentinel_reads_only_token_members_of_a_cursor_object() -> None:
     """A cursor object's unrelated metadata is not a page token.
 
@@ -793,6 +842,23 @@ def test_partial_result_sentinel_reads_only_token_members_of_a_cursor_object() -
     # A non-token member cannot stand in for the token on its own.
     assert hook.collect_codes(wrap({"next_cursor": {"status": "exhausted"}})) == set()
     assert hook.collect_codes(wrap({"next_cursor": {"expires_in": 0}})) == set()
+    # Pin the membership, so a token-bearing member cannot be dropped silently.
+    assert hook.CURSOR_OBJECT_TOKEN_FIELDS == {
+        "token",
+        "value",
+        "cursor",
+        "after",
+        "offset",
+        "marker",
+        "key",
+        "id",
+        "href",
+        "uri",
+        "url",
+        "path",
+        "next",
+        "start",
+    }
     # The token itself still fires through every member that can carry one.
     for field in sorted(hook.CURSOR_OBJECT_TOKEN_FIELDS):
         populated = {"items": [{"id": 1}], "next_cursor": {field: "p2", "status": "ok"}}

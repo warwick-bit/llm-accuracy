@@ -18,7 +18,12 @@ Detection is scoped to the response ENVELOPE. Record contents inside a
 collection are never inspected, because a row may legitimately hold a column
 called ``has_more`` or a cell whose value is ``row_cap_hit``; treating row data
 as pagination metadata would fire on ordinary database results. Record arrays
-are never walked into. One pass is broader: the Relay connection pass descends
+are never walked into. Two lists are read, and both are protocol rather than
+record: the MCP content blocks of the tool result itself, read at the wire
+boundary only and only when the block type says ``text``; and an envelope
+warning collection, read for exact machine codes. A provider's own ``content``
+array further down is its document body, not protocol, and is left alone.
+One pass is broader: the Relay connection pass descends
 dict values under any container name, to find a ``pageInfo`` block under a
 schema-specific path, but it reads signals out of that block alone and is
 bounded by ``MAX_DEPTH`` like everything else.
@@ -382,12 +387,20 @@ def json_envelope(text: str) -> dict | None:
 
 
 def content_block_envelopes(blocks: object) -> list[dict]:
-    """Parse MCP text content blocks whose body is a JSON envelope."""
+    """Parse MCP text content blocks whose body is a JSON envelope.
+
+    The block type is checked, not just the presence of a ``text`` field. A
+    provider's own document blocks are shaped the same way -- a CMS article
+    returns ``{"type": "paragraph", "text": ...}`` -- and reading those would
+    make an article that quotes a JSON example look like a partial result.
+    """
     found: list[dict] = []
     if not isinstance(blocks, list):
         return found
     for block in blocks[:MAX_CONTENT_BLOCKS]:
         if not isinstance(block, dict):
+            continue
+        if block.get("type") != "text":
             continue
         text = block.get("text")
         if not isinstance(text, str):
@@ -399,7 +412,13 @@ def content_block_envelopes(blocks: object) -> list[dict]:
 
 
 def embedded_envelopes(node: dict) -> list[dict]:
-    """Parse MCP text content blocks carried under a dict's ``content`` key."""
+    """Parse MCP text content blocks carried under a dict's ``content`` key.
+
+    Only ever applied at the MCP wire boundary -- the dict form of the tool
+    result itself. A `content` key deeper inside a provider payload belongs to
+    the provider, not the protocol: a document API returns its body that way,
+    and reparsing it reads record content as an envelope.
+    """
     return content_block_envelopes(node.get("content"))
 
 
@@ -533,7 +552,10 @@ def collect_codes(payload: object) -> set[str]:
                         paging_only or name in GENERIC_CONTAINER_KEYS,
                     )
                 )
-        if depth < MAX_DEPTH:
+        # Depth 0 only: that is the MCP wire boundary, where a `content` list is
+        # the protocol's own content blocks. Below it, `content` is the
+        # provider's, and parsing it reads record content as an envelope.
+        if depth == 0:
             for parsed in embedded_envelopes(node):
                 queue.append((parsed, depth + 1, in_pagination, paging_only))
     return codes
