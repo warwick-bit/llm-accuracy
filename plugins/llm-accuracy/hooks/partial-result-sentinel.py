@@ -26,6 +26,18 @@ look identical to a record count -- and associating a total with the right list
 is not solvable generically. That comparison produced false positives in review
 and was removed rather than special-cased.
 
+A page REFERENCE is read only when its own name states what it is. A document
+that links to its next chapter is structurally identical to an API page that
+links to its next page: both can carry ``links.next``, a ``rel: next``
+collection, a ``next_page`` object, or a bare root ``next`` holding a url.
+Nothing in a single stateless payload separates them, and successive attempts to
+infer it -- from absolute urls, from a sibling collection, from a record count
+-- each produced false advisories on ordinary documents. Measured across 459
+real MCP tool results, those ambiguous mechanisms never fired at all, while
+boolean flags, self-describing cursor names and the host notice accounted for
+every real detection. So the ambiguous forms are excluded, and a bare ``next``
+or ``after`` is read only inside a block whose own name means pagination.
+
 Tool output is inspected in memory and is never echoed or persisted.
 """
 
