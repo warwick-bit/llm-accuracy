@@ -91,6 +91,11 @@ CURSOR_KEYS = {
 # reference too -- a link object, or a url or path string.
 SHAPE_QUALIFIED_CURSOR_KEYS = {
     "nextlink",
+}
+
+# `next_page` is read only as an absolute url. Zendesk returns one; a document's
+# `next_page` holds a title, a slug, or an object naming the next section.
+ABSOLUTE_URL_CURSOR_KEYS = {
     "nextpage",
 }
 
@@ -112,50 +117,6 @@ PAGINATION_CONTAINER_KEYS = {
     "pagination",
     "cursor",
     "responsemetadata",
-    "links",
-}
-
-# Keys whose populated value is itself a resume token for the NEXT page, rather
-# than a scalar cursor. DynamoDB returns a whole key object; its presence is the
-# documented signal that a scan or query stopped early.
-RESUME_KEY_KEYS = {
-    "lastevaluatedkey",
-    "nextstartkey",
-}
-
-# Keys that hold a list of link objects, HAL / Atlas style, where a `next`
-# relation is the pagination signal. Only the link objects themselves are read;
-# this is never applied to record arrays.
-LINK_COLLECTION_KEYS = {
-    "links",
-    "link",
-}
-MAX_LINKS_SCANNED = 32
-
-# Numeric keys that state how many records a collection holds. Their presence
-# corroborates that this envelope IS a collection response, which an empty page
-# cannot show on its own. Bare `total` is excluded: it is the ambiguous total
-# that is deliberately never read.
-RECORD_COUNT_KEYS = {
-    "count",
-    "totalcount",
-    "totalsize",
-    "totalresults",
-    "totalrecords",
-    "resultcount",
-    "recordcount",
-    "scannedcount",
-    "numresults",
-}
-
-# Keys naming the PREVIOUS page. Their presence, even when null, is pagination
-# vocabulary, and is what tells a Django REST Framework page apart from a
-# document that happens to link onwards.
-PREVIOUS_PAGE_KEYS = {
-    "previous",
-    "prev",
-    "previouspage",
-    "prevpage",
 }
 
 # Exact machine warning codes, read only from envelope warning collections.
@@ -279,72 +240,6 @@ def url_like(value: object) -> bool:
     return candidate.startswith(("http://", "https://", "/"))
 
 
-def absolute_link(value: object) -> bool:
-    """Report whether a value is an absolute url, or an object carrying one."""
-    if absolute_url(value):
-        return True
-    if isinstance(value, dict):
-        return any(absolute_url(value.get(f)) for f in ("href", "uri", "url"))
-    return False
-
-
-def record_list(key: str, value: object) -> bool:
-    """Report whether one field is a non-empty list of returned records."""
-    if not isinstance(value, list) or not value:
-        return False
-    name = normalize(key)
-    return name not in LINK_COLLECTION_KEYS and name not in WARNING_CONTAINER_KEYS
-
-
-def collection_present(node: dict) -> bool:
-    """Report whether this envelope is a collection response.
-
-    Partiality is a statement about a RESULT SET, so an ambiguous page reference
-    only means pagination when this envelope is returning a collection. Document
-    navigation -- a chapter with a `next` link, or a link map -- is not, which is
-    what separates it from an API page response.
-
-    Two things establish it. Returned records, found either directly or one
-    level inside a container, because HAL puts them under `_embedded` while
-    pagination sits under `_links`. Or a record-count key, because a legitimately
-    EMPTY page still declares how many records it counted -- a filtered DynamoDB
-    scan returns no items and a resume key, and must still be reported.
-
-    An empty list on its own establishes nothing: `tags: []` on a document looks
-    identical to an exhausted result set.
-
-    A nested envelope inherits this from its ancestors and can also establish it
-    itself, so a response wrapped in `result` or `structuredContent` -- where the
-    root carries no records at all -- is still recognised.
-    """
-    for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
-        if record_list(key, value):
-            return True
-        if normalize(key) in RECORD_COUNT_KEYS and isinstance(value, int):
-            return True
-        if isinstance(value, dict):
-            for inner_key, inner_value in list(value.items())[:MAX_FIELDS_PER_NODE]:
-                if record_list(inner_key, inner_value):
-                    return True
-    return False
-
-
-def pagination_vocabulary(node: dict) -> bool:
-    """Report whether a node carries corroborating pagination vocabulary.
-
-    A bare `next` at the root of a business object is the most ambiguous signal
-    there is, so it needs more than a collection: a record count or a named
-    previous page, both of which a page response carries and a document does not.
-    """
-    for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
-        name = normalize(key)
-        if name in RECORD_COUNT_KEYS and isinstance(value, int):
-            return True
-        if name in PREVIOUS_PAGE_KEYS:
-            return True
-    return False
-
-
 def populated_cursor(value: object) -> bool:
     """Report whether a cursor-shaped value points at a further page.
 
@@ -370,40 +265,6 @@ def populated_cursor(value: object) -> bool:
     return False
 
 
-def populated_resume_key(value: object) -> bool:
-    """Report whether a resume-key value actually carries a resume token."""
-    if isinstance(value, dict):
-        return bool(value)
-    if isinstance(value, str):
-        return bool(value.strip())
-    return False
-
-
-def link_collection_codes(
-    key: str, value: object, *, has_collection: bool = True
-) -> set[str]:
-    """Read a HAL-style link collection for a `next` relation.
-
-    Scoped to keys that name a link collection, and the `next` relation must
-    target an absolute URL. Document navigation carries the same `rel: next`
-    with a relative path -- a chapter link -- so the relation alone is not
-    enough to tell an API page link from ordinary content.
-    """
-    if not has_collection:
-        return set()
-    if normalize(key) not in LINK_COLLECTION_KEYS or not isinstance(value, list):
-        return set()
-    for entry in value[:MAX_LINKS_SCANNED]:
-        if not isinstance(entry, dict):
-            continue
-        relation = entry.get("rel")
-        if not isinstance(relation, str) or relation.strip().lower() != "next":
-            continue
-        if absolute_url(entry.get("href")):
-            return {PAGINATION_INCOMPLETE}
-    return set()
-
-
 def boolean_codes(key: str, value: object) -> set[str]:
     """Return signal codes implied by an unambiguous boolean flag.
 
@@ -421,42 +282,23 @@ def boolean_codes(key: str, value: object) -> set[str]:
     return codes
 
 
-def scalar_codes(
-    key: str,
-    value: object,
-    *,
-    in_pagination: bool = False,
-    has_collection: bool = True,
-    corroborated: bool = True,
-) -> set[str]:
+def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set[str]:
     """Return signal codes implied by one envelope key/value pair.
 
-    `in_pagination` says whether this key sits inside a pagination container,
-    which is what makes an ambiguous name like `next` or `after` readable as a
-    cursor rather than as ordinary business vocabulary.
+    `in_pagination` says whether this key sits inside a block whose own name
+    means pagination. That is what makes a name as ordinary as `next` or
+    `after` readable as a cursor; outside such a block it is not read at all.
     """
     name = normalize(key)
     codes: set[str] = boolean_codes(key, value)
     if name in CURSOR_KEYS and populated_cursor(value):
         codes.add(PAGINATION_INCOMPLETE)
-    if not has_collection:
-        # Everything below is an ambiguous page reference, and means pagination
-        # only when the envelope actually returned a collection to page through.
-        return codes
-    if name in SHAPE_QUALIFIED_CURSOR_KEYS and (
-        isinstance(value, dict) and populated_cursor(value) or url_like(value)
-    ):
+    if name in SHAPE_QUALIFIED_CURSOR_KEYS and url_like(value):
         codes.add(PAGINATION_INCOMPLETE)
-    if name in CONTAINED_CURSOR_KEYS:
-        # Inside a pagination block, any populated value is a cursor. At the
-        # root it is the most ambiguous signal there is, so it needs both an
-        # absolute link and corroborating pagination vocabulary.
-        if in_pagination:
-            ambiguous = populated_cursor(value)
-        else:
-            ambiguous = corroborated and absolute_link(value)
-        if ambiguous:
-            codes.add(PAGINATION_INCOMPLETE)
+    if name in ABSOLUTE_URL_CURSOR_KEYS and absolute_url(value):
+        codes.add(PAGINATION_INCOMPLETE)
+    if in_pagination and name in CONTAINED_CURSOR_KEYS and populated_cursor(value):
+        codes.add(PAGINATION_INCOMPLETE)
     return codes
 
 
@@ -614,53 +456,30 @@ def collect_codes(payload: object) -> set[str]:
     envelopes = host_envelopes(payload)
     for envelope in envelopes:
         codes |= connection_codes(envelope)
-    queue: list[tuple[dict, int, bool, bool]] = [
-        (env, 0, False, collection_present(env)) for env in envelopes
-    ]
+    queue: list[tuple[dict, int, bool]] = [(env, 0, False) for env in envelopes]
     if not queue:
         return codes
     budget = MAX_ENVELOPES
     while queue:
-        node, depth, in_pagination, has_collection = queue.pop(0)
-        corroborated = pagination_vocabulary(node)
+        node, depth, in_pagination = queue.pop(0)
         budget -= 1
         if budget < 0:
             break
         codes |= warning_codes(node)
-        fields = list(node.items())[:MAX_FIELDS_PER_NODE]
-        # A resume token means "the scan stopped early" only when records were
-        # actually returned for it to resume. An empty list is not enough: it is
-        # what an exhausted scan looks like, and it is also what an unrelated
-        # business field such as `tags: []` looks like.
-        # A resume key needs this envelope to be a collection response, which a
-        # legitimately empty page still declares through its record count.
-        returned_rows = has_collection
-        for key, value in fields:
+        for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
             name = normalize(key)
-            codes |= scalar_codes(
-                key,
-                value,
-                in_pagination=in_pagination,
-                has_collection=has_collection,
-                corroborated=corroborated,
-            )
-            codes |= link_collection_codes(key, value, has_collection=has_collection)
-            if returned_rows and name in RESUME_KEY_KEYS and populated_resume_key(value):
-                codes.add(PAGINATION_INCOMPLETE)
+            codes |= scalar_codes(key, value, in_pagination=in_pagination)
             if isinstance(value, dict) and name in ENVELOPE_KEYS and depth < MAX_DEPTH:
                 queue.append(
                     (
                         value,
                         depth + 1,
                         in_pagination or name in PAGINATION_CONTAINER_KEYS,
-                        has_collection or collection_present(value),
                     )
                 )
         if depth < MAX_DEPTH:
             for parsed in embedded_envelopes(node):
-                queue.append(
-                    (parsed, depth + 1, in_pagination, collection_present(parsed))
-                )
+                queue.append((parsed, depth + 1, in_pagination))
     return codes
 
 

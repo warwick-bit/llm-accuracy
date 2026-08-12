@@ -78,18 +78,17 @@ substitute for it. It reads one tool result at a time and keeps no state, so it
 can never observe that a later page was fetched and can never certify coverage.
 
 It reads JSON only, and detects, in the response envelope: boolean partiality
-flags (`has_more`, `hasNextPage`, `truncated`, `is_truncated`, `row_cap_hit`,
-`incompleteSearch`, and `pagination_complete: false`); populated next-page
-cursors, tokens, markers and links (`next_cursor`, `nextPageToken`, `nextToken`,
-`next_marker`, `@odata.nextLink`, `nextRecordsUrl`, a `nextLink` or `next_page`
-that carries a link object or a url/path, and a bare `next`/`after` inside a
-pagination block or an absolute link at the root — each of these only when the
-envelope also returned a collection, since a chapter linking to the next
-chapter is navigation, not a partial result); a resume object such as DynamoDB's
-`LastEvaluatedKey` beside a returned collection; a HAL link collection whose
-`next` relation targets an absolute url; exact machine warning codes in an
-envelope warning collection; a GraphQL Relay `pageInfo` block reached through
-nested dictionaries; and the host's own over-budget notice when it replaces an
+flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
+`row_cap_hit`, `incompleteSearch`, `partial_provider_response`, and
+`pagination_complete: false`); cursors whose NAME states its own meaning
+(`next_cursor`, `nextPageToken`, `nextPageCursor`, `next_offset`, `nextToken`,
+`next_marker`, `next_page_url`, `continuationToken`, `pagingHandle`,
+`@odata.nextLink`, `nextRecordsUrl`, a url-shaped `nextLink`, an absolute-url
+`next_page`); a bare `next` or `after` inside a block whose own name means
+pagination (`paging`, `pagination`, `cursor`, `response_metadata`); exact
+machine warning codes in an envelope warning collection, as strings or as
+`{"code": ...}` objects; a GraphQL Relay `pageInfo` block reached through nested
+dictionaries; and the host's own over-budget notice when it replaces an
 oversized result with a pointer to a file.
 
 It deliberately does NOT do the following, and you remain responsible for each:
@@ -103,30 +102,25 @@ It deliberately does NOT do the following, and you remain responsible for each:
   inside a record array will not raise a signal.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
-- **Read a page reference outside a collection response.** Partiality is a claim
-  about a collection. A document that links to the next document, a link map, or
-  a business object that happens to carry a resume-key name is not a paginated
-  result, so an ambiguous reference is read only when the envelope is returning
-  a collection — shown by returned records, found directly or one level inside a
-  container as HAL's `_embedded` does, or by a record-count key, since a
-  legitimately empty page still declares its count. An empty unrelated list such
-  as `tags: []` establishes nothing, and link and warning collections are never
-  counted as records. A bare root `next` needs more still: a record count or a
-  named previous page, which a page response carries and a document does not.
+- **Read a page reference whose name and shape are ordinary content.** This is
+  the largest exclusion, and it is deliberate. A document that links to its next
+  chapter is structurally identical to an API page that links to its next page:
+  both carry `links.next`, a `rel: next` collection, a `next_page` object, or a
+  bare root `next` holding a url. Nothing in a single stateless payload
+  separates them, and every attempt to infer it — from absolute urls, from a
+  sibling collection, from a record count — produced false advisories on
+  ordinary documents. So JSON:API and Confluence `links.next`, HAL link
+  collections, Asana's `next_page` object, Django REST Framework's root `next`,
+  and DynamoDB's `LastEvaluatedKey` are not read. Measured across 459 real MCP
+  tool results, none of these mechanisms ever fired, while each produced false
+  positives in review; the flags and self-describing cursor names above account
+  for every real detection.
 - **Read flags whose names are ordinary business vocabulary.** Salesforce's
-  `done: false`, Jira's `isLast: false`, and Elasticsearch's `timed_out: true`
-  do declare partiality, and so does Kubernetes' `continue`, but the same field
-  names appear on task records, survey questions, job statuses, and wizard
-  state, where firing would be wrong. A name that merely suggests pagination —
-  `next_page`, `nextLink` — must also carry the shape of a page reference: a
-  link object, or a url or path, never a bare title, slug, or page number. They are left out
-  deliberately; a paired unambiguous signal (`nextRecordsUrl`, `nextPageToken`)
-  is what gets detected instead. For the same reason a bare `next` or `after`
-  is read as a cursor only inside a block whose own name means pagination —
-  `paging`, `pagination`, `cursor`, `links`, `response_metadata`, never a
-  generic `page` or `metadata` container — or, at the root, only when its value
-  is an absolute url, which is what separates a Django REST Framework page link
-  from a slug or a section title.
+  `done: false`, Jira's `isLast: false`, Elasticsearch's `timed_out: true`, and
+  Kubernetes' `continue` all declare partiality, but the same field names appear
+  on task records, survey questions, job statuses, and wizard state. Detection
+  relies on the paired self-describing signal instead — `nextRecordsUrl`,
+  `nextPageToken`.
 - **Report backward pagination.** `hasPreviousPage: true` proves the current
   page omits earlier records, and is still excluded: it is true of every page
   after the first in an ordinary forward walk, so acting on it would raise an

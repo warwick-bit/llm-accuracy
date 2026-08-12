@@ -543,90 +543,6 @@ DEEP_CONNECTION_SILENT_CASES = [
 ]
 
 
-AMBIGUOUS_CURSOR_AT_ROOT_MUST_NOT_FIRE = [
-    ({"next": "Quarterly review", "owner": "Ops"}, "report section named next"),
-    ({"after": "Lunch", "agenda": "Board meeting"}, "agenda field named after"),
-    ({"next": "chapter-two", "title": "Chapter one"}, "document navigation"),
-    ({"next": "/accounts/?page=5", "results": []}, "relative path is not enough"),
-]
-
-ROOT_URL_CURSOR_MUST_FIRE = [
-    (
-        {
-            "count": 1023,
-            "next": "https://api.example.test/accounts/?page=5",
-            "previous": None,
-            "results": [{"id": 1}],
-        },
-        "Django REST Framework page response",
-    ),
-]
-
-AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE = [
-    ({"results": [{"id": 1}], "paging": {"next": {"after": "52"}}}, "HubSpot"),
-    (
-        {"data": [{"id": "1"}], "links": {"next": "https://api.example.test/x?page=2"}},
-        "JSON:API",
-    ),
-    (
-        {
-            "data": [{"id": "1"}],
-            "links": {
-                "self": "a",
-                "next": {"href": "https://api.example.test/x?page=2"},
-            },
-        },
-        "JSON:API next as a link object",
-    ),
-    ({"rows": [{"id": 1}], "cursor": {"after": "abc123"}}, "cursor block"),
-]
-
-
-def test_partial_result_sentinel_reads_bare_next_only_inside_a_container() -> None:
-    """`next` and `after` are ordinary English outside a pagination block.
-
-    Regression for a false positive found by the third fresh audit: a business
-    object whose root carries `next` or `after` -- an agenda, a report section,
-    a document's navigation -- raised a partial-result advisory.
-
-    Inside a pagination container any populated value counts. At the root, where
-    real APIs do sometimes put a next-page link, only an ABSOLUTE link counts:
-    Django REST Framework returns one there, while business content holds a
-    title, a slug, or a relative path. An earlier version of this test claimed
-    every real API nests these names inside a container, which DRF disproves.
-
-    Every fixture that must fire also carries a returned collection, because an
-    ambiguous page reference only means pagination beside one. That rule is what
-    keeps a chapter's absolute `next` link silent, and it is covered separately.
-    """
-    hook = load_hook("partial-result-sentinel.py")
-
-    for response, label in AMBIGUOUS_CURSOR_AT_ROOT_MUST_NOT_FIRE:
-        assert hook.collect_codes(response) == set(), label
-        assert hook.collect_codes(wrap(response)) == set(), label
-
-    for response, label in AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-
-    for response, label in ROOT_URL_CURSOR_MUST_FIRE:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
-
-
-def test_partial_result_sentinel_covers_every_contained_cursor_key() -> None:
-    """Each contained cursor key fires in a container and stays silent at root.
-
-    Derived from the hook's own key set so a newly declared one cannot ship
-    without coverage on both sides of the boundary.
-    """
-    hook = load_hook("partial-result-sentinel.py")
-    assert hook.CONTAINED_CURSOR_KEYS
-
-    for key in hook.CONTAINED_CURSOR_KEYS:
-        paged = {"rows": [{"id": 1}], "paging": {key: "page-two"}}
-        assert hook.collect_codes(paged) == {"pagination_incomplete"}, key
-        assert hook.collect_codes({"rows": [{"id": 1}], key: "page-two"}) == set(), key
-
 
 NEW_PROVIDER_FIRE_CASES = [
     (
@@ -639,17 +555,6 @@ NEW_PROVIDER_FIRE_CASES = [
     (
         {"value": [{"id": 1}], "nextLink": "/api/books?$after=opaque"},
         "Azure next link",
-    ),
-    (
-        {
-            "data": [{"gid": "1"}],
-            "next_page": {
-                "offset": "opaque",
-                "path": "/tasks?offset=opaque",
-                "uri": "https://app.example.test/api/tasks",
-            },
-        },
-        "Asana next-page object",
     ),
 ]
 
@@ -730,178 +635,7 @@ def test_partial_result_sentinel_anchors_the_host_notice_on_its_prefix() -> None
     assert hook.collect_codes(real) == {"truncated_result"}
 
 
-DOCUMENT_NAVIGATION_MUST_NOT_FIRE = [
-    (
-        {"title": "Chapter 1", "next": "https://docs.example.test/chapter-2"},
-        "a chapter's absolute next link",
-    ),
-    (
-        {
-            "title": "Chapter 1",
-            "links": [{"rel": "next", "href": "https://docs.example.test/ch2"}],
-        },
-        "absolute rel: next navigation",
-    ),
-    (
-        {"title": "Chapter 1", "links": {"next": {"href": "/chapter-2"}}},
-        "a link map with no records",
-    ),
-    (
-        {"title": "Chapter 1", "next_page": {"path": "/chapter-2"}},
-        "a next-page object that is navigation",
-    ),
-    (
-        {"evaluation": "Q3 review", "last_evaluated_key": {"score": 4}, "tags": []},
-        "a resume-key name legitimised only by an empty unrelated list",
-    ),
-]
 
-PAGINATION_BESIDE_RECORDS_MUST_FIRE = [
-    (
-        {
-            "count": 12,
-            "previous": None,
-            "results": [{"id": 1}],
-            "next": "https://api.example.test/accounts/?page=2",
-        },
-        "the same absolute next link in a page response",
-    ),
-    (
-        {
-            "results": [{"id": 1}],
-            "links": [{"rel": "next", "href": "https://api.example.test/x?page=2"}],
-        },
-        "the same rel: next beside a returned collection",
-    ),
-    (
-        {"items": [{"id": 1}], "next_page": {"offset": 100}},
-        "a numeric next-page offset beside records",
-    ),
-    (
-        {"Items": [{"id": 1}], "LastEvaluatedKey": {"pk": {"S": "a"}}},
-        "a resume key beside returned rows",
-    ),
-]
-
-
-def test_partial_result_sentinel_requires_a_returned_collection() -> None:
-    """An ambiguous page reference means pagination only beside a result set.
-
-    Regression for the fourth fresh audit, which showed that absolute-versus-
-    relative is not the boundary between an API page link and document
-    navigation: a chapter can perfectly well link to the next chapter by
-    absolute url. Partiality is a claim about a RESULT SET, so an ambiguous
-    reference is read only when the envelope returned a collection. Link
-    collections and warning collections do not count as that collection, since
-    they describe the response rather than the records in it.
-    """
-    hook = load_hook("partial-result-sentinel.py")
-
-    for response, label in DOCUMENT_NAVIGATION_MUST_NOT_FIRE:
-        assert hook.collect_codes(response) == set(), label
-        assert hook.collect_codes(wrap(response)) == set(), label
-
-    for response, label in PAGINATION_BESIDE_RECORDS_MUST_FIRE:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
-
-
-WRAPPED_ENVELOPES_MUST_FIRE = [
-    (
-        {"result": {"rows": [{"id": 1}], "links": {"next": "https://x.test?p=2"}}},
-        "response wrapped in result",
-    ),
-    (
-        {"response": {"data": [{"id": 1}], "paging": {"next": {"after": "52"}}}},
-        "response wrapped in response",
-    ),
-    (
-        {"structuredContent": {"rows": [{"id": 1}], "next_page": {"offset": 100}}},
-        "response wrapped in structuredContent",
-    ),
-]
-
-
-def test_partial_result_sentinel_inherits_the_collection_from_a_wrapper() -> None:
-    """A wrapped envelope still counts as having returned a collection.
-
-    The collection gate is what keeps document navigation silent, but computing
-    it only at the envelope root silenced every response wrapped in `result`,
-    `response`, `body`, or `structuredContent`, where the root carries no list
-    at all. A nested envelope now inherits the gate and can establish it itself,
-    while navigation nested in the same wrappers stays silent.
-    """
-    hook = load_hook("partial-result-sentinel.py")
-
-    for response, label in WRAPPED_ENVELOPES_MUST_FIRE:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
-
-    nested_navigation = {"result": {"title": "Ch 1", "links": {"next": {"href": "/ch-2"}}}}
-    assert hook.collect_codes(nested_navigation) == set()
-
-
-COLLECTION_GATE_FIRE_CASES = [
-    (
-        {
-            "Items": [],
-            "Count": 0,
-            "ScannedCount": 100,
-            "LastEvaluatedKey": {"pk": {"S": "next"}},
-        },
-        "a filtered DynamoDB page returns no items and still must be resumed",
-    ),
-    (
-        {
-            "_links": {"next": {"href": "http://localhost/persons?page=1&size=5"}},
-            "_embedded": {"persons": [{"id": 1}]},
-            "page": {"size": 5, "number": 0},
-        },
-        "HAL keeps records under _embedded and paging under _links",
-    ),
-]
-
-COLLECTION_GATE_SILENT_CASES = [
-    (
-        {
-            "title": "Chapter 1",
-            "tags": ["reference"],
-            "next": "https://docs.example.test/chapter-2",
-        },
-        "a document with tags is still navigation, not a page response",
-    ),
-    (
-        {"title": "Chapter 1", "tags": [], "next": "https://docs.example.test/ch2"},
-        "an empty unrelated list establishes nothing",
-    ),
-]
-
-
-def test_partial_result_sentinel_gate_reads_counts_not_just_lists() -> None:
-    """An empty page can be real, and an unrelated list proves nothing.
-
-    Two findings from the fourth fresh audit pulled in opposite directions. A
-    filtered DynamoDB scan returns an EMPTY `Items` with a resume key and must
-    still be reported, so requiring a non-empty list lost real recall. Yet any
-    list at all opening the gate let document navigation fire again as soon as
-    the document carried tags or authors.
-
-    A record COUNT resolves both: a collection response declares how many
-    records it counted even when the page is empty, and a document does not. A
-    bare root `next` additionally needs corroborating pagination vocabulary --
-    a count or a named previous page -- because it is the most ambiguous signal
-    there is. Records nested one level inside a container also count, which is
-    how HAL's `_embedded` layout is recognised.
-    """
-    hook = load_hook("partial-result-sentinel.py")
-
-    for response, label in COLLECTION_GATE_FIRE_CASES:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
-
-    for response, label in COLLECTION_GATE_SILENT_CASES:
-        assert hook.collect_codes(response) == set(), label
-        assert hook.collect_codes(wrap(response)) == set(), label
 
 
 PROVIDER_PAGE_MATRIX = [
@@ -916,22 +650,7 @@ PROVIDER_PAGE_MATRIX = [
         },
         "Zendesk",
     ),
-    (
-        {
-            "results": [{"id": 1}],
-            "_links": {"next": "/rest/api/content?limit=25&start=25"},
-        },
-        "Confluence",
-    ),
     ({"values": [{"id": 1}], "nextPageToken": "tok"}, "Jira platform"),
-    (
-        {
-            "results": [{"id": 1}],
-            "links": [{"rel": "next", "href": "https://cloud.example.test/api?p=2"}],
-            "totalCount": 50,
-        },
-        "MongoDB Atlas",
-    ),
     ({"files": [{"id": 1}], "nextPageToken": "tok"}, "Google Drive"),
     (
         {
@@ -942,9 +661,40 @@ PROVIDER_PAGE_MATRIX = [
     ),
 ]
 
+# Documented exclusions: the page reference is real, but its name and shape are
+# indistinguishable from ordinary document content, so it is not read. Measured
+# across 459 real MCP results, none of these mechanisms ever fired, while each
+# of them produced false positives in review.
 PROVIDER_PAGE_EXCLUDED = [
     ({"records": [{"id": 1}], "offset": "itrX"}, "Airtable's bare offset"),
     ({"data": {"after": "t3_x", "children": [{"id": 1}]}}, "Reddit's after under data"),
+    (
+        {"data": [{"id": "1"}], "links": {"next": "https://api.example.test/x?page=2"}},
+        "JSON:API links.next, identical to a document's next-chapter link",
+    ),
+    (
+        {"results": [{"id": 1}], "_links": {"next": "/rest/api/content?start=25"}},
+        "Confluence _links.next, the same shape",
+    ),
+    (
+        {
+            "results": [{"id": 1}],
+            "links": [{"rel": "next", "href": "https://cloud.example.test/api?p=2"}],
+        },
+        "a HAL link collection, which document navigation also uses",
+    ),
+    (
+        {"data": [{"gid": "1"}], "next_page": {"path": "/tasks?offset=opaque"}},
+        "Asana's next_page object, which a document's next section also uses",
+    ),
+    (
+        {"count": 9, "previous": None, "results": [{"id": 1}], "next": "https://x.test"},
+        "a Django REST Framework page, whose bare next is ordinary English",
+    ),
+    (
+        {"Items": [{"id": 1}], "LastEvaluatedKey": {"pk": {"S": "a"}}},
+        "a DynamoDB resume key, which a business object can also carry",
+    ),
 ]
 
 
@@ -981,18 +731,6 @@ def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:
     assert hook.collect_codes({"warnings": [{"message": "row_cap_hit"}]}) == set()
 
 
-def test_partial_result_sentinel_requires_a_host_in_an_absolute_url() -> None:
-    """A bare scheme is not a next-page link."""
-    hook = load_hook("partial-result-sentinel.py")
-
-    page = {"count": 3, "previous": None, "results": [{"id": 1}]}
-    assert hook.collect_codes({**page, "next": "https://"}) == set()
-    assert hook.collect_codes({**page, "next": "https:///page/2"}) == set()
-    assert hook.collect_codes({**page, "next": "https://x.test"}) == {
-        "pagination_incomplete"
-    }
-
-
 PAGE_INFO_MUST_NOT_FIRE = [
     (
         {"document": {"pageInfo": {"truncated": True, "title": "Annual report"}}},
@@ -1024,73 +762,6 @@ def test_partial_result_sentinel_reads_only_booleans_from_page_info() -> None:
         "pagination_incomplete"
     }
 
-
-RESUME_AND_LINK_FIRE_CASES = [
-    (
-        {"Items": [{"id": 1}], "LastEvaluatedKey": {"id": {"S": "a"}}},
-        "DynamoDB stopped early and returned a resume key",
-    ),
-    (
-        {
-            "done": False,
-            "nextRecordsUrl": "/services/data/v59.0/query/01g",
-            "records": [],
-        },
-        "Salesforce next records url",
-    ),
-    (
-        {
-            "results": [{"id": 1}],
-            "links": [
-                {"rel": "self", "href": "https://api.example.test/x?page=1"},
-                {"rel": "next", "href": "https://api.example.test/x?page=2"},
-            ],
-        },
-        "HAL link collection with a next relation",
-    ),
-]
-
-RESUME_AND_LINK_SILENT_CASES = [
-    (
-        {"Items": [{"id": 1}], "LastEvaluatedKey": {}},
-        "empty resume key means exhausted",
-    ),
-    ({"Items": [{"id": 1}], "LastEvaluatedKey": None}, "absent resume key"),
-    ({"links": [{"rel": "self", "href": "https://x.test"}]}, "no next relation"),
-    ({"links": [{"rel": "author", "href": "https://x.test"}]}, "business relation"),
-    ({"links": [{"rel": "next", "href": ""}]}, "next relation with no target"),
-    (
-        {"title": "Chapter 1", "links": [{"rel": "next", "href": "/chapter-2"}]},
-        "document navigation carries rel: next with a relative path",
-    ),
-    (
-        {"evaluation": "Q3 review", "last_evaluated_key": {"score": 4}},
-        "resume-key name with no returned collection beside it",
-    ),
-    ({"rows": [{"rel": "next", "href": "b"}]}, "record array is not a link collection"),
-]
-
-
-def test_partial_result_sentinel_reads_resume_keys_and_link_relations() -> None:
-    """Two provider families declare a further page without a scalar cursor.
-
-    DynamoDB returns a whole key object, and HAL-style APIs put the signal in a
-    link collection. Both are read narrowly. A resume key counts only beside a
-    returned collection, so a business object carrying the same name stays
-    silent. A link entry counts only when its `next` relation targets an
-    ABSOLUTE url: document navigation carries the identical `rel: next` with a
-    relative path, which disproves the earlier claim that records simply do not
-    carry `rel`.
-    """
-    hook = load_hook("partial-result-sentinel.py")
-
-    for response, label in RESUME_AND_LINK_FIRE_CASES:
-        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
-        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
-
-    for response, label in RESUME_AND_LINK_SILENT_CASES:
-        assert hook.collect_codes(response) == set(), label
-        assert hook.collect_codes(wrap(response)) == set(), label
 
 
 def test_partial_result_sentinel_inspects_large_paginated_results() -> None:
@@ -1237,13 +908,7 @@ PROVIDER_ENVELOPES = [
         "Slack",
     ),
     ({"results": [{"id": 1}], "paging": {"next": {"after": "52"}}}, "HubSpot"),
-    (
-        {
-            "data": [{"id": "1"}],
-            "links": {"next": "https://api.example.test/records?page=2"},
-        },
-        "JSON:API",
-    ),
+    ({"rows": [{"id": 1}], "cursor": {"after": "abc"}}, "a cursor block"),
     (
         {
             "value": [{"id": 1}],
