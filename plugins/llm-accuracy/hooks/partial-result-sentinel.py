@@ -60,6 +60,7 @@ TRUE_MEANS_PARTIAL = {
     "hasnextpage": PAGINATION_INCOMPLETE,
     "morerecords": PAGINATION_INCOMPLETE,
     "incompletesearch": PARTIAL_PROVIDER_RESPONSE,
+    "incompleteresults": PARTIAL_PROVIDER_RESPONSE,
     "truncated": TRUNCATED_RESULT,
     "istruncated": TRUNCATED_RESULT,
     "rowcaphit": ROW_CAP_HIT,
@@ -116,11 +117,13 @@ GENERIC_CONTAINER_KEYS = {
     "metadata",
 }
 
+# Only blocks whose own name means pagination. `response_metadata` is absent:
+# it is a generic metadata bag, and Slack's use of it needs no help, because
+# `next_cursor` states its own meaning wherever it sits.
 PAGINATION_CONTAINER_KEYS = {
     "paging",
     "pagination",
     "cursor",
-    "responsemetadata",
 }
 
 # Exact machine warning codes, read only from envelope warning collections.
@@ -158,7 +161,6 @@ ENVELOPE_KEYS = {
     "structuredcontent",
     "responsemetadata",
     "links",
-    "next",
 }
 
 # Traversal bounds keep a pathological payload from stalling the hook.
@@ -219,9 +221,8 @@ def normalize(key: str) -> str:
 def populated_cursor(value: object) -> bool:
     """Report whether a cursor-shaped value points at a further page.
 
-    An object is accepted because several APIs return one instead of a bare
-    URL: JSON:API's `next` carries an `href`, Asana's `next_page` carries an
-    `offset`, `path`, and `uri`.
+    An object is accepted because providers wrap the token differently, and the
+    key itself has already said what it is.
     """
     if isinstance(value, bool):
         return False
@@ -230,9 +231,15 @@ def populated_cursor(value: object) -> bool:
     if isinstance(value, int):
         return value > 0
     if isinstance(value, dict):
-        # The KEY already states this is the next page, so any populated object
-        # under it is a cursor -- providers wrap the token differently.
-        return bool(value)
+        # The KEY already states this is the next page, so it does not matter
+        # which member carries the token -- providers wrap it differently. But
+        # something must actually be in there: `{}` and `{"value": null}` are an
+        # exhausted cursor, not a further page.
+        return any(
+            (isinstance(member, str) and member.strip())
+            or (isinstance(member, int) and not isinstance(member, bool) and member > 0)
+            for member in list(value.values())[:MAX_FIELDS_PER_NODE]
+        )
     return False
 
 

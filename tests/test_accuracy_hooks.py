@@ -550,6 +550,10 @@ NEW_PROVIDER_FIRE_CASES = [
         "next page url",
     ),
     ({"files": [{"id": "f1"}], "incompleteSearch": True}, "Drive incomplete search"),
+    (
+        {"total_count": 123, "incomplete_results": True, "items": [{"id": 1}]},
+        "GitHub search exceeded its time limit",
+    ),
     ({"nextToken": "opaque", "items": []}, "AWS next token"),
     ({"entries": [], "limit": 100, "next_marker": "opaque"}, "Box marker paging"),
 ]
@@ -564,6 +568,7 @@ def test_partial_result_sentinel_reads_further_provider_declarations() -> None:
         assert hook.collect_codes(wrap(response)), label
 
     assert hook.collect_codes({"files": [], "incompleteSearch": False}) == set()
+    assert hook.collect_codes({"items": [], "incomplete_results": False}) == set()
 
 
 AMBIGUOUS_NAMES_MUST_NOT_FIRE = [
@@ -691,6 +696,14 @@ PROVIDER_PAGE_EXCLUDED = [
         "rendering truncation inside a generic page container",
     ),
     (
+        {"response_metadata": {"next": "review-step-2"}},
+        "a generic metadata bag holding a workflow step",
+    ),
+    (
+        {"title": "Quarterly report", "next": {"title": "Chapter 2", "truncated": True}},
+        "a root next object describing the next document",
+    ),
+    (
         {"Items": [{"id": 1}], "LastEvaluatedKey": {"pk": {"S": "a"}}},
         "a DynamoDB resume key, which a business object can also carry",
     ),
@@ -745,6 +758,10 @@ def test_partial_result_sentinel_accepts_an_object_valued_cursor() -> None:
         "pagination_incomplete"
     }
     assert hook.collect_codes({"items": items, "next_cursor": {}}) == set()
+    # Present but tokenless is an exhausted cursor, not a further page.
+    assert hook.collect_codes({"items": items, "next_cursor": {"value": None}}) == set()
+    assert hook.collect_codes({"items": items, "next_cursor": {"value": ""}}) == set()
+    assert hook.collect_codes({"items": items, "next_cursor": {"done": False}}) == set()
 
 
 def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:
