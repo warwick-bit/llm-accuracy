@@ -268,6 +268,10 @@ def collection_present(node: dict) -> bool:
     collection at all, which is what separates it from an API page response.
     Link collections and warning collections are excluded, because they are
     metadata about the response rather than the records it returned.
+
+    A nested envelope inherits this from its ancestors and can also establish it
+    itself, so a response wrapped in `result` or `structuredContent` -- where
+    the root carries no list at all -- is still recognised.
     """
     for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
         if not isinstance(value, list):
@@ -584,7 +588,7 @@ def collect_codes(payload: object) -> set[str]:
                         value,
                         depth + 1,
                         in_pagination or name in PAGINATION_CONTAINER_KEYS,
-                        has_collection,
+                        has_collection or collection_present(value),
                     )
                 )
         if depth < MAX_DEPTH:

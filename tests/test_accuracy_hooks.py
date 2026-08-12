@@ -798,6 +798,41 @@ def test_partial_result_sentinel_requires_a_returned_collection() -> None:
         assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
 
 
+WRAPPED_ENVELOPES_MUST_FIRE = [
+    (
+        {"result": {"rows": [{"id": 1}], "links": {"next": "https://x.test?p=2"}}},
+        "response wrapped in result",
+    ),
+    (
+        {"response": {"data": [{"id": 1}], "paging": {"next": {"after": "52"}}}},
+        "response wrapped in response",
+    ),
+    (
+        {"structuredContent": {"rows": [{"id": 1}], "next_page": {"offset": 100}}},
+        "response wrapped in structuredContent",
+    ),
+]
+
+
+def test_partial_result_sentinel_inherits_the_collection_from_a_wrapper() -> None:
+    """A wrapped envelope still counts as having returned a collection.
+
+    The collection gate is what keeps document navigation silent, but computing
+    it only at the envelope root silenced every response wrapped in `result`,
+    `response`, `body`, or `structuredContent`, where the root carries no list
+    at all. A nested envelope now inherits the gate and can establish it itself,
+    while navigation nested in the same wrappers stays silent.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in WRAPPED_ENVELOPES_MUST_FIRE:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
+
+    nested_navigation = {"result": {"title": "Ch 1", "links": {"next": {"href": "/ch-2"}}}}
+    assert hook.collect_codes(nested_navigation) == set()
+
+
 def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:
     """A warning collection may carry objects, not only bare strings."""
     hook = load_hook("partial-result-sentinel.py")
