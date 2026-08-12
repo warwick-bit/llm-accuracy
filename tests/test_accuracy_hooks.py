@@ -599,10 +599,11 @@ def test_partial_result_sentinel_excludes_ambiguous_business_vocabulary() -> Non
     step. Generic containers are excluded too, because only a block whose own
     name means pagination can make a bare `next` readable as a cursor.
 
-    Names that merely SUGGEST pagination must also carry the shape of a page
-    reference. A `next_page` holding a title, a slug, or a page number, and a
-    `nextLink` holding a label, are ordinary content; only a link object or a
-    url/path counts.
+    Names that merely SUGGEST pagination are not read at all, whatever shape
+    their value takes. An interim rule read them when they carried a url or a
+    link object; rounds three to seven showed that a document linking to its
+    next chapter carries exactly the same shape, so `next_page` and `nextLink`
+    are now excluded outright rather than by shape.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -819,6 +820,15 @@ def test_partial_result_sentinel_reads_any_pagination_named_container() -> None:
     """
     hook = load_hook("partial-result-sentinel.py")
 
+    # Pin the membership itself. Iterating the set proves each member behaves,
+    # but a member REMOVED from it takes its case away with it, so the loop
+    # below would still pass while Twilio's `pagination.next` went silent.
+    assert hook.PAGINATION_CONTAINER_KEYS == {
+        "paging",
+        "pagination",
+        "cursor",
+        "paginationcontext",
+    }
     # Every enumerated container makes a bare `next`/`after` a cursor.
     for container in sorted(hook.PAGINATION_CONTAINER_KEYS):
         enumerated = {"apps": [{"id": "AP1"}], container: {"next": "page-token"}}
