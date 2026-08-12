@@ -566,10 +566,16 @@ AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE = [
     ({"results": [], "paging": {"next": {"after": "52"}}}, "HubSpot paging block"),
     ({"data": [], "links": {"next": "https://api.example.test/x?page=2"}}, "JSON:API"),
     (
-        {"links": {"self": "a", "next": {"href": "https://api.example.test/x?page=2"}}},
+        {
+            "data": [{"id": "1"}],
+            "links": {
+                "self": "a",
+                "next": {"href": "https://api.example.test/x?page=2"},
+            },
+        },
         "JSON:API next as a link object",
     ),
-    ({"cursor": {"after": "abc123"}}, "cursor block"),
+    ({"rows": [{"id": 1}], "cursor": {"after": "abc123"}}, "cursor block"),
 ]
 
 
@@ -581,10 +587,14 @@ def test_partial_result_sentinel_reads_bare_next_only_inside_a_container() -> No
     a document's navigation -- raised a partial-result advisory.
 
     Inside a pagination container any populated value counts. At the root, where
-    real APIs do sometimes put a next-page link, only an ABSOLUTE url counts:
+    real APIs do sometimes put a next-page link, only an ABSOLUTE link counts:
     Django REST Framework returns one there, while business content holds a
     title, a slug, or a relative path. An earlier version of this test claimed
     every real API nests these names inside a container, which DRF disproves.
+
+    Every fixture that must fire also carries a returned collection, because an
+    ambiguous page reference only means pagination beside one. That rule is what
+    keeps a chapter's absolute `next` link silent, and it is covered separately.
     """
     hook = load_hook("partial-result-sentinel.py")
 
@@ -610,10 +620,9 @@ def test_partial_result_sentinel_covers_every_contained_cursor_key() -> None:
     assert hook.CONTAINED_CURSOR_KEYS
 
     for key in hook.CONTAINED_CURSOR_KEYS:
-        assert hook.collect_codes({"paging": {key: "page-two"}}) == {
-            "pagination_incomplete"
-        }, key
-        assert hook.collect_codes({key: "page-two"}) == set(), key
+        paged = {"rows": [{"id": 1}], "paging": {key: "page-two"}}
+        assert hook.collect_codes(paged) == {"pagination_incomplete"}, key
+        assert hook.collect_codes({"rows": [{"id": 1}], key: "page-two"}) == set(), key
 
 
 NEW_PROVIDER_FIRE_CASES = [
@@ -713,6 +722,104 @@ def test_partial_result_sentinel_anchors_the_host_notice_on_its_prefix() -> None
         "allowed tokens. Output has been saved to /tmp/tool-results/x.txt."
     )
     assert hook.collect_codes(real) == {"truncated_result"}
+
+
+DOCUMENT_NAVIGATION_MUST_NOT_FIRE = [
+    (
+        {"title": "Chapter 1", "next": "https://docs.example.test/chapter-2"},
+        "a chapter's absolute next link",
+    ),
+    (
+        {
+            "title": "Chapter 1",
+            "links": [{"rel": "next", "href": "https://docs.example.test/ch2"}],
+        },
+        "absolute rel: next navigation",
+    ),
+    (
+        {"title": "Chapter 1", "links": {"next": {"href": "/chapter-2"}}},
+        "a link map with no records",
+    ),
+    (
+        {"title": "Chapter 1", "next_page": {"path": "/chapter-2"}},
+        "a next-page object that is navigation",
+    ),
+    (
+        {"evaluation": "Q3 review", "last_evaluated_key": {"score": 4}, "tags": []},
+        "a resume-key name legitimised only by an empty unrelated list",
+    ),
+]
+
+PAGINATION_BESIDE_RECORDS_MUST_FIRE = [
+    (
+        {
+            "results": [{"id": 1}],
+            "next": "https://api.example.test/accounts/?page=2",
+        },
+        "the same absolute next link beside a returned collection",
+    ),
+    (
+        {
+            "results": [{"id": 1}],
+            "links": [{"rel": "next", "href": "https://api.example.test/x?page=2"}],
+        },
+        "the same rel: next beside a returned collection",
+    ),
+    (
+        {"items": [{"id": 1}], "next_page": {"offset": 100}},
+        "a numeric next-page offset beside records",
+    ),
+    (
+        {"Items": [{"id": 1}], "LastEvaluatedKey": {"pk": {"S": "a"}}},
+        "a resume key beside returned rows",
+    ),
+]
+
+
+def test_partial_result_sentinel_requires_a_returned_collection() -> None:
+    """An ambiguous page reference means pagination only beside a result set.
+
+    Regression for the fourth fresh audit, which showed that absolute-versus-
+    relative is not the boundary between an API page link and document
+    navigation: a chapter can perfectly well link to the next chapter by
+    absolute url. Partiality is a claim about a RESULT SET, so an ambiguous
+    reference is read only when the envelope returned a collection. Link
+    collections and warning collections do not count as that collection, since
+    they describe the response rather than the records in it.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in DOCUMENT_NAVIGATION_MUST_NOT_FIRE:
+        assert hook.collect_codes(response) == set(), label
+        assert hook.collect_codes(wrap(response)) == set(), label
+
+    for response, label in PAGINATION_BESIDE_RECORDS_MUST_FIRE:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
+
+
+def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:
+    """A warning collection may carry objects, not only bare strings."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    assert hook.collect_codes({"source_warnings": [{"code": "row_cap_hit"}]}) == {
+        "row_cap_hit"
+    }
+    assert hook.collect_codes({"warnings": [{"code": "truncated_result"}]}) == {
+        "truncated_result"
+    }
+    assert hook.collect_codes({"warnings": [{"code": "stale_source"}]}) == set()
+    assert hook.collect_codes({"warnings": [{"message": "row_cap_hit"}]}) == set()
+
+
+def test_partial_result_sentinel_requires_a_host_in_an_absolute_url() -> None:
+    """A bare scheme is not a next-page link."""
+    hook = load_hook("partial-result-sentinel.py")
+
+    assert hook.collect_codes({"results": [{"id": 1}], "next": "https://"}) == set()
+    assert hook.collect_codes({"results": [{"id": 1}], "next": "https://x.test"}) == {
+        "pagination_incomplete"
+    }
 
 
 PAGE_INFO_MUST_NOT_FIRE = [
@@ -934,6 +1041,9 @@ def test_partial_result_sentinel_survives_hostile_payloads() -> None:
     assert sentinel_advisory(hook, []) == ""
 
 
+# Real provider envelopes always carry the records they are paging through, and
+# the fixtures say so: an ambiguous page reference only counts beside a returned
+# collection, because document navigation carries a link and no records.
 PROVIDER_ENVELOPES = [
     (
         {
@@ -942,10 +1052,28 @@ PROVIDER_ENVELOPES = [
         },
         "MCP structuredContent",
     ),
-    ({"response_metadata": {"next_cursor": "dXNlcjpXMDdRQzA1"}}, "Slack"),
-    ({"paging": {"next": {"after": "52"}}}, "HubSpot"),
-    ({"links": {"next": "https://api.example.test/records?page=2"}}, "JSON:API"),
-    ({"@odata.nextLink": "https://graph.example.test/v1/users?$skip=20"}, "OData"),
+    (
+        {
+            "messages": [{"ts": "1"}],
+            "response_metadata": {"next_cursor": "dXNlcjpXMDdRQzA1"},
+        },
+        "Slack",
+    ),
+    ({"results": [{"id": 1}], "paging": {"next": {"after": "52"}}}, "HubSpot"),
+    (
+        {
+            "data": [{"id": "1"}],
+            "links": {"next": "https://api.example.test/records?page=2"},
+        },
+        "JSON:API",
+    ),
+    (
+        {
+            "value": [{"id": 1}],
+            "@odata.nextLink": "https://graph.example.test/v1/users?$skip=20",
+        },
+        "OData",
+    ),
     ({"pageInfo": {"hasNextPage": True}}, "GraphQL pageInfo at envelope level"),
 ]
 

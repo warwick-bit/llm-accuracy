@@ -83,7 +83,9 @@ flags (`has_more`, `hasNextPage`, `truncated`, `is_truncated`, `row_cap_hit`,
 cursors, tokens, markers and links (`next_cursor`, `nextPageToken`, `nextToken`,
 `next_marker`, `@odata.nextLink`, `nextRecordsUrl`, a `nextLink` or `next_page`
 that carries a link object or a url/path, and a bare `next`/`after` inside a
-pagination block or an absolute url at the root); a resume object such as DynamoDB's
+pagination block or an absolute link at the root — each of these only when the
+envelope also returned a collection, since a chapter linking to the next
+chapter is navigation, not a partial result); a resume object such as DynamoDB's
 `LastEvaluatedKey` beside a returned collection; a HAL link collection whose
 `next` relation targets an absolute url; exact machine warning codes in an
 envelope warning collection; a GraphQL Relay `pageInfo` block reached through
@@ -101,6 +103,11 @@ It deliberately does NOT do the following, and you remain responsible for each:
   inside a record array will not raise a signal.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
+- **Read a page reference with no result set beside it.** Partiality is a claim
+  about a collection. A document that links to the next document, a link map, or
+  a business object that happens to carry a resume-key name is not a paginated
+  result, so an ambiguous reference is read only when records were returned
+  alongside it. Link and warning collections do not count as those records.
 - **Read flags whose names are ordinary business vocabulary.** Salesforce's
   `done: false`, Jira's `isLast: false`, and Elasticsearch's `timed_out: true`
   do declare partiality, and so does Kubernetes' `continue`, but the same field

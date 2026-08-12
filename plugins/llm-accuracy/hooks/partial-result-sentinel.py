@@ -236,7 +236,10 @@ def absolute_url(value: object) -> bool:
     if not isinstance(value, str):
         return False
     candidate = value.strip().lower()
-    return candidate.startswith("http://") or candidate.startswith("https://")
+    for scheme in ("http://", "https://"):
+        if candidate.startswith(scheme) and len(candidate) > len(scheme):
+            return True
+    return False
 
 
 def url_like(value: object) -> bool:
@@ -245,6 +248,35 @@ def url_like(value: object) -> bool:
         return False
     candidate = value.strip().lower()
     return candidate.startswith(("http://", "https://", "/"))
+
+
+def absolute_link(value: object) -> bool:
+    """Report whether a value is an absolute url, or an object carrying one."""
+    if absolute_url(value):
+        return True
+    if isinstance(value, dict):
+        return any(absolute_url(value.get(f)) for f in ("href", "uri", "url"))
+    return False
+
+
+def collection_present(node: dict) -> bool:
+    """Report whether this envelope returned a collection of records.
+
+    Partiality is a statement about a RESULT SET, so an ambiguous page reference
+    only means pagination when a returned collection sits beside it. Document
+    navigation -- a chapter with a `next` link, or a link map -- carries no
+    collection at all, which is what separates it from an API page response.
+    Link collections and warning collections are excluded, because they are
+    metadata about the response rather than the records it returned.
+    """
+    for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
+        if not isinstance(value, list):
+            continue
+        name = normalize(key)
+        if name in LINK_COLLECTION_KEYS or name in WARNING_CONTAINER_KEYS:
+            continue
+        return True
+    return False
 
 
 def populated_cursor(value: object) -> bool:
@@ -265,6 +297,10 @@ def populated_cursor(value: object) -> bool:
             target = value.get(field)
             if isinstance(target, str) and target.strip():
                 return True
+            if isinstance(target, bool):
+                continue
+            if isinstance(target, int) and target > 0:
+                return True
     return False
 
 
@@ -277,7 +313,9 @@ def populated_resume_key(value: object) -> bool:
     return False
 
 
-def link_collection_codes(key: str, value: object) -> set[str]:
+def link_collection_codes(
+    key: str, value: object, *, has_collection: bool = True
+) -> set[str]:
     """Read a HAL-style link collection for a `next` relation.
 
     Scoped to keys that name a link collection, and the `next` relation must
@@ -285,6 +323,8 @@ def link_collection_codes(key: str, value: object) -> set[str]:
     with a relative path -- a chapter link -- so the relation alone is not
     enough to tell an API page link from ordinary content.
     """
+    if not has_collection:
+        return set()
     if normalize(key) not in LINK_COLLECTION_KEYS or not isinstance(value, list):
         return set()
     for entry in value[:MAX_LINKS_SCANNED]:
@@ -315,7 +355,13 @@ def boolean_codes(key: str, value: object) -> set[str]:
     return codes
 
 
-def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set[str]:
+def scalar_codes(
+    key: str,
+    value: object,
+    *,
+    in_pagination: bool = False,
+    has_collection: bool = True,
+) -> set[str]:
     """Return signal codes implied by one envelope key/value pair.
 
     `in_pagination` says whether this key sits inside a pagination container,
@@ -326,14 +372,18 @@ def scalar_codes(key: str, value: object, *, in_pagination: bool = False) -> set
     codes: set[str] = boolean_codes(key, value)
     if name in CURSOR_KEYS and populated_cursor(value):
         codes.add(PAGINATION_INCOMPLETE)
+    if not has_collection:
+        # Everything below is an ambiguous page reference, and means pagination
+        # only when the envelope actually returned a collection to page through.
+        return codes
     if name in SHAPE_QUALIFIED_CURSOR_KEYS and (
         isinstance(value, dict) and populated_cursor(value) or url_like(value)
     ):
         codes.add(PAGINATION_INCOMPLETE)
     if name in CONTAINED_CURSOR_KEYS:
         # Inside a pagination block, any populated value is a cursor. Outside
-        # one, only an absolute URL is unambiguous enough to act on.
-        ambiguous = populated_cursor(value) if in_pagination else absolute_url(value)
+        # one, only an absolute link is unambiguous enough to act on.
+        ambiguous = populated_cursor(value) if in_pagination else absolute_link(value)
         if ambiguous:
             codes.add(PAGINATION_INCOMPLETE)
     return codes
@@ -347,6 +397,8 @@ def warning_codes(node: dict) -> set[str]:
             continue
         candidates = value if isinstance(value, list) else [value]
         for candidate in candidates[:MAX_FIELDS_PER_NODE]:
+            if isinstance(candidate, dict):
+                candidate = candidate.get("code")
             if isinstance(candidate, str):
                 code = WARNING_CODES.get(candidate.strip().lower())
                 if code:
@@ -491,26 +543,40 @@ def collect_codes(payload: object) -> set[str]:
     envelopes = host_envelopes(payload)
     for envelope in envelopes:
         codes |= connection_codes(envelope)
-    queue: list[tuple[dict, int, bool]] = [(env, 0, False) for env in envelopes]
+    queue: list[tuple[dict, int, bool, bool]] = [
+        (env, 0, False, collection_present(env)) for env in envelopes
+    ]
     if not queue:
         return codes
     budget = MAX_ENVELOPES
     while queue:
-        node, depth, in_pagination = queue.pop(0)
+        node, depth, in_pagination, has_collection = queue.pop(0)
         budget -= 1
         if budget < 0:
             break
         codes |= warning_codes(node)
         fields = list(node.items())[:MAX_FIELDS_PER_NODE]
-        # A resume token means "the scan stopped early" only when there is a
-        # returned collection for it to resume. Beside no collection at all, the
-        # same key name is ordinary business content.
-        has_records = any(isinstance(value, list) for _, value in fields)
+        # A resume token means "the scan stopped early" only when records were
+        # actually returned for it to resume. An empty list is not enough: it is
+        # what an exhausted scan looks like, and it is also what an unrelated
+        # business field such as `tags: []` looks like.
+        returned_rows = any(
+            isinstance(value, list)
+            and value
+            and normalize(key) not in LINK_COLLECTION_KEYS
+            and normalize(key) not in WARNING_CONTAINER_KEYS
+            for key, value in fields
+        )
         for key, value in fields:
             name = normalize(key)
-            codes |= scalar_codes(key, value, in_pagination=in_pagination)
-            codes |= link_collection_codes(key, value)
-            if has_records and name in RESUME_KEY_KEYS and populated_resume_key(value):
+            codes |= scalar_codes(
+                key,
+                value,
+                in_pagination=in_pagination,
+                has_collection=has_collection,
+            )
+            codes |= link_collection_codes(key, value, has_collection=has_collection)
+            if returned_rows and name in RESUME_KEY_KEYS and populated_resume_key(value):
                 codes.add(PAGINATION_INCOMPLETE)
             if isinstance(value, dict) and name in ENVELOPE_KEYS and depth < MAX_DEPTH:
                 queue.append(
@@ -518,11 +584,14 @@ def collect_codes(payload: object) -> set[str]:
                         value,
                         depth + 1,
                         in_pagination or name in PAGINATION_CONTAINER_KEYS,
+                        has_collection,
                     )
                 )
         if depth < MAX_DEPTH:
             for parsed in embedded_envelopes(node):
-                queue.append((parsed, depth + 1, in_pagination))
+                queue.append(
+                    (parsed, depth + 1, in_pagination, collection_present(parsed))
+                )
     return codes
 
 
