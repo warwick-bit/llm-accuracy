@@ -556,15 +556,18 @@ ROOT_URL_CURSOR_MUST_FIRE = [
             "count": 1023,
             "next": "https://api.example.test/accounts/?page=5",
             "previous": None,
-            "results": [],
+            "results": [{"id": 1}],
         },
         "Django REST Framework page response",
     ),
 ]
 
 AMBIGUOUS_CURSOR_IN_CONTAINER_MUST_FIRE = [
-    ({"results": [], "paging": {"next": {"after": "52"}}}, "HubSpot paging block"),
-    ({"data": [], "links": {"next": "https://api.example.test/x?page=2"}}, "JSON:API"),
+    ({"results": [{"id": 1}], "paging": {"next": {"after": "52"}}}, "HubSpot"),
+    (
+        {"data": [{"id": "1"}], "links": {"next": "https://api.example.test/x?page=2"}},
+        "JSON:API",
+    ),
     (
         {
             "data": [{"id": "1"}],
@@ -633,10 +636,13 @@ NEW_PROVIDER_FIRE_CASES = [
     ({"files": [{"id": "f1"}], "incompleteSearch": True}, "Drive incomplete search"),
     ({"nextToken": "opaque", "items": []}, "AWS next token"),
     ({"entries": [], "limit": 100, "next_marker": "opaque"}, "Box marker paging"),
-    ({"value": [], "nextLink": "/api/books?$after=opaque"}, "Azure next link"),
+    (
+        {"value": [{"id": 1}], "nextLink": "/api/books?$after=opaque"},
+        "Azure next link",
+    ),
     (
         {
-            "data": [],
+            "data": [{"gid": "1"}],
             "next_page": {
                 "offset": "opaque",
                 "path": "/tasks?offset=opaque",
@@ -753,10 +759,12 @@ DOCUMENT_NAVIGATION_MUST_NOT_FIRE = [
 PAGINATION_BESIDE_RECORDS_MUST_FIRE = [
     (
         {
+            "count": 12,
+            "previous": None,
             "results": [{"id": 1}],
             "next": "https://api.example.test/accounts/?page=2",
         },
-        "the same absolute next link beside a returned collection",
+        "the same absolute next link in a page response",
     ),
     (
         {
@@ -833,6 +841,69 @@ def test_partial_result_sentinel_inherits_the_collection_from_a_wrapper() -> Non
     assert hook.collect_codes(nested_navigation) == set()
 
 
+COLLECTION_GATE_FIRE_CASES = [
+    (
+        {
+            "Items": [],
+            "Count": 0,
+            "ScannedCount": 100,
+            "LastEvaluatedKey": {"pk": {"S": "next"}},
+        },
+        "a filtered DynamoDB page returns no items and still must be resumed",
+    ),
+    (
+        {
+            "_links": {"next": {"href": "http://localhost/persons?page=1&size=5"}},
+            "_embedded": {"persons": [{"id": 1}]},
+            "page": {"size": 5, "number": 0},
+        },
+        "HAL keeps records under _embedded and paging under _links",
+    ),
+]
+
+COLLECTION_GATE_SILENT_CASES = [
+    (
+        {
+            "title": "Chapter 1",
+            "tags": ["reference"],
+            "next": "https://docs.example.test/chapter-2",
+        },
+        "a document with tags is still navigation, not a page response",
+    ),
+    (
+        {"title": "Chapter 1", "tags": [], "next": "https://docs.example.test/ch2"},
+        "an empty unrelated list establishes nothing",
+    ),
+]
+
+
+def test_partial_result_sentinel_gate_reads_counts_not_just_lists() -> None:
+    """An empty page can be real, and an unrelated list proves nothing.
+
+    Two findings from the fourth fresh audit pulled in opposite directions. A
+    filtered DynamoDB scan returns an EMPTY `Items` with a resume key and must
+    still be reported, so requiring a non-empty list lost real recall. Yet any
+    list at all opening the gate let document navigation fire again as soon as
+    the document carried tags or authors.
+
+    A record COUNT resolves both: a collection response declares how many
+    records it counted even when the page is empty, and a document does not. A
+    bare root `next` additionally needs corroborating pagination vocabulary --
+    a count or a named previous page -- because it is the most ambiguous signal
+    there is. Records nested one level inside a container also count, which is
+    how HAL's `_embedded` layout is recognised.
+    """
+    hook = load_hook("partial-result-sentinel.py")
+
+    for response, label in COLLECTION_GATE_FIRE_CASES:
+        assert hook.collect_codes(response) == {"pagination_incomplete"}, label
+        assert hook.collect_codes(wrap(response)) == {"pagination_incomplete"}, label
+
+    for response, label in COLLECTION_GATE_SILENT_CASES:
+        assert hook.collect_codes(response) == set(), label
+        assert hook.collect_codes(wrap(response)) == set(), label
+
+
 def test_partial_result_sentinel_reads_object_form_warning_codes() -> None:
     """A warning collection may carry objects, not only bare strings."""
     hook = load_hook("partial-result-sentinel.py")
@@ -851,8 +922,10 @@ def test_partial_result_sentinel_requires_a_host_in_an_absolute_url() -> None:
     """A bare scheme is not a next-page link."""
     hook = load_hook("partial-result-sentinel.py")
 
-    assert hook.collect_codes({"results": [{"id": 1}], "next": "https://"}) == set()
-    assert hook.collect_codes({"results": [{"id": 1}], "next": "https://x.test"}) == {
+    page = {"count": 3, "previous": None, "results": [{"id": 1}]}
+    assert hook.collect_codes({**page, "next": "https://"}) == set()
+    assert hook.collect_codes({**page, "next": "https:///page/2"}) == set()
+    assert hook.collect_codes({**page, "next": "https://x.test"}) == {
         "pagination_incomplete"
     }
 

@@ -103,11 +103,16 @@ It deliberately does NOT do the following, and you remain responsible for each:
   inside a record array will not raise a signal.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
-- **Read a page reference with no result set beside it.** Partiality is a claim
+- **Read a page reference outside a collection response.** Partiality is a claim
   about a collection. A document that links to the next document, a link map, or
   a business object that happens to carry a resume-key name is not a paginated
-  result, so an ambiguous reference is read only when records were returned
-  alongside it. Link and warning collections do not count as those records.
+  result, so an ambiguous reference is read only when the envelope is returning
+  a collection — shown by returned records, found directly or one level inside a
+  container as HAL's `_embedded` does, or by a record-count key, since a
+  legitimately empty page still declares its count. An empty unrelated list such
+  as `tags: []` establishes nothing, and link and warning collections are never
+  counted as records. A bare root `next` needs more still: a record count or a
+  named previous page, which a page response carries and a document does not.
 - **Read flags whose names are ordinary business vocabulary.** Salesforce's
   `done: false`, Jira's `isLast: false`, and Elasticsearch's `timed_out: true`
   do declare partiality, and so does Kubernetes' `continue`, but the same field

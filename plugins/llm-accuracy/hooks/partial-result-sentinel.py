@@ -132,6 +132,32 @@ LINK_COLLECTION_KEYS = {
 }
 MAX_LINKS_SCANNED = 32
 
+# Numeric keys that state how many records a collection holds. Their presence
+# corroborates that this envelope IS a collection response, which an empty page
+# cannot show on its own. Bare `total` is excluded: it is the ambiguous total
+# that is deliberately never read.
+RECORD_COUNT_KEYS = {
+    "count",
+    "totalcount",
+    "totalsize",
+    "totalresults",
+    "totalrecords",
+    "resultcount",
+    "recordcount",
+    "scannedcount",
+    "numresults",
+}
+
+# Keys naming the PREVIOUS page. Their presence, even when null, is pagination
+# vocabulary, and is what tells a Django REST Framework page apart from a
+# document that happens to link onwards.
+PREVIOUS_PAGE_KEYS = {
+    "previous",
+    "prev",
+    "previouspage",
+    "prevpage",
+}
+
 # Exact machine warning codes, read only from envelope warning collections.
 WARNING_CODES = {
     PAGINATION_INCOMPLETE: PAGINATION_INCOMPLETE,
@@ -237,7 +263,10 @@ def absolute_url(value: object) -> bool:
         return False
     candidate = value.strip().lower()
     for scheme in ("http://", "https://"):
-        if candidate.startswith(scheme) and len(candidate) > len(scheme):
+        if not candidate.startswith(scheme):
+            continue
+        host = candidate[len(scheme) :].split("/", 1)[0]
+        if host:
             return True
     return False
 
@@ -259,27 +288,60 @@ def absolute_link(value: object) -> bool:
     return False
 
 
+def record_list(key: str, value: object) -> bool:
+    """Report whether one field is a non-empty list of returned records."""
+    if not isinstance(value, list) or not value:
+        return False
+    name = normalize(key)
+    return name not in LINK_COLLECTION_KEYS and name not in WARNING_CONTAINER_KEYS
+
+
 def collection_present(node: dict) -> bool:
-    """Report whether this envelope returned a collection of records.
+    """Report whether this envelope is a collection response.
 
     Partiality is a statement about a RESULT SET, so an ambiguous page reference
-    only means pagination when a returned collection sits beside it. Document
-    navigation -- a chapter with a `next` link, or a link map -- carries no
-    collection at all, which is what separates it from an API page response.
-    Link collections and warning collections are excluded, because they are
-    metadata about the response rather than the records it returned.
+    only means pagination when this envelope is returning a collection. Document
+    navigation -- a chapter with a `next` link, or a link map -- is not, which is
+    what separates it from an API page response.
+
+    Two things establish it. Returned records, found either directly or one
+    level inside a container, because HAL puts them under `_embedded` while
+    pagination sits under `_links`. Or a record-count key, because a legitimately
+    EMPTY page still declares how many records it counted -- a filtered DynamoDB
+    scan returns no items and a resume key, and must still be reported.
+
+    An empty list on its own establishes nothing: `tags: []` on a document looks
+    identical to an exhausted result set.
 
     A nested envelope inherits this from its ancestors and can also establish it
-    itself, so a response wrapped in `result` or `structuredContent` -- where
-    the root carries no list at all -- is still recognised.
+    itself, so a response wrapped in `result` or `structuredContent` -- where the
+    root carries no records at all -- is still recognised.
     """
     for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
-        if not isinstance(value, list):
-            continue
+        if record_list(key, value):
+            return True
+        if normalize(key) in RECORD_COUNT_KEYS and isinstance(value, int):
+            return True
+        if isinstance(value, dict):
+            for inner_key, inner_value in list(value.items())[:MAX_FIELDS_PER_NODE]:
+                if record_list(inner_key, inner_value):
+                    return True
+    return False
+
+
+def pagination_vocabulary(node: dict) -> bool:
+    """Report whether a node carries corroborating pagination vocabulary.
+
+    A bare `next` at the root of a business object is the most ambiguous signal
+    there is, so it needs more than a collection: a record count or a named
+    previous page, both of which a page response carries and a document does not.
+    """
+    for key, value in list(node.items())[:MAX_FIELDS_PER_NODE]:
         name = normalize(key)
-        if name in LINK_COLLECTION_KEYS or name in WARNING_CONTAINER_KEYS:
-            continue
-        return True
+        if name in RECORD_COUNT_KEYS and isinstance(value, int):
+            return True
+        if name in PREVIOUS_PAGE_KEYS:
+            return True
     return False
 
 
@@ -365,6 +427,7 @@ def scalar_codes(
     *,
     in_pagination: bool = False,
     has_collection: bool = True,
+    corroborated: bool = True,
 ) -> set[str]:
     """Return signal codes implied by one envelope key/value pair.
 
@@ -385,9 +448,13 @@ def scalar_codes(
     ):
         codes.add(PAGINATION_INCOMPLETE)
     if name in CONTAINED_CURSOR_KEYS:
-        # Inside a pagination block, any populated value is a cursor. Outside
-        # one, only an absolute link is unambiguous enough to act on.
-        ambiguous = populated_cursor(value) if in_pagination else absolute_link(value)
+        # Inside a pagination block, any populated value is a cursor. At the
+        # root it is the most ambiguous signal there is, so it needs both an
+        # absolute link and corroborating pagination vocabulary.
+        if in_pagination:
+            ambiguous = populated_cursor(value)
+        else:
+            ambiguous = corroborated and absolute_link(value)
         if ambiguous:
             codes.add(PAGINATION_INCOMPLETE)
     return codes
@@ -555,6 +622,7 @@ def collect_codes(payload: object) -> set[str]:
     budget = MAX_ENVELOPES
     while queue:
         node, depth, in_pagination, has_collection = queue.pop(0)
+        corroborated = pagination_vocabulary(node)
         budget -= 1
         if budget < 0:
             break
@@ -564,13 +632,9 @@ def collect_codes(payload: object) -> set[str]:
         # actually returned for it to resume. An empty list is not enough: it is
         # what an exhausted scan looks like, and it is also what an unrelated
         # business field such as `tags: []` looks like.
-        returned_rows = any(
-            isinstance(value, list)
-            and value
-            and normalize(key) not in LINK_COLLECTION_KEYS
-            and normalize(key) not in WARNING_CONTAINER_KEYS
-            for key, value in fields
-        )
+        # A resume key needs this envelope to be a collection response, which a
+        # legitimately empty page still declares through its record count.
+        returned_rows = has_collection
         for key, value in fields:
             name = normalize(key)
             codes |= scalar_codes(
@@ -578,6 +642,7 @@ def collect_codes(payload: object) -> set[str]:
                 value,
                 in_pagination=in_pagination,
                 has_collection=has_collection,
+                corroborated=corroborated,
             )
             codes |= link_collection_codes(key, value, has_collection=has_collection)
             if returned_rows and name in RESUME_KEY_KEYS and populated_resume_key(value):
