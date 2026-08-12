@@ -17,8 +17,11 @@ no-op for every real MCP result.
 Detection is scoped to the response ENVELOPE. Record contents inside a
 collection are never inspected, because a row may legitimately hold a column
 called ``has_more`` or a cell whose value is ``row_cap_hit``; treating row data
-as pagination metadata would fire on ordinary database results. Only envelope
-dictionaries are read; record arrays are never walked into.
+as pagination metadata would fire on ordinary database results. Record arrays
+are never walked into. One pass is broader: the Relay connection pass descends
+dict values under any container name, to find a ``pageInfo`` block under a
+schema-specific path, but it reads signals out of that block alone and is
+bounded by ``MAX_DEPTH`` like everything else.
 
 One record shape is beyond that protection and is accepted as a limit: a
 SINGULAR record returned as a bare JSON object, with no collection wrapping it,
@@ -100,6 +103,7 @@ CURSOR_KEYS = {
     "nextpagecursor",
     "nextoffset",
     "nextpageurl",
+    "nextpageuri",
     "nexttoken",
     "nextmarker",
     "continuationtoken",
@@ -161,12 +165,18 @@ PAGINATION_CONTAINER_KEYS = {
     "paging",
     "pagination",
     "cursor",
+    "paginationcontext",
 }
-# The set above names three spellings of one rule, and providers spell it more
-# ways than that -- Alexa returns its token under `paginationContext`. Any block
-# whose name begins with `pagination` is stating what it holds, so the rule is
-# written out rather than enumerated. A dict is the only thing traversed, so a
-# scalar such as `paginationEnabled: false` is unaffected.
+
+# A `pagination`-named block is TRAVERSED even when it is not one of the names
+# above, so a self-describing cursor inside it is found: Alexa returns its token
+# at `paginationContext.nextToken`. Being reachable is all the prefix grants.
+# It deliberately does NOT establish pagination context, because that is what
+# makes a bare `next` readable as a cursor, and a `paginationLabels` block holds
+# button copy -- `{"previous": "Back", "next": "Next"}` -- not cursor state.
+# Only the enumerated names above, each an observed pagination block, do that.
+# A dict is the only thing traversed, so a scalar such as `paginationEnabled:
+# false` is unaffected either way.
 PAGINATION_CONTAINER_PREFIX = "pagination"
 
 # Exact machine warning codes, read only from envelope warning collections.
@@ -263,16 +273,13 @@ def normalize(key: str) -> str:
     return key.lower()
 
 
-def is_pagination_container(name: str) -> bool:
-    """Report whether a normalised block name states that it holds pagination.
+def is_pagination_named(name: str) -> bool:
+    """Report whether a normalised block name begins with `pagination`.
 
-    A block that names itself pagination is what makes a member as ordinary as
-    `next` or `after` readable as a cursor. Nothing else qualifies: a generic
-    `page` or `metadata` bag is excluded on purpose.
+    This grants TRAVERSAL only, so a self-describing cursor inside the block is
+    found. It does not grant pagination context: see PAGINATION_CONTAINER_KEYS.
     """
-    return name in PAGINATION_CONTAINER_KEYS or name.startswith(
-        PAGINATION_CONTAINER_PREFIX
-    )
+    return name.startswith(PAGINATION_CONTAINER_PREFIX)
 
 
 def populated_cursor(value: object) -> bool:
@@ -487,9 +494,10 @@ def collect_codes(payload: object) -> set[str]:
     """Return every explicit partial-result code found in a tool result.
 
     Accepts the shapes a host actually delivers -- a bare content-block list, a
-    bare string, or a dict. Only envelope dictionaries are inspected. Record
-    arrays are never walked into, so row content cannot be mistaken for
-    pagination metadata.
+    bare string, or a dict. Record arrays are never walked into, so row content
+    cannot be mistaken for pagination metadata. Signals come from envelope
+    dictionaries, plus the Relay connection pass, which reaches a `pageInfo`
+    block under any dict container but reads nothing else on the way.
     """
     codes: set[str] = host_truncation_codes(payload)
     envelopes = host_envelopes(payload)
@@ -512,8 +520,10 @@ def collect_codes(payload: object) -> set[str]:
             codes |= scalar_codes(
                 key, value, in_pagination=in_pagination, paging_only=paging_only
             )
-            paginated_block = is_pagination_container(name)
-            reachable = name in ENVELOPE_KEYS or paginated_block
+            paginated_block = name in PAGINATION_CONTAINER_KEYS
+            reachable = (
+                name in ENVELOPE_KEYS or paginated_block or is_pagination_named(name)
+            )
             if isinstance(value, dict) and reachable and depth < MAX_DEPTH:
                 queue.append(
                     (

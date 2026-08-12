@@ -89,8 +89,10 @@ flags (`has_more`, `hasNextPage`, `moreRecords`, `truncated`, `is_truncated`,
 wrapping one under a member that can carry a token, so that a cursor holding
 `{"value": null, "status": "exhausted"}` reads as exhausted); a bare `next` or
 `after` inside a block whose own name means
-pagination (`paging`, `cursor`, or any name beginning `pagination`, which covers
-`pagination` itself and Alexa's `paginationContext`); exact
+pagination (`paging`, `pagination`, `cursor`, `paginationContext`); a
+self-describing cursor inside any other `pagination`-named block, which is
+traversed but does not make a bare `next` a cursor, because a `paginationLabels`
+block holds button copy rather than cursor state; exact
 machine warning codes in an envelope warning collection, as strings or as
 `{"code": ...}` objects; a GraphQL Relay `pageInfo` block reached through nested
 dictionaries; and the host's own over-budget notice when it replaces an
@@ -118,7 +120,12 @@ It deliberately does NOT do the following, and you remain responsible for each:
   `response`, `body`, `page`, `meta`, `metadata`, `response_metadata`, `links`,
   `structuredContent`, and any pagination-named block. A cursor buried under a
   schema-specific container the traversal does not know is not found; only a
-  Relay `pageInfo` block is chased to arbitrary depth.
+  Relay `pageInfo` block is chased under container names the traversal does not
+  know, and that chase stops at the same depth bound as everything else (6).
+- **Read a bare root `cursor`.** Square returns a populated root `cursor` only
+  when a further page exists, but a bare `cursor` more often identifies the page
+  already returned, and the name does not say which. A cursor whose name states
+  it points forward — `next_cursor`, `nextPageToken` — is read as usual.
 - **Detect undeclared caps.** A source that silently truncates emits nothing to
   detect.
 - **Read result-set flags inside a generic block.** A `page`, `meta`,

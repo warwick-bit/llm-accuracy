@@ -555,6 +555,10 @@ NEW_PROVIDER_FIRE_CASES = [
     ),
     ({"nextToken": "opaque", "items": []}, "AWS next token"),
     ({"entries": [], "limit": 100, "next_marker": "opaque"}, "Box marker paging"),
+    (
+        {"calls": [{"sid": "CA1"}], "next_page_uri": "/2010-04-01/Calls.json?Page=1"},
+        "Twilio's next page uri, the same self-describing name as next_page_url",
+    ),
 ]
 
 
@@ -814,14 +818,23 @@ def test_partial_result_sentinel_reads_any_pagination_named_container() -> None:
     alexa = {"paginationContext": {"nextToken": "opaque"}, "results": [{"id": 1}]}
     assert hook.collect_codes(alexa) == {"pagination_incomplete"}
     assert hook.collect_codes(wrap(alexa)) == {"pagination_incomplete"}
-    # A bare `next` becomes readable inside one, as in any pagination block.
+    # `paginationContext` is a named pagination block, so a bare `after` counts.
     contained = {"items": [{"id": 1}], "pagination_context": {"after": "52"}}
     assert hook.collect_codes(wrap(contained)) == {"pagination_incomplete"}
+    # An unenumerated `pagination`-named block is only TRAVERSED, so a
+    # self-describing cursor inside it is found...
+    unnamed = {"rows": [{"id": 1}], "paginationDetails": {"next_cursor": "p2"}}
+    assert hook.collect_codes(wrap(unnamed)) == {"pagination_incomplete"}
+    # ...while a bare `next` inside it stays button copy, not cursor state.
+    labels = {"paginationLabels": {"previous": "Back", "next": "Next"}}
+    assert hook.collect_codes(labels) == set()
+    assert hook.collect_codes(wrap(labels)) == set()
     # The prefix reaches dicts only, so an ordinary scalar is untouched.
     assert hook.collect_codes(wrap({"rows": [], "paginationEnabled": False})) == set()
     # And it does not turn a generic container into a pagination one.
-    assert hook.collect_codes(wrap({"page": {"next": "about-us"}})) == set()
-    assert hook.collect_codes(wrap({"metadata": {"next": "review-step-2"}})) == set()
+    for container in ("page", "meta", "metadata", "response_metadata"):
+        generic = {"items": [{"id": 1}], container: {"next": "review-step-2"}}
+        assert hook.collect_codes(wrap(generic)) == set(), container
 
 
 def test_partial_result_sentinel_reports_a_singular_record_as_a_known_limit() -> None:
