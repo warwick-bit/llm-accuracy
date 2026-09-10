@@ -58,6 +58,8 @@ a "secret codeword" was refused; a neutral continuity question was answered.
 Observed: Claude Code 2.1.267, 10 Sep 2026, Linux (WSL2). A fresh authenticated
 `CLAUDE_CONFIG_DIR` ran the repeatable smoke below against this source plugin.
 The observer retained event names, key names, and boolean presence flags only.
+The committed [content-free receipt](../../../docs/validation/session-ledger-host-smoke-2026-09-10.json)
+contains the complete retained result.
 
 - The direct scenario emitted `SessionStart`, `UserPromptSubmit`, and `Stop`.
 - The named no-tool child emitted `SubagentStart` and `SubagentStop` with

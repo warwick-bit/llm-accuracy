@@ -12,6 +12,9 @@ from types import ModuleType
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "session_ledger_host_smoke.py"
+HOST_SMOKE_RECEIPT = (
+    ROOT / "docs" / "validation" / "session-ledger-host-smoke-2026-09-10.json"
+)
 
 
 def load_smoke() -> ModuleType:
@@ -176,6 +179,26 @@ def test_subagent_report_requires_an_observed_agent_field() -> None:
     ] == "FAIL"
 
 
+def test_subagent_report_fails_without_lifecycle_events() -> None:
+    smoke = load_smoke()
+    receipts = [
+        {"event": "SessionStart", "agent_id_present": False},
+        {
+            "event": "UserPromptSubmit",
+            "agent_id_present": True,
+            "session_id_matches_requested": True,
+            "session_id_present": True,
+        },
+        {"event": "Stop", "agent_id_present": False},
+    ]
+
+    result = smoke.report_for(receipts, scenario="subagent", command_exit=0)
+
+    assert result["outcome"] == "FAIL"
+    assert result["subagent_payload_seen"] is False
+    assert result["subagent_session_mapping"] == "not_observed"
+
+
 def test_smoke_command_uses_a_new_session_and_direct_plugin_paths(tmp_path: Path) -> None:
     smoke = load_smoke()
     command = smoke.smoke_command(
@@ -197,6 +220,8 @@ def test_smoke_command_uses_a_new_session_and_direct_plugin_paths(tmp_path: Path
     ]
     assert "--strict-mcp-config" in command
     assert command[command.index("--tools") + 1] == ""
+    assert "--allowedTools" not in command
+    assert "--agents" not in command
     assert "--plugin-dir" in command
     assert str(smoke.LEDGER_PLUGIN) in command
     assert str(tmp_path / "observer") in command
@@ -220,6 +245,34 @@ def test_subagent_command_allows_only_the_named_smoke_agent(tmp_path: Path) -> N
     agent_specification = json.loads(command[command.index("--agents") + 1])
     assert agent_specification == smoke.SMOKE_AGENT
     assert smoke.SMOKE_AGENT_NAME in smoke.SUBAGENT_PROMPT
+
+
+def test_committed_host_smoke_receipt_is_complete_and_content_free() -> None:
+    receipt = json.loads(HOST_SMOKE_RECEIPT.read_text(encoding="utf-8"))
+
+    assert receipt["claude_code_version"] == "2.1.267"
+    assert receipt["host"] == "Linux (WSL2)"
+    assert receipt["observed_on"] == "2026-09-10"
+    assert receipt["direct"]["outcome"] == "PASS"
+    assert receipt["direct"]["event_counts"] == {
+        "SessionStart": 1,
+        "Stop": 1,
+        "UserPromptSubmit": 1,
+    }
+    assert receipt["subagent"]["outcome"] == "PASS"
+    assert receipt["subagent"]["event_counts"] == {
+        "SessionStart": 1,
+        "Stop": 1,
+        "SubagentStart": 1,
+        "SubagentStop": 1,
+        "UserPromptSubmit": 1,
+    }
+    assert receipt["subagent"]["subagent_session_mapping"] == "shared-session"
+    rendered = json.dumps(receipt, sort_keys=True)
+    assert "transcript_path" not in rendered
+    assert "last_assistant_message" not in rendered
+    assert "agent_id\"" not in rendered
+    assert "session_id\"" not in rendered
 
 
 def test_run_smoke_uses_only_the_clean_config_and_structural_receipt(
