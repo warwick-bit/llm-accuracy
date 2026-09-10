@@ -198,21 +198,25 @@ def report_for(
         if scenario == "subagent"
         else DIRECT_REQUIRED_EVENTS
     )
-    agent_receipts = [
+    lifecycle_receipts = [
         receipt
         for receipt in receipts
         if receipt.get("event") in SUBAGENT_LIFECYCLE_EVENTS
-        and (receipt.get("agent_id_present") or receipt.get("agent_type_present"))
+    ]
+    agent_receipts = [
+        receipt
+        for receipt in lifecycle_receipts
+        if receipt.get("agent_id_present") or receipt.get("agent_type_present")
     ]
     subagent_payload_seen = bool(agent_receipts)
     matching_agent_sessions = [
         receipt.get("session_id_matches_requested")
-        for receipt in agent_receipts
+        for receipt in lifecycle_receipts
         if receipt.get("session_id_present") is True
     ]
     if not agent_receipts:
         subagent_session_mapping = "not_observed"
-    elif not matching_agent_sessions:
+    elif len(matching_agent_sessions) != len(lifecycle_receipts):
         subagent_session_mapping = "missing-session-id"
     elif all(matching_agent_sessions):
         subagent_session_mapping = "shared-session"

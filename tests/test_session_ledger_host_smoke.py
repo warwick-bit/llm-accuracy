@@ -179,6 +179,28 @@ def test_subagent_report_requires_an_observed_agent_field() -> None:
     ] == "FAIL"
 
 
+def test_subagent_report_fails_when_any_lifecycle_session_id_is_missing() -> None:
+    smoke = load_smoke()
+    receipts = [
+        {"event": "SessionStart", "agent_id_present": False},
+        {"event": "UserPromptSubmit", "agent_id_present": False},
+        {
+            "event": "SubagentStart",
+            "agent_id_present": True,
+            "session_id_matches_requested": True,
+            "session_id_present": True,
+        },
+        {"event": "SubagentStop", "agent_type_present": True},
+        {"event": "Stop", "agent_id_present": False},
+    ]
+
+    result = smoke.report_for(receipts, scenario="subagent", command_exit=0)
+
+    assert result["outcome"] == "FAIL"
+    assert result["subagent_payload_seen"] is True
+    assert result["subagent_session_mapping"] == "missing-session-id"
+
+
 def test_subagent_report_fails_without_lifecycle_events() -> None:
     smoke = load_smoke()
     receipts = [
