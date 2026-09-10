@@ -58,6 +58,8 @@ a "secret codeword" was refused; a neutral continuity question was answered.
 Observed: Claude Code 2.1.267, 10 Sep 2026, Linux (WSL2). A fresh authenticated
 `CLAUDE_CONFIG_DIR` ran the repeatable smoke below against this source plugin.
 The observer retained event names, key names, and boolean presence flags only.
+The harness derives per-event counts plus safe execution and exit status from
+those structural receipts; it never retains a host payload value.
 The committed [content-free receipt](../../../docs/validation/session-ledger-host-smoke-2026-09-10.json)
 contains the complete retained result.
 
@@ -93,12 +95,13 @@ Claude Code host. It loads the source plugin directly for one non-interactive,
 synthetic turn and generates a temporary observer plugin. The observer records
 only event names, the complete host-defined payload key set (never values),
 allowlisted `SessionStart.source` values, and boolean presence flags for
-`session_id`, `agent_id`, and `agent_type`. Claude stdout/stderr, every payload
-value, prompts, transcripts, model output, and credentials are captured and
-discarded. The Claude child receives only `HOME`, `PATH`, the clean config path,
-the observer-receipt path, and a synthetic requested-session id; it does not
-inherit ambient environment values. `HOME` and `CLAUDE_CONFIG_DIR` both point
-to the clean config directory.
+`session_id`, `agent_id`, and `agent_type`. The report derives per-event counts
+and safe execution/exit status from those structural receipts. Claude
+stdout/stderr, every payload value, prompts, transcripts, model output, and
+credentials are captured and discarded. The Claude child receives only `HOME`,
+`PATH`, the clean config path, the observer-receipt path, and a synthetic
+requested-session id; it does not inherit ambient environment values. `HOME`
+and `CLAUDE_CONFIG_DIR` both point to the clean config directory.
 
 Use an empty persistent config directory and authenticate it interactively once
 before running the smoke. On Linux and Windows, `CLAUDE_CONFIG_DIR` includes

@@ -199,6 +199,27 @@ def test_subagent_report_fails_without_lifecycle_events() -> None:
     assert result["subagent_session_mapping"] == "not_observed"
 
 
+def test_report_discards_unexpected_receipt_values() -> None:
+    smoke = load_smoke()
+    private_values = {
+        "cwd": "/synthetic/private/workspace",
+        "prompt": "Synthetic user content must not reach the report.",
+        "session_id": "synthetic-session-id",
+        "transcript_path": "/synthetic/private/transcript.jsonl",
+    }
+    receipts = [
+        {"event": event, "agent_id_present": False, **private_values}
+        for event in ("SessionStart", "UserPromptSubmit", "Stop")
+    ]
+
+    rendered = json.dumps(
+        smoke.report_for(receipts, scenario="direct", command_exit=0),
+        sort_keys=True,
+    )
+
+    assert all(value not in rendered for value in private_values.values())
+
+
 def test_smoke_command_uses_a_new_session_and_direct_plugin_paths(tmp_path: Path) -> None:
     smoke = load_smoke()
     command = smoke.smoke_command(
@@ -269,10 +290,17 @@ def test_committed_host_smoke_receipt_is_complete_and_content_free() -> None:
     }
     assert receipt["subagent"]["subagent_session_mapping"] == "shared-session"
     rendered = json.dumps(receipt, sort_keys=True)
-    assert "transcript_path" not in rendered
-    assert "last_assistant_message" not in rendered
-    assert "agent_id\"" not in rendered
-    assert "session_id\"" not in rendered
+    for forbidden_key in (
+        "agent_id\"",
+        "cwd\"",
+        "last_assistant_message",
+        "permission_mode",
+        "prompt\"",
+        "session_id\"",
+        "tool_name",
+        "transcript_path",
+    ):
+        assert forbidden_key not in rendered
 
 
 def test_run_smoke_uses_only_the_clean_config_and_structural_receipt(
