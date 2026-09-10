@@ -1,0 +1,47 @@
+{
+  "claude_code_version": "2.1.267",
+  "host": "Linux (WSL2)",
+  "observed_on": "2026-09-10",
+  "direct": {
+    "claude_exit_code": 0,
+    "event_counts": {
+      "SessionStart": 1,
+      "Stop": 1,
+      "UserPromptSubmit": 1
+    },
+    "execution": "completed",
+    "host_output": "discarded",
+    "outcome": "PASS",
+    "required_events_seen": [
+      "SessionStart",
+      "Stop",
+      "UserPromptSubmit"
+    ],
+    "scenario": "direct",
+    "subagent_payload_seen": false,
+    "subagent_session_mapping": "not_observed"
+  },
+  "subagent": {
+    "claude_exit_code": 0,
+    "event_counts": {
+      "SessionStart": 1,
+      "Stop": 1,
+      "SubagentStart": 1,
+      "SubagentStop": 1,
+      "UserPromptSubmit": 1
+    },
+    "execution": "completed",
+    "host_output": "discarded",
+    "outcome": "PASS",
+    "required_events_seen": [
+      "SessionStart",
+      "Stop",
+      "SubagentStart",
+      "SubagentStop",
+      "UserPromptSubmit"
+    ],
+    "scenario": "subagent",
+    "subagent_payload_seen": true,
+    "subagent_session_mapping": "shared-session"
+  }
+}

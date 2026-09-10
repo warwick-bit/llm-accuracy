@@ -53,6 +53,83 @@ session correctly recalled a reference string stated before compaction. The
 untrusted framing behaved as designed: a prompt phrased as a demand to repeat
 a "secret codeword" was refused; a neutral continuity question was answered.
 
+## Current structural rerun
+
+Observed: Claude Code 2.1.267, 10 Sep 2026, Linux (WSL2). A fresh authenticated
+`CLAUDE_CONFIG_DIR` ran the repeatable smoke below against this source plugin.
+The observer retained event names, key names, and boolean presence flags only.
+The harness derives per-event counts plus safe execution and exit status from
+those structural receipts; it never retains a host payload value.
+The committed [content-free receipt](../../../docs/validation/session-ledger-host-smoke-2026-09-10.json)
+contains the complete published aggregate.
+
+- The direct scenario emitted `SessionStart`, `UserPromptSubmit`, and `Stop`.
+- The named no-tool child emitted `SubagentStart` and `SubagentStop`; agent
+  metadata was observed across those lifecycle deliveries. Both lifecycle
+  payloads carried the parent test session id (`shared-session`).
+
+This is a structural receipt, not a fresh compaction-ordering or natural-recall
+claim.
+
+## Source-level subagent policy
+
+Claude Code's current hook documentation defines `SubagentStart` and
+`SubagentStop` lifecycle events with `agent_id` and `agent_type` fields. Session
+Ledger does not register those events, persist either field, or use either
+field to infer a parent-child relationship. Its only identity inputs are the
+host-provided `session_id` and `cwd`:
+
+- hook deliveries with the same session id and workspace append to the same
+  full-fidelity rolling record, even when their optional agent metadata differs;
+- deliveries with a different session id remain in a separate record; and
+- the plugin does not claim that a particular host version uses either identity
+  arrangement for subagents until a host smoke observes it.
+
+This keeps the local record keyed to Claude Code's own session boundary without
+persisting raw actor identifiers or inventing an unsupported parent-child map.
+
+## Repeatable current-host structural smoke
+
+`scripts/session_ledger_host_smoke.py` is a clean-config smoke for the current
+Claude Code host. It loads the source plugin directly for one non-interactive,
+synthetic turn and generates a temporary observer plugin. The observer records
+only event names, the complete host-defined payload key set (never values),
+allowlisted `SessionStart.source` values, and boolean presence flags for
+`session_id`, `agent_id`, and `agent_type`. The report derives per-event counts
+and safe execution/exit status from those structural receipts. Claude
+stdout/stderr, every payload value, prompts, transcripts, model output, and
+credentials are captured and discarded. The Claude child receives only `HOME`,
+`PATH`, the clean config path, the observer-receipt path, and a synthetic
+requested-session id; it does not inherit ambient environment values. `HOME`
+and `CLAUDE_CONFIG_DIR` both point to the clean config directory.
+
+Use an empty persistent config directory and authenticate it interactively once
+before running the smoke. On Linux and Windows, `CLAUDE_CONFIG_DIR` includes
+the login credential, so this does not copy or read credentials from another
+Claude profile:
+
+```bash
+CLAUDE_CONFIG_DIR=/path/to/clean-claude-config claude
+# Run /login interactively, then exit.
+python3 scripts/session_ledger_host_smoke.py \
+  --config-dir /path/to/clean-claude-config --scenario direct
+python3 scripts/session_ledger_host_smoke.py \
+  --config-dir /path/to/clean-claude-config --scenario subagent
+```
+
+The direct scenario requires `SessionStart`, `UserPromptSubmit`, and `Stop`.
+The subagent scenario requires `SubagentStart`, `SubagentStop`, and the three
+direct-turn events. It records only boolean agent-metadata presence on the two
+lifecycle events, then reports whether their host session ids equal the
+requested test session (`shared-session`) or differ (`separate-session`).
+Neither arrangement warrants an identity-policy change; a `FAIL` is an
+inconclusive host result. `not_observed`, `missing-session-id`, and
+`mixed-session` are also inconclusive mappings, never an invitation to infer a
+parent-child relationship. This structural smoke deliberately does not re-test
+the historical forced-compaction receipt above (Claude Code 2.1.218, 24 Jul
+2026): run and record a separate interactive `/compact` receipt before making a
+newer ordering claim.
+
 ## Skill command context — observed live
 
 Verified on Claude Code 2.1.218, 2026-07-24, Linux (WSL2): isolated

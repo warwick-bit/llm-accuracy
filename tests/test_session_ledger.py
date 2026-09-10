@@ -359,6 +359,69 @@ def test_direct_hook_text_is_captured_before_the_transcript_catches_up(
     ]
 
 
+def test_agent_metadata_never_changes_or_persists_session_identity(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    first_payload = {
+        "agent_id": "synthetic-child-a",
+        "agent_type": "subagent",
+        "cwd": "/work/project",
+        "prompt": "Synthetic child evidence A.",
+        "session_id": "session-one",
+    }
+    second_payload = {
+        "agent_id": "synthetic-child-b",
+        "agent_type": "subagent",
+        "cwd": "/work/project",
+        "prompt": "Synthetic child evidence B.",
+        "session_id": "session-one",
+    }
+
+    assert ledger.update_ledger(first_payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(second_payload, data_root=data_root, now=NOW)
+
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [entry["text"] for entry in record["entries"]] == [
+        "Synthetic child evidence A.",
+        "Synthetic child evidence B.",
+    ]
+    rendered = json.dumps(record)
+    assert "synthetic-child-a" not in rendered
+    assert "synthetic-child-b" not in rendered
+    assert "subagent" not in rendered
+
+
+def test_different_session_ids_remain_separate_despite_matching_agent_metadata(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    payload = {
+        "agent_id": "synthetic-child",
+        "agent_type": "subagent",
+        "cwd": "/work/project",
+        "prompt": "Synthetic first-session evidence.",
+        "session_id": "session-one",
+    }
+    second_session_payload = {
+        **payload,
+        "prompt": "Synthetic second-session evidence.",
+        "session_id": "session-two",
+    }
+
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(second_session_payload, data_root=data_root, now=NOW)
+
+    first = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    second = json.loads(ledger.record_path(data_root, "session-two").read_text())
+    assert [entry["text"] for entry in first["entries"]] == [
+        "Synthetic first-session evidence."
+    ]
+    assert [entry["text"] for entry in second["entries"]] == [
+        "Synthetic second-session evidence."
+    ]
+
+
 def test_direct_hook_text_is_not_duplicated_when_the_transcript_catches_up(
     tmp_path: Path,
 ) -> None:
