@@ -61,12 +61,12 @@ The observer retained event names, key names, and boolean presence flags only.
 The harness derives per-event counts plus safe execution and exit status from
 those structural receipts; it never retains a host payload value.
 The committed [content-free receipt](../../../docs/validation/session-ledger-host-smoke-2026-09-10.json)
-contains the complete retained result.
+contains the complete published aggregate.
 
 - The direct scenario emitted `SessionStart`, `UserPromptSubmit`, and `Stop`.
-- The named no-tool child emitted `SubagentStart` and `SubagentStop` with
-  `agent_id` and `agent_type` present. Both lifecycle payloads carried the
-  parent test session id (`shared-session`).
+- The named no-tool child emitted `SubagentStart` and `SubagentStop`; agent
+  metadata was observed across those lifecycle deliveries. Both lifecycle
+  payloads carried the parent test session id (`shared-session`).
 
 This is a structural receipt, not a fresh compaction-ordering or natural-recall
 claim.

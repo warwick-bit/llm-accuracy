@@ -330,6 +330,7 @@ def test_run_smoke_uses_only_the_clean_config_and_structural_receipt(
 ) -> None:
     smoke = load_smoke()
     captured: dict[str, object] = {}
+    monkeypatch.chdir(tmp_path)
 
     def fake_run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
         captured["command"] = command
@@ -355,7 +356,7 @@ def test_run_smoke_uses_only_the_clean_config_and_structural_receipt(
 
     result = smoke.run_smoke(
         claude="claude-test",
-        config_dir=tmp_path / "clean-config",
+        config_dir=Path("clean-config"),
         scenario="direct",
         budget_usd="0.25",
         timeout=30,
