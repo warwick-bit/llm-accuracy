@@ -73,7 +73,9 @@ def test_observer_payload_bounds_unknown_event_and_source_values() -> None:
     }
 
 
-def test_observer_plugin_covers_only_session_ledger_events(tmp_path: Path) -> None:
+def test_observer_plugin_covers_direct_and_subagent_lifecycle_events(
+    tmp_path: Path,
+) -> None:
     smoke = load_smoke()
 
     plugin = smoke.write_observer_plugin(tmp_path)
@@ -150,9 +152,16 @@ def test_subagent_report_requires_an_observed_agent_field() -> None:
     smoke = load_smoke()
     receipts = [
         {"event": "SessionStart", "agent_id_present": False},
+        {"event": "UserPromptSubmit", "agent_id_present": False},
         {
-            "event": "UserPromptSubmit",
+            "event": "SubagentStart",
             "agent_id_present": True,
+            "session_id_matches_requested": True,
+            "session_id_present": True,
+        },
+        {
+            "event": "SubagentStop",
+            "agent_type_present": True,
             "session_id_matches_requested": True,
             "session_id_present": True,
         },
@@ -162,7 +171,7 @@ def test_subagent_report_requires_an_observed_agent_field() -> None:
     result = smoke.report_for(receipts, scenario="subagent", command_exit=0)
     assert result["outcome"] == "PASS"
     assert result["subagent_session_mapping"] == "shared-session"
-    assert smoke.report_for(receipts[:1], scenario="subagent", command_exit=0)[
+    assert smoke.report_for(receipts[:-1], scenario="subagent", command_exit=0)[
         "outcome"
     ] == "FAIL"
 
@@ -187,12 +196,30 @@ def test_smoke_command_uses_a_new_session_and_direct_plugin_paths(tmp_path: Path
         "",
     ]
     assert "--strict-mcp-config" in command
+    assert command[command.index("--tools") + 1] == ""
     assert "--plugin-dir" in command
     assert str(smoke.LEDGER_PLUGIN) in command
     assert str(tmp_path / "observer") in command
     session_id = command[command.index("--session-id") + 1]
     assert session_id == "123e4567-e89b-12d3-a456-426614174000"
     assert command[-1] == smoke.DIRECT_PROMPT
+
+
+def test_subagent_command_allows_only_the_named_smoke_agent(tmp_path: Path) -> None:
+    smoke = load_smoke()
+    command = smoke.smoke_command(
+        claude="claude-test",
+        observer=tmp_path / "observer",
+        scenario="subagent",
+        budget_usd="0.25",
+        session_id="123e4567-e89b-12d3-a456-426614174000",
+    )
+
+    assert command[command.index("--tools") + 1] == "Agent"
+    assert command[command.index("--allowedTools") + 1] == "Agent"
+    agent_specification = json.loads(command[command.index("--agents") + 1])
+    assert agent_specification == smoke.SMOKE_AGENT
+    assert smoke.SMOKE_AGENT_NAME in smoke.SUBAGENT_PROMPT
 
 
 def test_run_smoke_uses_only_the_clean_config_and_structural_receipt(

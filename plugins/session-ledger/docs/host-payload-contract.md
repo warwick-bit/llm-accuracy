@@ -53,13 +53,27 @@ session correctly recalled a reference string stated before compaction. The
 untrusted framing behaved as designed: a prompt phrased as a demand to repeat
 a "secret codeword" was refused; a neutral continuity question was answered.
 
+## Current structural rerun
+
+Observed: Claude Code 2.1.267, 10 Sep 2026, Linux (WSL2). A fresh authenticated
+`CLAUDE_CONFIG_DIR` ran the repeatable smoke below against this source plugin.
+The observer retained event names, key names, and boolean presence flags only.
+
+- The direct scenario emitted `SessionStart`, `UserPromptSubmit`, and `Stop`.
+- The named no-tool child emitted `SubagentStart` and `SubagentStop` with
+  `agent_id` and `agent_type` present. Both lifecycle payloads carried the
+  parent test session id (`shared-session`).
+
+This is a structural receipt, not a fresh compaction-ordering or natural-recall
+claim.
+
 ## Source-level subagent policy
 
-Claude Code's current hook documentation advertises optional `agent_id` and
-`agent_type` fields for hooks delivered in subagents. Session Ledger does not
-persist either field and does not use either field to infer a parent-child
-relationship. Its only identity inputs are the host-provided `session_id` and
-`cwd`:
+Claude Code's current hook documentation defines `SubagentStart` and
+`SubagentStop` lifecycle events with `agent_id` and `agent_type` fields. Session
+Ledger does not register those events, persist either field, or use either
+field to infer a parent-child relationship. Its only identity inputs are the
+host-provided `session_id` and `cwd`:
 
 - hook deliveries with the same session id and workspace append to the same
   full-fidelity rolling record, even when their optional agent metadata differs;
@@ -99,9 +113,10 @@ python3 scripts/session_ledger_host_smoke.py \
 ```
 
 The direct scenario requires `SessionStart`, `UserPromptSubmit`, and `Stop`.
-The subagent scenario also requires at least one hook payload carrying
-`agent_id` or `agent_type`, then reports whether those events use the requested
-test session id (`shared-session`) or another session id (`separate-session`).
+The subagent scenario requires `SubagentStart`, `SubagentStop`, and the three
+direct-turn events. It records only boolean agent-metadata presence on the two
+lifecycle events, then reports whether their host session ids equal the
+requested test session (`shared-session`) or differ (`separate-session`).
 Neither arrangement warrants an identity-policy change; a `FAIL` is an
 inconclusive host result. `not_observed`, `missing-session-id`, and
 `mixed-session` are also inconclusive mappings, never an invitation to infer a

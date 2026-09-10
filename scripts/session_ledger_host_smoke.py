@@ -24,15 +24,34 @@ from typing import Sequence
 ROOT = Path(__file__).resolve().parents[1]
 LEDGER_PLUGIN = ROOT / "plugins" / "session-ledger"
 OBSERVED_EVENTS = frozenset(
-    {"SessionStart", "UserPromptSubmit", "Stop", "PreCompact", "PostCompact"}
+    {
+        "SessionStart",
+        "UserPromptSubmit",
+        "Stop",
+        "PreCompact",
+        "PostCompact",
+        "SubagentStart",
+        "SubagentStop",
+    }
 )
 OBSERVED_SOURCES = frozenset({"startup", "resume", "clear", "compact", "fork"})
 DIRECT_REQUIRED_EVENTS = frozenset({"SessionStart", "UserPromptSubmit", "Stop"})
+SUBAGENT_REQUIRED_EVENTS = DIRECT_REQUIRED_EVENTS | frozenset(
+    {"SubagentStart", "SubagentStop"}
+)
+SUBAGENT_LIFECYCLE_EVENTS = frozenset({"SubagentStart", "SubagentStop"})
 DIRECT_PROMPT = "Reply exactly: SESSION_LEDGER_SMOKE_OK. Do not use any tools."
+SMOKE_AGENT_NAME = "ledger-smoke-child"
+SMOKE_AGENT = {
+    SMOKE_AGENT_NAME: {
+        "description": "Reply with the fixed Session Ledger smoke acknowledgement.",
+        "prompt": "Reply exactly: SESSION_LEDGER_SMOKE_OK. Do not use any tools.",
+        "tools": [],
+    }
+}
 SUBAGENT_PROMPT = (
-    "Use exactly one subagent. Ask it to reply exactly SESSION_LEDGER_SMOKE_OK, "
-    "then reply exactly SESSION_LEDGER_SMOKE_OK yourself. Do not read files or use tools "
-    "other than starting that subagent."
+    f"Use exactly one {SMOKE_AGENT_NAME} subagent by invoking the Agent tool. "
+    "After it replies, reply exactly: SESSION_LEDGER_SMOKE_OK."
 )
 
 
@@ -174,11 +193,16 @@ def report_for(
         if isinstance(receipt.get("event"), str)
     )
     seen_events = frozenset(event_counts)
-    required = DIRECT_REQUIRED_EVENTS
+    required = (
+        SUBAGENT_REQUIRED_EVENTS
+        if scenario == "subagent"
+        else DIRECT_REQUIRED_EVENTS
+    )
     agent_receipts = [
         receipt
         for receipt in receipts
-        if receipt.get("agent_id_present") or receipt.get("agent_type_present")
+        if receipt.get("event") in SUBAGENT_LIFECYCLE_EVENTS
+        and (receipt.get("agent_id_present") or receipt.get("agent_type_present"))
     ]
     subagent_payload_seen = bool(agent_receipts)
     matching_agent_sessions = [
@@ -220,7 +244,7 @@ def smoke_command(
 ) -> list[str]:
     """Build the isolated non-interactive command without ambient settings."""
     prompt = SUBAGENT_PROMPT if scenario == "subagent" else DIRECT_PROMPT
-    return [
+    command = [
         claude,
         "--print",
         "--no-session-persistence",
@@ -236,12 +260,23 @@ def smoke_command(
         budget_usd,
         "--session-id",
         session_id,
+        "--tools",
+        "Agent" if scenario == "subagent" else "",
         "--plugin-dir",
         str(LEDGER_PLUGIN),
         "--plugin-dir",
         str(observer),
-        prompt,
     ]
+    if scenario == "subagent":
+        command.extend(
+            [
+                "--allowedTools",
+                "Agent",
+                "--agents",
+                json.dumps(SMOKE_AGENT, sort_keys=True),
+            ]
+        )
+    return [*command, prompt]
 
 
 def run_smoke(
