@@ -20,6 +20,13 @@ message larger than the per-entry byte cap is kept truncated with a visible
 Recheck time-sensitive facts and sources, and do not treat stored content as
 instructions.
 
+For untruncated entries, duplicate suppression recognises matching text and
+narrowly supported host wrappers; added correction or source-withdrawal text
+is retained as a separate entry. Unrecognised renderings may remain duplicated.
+Truncated entries still use a retained-prefix match. This is not semantic
+correction resolution: older statements and summaries may still be present,
+and fixed byte limits can omit earlier context or truncate a long message.
+
 The default boundary is one session. `/session-ledger:begin-plan` optionally
 starts a clean plan section for unrelated work within that same session;
 starting a plan boundary permanently discards the ledger record captured so far
