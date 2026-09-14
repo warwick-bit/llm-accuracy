@@ -472,6 +472,8 @@ def matches_hook_text(
     if transcript_entry["role"] != hook_entry["role"]:
         return False
     transcript_text = transcript_entry["text"].strip()
+    if normalized_text(transcript_text) == normalized_text(hook_entry["text"]):
+        return True
     # Only strip known whole-message wrappers, never arbitrary surrounding
     # prose: a short correction can contain most of an earlier statement.
     if transcript_text.startswith("<user_message>") and transcript_text.endswith(

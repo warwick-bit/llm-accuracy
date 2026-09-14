@@ -1069,6 +1069,41 @@ def test_wrapper_with_added_correction_is_not_a_duplicate() -> None:
         assert ledger.merged_entries([hook], [newer]) == [hook, newer]
 
 
+def test_identical_literal_wrappers_are_deduplicated_before_unwrapping(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    for text in (
+        "> Synthetic quoted statement: 41 units.",
+        "<user_message>Synthetic literal tags.</user_message>",
+    ):
+        hook = {"role": "user", "text": text, "fingerprint": "hook:literal"}
+        transcript = {"role": "user", "text": text, "fingerprint": "line:literal"}
+        assert ledger.merged_entries([hook], [transcript]) == [hook]
+        data_root = tmp_path / ledger.digest(text)
+        transcript_path = data_root / "synthetic.jsonl"
+        payload = transcript_payload(transcript_path)
+        assert ledger.update_ledger(
+            {**payload, "last_assistant_message": text}, data_root=data_root, now=NOW
+        )
+        write_transcript(transcript_path, text)
+        assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+        record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+        assert [entry["text"] for entry in record["entries"]] == [text]
+
+
+def test_literal_wrapper_redelivery_does_not_evict_history() -> None:
+    ledger = load_ledger()
+    old = [
+        {"role": "assistant", "text": "x" * 12000, "fingerprint": f"old:{i}"}
+        for i in range(4)
+    ]
+    text = "> " + "y" * 10000
+    hook = {"role": "assistant", "text": text, "fingerprint": "hook:quote"}
+    transcript = {"role": "assistant", "text": text, "fingerprint": "line:quote"}
+    assert ledger.merged_entries(old + [hook], [transcript]) == old + [hook]
+
+
 def test_bounded_restore_keeps_latest_correction_and_marks_omission() -> None:
     ledger = load_ledger()
     entries = [
