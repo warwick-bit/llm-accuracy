@@ -1020,6 +1020,110 @@ def test_containment_dedupe_requires_the_hook_text_to_dominate() -> None:
     assert [entry["fingerprint"] for entry in merged] == ["hook:1"]
 
 
+def test_short_correction_containing_prior_hook_text_is_not_discarded() -> None:
+    ledger = load_ledger()
+    prior = "Synthetic total is 120 units from source A."
+    hook = {"role": "assistant", "text": prior, "fingerprint": "hook:prior"}
+    for text in (
+        f"{prior} Correction: 90 units.",
+        f"Not true: {prior}",
+        f"{prior} Source withdrawn.",
+    ):
+        correction = {"role": "assistant", "text": text, "fingerprint": "line:new"}
+        merged = ledger.merged_entries([hook], [correction])
+        assert [entry["text"] for entry in merged] == [prior, text]
+
+
+def test_correction_survives_capture_persistence_and_restore(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    data_root = tmp_path / "plugin-data"
+    transcript = tmp_path / "synthetic.jsonl"
+    prior = "Synthetic total is 120 units from source A."
+    correction = f"{prior} Correction: 90 units."
+    payload = transcript_payload(transcript)
+    assert ledger.update_ledger(
+        {**payload, "last_assistant_message": prior}, data_root=data_root, now=NOW
+    )
+    write_transcript(transcript, correction)
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+    assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+    record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+    assert [entry["text"] for entry in record["entries"]] == [prior, correction]
+    context = ledger.session_start_context(
+        session_start_payload(source="compact"), data_root=data_root, now=NOW
+    )
+    assert context is not None
+    assert "Correction: 90 units." in context
+
+
+def test_wrapper_with_added_correction_is_not_a_duplicate() -> None:
+    ledger = load_ledger()
+    prior = "Synthetic source B reports 48 units."
+    hook = {"role": "user", "text": prior, "fingerprint": "hook:prior"}
+    for text in (
+        f"<user_message>{prior} Correction: 41 units.</user_message>",
+        f"> {prior}\nCorrection: 41 units.",
+        f"<user_message>{prior}</user_message> Source withdrawn.",
+    ):
+        newer = {"role": "user", "text": text, "fingerprint": "line:new"}
+        assert ledger.merged_entries([hook], [newer]) == [hook, newer]
+
+
+def test_identical_literal_wrappers_are_deduplicated_before_unwrapping(
+    tmp_path: Path,
+) -> None:
+    ledger = load_ledger()
+    for text in (
+        "> Synthetic quoted statement: 41 units.",
+        "<user_message>Synthetic literal tags.</user_message>",
+    ):
+        hook = {"role": "user", "text": text, "fingerprint": "hook:literal"}
+        transcript = {"role": "user", "text": text, "fingerprint": "line:literal"}
+        assert ledger.merged_entries([hook], [transcript]) == [hook]
+        data_root = tmp_path / ledger.digest(text)
+        transcript_path = data_root / "synthetic.jsonl"
+        payload = transcript_payload(transcript_path)
+        assert ledger.update_ledger(
+            {**payload, "last_assistant_message": text}, data_root=data_root, now=NOW
+        )
+        write_transcript(transcript_path, text)
+        assert ledger.update_ledger(payload, data_root=data_root, now=NOW)
+        record = json.loads(ledger.record_path(data_root, "session-one").read_text())
+        assert [entry["text"] for entry in record["entries"]] == [text]
+
+
+def test_literal_wrapper_redelivery_does_not_evict_history() -> None:
+    ledger = load_ledger()
+    old = [
+        {"role": "assistant", "text": "x" * 12000, "fingerprint": f"old:{i}"}
+        for i in range(4)
+    ]
+    text = "> " + "y" * 10000
+    hook = {"role": "assistant", "text": text, "fingerprint": "hook:quote"}
+    transcript = {"role": "assistant", "text": text, "fingerprint": "line:quote"}
+    assert ledger.merged_entries(old + [hook], [transcript]) == old + [hook]
+
+
+def test_bounded_restore_keeps_latest_correction_and_marks_omission() -> None:
+    ledger = load_ledger()
+    entries = [
+        {
+            "role": "assistant",
+            "text": "Synthetic filler. " * 900,
+            "fingerprint": f"line:{index}",
+        }
+        for index in range(8)
+    ]
+    correction = "Correction: synthetic total is 41, not 48; source: fixture-B."
+    entries.append({"role": "user", "text": correction, "fingerprint": "line:last"})
+    before = json.dumps(entries)
+    context = ledger.bounded_context(entries, "Earlier synthetic summary: 48 units.")
+    assert correction in context
+    assert ledger.CONTEXT_TRUNCATION_NOTICE in context
+    assert ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+    assert json.dumps(entries) == before
+
+
 def test_prune_preserves_a_held_lock_and_sweeps_orphans(tmp_path: Path) -> None:
     ledger = load_ledger()
     if ledger.fcntl is None:  # non-POSIX runtimes fall back to plain removal

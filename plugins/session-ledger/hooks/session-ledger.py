@@ -471,7 +471,18 @@ def matches_hook_text(
     """Return whether one transcript rendering corresponds to direct hook text."""
     if transcript_entry["role"] != hook_entry["role"]:
         return False
-    transcript_text = normalized_text(transcript_entry["text"])
+    transcript_text = transcript_entry["text"].strip()
+    if normalized_text(transcript_text) == normalized_text(hook_entry["text"]):
+        return True
+    # Only strip known whole-message wrappers, never arbitrary surrounding
+    # prose: a short correction can contain most of an earlier statement.
+    if transcript_text.startswith("<user_message>") and transcript_text.endswith(
+        "</user_message>"
+    ):
+        transcript_text = transcript_text[len("<user_message>") : -len("</user_message>")]
+    elif transcript_text.startswith("> "):
+        transcript_text = transcript_text[2:]
+    transcript_text = normalized_text(transcript_text)
     hook_text = hook_entry["text"]
     truncated = hook_text.endswith(ENTRY_TRUNCATION_MARKER)
     if truncated:
@@ -481,15 +492,13 @@ def matches_hook_text(
         return False
     if transcript_text == hook_text:
         return True
-    if (
-        len(hook_text) < MINIMUM_CONTAINED_HOOK_TEXT_CHARS
-        or hook_text not in transcript_text
-    ):
-        return False
-    # Containment alone can wrongly consume a longer message that merely
-    # quotes the hook text; require the hook text to dominate the rendering
-    # unless the stored copy was truncated (its prefix is strong evidence).
-    return truncated or len(hook_text) * 2 >= len(transcript_text)
+    # A stored truncated prefix can match a later complete rendering, but
+    # not a quotation elsewhere in a newer message.
+    return (
+        truncated
+        and len(hook_text) >= MINIMUM_CONTAINED_HOOK_TEXT_CHARS
+        and transcript_text.startswith(hook_text)
+    )
 
 
 def matches_stored_text(
@@ -522,9 +531,9 @@ def merged_entries(
     arrived first); a direct hook delivery that repeats the FINAL stored entry
     is treated as a re-delivery and skipped — real re-delivery only ever
     repeats the current last message, and matching older entries would drop a
-    genuine repeat whose transcript line has not landed yet. Containment stays
-    one-directional so a longer message that quotes an earlier one is never
-    consumed.
+    genuine repeat whose transcript line has not landed yet. Untruncated hook
+    copies match only equal text or supported wrappers, not added prose.
+    Truncated copies retain a prefix-match fallback within the byte limit.
     """
     fingerprints = {entry["fingerprint"] for entry in existing}
     hook_entries = [entry for entry in existing + discovered if is_hook_entry(entry)]
