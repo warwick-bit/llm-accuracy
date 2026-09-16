@@ -40,4 +40,6 @@ adapter.
 
 The JSON Schema covers portable per-document constraints. The CLI validator
 also enforces normalized alias uniqueness across definitions, which JSON Schema
-cannot express directly.
+cannot express directly. The receipt validator accepts JSON on standard input
+when no file path is supplied, so a routing session can validate its inline
+receipt without creating a temporary file.

@@ -50,14 +50,17 @@ example is synthetic and cannot answer a real question.
    JSON object is not an evidence receipt. Include the receipt for every
    terminal route: matched, gap, ambiguous, candidate, unavailable, failed or
    successful. Return it and its validation status in the same response before
-   any canonical value. Do not write the receipt to a file unless the user
-   explicitly asks.
+   any canonical value. Do not write the receipt to a file, including a
+   temporary or scratchpad file, unless the user explicitly asks.
 9. If execution tools are permitted and the validator exists, attempt the
-   bundled validator once. Exit code 0 means `passed`; any completed nonzero
-   exit means `failed`, including a validator runtime error. Use `not run` only
-   when the validator could not be launched because execution was denied or the
-   tool or script was unavailable. Visual inspection can identify a caveat, but
-   cannot produce either a `passed` or `failed` validation status.
+   bundled validator once. Invoke it without a receipt path and pass the JSON
+   through standard input with a quoted heredoc delimiter (`<<'RECEIPT_JSON'`);
+   never create a file just to validate it. Exit code 0 means `passed`; any
+   completed nonzero exit means `failed`, including a validator runtime error.
+   Use `not run` only when the validator could not be launched because execution
+   was denied or the tool or script was unavailable. Visual inspection can
+   identify a caveat, but cannot produce either a `passed` or `failed`
+   validation status.
 
 For an unexecuted or unavailable source, use a source status of `unavailable`,
 mark freshness and completeness `unknown`, and set `claim_status` to `withheld`.

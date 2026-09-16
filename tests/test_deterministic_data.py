@@ -99,6 +99,10 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     assert "user-owned catalogue" in skill
     assert "Return one evidence receipt inline" in skill
     assert "Do not write the receipt to a file" in skill
+    assert "temporary or scratchpad file" in normalized_skill
+    assert "pass the JSON through standard input" in normalized_skill
+    assert "`<<'RECEIPT_JSON'`" in skill
+    assert "never create a file just to validate it" in normalized_skill
     assert "Structural validation" in skill
     assert "same response before any canonical value" in normalized_skill
     assert "must contain exactly" in normalized_skill
