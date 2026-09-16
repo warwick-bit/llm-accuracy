@@ -1,7 +1,8 @@
 # LLM Accuracy plugin
 
-LLM Accuracy is a Claude Code plugin for evidence-aware LLM work. It ships
-general accuracy hygiene rather than a claim of universal factual correctness.
+LLM Accuracy is a Claude Code and Cowork plugin for evidence-aware LLM work. It
+ships general accuracy hygiene rather than a claim of universal factual
+correctness.
 
 ## What it does
 
@@ -32,12 +33,12 @@ mean the underlying claim is correct.
 
 ## Day-to-day use
 
-Once installed and activated, use Claude Code normally: there is no separate
-command to run or prompt to paste for matching prompts. Claude Code adds
+Once installed and activated, use Claude Code or Cowork normally: there is no
+separate command to run or prompt to paste for matching prompts. These hosts add
 targeted advisory reminders for matching analysis and source-conflict prompts,
-and after context compaction; it does not interrupt every prompt or verify facts
-automatically. Ask the assistant to audit one of its earlier answers when you
-want a direct self-check.
+and after context compaction; the plugin does not interrupt every prompt or
+verify facts automatically. Ask the assistant to audit one of its earlier
+answers when you want a direct self-check.
 
 ## Freshness and memory
 

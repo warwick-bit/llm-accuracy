@@ -82,7 +82,7 @@ def test_catalogue_cli_does_not_echo_values(tmp_path: Path) -> None:
 
     output = json.loads(result.stdout)
     assert result.returncode == 1
-    assert output["authority"] == "structure_only"
+    assert output["authority"] == "structural_only"
     assert secret not in result.stdout
 
 
@@ -102,7 +102,13 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     assert "temporary or scratchpad file" in normalized_skill
     assert "pass the JSON through standard input" in normalized_skill
     assert "`<<'RECEIPT_JSON'`" in skill
-    assert "never create a file just to validate it" in normalized_skill
+    assert "never create a file just to validate it" in normalized_skill.lower()
+    assert "--expected-epoch" in skill
+    assert '`--expected-epoch "<prompt_epoch>"` as one quoted argument' in skill
+    assert "calendar date alone is not a prompt epoch" in normalized_skill
+    assert "Set `prompt_epoch` to that exact route ID" in skill
+    assert "must remain usable when LLM Accuracy is not installed" in normalized_skill
+    assert "Apply the LLM Accuracy claim-fidelity check" not in skill
     assert "Structural validation" in skill
     assert "same response before any canonical value" in normalized_skill
     assert "must contain exactly" in normalized_skill

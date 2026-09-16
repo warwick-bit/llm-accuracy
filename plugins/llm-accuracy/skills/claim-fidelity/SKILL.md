@@ -38,7 +38,8 @@ Check whether the conclusion stays inside the authority of the evidence.
 When an evidence receipt is supplied, validate its structure with
 `${CLAUDE_PLUGIN_ROOT}/scripts/validate_evidence_receipt.py`. A structural pass
 does not verify source truth, arithmetic, domain correctness, or the resulting
-claim.
+claim. If the calling workflow supplies the current prompt epoch, pass it with
+`--expected-epoch`; otherwise report prompt binding as unchecked.
 
 ## Output
 

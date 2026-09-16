@@ -45,7 +45,7 @@ def test_receipt_validator_accepts_json_on_standard_input() -> None:
     )
 
     result = subprocess.run(
-        ["python3", str(script)],
+        ["python3", str(script), "--expected-epoch", "epoch-001"],
         input=json.dumps(RECEIPT),
         capture_output=True,
         check=False,
@@ -56,4 +56,28 @@ def test_receipt_validator_accepts_json_on_standard_input() -> None:
     assert result.returncode == 0
     assert output["status"] == "pass"
     assert output["errors"] == []
+    assert output["authority"] == "structural_only"
+
+
+def test_receipt_validator_rejects_stdin_from_another_prompt_epoch() -> None:
+    script = (
+        ROOT
+        / "plugins"
+        / "deterministic-data"
+        / "scripts"
+        / "validate_evidence_receipt.py"
+    )
+
+    result = subprocess.run(
+        ["python3", str(script), "--expected-epoch", "epoch-002"],
+        input=json.dumps(RECEIPT),
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+    output = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert output["status"] == "fail"
+    assert output["errors"] == ["prompt_epoch_mismatch"]
     assert output["authority"] == "structural_only"

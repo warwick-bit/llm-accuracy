@@ -116,7 +116,7 @@ def main() -> int:
     except (OSError, UnicodeError, json.JSONDecodeError):
         errors = ["catalogue_unreadable"]
     result = {
-        "authority": "structure_only",
+        "authority": "structural_only",
         "schema_version": "1.0",
         "status": "pass" if not errors else "fail",
         "errors": errors,
