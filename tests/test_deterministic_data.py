@@ -96,7 +96,15 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     assert "Fork or copy this repository" in readme
     assert "Do not edit an installed marketplace cache" in readme
     assert "Never put credentials" in readme
+    assert "supported window token does not establish concrete dates" in " ".join(
+        readme.split()
+    ).lower()
+    assert "calendar, timezone and close rule" in readme
     assert "user-owned catalogue" in skill
+    assert "supported window token does not define concrete dates" in normalized_skill
+    assert "supply all three required rules" in normalized_skill
+    assert "calendar, timezone and close rule" in normalized_skill
+    assert "concrete bounds are unresolved" in normalized_skill
     assert "Return one evidence receipt inline" in skill
     assert "Do not write the receipt to a file" in skill
     assert "temporary or scratchpad file" in normalized_skill

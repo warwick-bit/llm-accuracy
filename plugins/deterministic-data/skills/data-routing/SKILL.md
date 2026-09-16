@@ -38,7 +38,11 @@ example is synthetic and cannot answer a real question.
 5. A `candidate` or `gap` entry may explain the boundary but cannot produce a
    canonical value.
 6. For one `approved` definition, check the requested window against
-   `supported_windows`, then call only its declared source binding.
+   `supported_windows`, then call only its declared source binding. A supported
+   window token does not define concrete dates by itself. Resolve it to dates
+   only when the catalogue definition, declared binding, or both together
+   supply all three required rules: calendar, timezone and close rule. Otherwise
+   preserve the token and state that its concrete bounds are unresolved.
 7. Preserve failed, unavailable, partial, stale, conflicting and scope-mismatch
    outcomes. Never substitute memory, another source, or a provisional method.
 8. Return one evidence receipt inline using

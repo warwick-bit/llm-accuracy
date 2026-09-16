@@ -30,6 +30,8 @@ catalogue or test fixture.
   prove that a source is available or correct.
 - `candidate` and `gap` entries cannot produce a canonical value.
 - An approved route executes only through its declared source binding.
+- A supported window token does not establish concrete dates unless its
+  calendar, timezone and close rule are defined.
 - Failed, unavailable, partial or mismatched reads cannot be replaced with a
   remembered, estimated or nearby value.
 - Every answer route emits an evidence receipt using the bundled versioned
