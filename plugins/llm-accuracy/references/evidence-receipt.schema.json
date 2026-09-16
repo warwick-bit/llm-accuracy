@@ -35,7 +35,7 @@
         "properties": {
           "source_id": {"type": "string", "minLength": 1, "maxLength": 128},
           "status": {"enum": ["success", "failed", "unavailable"]},
-          "observed_at": {"type": ["string", "null"]},
+          "observed_at": {"type": ["string", "null"], "maxLength": 128},
           "scope_match": {"enum": ["match", "mismatch", "unknown"]}
         }
       }

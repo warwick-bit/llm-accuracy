@@ -102,6 +102,17 @@ def test_receipt_contracts_are_identical_between_plugins() -> None:
     ).read_bytes()
 
 
+def test_receipt_schema_bounds_observation_timestamp() -> None:
+    schema = json.loads(
+        (CORE / "references" / "evidence-receipt.schema.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    source = schema["properties"]["source_refs"]["items"]["properties"]
+
+    assert source["observed_at"]["maxLength"] == 128
+
+
 def test_cli_reports_structure_only_without_echoing_input(tmp_path: Path) -> None:
     receipt = valid_receipt()
     secret = "CANARY-RAW-DATA-MUST-NOT-ECHO"

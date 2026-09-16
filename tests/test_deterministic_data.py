@@ -31,6 +31,16 @@ def test_example_catalogue_is_structurally_valid() -> None:
     assert load_validator().validate_catalogue(example()) == []
 
 
+def test_catalogue_schema_encodes_cli_portable_constraints() -> None:
+    schema = json.loads(
+        (PLUGIN / "references" / "catalogue.schema.json").read_text(encoding="utf-8")
+    )
+    definition = schema["properties"]["definitions"]["items"]
+
+    assert definition["properties"]["definition_id"]["pattern"]
+    assert len(definition["allOf"]) == 2
+
+
 def test_duplicate_alias_is_rejected() -> None:
     catalogue = example()
     catalogue["definitions"][1]["aliases"] = [" ACTIVE   UNITS "]

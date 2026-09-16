@@ -37,3 +37,7 @@ catalogue or test fixture.
 
 The bundled example is fictional and intentionally has no working provider
 adapter.
+
+The JSON Schema covers portable per-document constraints. The CLI validator
+also enforces normalized alias uniqueness across definitions, which JSON Schema
+cannot express directly.

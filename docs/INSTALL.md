@@ -84,7 +84,9 @@ Keep credentials, provider payloads, query results, customer records and raw
 prompt content out of catalogue files. Add separately reviewed read-only
 adapters for real sources. In Claude Code, add your customised repository as a
 marketplace and install `deterministic-data` from it. In Cowork, upload the ZIP
-built from your customised source.
+built from your customised source. The Cowork path is not runtime-smoke-tested
+for this release; validate the uploaded skill and script behavior before relying
+on it for consequential work.
 
 ## Session Ledger — Claude Code terminal or IDE only
 

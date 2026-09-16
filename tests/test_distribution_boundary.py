@@ -32,6 +32,34 @@ def test_deterministic_data_plugin_satisfies_public_boundary() -> None:
     )
 
 
+def test_deterministic_data_rejects_session_ledger_artifacts(tmp_path: Path) -> None:
+    (tmp_path / "session_ledger.py").write_text("pass\n", encoding="utf-8")
+
+    assert boundary_violations(tmp_path, profile="deterministic-data") == [
+        "excluded artifact: session_ledger.py"
+    ]
+
+
+def test_public_profiles_reject_private_contract_receipt_artifacts(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "contract-receipts.md").write_text("generic text\n", encoding="utf-8")
+
+    assert boundary_violations(tmp_path, profile="deterministic-data") == [
+        "excluded artifact: contract-receipts.md"
+    ]
+
+
+def test_public_profiles_reject_private_contract_receipt_references(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "notes.md").write_text("private contract-receipt tool\n", encoding="utf-8")
+
+    assert boundary_violations(tmp_path, profile="deterministic-data") == [
+        "internal reference: notes.md"
+    ]
+
+
 def test_session_ledger_profile_still_rejects_external_verification_artifacts(
     tmp_path: Path,
 ) -> None:
