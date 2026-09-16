@@ -20,6 +20,16 @@
             "statusMessage": "Checking llm-accuracy fusion evidence"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\"",
+            "timeout": 3,
+            "statusMessage": "Checking llm-accuracy claim fidelity"
+          }
+        ]
       }
     ],
     "PostToolUse": [

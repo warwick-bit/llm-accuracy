@@ -16,7 +16,11 @@ except ModuleNotFoundError:  # Direct script execution puts scripts/ on sys.path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PLUGIN = ROOT / "plugins" / "llm-accuracy"
+PLUGINS = {
+    "llm-accuracy": ROOT / "plugins" / "llm-accuracy",
+    "deterministic-data": ROOT / "plugins" / "deterministic-data",
+}
+PLUGIN = PLUGINS["llm-accuracy"]
 IGNORED_PARTS = frozenset({"__pycache__"})
 IGNORED_SUFFIXES = frozenset({".pyc", ".pyo"})
 
@@ -89,7 +93,10 @@ def tracked_plugin_files(plugin: Path) -> list[Path]:
 
 def archive_members(plugin: Path = PLUGIN) -> list[Path]:
     """Return deterministic, boundary-safe tracked files for the release archive."""
-    violations = boundary_violations(plugin)
+    profile = (
+        "deterministic-data" if plugin.name == "deterministic-data" else "accuracy-core"
+    )
+    violations = boundary_violations(plugin, profile=profile)
     if violations:
         raise ValueError("distribution boundary check failed: " + "; ".join(violations))
     return [
@@ -113,13 +120,20 @@ def build_archive(output: Path, plugin: Path = PLUGIN) -> Path:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--plugin",
+        choices=sorted(PLUGINS),
+        default="llm-accuracy",
+        help="Plugin to package (defaults to llm-accuracy).",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
-        help="Archive destination (defaults to dist/llm-accuracy-<version>.zip).",
+        help="Archive destination (defaults to dist/<plugin>-<version>.zip).",
     )
     args = parser.parse_args()
-    output = args.output or ROOT / "dist" / f"llm-accuracy-{plugin_version()}.zip"
-    print(build_archive(output))
+    plugin = PLUGINS[args.plugin]
+    output = args.output or ROOT / "dist" / f"{args.plugin}-{plugin_version(plugin)}.zip"
+    print(build_archive(output, plugin=plugin))
     return 0
 
 

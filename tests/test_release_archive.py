@@ -34,12 +34,29 @@ def test_release_archive_has_plugin_root_contents_only(tmp_path: Path) -> None:
         manifest = json.loads(archive.read(".claude-plugin/plugin.json"))
 
     assert manifest["name"] == "llm-accuracy"
-    assert manifest["version"] == "0.4.1"
+    assert manifest["version"] == "0.5.0"
     assert "LICENSE.md" in names
     assert "hooks/hooks.json" in names
     assert "skills/self-audit/SKILL.md" in names
     assert not any(name.startswith("plugins/") for name in names)
     assert not any("__pycache__" in name for name in names)
+
+
+def test_deterministic_data_archive_is_independent(tmp_path: Path) -> None:
+    builder = load_builder()
+    plugin = ROOT / "plugins" / "deterministic-data"
+    output = builder.build_archive(tmp_path / "deterministic-data.zip", plugin=plugin)
+
+    with zipfile.ZipFile(output) as archive:
+        names = archive.namelist()
+        manifest = json.loads(archive.read(".claude-plugin/plugin.json"))
+
+    assert manifest["name"] == "deterministic-data"
+    assert manifest["version"] == "0.1.0"
+    assert "catalogues/example.catalogue.json" in names
+    assert "skills/data-routing/SKILL.md" in names
+    assert "references/evidence-receipt.schema.json" in names
+    assert not any(name.startswith("plugins/") for name in names)
 
 
 def test_release_archive_rejects_external_symlink(tmp_path: Path) -> None:

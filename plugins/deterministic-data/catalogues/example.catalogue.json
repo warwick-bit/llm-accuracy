@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "catalogue_id": "fictional-service-catalogue",
+  "definitions": [
+    {
+      "definition_id": "active-service-units",
+      "label": "Active service units",
+      "aliases": ["active units", "service units"],
+      "status": "approved",
+      "definition": "Count of fictional service units active at the end of the requested complete month.",
+      "unit": "units",
+      "grain": "account_month",
+      "supported_windows": ["latest_complete_month"],
+      "source_binding": {
+        "adapter_id": "replace-with-read-only-adapter",
+        "query_id": "replace-with-reviewed-query"
+      },
+      "caveats": ["Synthetic example only; no provider is connected."]
+    },
+    {
+      "definition_id": "gross-service-value",
+      "label": "Gross service value",
+      "aliases": ["service value"],
+      "status": "candidate",
+      "definition": "Fictional gross value before adjustments; owner approval and a source binding are missing.",
+      "unit": "currency",
+      "grain": "account_month",
+      "supported_windows": ["latest_complete_month"],
+      "source_binding": null,
+      "caveats": ["Candidate definition; do not present a canonical value."]
+    }
+  ]
+}

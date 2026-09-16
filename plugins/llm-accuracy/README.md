@@ -7,20 +7,28 @@ general accuracy hygiene rather than a claim of universal factual correctness.
 
 - prompts for provenance, scope, freshness, and caveats on consequential
   factual answers;
+- checks whether claims remain within their source, population, definition,
+  window, freshness and completeness boundaries;
 - nudges a model to recheck stale details after long sessions; and
-- provides a self-audit workflow for a prior assistant answer.
+- provides self-audit and claim-fidelity workflows;
+- includes a stateless evidence-receipt schema and structural validator for
+  workflows that already produce typed evidence boundaries.
 
 ## What it does not do
 
 - access a provider, database, or external source of truth;
 - verify a specific domain metric or business definition;
-- perform a deterministic check of a drafted answer; its reminders are
-  advisory only;
+- certify source truth, arithmetic, domain correctness or factual accuracy;
+- create or persist prompt epochs, receipts, prompts, or tool output;
 - collect telemetry, persist prompts or tool output, or send data to a server;
   or
 - guarantee that an answer is complete, current, or correct. It does not guarantee factual correctness.
 
 Hooks are advisory and non-blocking.
+
+The receipt validator emits `structural_only` results and stable error codes. A
+pass means the receipt satisfies the generic structural contract; it does not
+mean the underlying claim is correct.
 
 ## Day-to-day use
 

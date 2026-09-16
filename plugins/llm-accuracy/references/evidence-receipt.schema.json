@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/warwick-bit/llm-accuracy/schemas/evidence-receipt-v1.json",
+  "title": "LLM Accuracy Evidence Receipt",
+  "description": "A structural evidence boundary. It does not certify source truth, arithmetic, domain correctness, or factual accuracy.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "prompt_epoch",
+    "claim_id",
+    "route_id",
+    "definition_id",
+    "source_refs",
+    "scope",
+    "freshness",
+    "completeness",
+    "conflict",
+    "caveats",
+    "claim_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "prompt_epoch": {"type": "string", "minLength": 1, "maxLength": 128},
+    "claim_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "route_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "definition_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id", "status", "observed_at", "scope_match"],
+        "properties": {
+          "source_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "status": {"enum": ["success", "failed", "unavailable"]},
+          "observed_at": {"type": ["string", "null"]},
+          "scope_match": {"enum": ["match", "mismatch", "unknown"]}
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["population", "measure", "time_window", "grain"],
+      "properties": {
+        "population": {"type": "string", "minLength": 1, "maxLength": 300},
+        "measure": {"type": "string", "minLength": 1, "maxLength": 300},
+        "time_window": {"type": "string", "minLength": 1, "maxLength": 300},
+        "grain": {"type": "string", "minLength": 1, "maxLength": 300}
+      }
+    },
+    "freshness": {"$ref": "#/$defs/boundedStatus"},
+    "completeness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "basis"],
+      "properties": {
+        "status": {"enum": ["complete", "partial", "unknown"]},
+        "basis": {"type": "string", "minLength": 1, "maxLength": 500}
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "basis"],
+      "properties": {
+        "status": {"enum": ["none", "present", "unknown"]},
+        "basis": {"type": "string", "minLength": 1, "maxLength": 500}
+      }
+    },
+    "caveats": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1, "maxLength": 500},
+      "maxItems": 20
+    },
+    "claim_status": {"enum": ["supported", "qualified", "withheld"]}
+  },
+  "$defs": {
+    "boundedStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "basis"],
+      "properties": {
+        "status": {"enum": ["current", "stale", "unknown"]},
+        "basis": {"type": "string", "minLength": 1, "maxLength": 500}
+      }
+    }
+  }
+}

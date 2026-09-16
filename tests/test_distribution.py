@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "llm-accuracy"
 LEDGER = ROOT / "plugins" / "session-ledger"
+DETERMINISTIC = ROOT / "plugins" / "deterministic-data"
 
 
 def load_json(relative_path: str) -> dict[str, object]:
@@ -19,19 +20,29 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.4.1"
+    assert claude["version"] == "0.5.0"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
 
-def test_claude_marketplace_publishes_the_two_isolated_plugins() -> None:
+def test_claude_marketplace_publishes_the_three_isolated_plugins() -> None:
     claude = load_json(".claude-plugin/marketplace.json")
 
     assert claude["name"] == "llm-accuracy"
     assert [entry["name"] for entry in claude["plugins"]] == [
         "llm-accuracy",
+        "deterministic-data",
         "session-ledger",
     ]
+
+
+def test_deterministic_data_manifest_is_separate_and_claude_only() -> None:
+    manifest = load_json("plugins/deterministic-data/.claude-plugin/plugin.json")
+
+    assert manifest["name"] == "deterministic-data"
+    assert manifest["version"] == "0.1.0"
+    assert manifest["license"] == "MIT"
+    assert not (DETERMINISTIC / ".codex-plugin").exists()
 
 
 def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
@@ -50,6 +61,7 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
 def test_distribution_contains_no_codex_runtime_package() -> None:
     assert not (ROOT / ".agents" / "plugins" / "marketplace.json").exists()
     assert not (PLUGIN / ".codex-plugin" / "plugin.json").exists()
+    assert not (DETERMINISTIC / ".codex-plugin" / "plugin.json").exists()
 
 
 def test_distribution_excludes_external_integrations_and_updater() -> None:
@@ -81,7 +93,8 @@ def test_docs_state_the_safety_boundary() -> None:
     assert "stale summary after a long session" in root_readme
     assert "Never submit" in contributing
     assert "does not guarantee" in plugin_readme
-    assert "deterministic check of a drafted answer" in plugin_readme
+    assert "stateless evidence-receipt schema and structural validator" in plugin_readme
+    assert "certify source truth" in plugin_readme
     assert "No session ledger, prompt history, or tool output" in plugin_readme
     assert "Claude Code terminal or IDE — full plugin" in install_guide
     assert "Claude Desktop Chat — skills-only" in install_guide
@@ -91,6 +104,8 @@ def test_docs_state_the_safety_boundary() -> None:
     assert "Add marketplace" in install_guide
     assert "Claude Code on the web — pilot only" in install_guide
     assert "Session Ledger — Claude Code terminal or IDE only" in install_guide
+    assert "Deterministic Data — editable template" in install_guide
+    assert "own fork or source copy" in install_guide
     assert "exact shipped hook commands" in install_guide
     assert install_guide.count("not runtime-smoke-tested for this release") == 3
     assert "untested and unsupported for this release" in install_guide

@@ -23,6 +23,15 @@ def test_session_ledger_plugin_satisfies_its_local_only_boundary() -> None:
     )
 
 
+def test_deterministic_data_plugin_satisfies_public_boundary() -> None:
+    assert (
+        boundary_violations(
+            ROOT / "plugins" / "deterministic-data", profile="deterministic-data"
+        )
+        == []
+    )
+
+
 def test_session_ledger_profile_still_rejects_external_verification_artifacts(
     tmp_path: Path,
 ) -> None:
