@@ -43,17 +43,23 @@ jobs:
               Path(".claude-plugin/marketplace.json"),
               Path("plugins/llm-accuracy/.claude-plugin/plugin.json"),
               Path("plugins/llm-accuracy/hooks/hooks.json"),
+              Path("plugins/llm-accuracy/references/evidence-receipt.schema.json"),
+              Path("plugins/deterministic-data/.claude-plugin/plugin.json"),
+              Path("plugins/deterministic-data/references/catalogue.schema.json"),
+              Path("plugins/deterministic-data/references/evidence-receipt.schema.json"),
+              Path("plugins/deterministic-data/catalogues/example.catalogue.json"),
               Path("plugins/session-ledger/.claude-plugin/plugin.json"),
               Path("plugins/session-ledger/hooks/hooks.json"),
           ]
           for path in paths:
               json.loads(path.read_text(encoding="utf-8"))
           PY
-          find plugins -path '*/hooks/*.py' -print0 | xargs -0 -r python3 -m py_compile
+          find plugins -name '*.py' -print0 | xargs -0 -r python3 -m py_compile
 
       - name: Enforce distribution boundary
         run: |
           python3 scripts/check_distribution_boundary.py plugins/llm-accuracy
+          python3 scripts/check_distribution_boundary.py plugins/deterministic-data --profile deterministic-data
           python3 scripts/check_distribution_boundary.py plugins/session-ledger --profile session-ledger
 
   release-gates:

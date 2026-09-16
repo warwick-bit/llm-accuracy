@@ -2,9 +2,10 @@
 
 Evidence-first accuracy hygiene for Claude Code.
 
-LLM Accuracy helps an LLM distinguish direct evidence from inference, recheck
-stale details, calibrate confidence, and audit its own prior answers. It does
-not guarantee truth, completeness, timeliness, or domain correctness.
+LLM Accuracy helps an LLM distinguish direct evidence from inference, keep
+claims inside their source and scope, recheck stale details, calibrate
+confidence, and audit its own prior answers. It does not guarantee truth,
+completeness, timeliness, or domain correctness.
 
 ## Licence and boundary
 
@@ -15,6 +16,8 @@ conversation transcripts in issues, pull requests, or test fixtures.
 The plugins cover only a generic core:
 
 - evidence and provenance discipline;
+- claim/source/scope/freshness/completeness alignment;
+- a stateless evidence-receipt schema and structural validator;
 - stale-memory rechecks and calibrated uncertainty;
 - self-audit of a prior assistant answer; and
 - no persisted prompts or tool output. **LLM Accuracy itself remains stateless.**
@@ -32,6 +35,12 @@ content.
 Provider-specific verification integrations are intentionally out of scope.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for feedback rules and [SECURITY.md](SECURITY.md)
 for responsible disclosure.
+
+The marketplace also includes **Deterministic Data**, a separate editable
+template for user-owned catalogues, definition routing and source bindings. Its
+bundled catalogue is fictional. Users customise a fork or source copy and then
+install it in Claude Code or upload a rebuilt ZIP to Cowork; installed
+marketplace files are not the editing surface.
 
 ## Install
 
@@ -65,6 +74,10 @@ answers.
 In Claude Code, advisory hooks add targeted reminders for matching open-ended
 analysis or source-conflict prompts and after context compaction. They do not
 run on every prompt, block work, fetch evidence, or verify an answer for you.
+
+Use `/llm-accuracy:claim-fidelity` to check whether a conclusion is supported
+by its source, population, definition, window, freshness and completeness. The
+receipt validator checks structure only and stores no receipt content.
 
 When separately installed, Session Ledger starts automatically with each Claude
 Code session, captures a bounded rolling session record as that session

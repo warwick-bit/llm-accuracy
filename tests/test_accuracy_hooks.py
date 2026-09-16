@@ -71,6 +71,23 @@ FUSION_SILENT_PROMPTS = [
     ),
 ]
 
+FIDELITY_FIRE_PROMPTS = [
+    "Does this prove the source is current?",
+    "Can we conclude the coverage is complete data?",
+    "The totals match. Is this the same population?",
+    "Is this provisional calculation aligned with the method?",
+    "Does this prove causation for the drop?",
+]
+
+FIDELITY_SILENT_PROMPTS = [
+    "Fix the source adapter in routing.py.",
+    "Summarise this document.",
+    "The unit test failed because of a null check.",
+    "The crash was caused by a race condition.",
+    "Does this prove the source is current? # fidelity-ok",
+    "Does this prove the source is current? # Fidelity-OK",
+]
+
 
 def load_hook(filename: str) -> ModuleType:
     path = HOOKS / filename
@@ -144,6 +161,40 @@ def test_fusion_hook_emits_advisory_context(monkeypatch, capsys) -> None:
         "fusion evidence trigger"
         in output["hookSpecificOutput"]["additionalContext"].lower()
     )
+
+
+def test_claim_fidelity_hook_precision_battery() -> None:
+    hook = load_hook("claim-fidelity-trigger.py")
+
+    for prompt in FIDELITY_FIRE_PROMPTS:
+        assert hook.should_fire(prompt), prompt
+    for prompt in FIDELITY_SILENT_PROMPTS:
+        assert not hook.should_fire(prompt), prompt
+
+
+def test_claim_fidelity_hook_is_advisory_and_nonblocking(monkeypatch, capsys) -> None:
+    hook = load_hook("claim-fidelity-trigger.py")
+    monkeypatch.delenv("CC_SKIP_CLAIM_FIDELITY", raising=False)
+    monkeypatch.setattr(
+        hook.sys,
+        "stdin",
+        io.StringIO(json.dumps({"prompt": "Does this prove complete coverage?"})),
+    )
+
+    assert hook.main() == 0
+    output = json.loads(capsys.readouterr().out)
+    context = output["hookSpecificOutput"]["additionalContext"]
+    assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    assert "claim fidelity check" in context.lower()
+
+
+def test_claim_fidelity_hook_fails_open_and_honours_skip(monkeypatch, capsys) -> None:
+    hook = load_hook("claim-fidelity-trigger.py")
+    monkeypatch.setenv("CC_SKIP_CLAIM_FIDELITY", "1")
+    monkeypatch.setattr(hook.sys, "stdin", io.StringIO("{not json"))
+
+    assert hook.main() == 0
+    assert capsys.readouterr().out == ""
 
 
 def test_post_compact_hook_emits_freshness_nudge(monkeypatch, capsys) -> None:

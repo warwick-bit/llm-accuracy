@@ -7,14 +7,21 @@ products. Use the path below that matches where you work.
 
 Platform capability and this release's runtime evidence are separate:
 
-- **Claude Code terminal or IDE:** exact shipped hook commands and the automated
-  distribution suite were re-tested on 11 Aug 2026. A clean isolated-profile
-  marketplace installation smoke (marketplace add plus both plugin installs)
-  was recorded on 11 Aug 2026.
+- **Claude Code terminal or IDE:** exact shipped hook commands, the automated
+  distribution suite and a clean isolated-profile marketplace installation
+  (marketplace add plus both plugin installs) were re-tested on 16 Sep 2026.
+  Authenticated, non-persistent local sessions also exercised the claim-fidelity
+  hook and skill, Deterministic Data routing, receipt validation and a negative
+  hook control on 16 Sep 2026.
 - **Claude Desktop Chat:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
-- **Claude Cowork:** not runtime-smoke-tested for this release. The
-  skills-and-hooks description follows Anthropic's current plugin documentation.
+- **Claude Cowork:** an initial Desktop 2.110.0 smoke on 16 Sep 2026 verified
+  plugin activation, the claim-fidelity hook and skill, Deterministic Data
+  routing, receipt validation and a negative control. A follow-up Cowork smoke
+  of the final rebuilt ZIP used no `Write` tool, validated its receipt through
+  stdin with a route-bound prompt epoch, preserved the unresolved
+  `latest_complete_month` token and withheld the canonical value. See the
+  [raw-free smoke receipt](validation/cowork-deterministic-data-smoke-2026-09-16.json).
 - **Claude chat on the web:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
 - **Claude Code on the web:** untested and unsupported for this release.
@@ -63,6 +70,33 @@ Claude to check one of its own earlier answers.
 The hooks add reminders only for matching open-ended analysis or source-conflict
 prompts and after context compaction. They do not run on every prompt, fetch
 evidence, block work, or verify facts automatically.
+
+## Deterministic Data — editable template
+
+Deterministic Data is a separate plugin for teams that want their own metric or
+data catalogue. Installers can change every definition, alias and source-binding
+ID in their own fork or source copy. Do not edit the installed marketplace
+cache because an update can replace those files.
+
+Start by forking or copying the repository, copy the fictional example
+catalogue, fill it with your metadata, and validate it:
+
+```bash
+python3 plugins/deterministic-data/scripts/validate_catalogue.py \
+  plugins/deterministic-data/catalogues/your-catalogue.json
+python3 scripts/build_plugin_zip.py --plugin deterministic-data
+```
+
+Keep credentials, provider payloads, query results, customer records and raw
+prompt content out of catalogue files. Add separately reviewed read-only
+adapters for real sources. In Claude Code, add your customised repository as a
+marketplace and install `deterministic-data` from it. In Cowork, upload the ZIP
+built from your customised source. A Cowork smoke of the rebuilt ZIP and bundled
+fictional catalogue on 16 Sep 2026 stayed file-free, matched the receipt epoch
+to the route, kept unresolved window bounds unresolved and withheld the
+canonical value. Custom adapters and catalogues need their own runtime test. The
+linked raw-free smoke receipt records the candidate commit, exported-session
+identifier, transcript hash and pass checks.
 
 ## Session Ledger — Claude Code terminal or IDE only
 
@@ -130,10 +164,11 @@ To update to the latest released versions:
 ```bash
 claude plugin marketplace update llm-accuracy
 claude plugin update llm-accuracy@llm-accuracy --scope user
+claude plugin update deterministic-data@llm-accuracy --scope user
 claude plugin update session-ledger@llm-accuracy --scope user
 ```
 
-Run the `session-ledger` update only if that plugin is installed. Then run
+Run the optional plugin updates only for plugins you installed. Then run
 `/reload-plugins` in an active Claude Code session.
 
 Marketplace auto-update is off by default for third-party marketplaces like
@@ -146,6 +181,7 @@ plugins and local Session Ledger data:
 
 ```bash
 claude plugin uninstall session-ledger@llm-accuracy --scope user
+claude plugin uninstall deterministic-data@llm-accuracy --scope user
 claude plugin uninstall llm-accuracy@llm-accuracy --scope user
 claude plugin marketplace remove llm-accuracy
 ```
@@ -164,6 +200,11 @@ Download the latest `llm-accuracy-<version>.zip` asset from the
 In Claude Desktop or Cowork, open **Customize**, then **Plugins**, and upload
 the custom plugin file. Confirm that the self-audit skill appears before relying
 on the plugin for consequential work.
+
+For a customised Deterministic Data plugin, edit the source catalogue first,
+run the validators and build `deterministic-data-<version>.zip`. Upload that ZIP
+to Cowork. Shared installed plugin content is replaced through an updated ZIP or
+synced marketplace; it is not an in-place catalogue editor.
 
 ### Claude Desktop Chat — skills-only
 

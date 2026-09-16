@@ -12,3 +12,6 @@ or persisted tool-output capture. The separately installed Session Ledger stores
 only the participant's local compact summary and bounded rolling user/assistant
 session record in Claude plugin data; it has no telemetry or server-side store.
 Hooks operate in the participant's local runtime and are advisory and non-blocking.
+The LLM Accuracy evidence-receipt validator and Deterministic Data catalogue
+validator run locally, make no network calls, retain no inputs and emit no
+receipt- or catalogue-supplied values.

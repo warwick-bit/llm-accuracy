@@ -1,16 +1,22 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "llm-accuracy",
-  "description": "Evidence-first accuracy hygiene and opt-in local session continuity for Claude Code.",
+  "description": "Evidence-first accuracy hygiene, editable deterministic-data routing, and opt-in local session continuity for Claude Code and Cowork.",
   "owner": {
     "name": "Warwick"
   },
   "plugins": [
     {
       "name": "llm-accuracy",
-      "description": "Evidence discipline, stale-memory checks, calibrated uncertainty, and self-audit.",
+      "description": "Claim fidelity, evidence discipline, stale-memory checks, calibrated uncertainty, and self-audit.",
       "category": "productivity",
       "source": "./plugins/llm-accuracy"
+    },
+    {
+      "name": "deterministic-data",
+      "description": "Editable catalogue and routing template for source-bound data answers.",
+      "category": "productivity",
+      "source": "./plugins/deterministic-data"
     },
     {
       "name": "session-ledger",

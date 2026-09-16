@@ -24,6 +24,10 @@ EXPECTED_HANDLERS = {
         "fusion-evidence-trigger.py",
         "Checking llm-accuracy fusion evidence",
     ),
+    ("UserPromptSubmit", 2): (
+        "claim-fidelity-trigger.py",
+        "Checking llm-accuracy claim fidelity",
+    ),
     ("SessionStart", 0): (
         "post-compact-accuracy.py",
         "Checking llm-accuracy post-compaction accuracy",
@@ -52,6 +56,7 @@ def clean_environment() -> dict[str, str]:
     excluded = {
         "CC_SKIP_ANALYSIS",
         "CC_SKIP_FUSION_EVIDENCE",
+        "CC_SKIP_CLAIM_FIDELITY",
         "CC_SKIP_PARTIAL_RESULT",
         "CLAUDE_PLUGIN_ROOT",
     }
@@ -159,6 +164,12 @@ def test_commands_fail_open_when_plugin_root_is_missing(
             ),
             "FUSION EVIDENCE TRIGGER",
         ),
+        (
+            "UserPromptSubmit",
+            2,
+            "Does this evidence prove the source is current and complete?",
+            "CLAIM FIDELITY CHECK",
+        ),
     ],
 )
 def test_user_prompt_commands_emit_context_without_echoing_the_prompt(
@@ -178,7 +189,7 @@ def test_user_prompt_commands_emit_context_without_echoing_the_prompt(
 
 
 @posix_only
-@pytest.mark.parametrize("index", [0, 1])
+@pytest.mark.parametrize("index", [0, 1, 2])
 @pytest.mark.parametrize("stdin_text", ["", "{not json", '["not", "an", "object"]'])
 def test_user_prompt_commands_fail_open_on_malformed_stdin(
     index: int, stdin_text: str

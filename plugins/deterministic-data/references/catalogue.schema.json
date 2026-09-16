@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/warwick-bit/llm-accuracy/schemas/deterministic-data-catalogue-v1.json",
+  "title": "Deterministic Data Catalogue",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "catalogue_id", "definitions"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "catalogue_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "definitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["definition_id", "label", "aliases", "status", "definition", "unit", "grain", "supported_windows", "source_binding", "caveats"],
+        "properties": {
+          "definition_id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "minLength": 1, "maxLength": 128},
+          "label": {"type": "string", "minLength": 1, "maxLength": 200},
+          "aliases": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 200}},
+          "status": {"enum": ["approved", "candidate", "gap"]},
+          "definition": {"type": "string", "minLength": 1, "maxLength": 1000},
+          "unit": {"type": "string", "minLength": 1, "maxLength": 100},
+          "grain": {"type": "string", "minLength": 1, "maxLength": 100},
+          "supported_windows": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 100}},
+          "source_binding": {
+            "oneOf": [
+              {"type": "null"},
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["adapter_id", "query_id"],
+                "properties": {
+                  "adapter_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                  "query_id": {"type": "string", "minLength": 1, "maxLength": 128}
+                }
+              }
+            ]
+          },
+          "caveats": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 500}, "maxItems": 20}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"status": {"const": "approved"}}, "required": ["status"]},
+            "then": {"properties": {"source_binding": {"type": "object"}}}
+          },
+          {
+            "if": {"properties": {"status": {"enum": ["candidate", "gap"]}}, "required": ["status"]},
+            "then": {"properties": {"source_binding": {"type": "null"}}}
+          }
+        ]
+      }
+    }
+  }
+}

@@ -30,6 +30,38 @@ Do not promote lower-layer evidence into a higher-layer claim.
 When a claim needs a bridge, name the bridge or downgrade the claim. If it is
 missing, state what the evidence proves and what it does not prove.
 
+## Claim fidelity
+
+Check the conclusion against the evidence across source, subject, population,
+measure, definition, grain, time window, freshness and completeness. A source
+can be real and current while still being the wrong source for the claim.
+
+- Equal counts or totals do not establish equal membership.
+- A maximum business-event timestamp does not establish that a source or
+  pipeline is fully synchronized.
+- A successful tool call establishes that a response was returned; it does not
+  establish source truth, correct joins, complete coverage or sound arithmetic.
+- A provisional label does not repair a mismatch between the selected method
+  and the method actually executed.
+- A plausible mechanism, sequence or correlation does not establish cause.
+- A caveat must remain visible in follow-up answers until current evidence
+  resolves it. Do not transform an unknown input into an asserted exclusion.
+
+Classify material claims as supported, qualified, withheld or unchecked. The
+answer body must reflect that classification.
+
+### Evidence receipts
+
+The bundled evidence-receipt schema can carry a prompt epoch, definition,
+source references, scope, freshness, completeness, conflicts and caveats. Its
+validator is stateless: it stores nothing, reads no transcript, and emits stable
+error codes without echoing receipt content.
+
+A structural pass is not an accuracy verdict. It does not verify source truth,
+arithmetic, domain correctness, permissions, citation support or the claim
+itself. The current prompt epoch must be supplied by the calling workflow; the
+receipt validator does not create or persist epochs.
+
 ## Stale memory
 
 After compaction, interruption, a long session, or a handoff, re-read exact

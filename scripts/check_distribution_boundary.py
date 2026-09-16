@@ -16,14 +16,14 @@ ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES = COMMON_FORBIDDEN_PATH_PREFIXES + (
     "session-ledger",
 )
 FORBIDDEN_FILE_NAMES = {
-    "contract-receipts.md",
     "codex_marketplace_autoupgrade.py",
+    "contract-receipts.md",
 }
 FORBIDDEN_TEXT = (
     "sophiie",
     "soph-investigate",
-    "contract-receipt",
     "marketplace-autoupgrade",
+    "contract-receipt",
 )
 FORBIDDEN_PYTHON_IMPORT = re.compile(
     r"^\s*(?:from\s+(?:requests|urllib|httpx|socket|subprocess)\b|"
@@ -38,6 +38,8 @@ def forbidden_path_prefixes(profile: str) -> tuple[str, ...]:
         return ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
     if profile == "session-ledger":
         return COMMON_FORBIDDEN_PATH_PREFIXES
+    if profile == "deterministic-data":
+        return ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
     raise ValueError(f"unknown distribution-boundary profile: {profile}")
 
 
@@ -89,7 +91,7 @@ def main() -> int:
     parser.add_argument("plugin", type=Path)
     parser.add_argument(
         "--profile",
-        choices=("accuracy-core", "session-ledger"),
+        choices=("accuracy-core", "session-ledger", "deterministic-data"),
         default="accuracy-core",
     )
     args = parser.parse_args()

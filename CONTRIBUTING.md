@@ -71,8 +71,15 @@ The generic accuracy plugin is a sanitized downstream distribution of the
 maintainer's internal accuracy toolkit. Shared hook or evidence-doctrine changes
 must be compared in both directions and either backported or recorded as an
 intentional downstream divergence. Domain integrations, provider-specific
-markers, deterministic receipt tooling, and session continuity remain excluded
-from the generic plugin.
+markers, receipt persistence, and session continuity remain excluded from the
+generic plugin. The generic evidence-receipt schema and stateless structural
+validator are intentionally shared with Deterministic Data; neither establishes
+domain truth.
+
+Deterministic Data contributions must remain synthetic and provider-neutral.
+Catalogue fixtures contain definitions and fake source-binding identifiers,
+never provider payloads, query results, credentials, customer records or real
+business values.
 
 Cross-repository drift is not currently enforced in CI because this repository's
 GitHub Actions token cannot read the separate private upstream repository.

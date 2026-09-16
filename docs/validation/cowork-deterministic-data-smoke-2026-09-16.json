@@ -1,0 +1,32 @@
+{
+  "candidate_head": "ef4cc8e153312a231ae584dbd966758968706e2d",
+  "host": "Claude Cowork",
+  "observed_on": "2026-09-16",
+  "outcome": "PASS",
+  "scope": "deterministic-data:data-routing with the bundled fictional catalogue",
+  "session": {
+    "cli_session_id": "76f5a9ea-90d3-5663-b574-499a7513d776",
+    "parse_errors": 0,
+    "record_count": 89,
+    "transcript_sha256": "3c7efff956752e0a38d4303855150f0d388567559ee4931c7cad22f638e53be0"
+  },
+  "checks": {
+    "canonical_value": "withheld",
+    "concrete_calendar_month_named": false,
+    "expected_epoch_flag_used": true,
+    "latest_complete_month_preserved": true,
+    "prompt_epoch_equals_route_id": true,
+    "quoted_stdin_heredoc_used": true,
+    "receipt_claim_status": "withheld",
+    "receipt_validation_calls": 1,
+    "receipt_validator_errors": [],
+    "receipt_validator_exit_code": 0,
+    "receipt_validator_status": "pass",
+    "write_tool_calls": 0
+  },
+  "evidence_boundary": {
+    "raw_content_committed": false,
+    "source_query_executed": false,
+    "structural_validation_only": true
+  }
+}
