@@ -7,10 +7,12 @@ products. Use the path below that matches where you work.
 
 Platform capability and this release's runtime evidence are separate:
 
-- **Claude Code terminal or IDE:** exact shipped hook commands and the automated
-  distribution suite were re-tested on 11 Aug 2026. A clean isolated-profile
-  marketplace installation smoke (marketplace add plus both plugin installs)
-  was recorded on 11 Aug 2026.
+- **Claude Code terminal or IDE:** exact shipped hook commands, the automated
+  distribution suite and a clean isolated-profile marketplace installation
+  (marketplace add plus both plugin installs) were re-tested on 16 Sep 2026.
+  Authenticated, non-persistent local sessions also exercised the claim-fidelity
+  hook and skill, Deterministic Data routing, receipt validation and a negative
+  hook control on 16 Sep 2026.
 - **Claude Desktop Chat:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
 - **Claude Cowork:** not runtime-smoke-tested for this release. The

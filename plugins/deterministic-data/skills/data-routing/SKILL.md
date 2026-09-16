@@ -41,10 +41,49 @@ example is synthetic and cannot answer a real question.
    `supported_windows`, then call only its declared source binding.
 7. Preserve failed, unavailable, partial, stale, conflicting and scope-mismatch
    outcomes. Never substitute memory, another source, or a provisional method.
-8. Produce one evidence receipt using
-   `${CLAUDE_PLUGIN_ROOT}/references/evidence-receipt.schema.json` and validate
-   it with `${CLAUDE_PLUGIN_ROOT}/scripts/validate_evidence_receipt.py`.
+8. Return one evidence receipt inline using
+   `${CLAUDE_PLUGIN_ROOT}/references/evidence-receipt.schema.json`. Read that
+   schema before constructing the receipt. The receipt must contain exactly
+   these root fields: `schema_version`, `prompt_epoch`, `claim_id`, `route_id`,
+   `definition_id`, `source_refs`, `scope`, `freshness`, `completeness`,
+   `conflict`, `caveats`, and `claim_status`. A routing summary or a different
+   JSON object is not an evidence receipt. Include the receipt for every
+   terminal route: matched, gap, ambiguous, candidate, unavailable, failed or
+   successful. Return it and its validation status in the same response before
+   any canonical value. Do not write the receipt to a file unless the user
+   explicitly asks.
+9. If execution tools are permitted and the validator exists, attempt the
+   bundled validator once. Exit code 0 means `passed`; any completed nonzero
+   exit means `failed`, including a validator runtime error. Use `not run` only
+   when the validator could not be launched because execution was denied or the
+   tool or script was unavailable. Visual inspection can identify a caveat, but
+   cannot produce either a `passed` or `failed` validation status.
+
+For an unexecuted or unavailable source, use a source status of `unavailable`,
+mark freshness and completeness `unknown`, and set `claim_status` to `withheld`.
+Do not replace the receipt schema with catalogue fields such as `route_status`,
+`definition_status`, `supported`, or `source_binding_executed`.
+
+The required nested shapes are:
+
+- `source_refs`: a non-empty list of objects containing only `source_id`,
+  `status`, `observed_at`, and `scope_match`; use the catalogue or declared
+  adapter as an unavailable source when no query ran;
+- `scope`: an object containing only non-empty `population`, `measure`,
+  `time_window`, and `grain` strings; use explicit `unknown` text where needed;
+- `freshness`, `completeness`, and `conflict`: objects containing only `status`
+  and a non-empty `basis`; and
+- `caveats`: a list of strings, with `claim_status` set to `supported`,
+  `qualified`, `withheld`, or `unchecked`.
 
 An evidence-receipt structural pass never means the data or conclusion is
 factually correct. Apply the LLM Accuracy claim-fidelity check before presenting
 a consequential conclusion.
+
+## Output
+
+- **Matched definition:** exact definition ID, or the gap/ambiguity.
+- **Route status:** whether a declared source binding was executed.
+- **Evidence receipt:** one inline receipt for this route.
+- **Structural validation:** `passed`, `failed`, or `not run`.
+- **Canonical value:** returned or withheld, with the reason; always last.

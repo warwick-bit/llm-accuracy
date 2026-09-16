@@ -91,8 +91,22 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     skill = (PLUGIN / "skills" / "data-routing" / "SKILL.md").read_text(
         encoding="utf-8"
     )
+    normalized_skill = " ".join(skill.split())
 
     assert "Fork or copy this repository" in readme
     assert "Do not edit an installed marketplace cache" in readme
     assert "Never put credentials" in readme
     assert "user-owned catalogue" in skill
+    assert "Return one evidence receipt inline" in skill
+    assert "Do not write the receipt to a file" in skill
+    assert "Structural validation" in skill
+    assert "same response before any canonical value" in normalized_skill
+    assert "must contain exactly" in normalized_skill
+    assert "A routing summary or a different" in normalized_skill
+    assert "`claim_status` to `withheld`" in skill
+    assert "`source_refs`: a non-empty list" in skill
+    assert "`freshness`, `completeness`, and `conflict`" in skill
+    assert "any completed nonzero" in normalized_skill
+    assert "could not be launched" in normalized_skill
+    output = skill.split("## Output", 1)[1]
+    assert output.index("Evidence receipt") < output.index("Canonical value")

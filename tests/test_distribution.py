@@ -107,5 +107,6 @@ def test_docs_state_the_safety_boundary() -> None:
     assert "Deterministic Data — editable template" in install_guide
     assert "own fork or source copy" in install_guide
     assert "exact shipped hook commands" in install_guide
+    assert "Authenticated, non-persistent local sessions" in install_guide
     assert install_guide.count("not runtime-smoke-tested for this release") == 3
     assert "untested and unsupported for this release" in install_guide
