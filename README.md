@@ -1,6 +1,6 @@
 # LLM Accuracy
 
-Evidence-first accuracy hygiene for Claude Code.
+Evidence-first accuracy hygiene for Claude Cowork and Claude Code.
 
 LLM Accuracy helps an LLM distinguish direct evidence from inference, keep
 claims inside their source and scope, recheck stale details, calibrate
