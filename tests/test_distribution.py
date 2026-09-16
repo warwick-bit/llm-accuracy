@@ -108,5 +108,7 @@ def test_docs_state_the_safety_boundary() -> None:
     assert "own fork or source copy" in install_guide
     assert "exact shipped hook commands" in install_guide
     assert "Authenticated, non-persistent local sessions" in install_guide
-    assert install_guide.count("not runtime-smoke-tested for this release") == 3
+    assert install_guide.count("not runtime-smoke-tested for this release") == 2
+    assert "initial Desktop 2.110.0 smoke" in install_guide
+    assert "rebuilt ZIP has not yet been re-tested in Cowork" in install_guide
     assert "untested and unsupported for this release" in install_guide

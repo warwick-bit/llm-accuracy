@@ -15,8 +15,11 @@ Platform capability and this release's runtime evidence are separate:
   hook control on 16 Sep 2026.
 - **Claude Desktop Chat:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
-- **Claude Cowork:** not runtime-smoke-tested for this release. The
-  skills-and-hooks description follows Anthropic's current plugin documentation.
+- **Claude Cowork:** an initial Desktop 2.110.0 smoke on 16 Sep 2026 verified
+  plugin activation, the claim-fidelity hook and skill, Deterministic Data
+  routing, receipt validation and a negative control. That run also exposed a
+  temporary scratchpad receipt write. The plugin now requires stdin validation,
+  but the rebuilt ZIP has not yet been re-tested in Cowork.
 - **Claude chat on the web:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
 - **Claude Code on the web:** untested and unsupported for this release.
@@ -86,9 +89,9 @@ Keep credentials, provider payloads, query results, customer records and raw
 prompt content out of catalogue files. Add separately reviewed read-only
 adapters for real sources. In Claude Code, add your customised repository as a
 marketplace and install `deterministic-data` from it. In Cowork, upload the ZIP
-built from your customised source. The Cowork path is not runtime-smoke-tested
-for this release; validate the uploaded skill and script behavior before relying
-on it for consequential work.
+built from your customised source. The initial Cowork smoke exercised this path
+and found a temporary validation write that is fixed in the current source; the
+rebuilt ZIP still needs a Cowork re-test before consequential use.
 
 ## Session Ledger — Claude Code terminal or IDE only
 
