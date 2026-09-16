@@ -76,12 +76,14 @@ FIDELITY_FIRE_PROMPTS = [
     "Can we conclude the coverage is complete data?",
     "The totals match. Is this the same population?",
     "Is this provisional calculation aligned with the method?",
-    "Was the drop caused by lower usage?",
+    "Does this prove causation for the drop?",
 ]
 
 FIDELITY_SILENT_PROMPTS = [
     "Fix the source adapter in routing.py.",
     "Summarise this document.",
+    "The unit test failed because of a null check.",
+    "The crash was caused by a race condition.",
     "Does this prove the source is current? # fidelity-ok",
     "Does this prove the source is current? # Fidelity-OK",
 ]

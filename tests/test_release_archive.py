@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 from types import ModuleType
@@ -57,6 +58,23 @@ def test_deterministic_data_archive_is_independent(tmp_path: Path) -> None:
     assert "skills/data-routing/SKILL.md" in names
     assert "references/evidence-receipt.schema.json" in names
     assert not any(name.startswith("plugins/") for name in names)
+
+
+def test_deterministic_data_cli_uses_manifest_version(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    builder = load_builder()
+    monkeypatch.setattr(builder, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["build_plugin_zip.py", "--plugin", "deterministic-data"],
+    )
+
+    assert builder.main() == 0
+    output = Path(capsys.readouterr().out.strip())
+    assert output == tmp_path / "dist" / "deterministic-data-0.1.0.zip"
+    assert output.is_file()
 
 
 def test_release_archive_rejects_external_symlink(tmp_path: Path) -> None:

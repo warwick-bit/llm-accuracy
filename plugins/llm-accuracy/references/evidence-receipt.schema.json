@@ -75,7 +75,7 @@
       "items": {"type": "string", "minLength": 1, "maxLength": 500},
       "maxItems": 20
     },
-    "claim_status": {"enum": ["supported", "qualified", "withheld"]}
+    "claim_status": {"enum": ["supported", "qualified", "withheld", "unchecked"]}
   },
   "$defs": {
     "boundedStatus": {

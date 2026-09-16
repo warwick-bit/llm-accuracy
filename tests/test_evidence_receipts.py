@@ -62,7 +62,7 @@ def validators() -> list[ModuleType]:
     ]
 
 
-@pytest.mark.parametrize("status", ["supported", "qualified", "withheld"])
+@pytest.mark.parametrize("status", ["supported", "qualified", "withheld", "unchecked"])
 def test_receipt_statuses_validate(status: str) -> None:
     for validator in validators():
         assert validator.validate_receipt(valid_receipt(status)) == []

@@ -15,7 +15,7 @@ TRIGGER_RE = re.compile(
     r"evidence\s+supports?|fully\s+sync(?:ed|hronized)|same\s+population|"
     r"complete\s+(?:data|dataset|coverage)|source\s+is\s+current|"
     r"provisional\s+(?:result|calculation)|method\s+(?:matches|aligned)|"
-    r"caused\s+by|because\s+of)\b",
+    r"causal\s+claim|prove\s+caus(?:e|ation))\b",
     re.IGNORECASE,
 )
 

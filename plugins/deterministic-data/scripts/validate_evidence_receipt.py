@@ -107,7 +107,7 @@ def validate_receipt(payload: Any, *, expected_epoch: str | None = None) -> list
         errors.append("caveats_invalid")
 
     status = payload.get("claim_status")
-    if status not in {"supported", "qualified", "withheld"}:
+    if status not in {"supported", "qualified", "withheld", "unchecked"}:
         errors.append("claim_status_invalid")
     elif status == "supported":
         if successful == 0:
