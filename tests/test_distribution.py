@@ -110,5 +110,39 @@ def test_docs_state_the_safety_boundary() -> None:
     assert "Authenticated, non-persistent local sessions" in install_guide
     assert install_guide.count("not runtime-smoke-tested for this release") == 2
     assert "initial Desktop 2.110.0 smoke" in install_guide
-    assert "rebuilt ZIP has not yet been re-tested in Cowork" in install_guide
+    assert "A follow-up Cowork smoke" in install_guide
+    assert "`latest_complete_month` token" in install_guide
+    assert "rebuilt ZIP has not yet been re-tested in Cowork" not in install_guide
+    assert "temporary scratchpad receipt write" not in install_guide
+    assert (
+        "validation/cowork-deterministic-data-smoke-2026-09-16.json"
+        in install_guide
+    )
     assert "untested and unsupported for this release" in install_guide
+
+
+def test_cowork_deterministic_data_smoke_receipt_records_final_boundaries() -> None:
+    receipt = load_json(
+        "docs/validation/cowork-deterministic-data-smoke-2026-09-16.json"
+    )
+
+    assert receipt["candidate_head"] == "ef4cc8e153312a231ae584dbd966758968706e2d"
+    assert receipt["outcome"] == "PASS"
+    assert receipt["session"] == {
+        "cli_session_id": "76f5a9ea-90d3-5663-b574-499a7513d776",
+        "parse_errors": 0,
+        "record_count": 89,
+        "transcript_sha256": (
+            "3c7efff956752e0a38d4303855150f0d388567559ee4931c7cad22f638e53be0"
+        ),
+    }
+    checks = receipt["checks"]
+    assert checks["write_tool_calls"] == 0
+    assert checks["prompt_epoch_equals_route_id"] is True
+    assert checks["latest_complete_month_preserved"] is True
+    assert checks["concrete_calendar_month_named"] is False
+    assert checks["canonical_value"] == "withheld"
+    assert checks["receipt_validator_exit_code"] == 0
+    assert checks["receipt_validator_status"] == "pass"
+    assert checks["receipt_validator_errors"] == []
+    assert receipt["evidence_boundary"]["raw_content_committed"] is False

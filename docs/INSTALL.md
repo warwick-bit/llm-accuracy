@@ -17,9 +17,11 @@ Platform capability and this release's runtime evidence are separate:
   skills-only description follows Anthropic's current plugin documentation.
 - **Claude Cowork:** an initial Desktop 2.110.0 smoke on 16 Sep 2026 verified
   plugin activation, the claim-fidelity hook and skill, Deterministic Data
-  routing, receipt validation and a negative control. That run also exposed a
-  temporary scratchpad receipt write. The plugin now requires stdin validation,
-  but the rebuilt ZIP has not yet been re-tested in Cowork.
+  routing, receipt validation and a negative control. A follow-up Cowork smoke
+  of the final rebuilt ZIP used no `Write` tool, validated its receipt through
+  stdin with a route-bound prompt epoch, preserved the unresolved
+  `latest_complete_month` token and withheld the canonical value. See the
+  [raw-free smoke receipt](validation/cowork-deterministic-data-smoke-2026-09-16.json).
 - **Claude chat on the web:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
 - **Claude Code on the web:** untested and unsupported for this release.
@@ -89,9 +91,12 @@ Keep credentials, provider payloads, query results, customer records and raw
 prompt content out of catalogue files. Add separately reviewed read-only
 adapters for real sources. In Claude Code, add your customised repository as a
 marketplace and install `deterministic-data` from it. In Cowork, upload the ZIP
-built from your customised source. The initial Cowork smoke exercised this path
-and found a temporary validation write that is fixed in the current source; the
-rebuilt ZIP still needs a Cowork re-test before consequential use.
+built from your customised source. A Cowork smoke of the rebuilt ZIP and bundled
+fictional catalogue on 16 Sep 2026 stayed file-free, matched the receipt epoch
+to the route, kept unresolved window bounds unresolved and withheld the
+canonical value. Custom adapters and catalogues need their own runtime test. The
+linked raw-free smoke receipt records the candidate commit, exported-session
+identifier, transcript hash and pass checks.
 
 ## Session Ledger — Claude Code terminal or IDE only
 
