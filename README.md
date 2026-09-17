@@ -42,6 +42,150 @@ bundled catalogue is fictional. Users customise a fork or source copy and then
 install it in Claude Code or upload a rebuilt ZIP to Cowork; installed
 marketplace files are not the editing surface.
 
+## See it in practice
+
+These examples use fictional data. They show the failure being corrected, the
+safer answer, and which part of the plugin changes the behaviour.
+
+Examples 1 and 2 use **LLM Accuracy**. Example 3 uses **Deterministic Data**,
+which is offered through the same repository marketplace but installed and
+enabled separately. Neither plugin depends on the other.
+
+### 1. A narrow source becomes an over-broad claim
+
+**Question**
+
+> A survey of 80 trial users says 62% activated. Can we report that 62% of all
+> customers activated?
+
+**Typical failure**
+
+> Yes. Customer activation is 62%.
+
+The answer silently changes the population from surveyed trial users to all
+customers.
+
+**With `/llm-accuracy:claim-fidelity`**
+
+> **Status:** withheld
+>
+> **Evidence boundary:** 62% of the 80 surveyed trial users activated under the
+> survey's definition and time window.
+>
+> **Overreach:** this does not establish activation for all customers.
+>
+> **Next check:** measure the full customer population using the same activation
+> definition and window.
+
+**How it changes the answer:** the workflow compares the claim and source across
+population, measure, time window, freshness and completeness. This is a
+model-guided evidence check; it does not independently verify that the survey
+itself is correct.
+
+### 2. One page of data is treated as the complete set
+
+**Tool response envelope**
+
+```json
+{
+  "rows": ["25 fictional records"],
+  "has_more": true,
+  "next_cursor": "page-2"
+}
+```
+
+**Typical failure**
+
+> There are 25 records in total.
+
+**With LLM Accuracy**
+
+> This is a partial result: 25 rows were seen on the first page and another page
+> is declared. I need to continue from `page-2`, or report only the 25 rows
+> observed so far. The complete total is withheld.
+
+**How it changes the answer:** a programmatic post-tool hook detects explicit
+partial-result markers such as `has_more`, a next-page cursor, row-cap warnings
+or host truncation. It adds a bounded reminder without retaining or echoing the
+tool payload. The model can still cite details from the original response, as
+it does above; those details are not re-emitted by the hook. The hook cannot
+prove completeness when the source declares no partial-result marker.
+
+### 3. An undefined metric gets a confident number
+
+**Question**
+
+> What were active service units last month?
+
+**Typical failure**
+
+> Active service units were 1,240 last month.
+
+That answer can invent the definition, calendar window, source and value.
+
+Deterministic Data's catalogue and validators provide deterministic boundaries
+around a model-guided routing workflow.
+
+**With `/deterministic-data:data-routing` and the bundled example catalogue**
+
+The following is a model-produced response that follows the routing workflow.
+The validators can check its catalogue and receipt structures, but do not
+programmatically select the definition or execute the route.
+
+> **Matched definition:** `active-service-units`
+>
+> **Route status:** source unavailable
+>
+> **Window:** `latest_complete_month`; concrete dates unresolved
+>
+> **Evidence receipt:** emitted inline and structurally validated
+>
+> **Canonical value:** withheld because the example has no working provider
+> adapter and defines no calendar, timezone or close rule.
+
+**How it changes the answer:** the workflow instructs the model to match exact
+aliases to a reviewed definition, stop on candidate, ambiguous and missing
+definitions, and use only the declared read-only source binding for an approved
+definition. Failed, partial or unavailable reads stay unresolved instead of
+being replaced with a remembered number. The programmatic
+[catalogue validator](plugins/deterministic-data/scripts/validate_catalogue.py)
+rejects invalid structure and duplicate normalized aliases. The
+[receipt validator](plugins/deterministic-data/scripts/validate_evidence_receipt.py)
+rejects malformed receipts and, when supplied the expected epoch,
+prompt-epoch mismatches. These validators do not execute the route or prove the
+source value is true.
+
+To make the third route useful, copy the fictional catalogue, add your own
+reviewed definition and calendar rules, bind it to a read-only source, validate
+the catalogue, and test it with synthetic fixtures before using real data.
+
+**After that setup, a successful fictional route could return**
+
+> **Matched definition:** `active-service-units`
+>
+> **Route status:** declared read-only source executed
+>
+> **Window:** resolved using the catalogue's calendar, timezone and close rule
+>
+> **Evidence receipt:** emitted inline and structurally validated
+>
+> **Canonical value:** 1,240 fictional units, supported by the completed source
+> read for the resolved window.
+
+The value becomes eligible to return because the definition, window, binding
+and completed read align. Human review still decides whether those inputs and
+the underlying source are trustworthy.
+
+### What is enforced in code?
+
+- **Programmatic:** explicit partial-result detection, catalogue schema and
+  alias-uniqueness validation, and receipt-shape and prompt-binding validation.
+- **Model-guided:** claim/source alignment, exact-alias routing, stop/withhold
+  decisions, uncertainty language, self-audit and the decision to follow an
+  advisory hook.
+- **Outside the plugin:** source truth, business-definition approval, connector
+  correctness and human review of consequential answers.
+
 ## Install
 
 Choose the installation path that matches your Claude environment.
