@@ -1,0 +1,261 @@
+{
+  "healthy_receipt": {
+    "schema_version": "1.0",
+    "prompt_epoch": "fictional-turn-a",
+    "claim_id": "fictional-claim",
+    "route_id": "fictional-route",
+    "definition_id": "fictional-unit-count",
+    "source_refs": [
+      {
+        "source_id": "fictional-source",
+        "status": "success",
+        "observed_at": "2030-01-01T00:00:00Z",
+        "scope_match": "match"
+      }
+    ],
+    "scope": {
+      "population": "fictional units",
+      "measure": "unit count",
+      "time_window": "fictional snapshot",
+      "grain": "unit"
+    },
+    "freshness": {
+      "status": "current",
+      "basis": "Fixture assertion only."
+    },
+    "completeness": {
+      "status": "complete",
+      "basis": "Fixture assertion only."
+    },
+    "conflict": {
+      "status": "none",
+      "basis": "Fixture assertion only."
+    },
+    "caveats": [],
+    "claim_status": "supported"
+  },
+  "failure_cases": [
+    {
+      "case": "missing_required_input",
+      "receipt": {
+        "schema_version": "1.0",
+        "prompt_epoch": "fictional-turn-a",
+        "claim_id": "fictional-claim",
+        "route_id": "fictional-route",
+        "definition_id": "fictional-unit-count",
+        "source_refs": [
+          {
+            "source_id": "fictional-source",
+            "status": "success",
+            "observed_at": "2030-01-01T00:00:00Z",
+            "scope_match": "match"
+          }
+        ],
+        "scope": {
+          "population": "fictional units",
+          "measure": "unit count",
+          "time_window": "fictional snapshot",
+          "grain": "unit"
+        },
+        "freshness": {
+          "status": "current",
+          "basis": "Fixture assertion only."
+        },
+        "completeness": {
+          "status": "partial",
+          "basis": "Fixture assertion only."
+        },
+        "conflict": {
+          "status": "none",
+          "basis": "Fixture assertion only."
+        },
+        "caveats": [
+          "Fictional failure; no current figure."
+        ],
+        "claim_status": "withheld"
+      },
+      "supported_errors": [
+        "supported_without_complete_coverage"
+      ]
+    },
+    {
+      "case": "invalid_required_input",
+      "receipt": {
+        "schema_version": "1.0",
+        "prompt_epoch": "fictional-turn-a",
+        "claim_id": "fictional-claim",
+        "route_id": "fictional-route",
+        "definition_id": "fictional-unit-count",
+        "source_refs": [
+          {
+            "source_id": "fictional-source",
+            "status": "success",
+            "observed_at": "2030-01-01T00:00:00Z",
+            "scope_match": "match"
+          }
+        ],
+        "scope": {
+          "population": "fictional units",
+          "measure": "unit count",
+          "time_window": "fictional snapshot",
+          "grain": "unit"
+        },
+        "freshness": {
+          "status": "unknown",
+          "basis": "Fixture assertion only."
+        },
+        "completeness": {
+          "status": "unknown",
+          "basis": "Fixture assertion only."
+        },
+        "conflict": {
+          "status": "none",
+          "basis": "Fixture assertion only."
+        },
+        "caveats": [
+          "Fictional failure; no current figure."
+        ],
+        "claim_status": "withheld"
+      },
+      "supported_errors": [
+        "supported_without_complete_coverage",
+        "supported_without_current_source"
+      ]
+    },
+    {
+      "case": "source_unavailable",
+      "receipt": {
+        "schema_version": "1.0",
+        "prompt_epoch": "fictional-turn-a",
+        "claim_id": "fictional-claim",
+        "route_id": "fictional-route",
+        "definition_id": "fictional-unit-count",
+        "source_refs": [
+          {
+            "source_id": "fictional-source",
+            "status": "unavailable",
+            "observed_at": null,
+            "scope_match": "unknown"
+          }
+        ],
+        "scope": {
+          "population": "fictional units",
+          "measure": "unit count",
+          "time_window": "fictional snapshot",
+          "grain": "unit"
+        },
+        "freshness": {
+          "status": "unknown",
+          "basis": "Fixture assertion only."
+        },
+        "completeness": {
+          "status": "unknown",
+          "basis": "Fixture assertion only."
+        },
+        "conflict": {
+          "status": "none",
+          "basis": "Fixture assertion only."
+        },
+        "caveats": [
+          "Fictional failure; no current figure."
+        ],
+        "claim_status": "withheld"
+      },
+      "supported_errors": [
+        "supported_without_complete_coverage",
+        "supported_without_current_source",
+        "supported_without_scope_match",
+        "supported_without_successful_source"
+      ]
+    },
+    {
+      "case": "failed_refresh",
+      "receipt": {
+        "schema_version": "1.0",
+        "prompt_epoch": "fictional-turn-a",
+        "claim_id": "fictional-claim",
+        "route_id": "fictional-route",
+        "definition_id": "fictional-unit-count",
+        "source_refs": [
+          {
+            "source_id": "fictional-source",
+            "status": "failed",
+            "observed_at": null,
+            "scope_match": "unknown"
+          }
+        ],
+        "scope": {
+          "population": "fictional units",
+          "measure": "unit count",
+          "time_window": "fictional snapshot",
+          "grain": "unit"
+        },
+        "freshness": {
+          "status": "unknown",
+          "basis": "Fixture assertion only."
+        },
+        "completeness": {
+          "status": "unknown",
+          "basis": "Fixture assertion only."
+        },
+        "conflict": {
+          "status": "none",
+          "basis": "Fixture assertion only."
+        },
+        "caveats": [
+          "Fictional failure; no current figure."
+        ],
+        "claim_status": "withheld"
+      },
+      "supported_errors": [
+        "supported_without_complete_coverage",
+        "supported_without_current_source",
+        "supported_without_scope_match",
+        "supported_without_successful_source"
+      ]
+    },
+    {
+      "case": "definition_mismatch",
+      "receipt": {
+        "schema_version": "1.0",
+        "prompt_epoch": "fictional-turn-a",
+        "claim_id": "fictional-claim",
+        "route_id": "fictional-route",
+        "definition_id": "fictional-unit-count",
+        "source_refs": [
+          {
+            "source_id": "fictional-source",
+            "status": "success",
+            "observed_at": "2030-01-01T00:00:00Z",
+            "scope_match": "mismatch"
+          }
+        ],
+        "scope": {
+          "population": "fictional units",
+          "measure": "unit count",
+          "time_window": "fictional snapshot",
+          "grain": "unit"
+        },
+        "freshness": {
+          "status": "current",
+          "basis": "Fixture assertion only."
+        },
+        "completeness": {
+          "status": "complete",
+          "basis": "Fixture assertion only."
+        },
+        "conflict": {
+          "status": "none",
+          "basis": "Fixture assertion only."
+        },
+        "caveats": [
+          "Fictional failure; no current figure."
+        ],
+        "claim_status": "withheld"
+      },
+      "supported_errors": [
+        "supported_without_scope_match"
+      ]
+    }
+  ]
+}
