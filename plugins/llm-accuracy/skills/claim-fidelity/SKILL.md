@@ -7,7 +7,7 @@ plugin: llm-accuracy
 fully_qualified: llm-accuracy:claim-fidelity
 version: "0.1.0"
 triggers:
-  - pattern: "\\b(does this prove|can we conclude|claim fidelity|evidence supports|fully synced|same population|complete data|source is current|provisional result)\\b"
+  - pattern: "\\b(does (this|that) prove|can we conclude|claim fidelity|evidence supports|fully synced|same population|complete data|source is current|provisional result)\\b"
     confidence: 0.85
   - explicit_invocation: true
 priority: 56

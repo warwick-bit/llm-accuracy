@@ -8,6 +8,8 @@ correctness.
 
 - prompts for provenance, scope, freshness, and caveats on consequential
   factual answers;
+- asks for a short clarification on selected common business prompts with
+  multiple reasonable definitions, windows, comparisons or sources;
 - checks whether claims remain within their source, population, definition,
   window, freshness and completeness boundaries;
 - nudges a model to recheck stale details after long sessions; and
@@ -35,10 +37,11 @@ mean the underlying claim is correct.
 
 Once installed and activated, use Claude Code or Cowork normally: there is no
 separate command to run or prompt to paste for matching prompts. These hosts add
-targeted advisory reminders for matching analysis and source-conflict prompts,
-and after context compaction; the plugin does not interrupt every prompt or
-verify facts automatically. Ask the assistant to audit one of its earlier
-answers when you want a direct self-check.
+targeted advisory reminders for matching ambiguous business questions,
+analysis and source-conflict prompts, and after context compaction; the plugin
+does not interrupt every prompt or verify facts automatically. Ask the
+assistant to audit one of its earlier answers when you want a direct
+self-check.
 
 ## Freshness and memory
 

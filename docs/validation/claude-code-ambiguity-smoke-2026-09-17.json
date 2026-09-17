@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "test_date": "2026-09-17",
+  "host": {
+    "product": "Claude Code",
+    "version": "2.1.274",
+    "requested_model": "sonnet",
+    "resolved_model": "claude-sonnet-5",
+    "session_persistence": false
+  },
+  "candidate": {
+    "plugin": "llm-accuracy",
+    "version": "0.5.2",
+    "archive_digest": "ec228dd1f9eb7be10bc29118344dafb308d39f9b4b07988bf66ed8c355e80dcb",
+    "archive_integrity": "pass"
+  },
+  "method": {
+    "fresh_session_per_prompt": true,
+    "same_model_and_effort": true,
+    "paired_prompts": 5,
+    "candidate_negative_controls": 3,
+    "revenue_repetitions_per_condition": 3,
+    "claude_model_sessions_executed": true,
+    "business_data_provider_queries_executed": false,
+    "raw_responses_committed": false
+  },
+  "checks": {
+    "baseline_revenue_definition_and_period_clarified": "0/3",
+    "candidate_revenue_definition_and_period_clarified": "3/3",
+    "candidate_best_customer_criterion_and_period_clarified": "1/1",
+    "candidate_marketing_success_measure_and_period_clarified": "1/1",
+    "candidate_activation_definition_and_comparison_clarified": "1/1",
+    "candidate_pricing_causality_rejected": "1/1",
+    "baseline_pricing_causality_rejected": "1/1",
+    "programmatic_negative_controls_silent": "3/3",
+    "packaged_archive_revenue_smoke": "pass"
+  },
+  "check_definitions": {
+    "packaged_archive_revenue_smoke": "The built candidate ZIP was loaded in an isolated Claude Code profile and run once with the revenue prompt."
+  },
+  "outcome": "PASS",
+  "evidence_boundary": {
+    "establishes": "The candidate hook added the intended clarification boundary in these synthetic Claude Code sessions.",
+    "does_not_establish": "Universal model compliance, source truth, improved answers for every wording, or Claude Cowork behavior."
+  }
+}

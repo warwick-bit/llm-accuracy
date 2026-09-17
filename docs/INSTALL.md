@@ -12,7 +12,10 @@ Platform capability and this release's runtime evidence are separate:
   (marketplace add plus both plugin installs) were re-tested on 16 Sep 2026.
   Authenticated, non-persistent local sessions also exercised the claim-fidelity
   hook and skill, Deterministic Data routing, receipt validation and a negative
-  hook control on 16 Sep 2026.
+  hook control on 16 Sep 2026. A paired candidate smoke on 17 Sep 2026 tested
+  the five ambiguity examples, three negative controls and repeated revenue
+  prompts; see the
+  [raw-free receipt](validation/claude-code-ambiguity-smoke-2026-09-17.json).
 - **Claude Desktop Chat:** not runtime-smoke-tested for this release. The
   skills-only description follows Anthropic's current plugin documentation.
 - **Claude Cowork:** an initial Desktop 2.110.0 smoke on 16 Sep 2026 verified
@@ -67,9 +70,11 @@ Use Claude Code normally. LLM Accuracy has no command to run or system prompt to
 paste for matching prompts. Its self-audit skill is available when you ask
 Claude to check one of its own earlier answers.
 
-The hooks add reminders only for matching open-ended analysis or source-conflict
-prompts and after context compaction. They do not run on every prompt, fetch
-evidence, block work, or verify facts automatically.
+The hooks add reminders only for matching ambiguous business questions,
+open-ended analysis, evidence-boundary claims or source conflicts, and after
+context compaction. They do not run on every prompt, fetch evidence, block work,
+or verify facts automatically. The automatic patterns are deliberately bounded;
+use `/llm-accuracy:claim-fidelity` when you want an explicit check.
 
 ## Deterministic Data — editable template
 
@@ -86,6 +91,12 @@ python3 plugins/deterministic-data/scripts/validate_catalogue.py \
   plugins/deterministic-data/catalogues/your-catalogue.json
 python3 scripts/build_plugin_zip.py --plugin deterministic-data
 ```
+
+After installing your customised copy, invoke
+`/deterministic-data:data-routing` with the question and catalogue path. The
+bundled fictional catalogue cannot answer questions about your company, and
+the routing skill is not a replacement for configuring definitions and
+read-only source bindings.
 
 Keep credentials, provider payloads, query results, customer records and raw
 prompt content out of catalogue files. Add separately reviewed read-only

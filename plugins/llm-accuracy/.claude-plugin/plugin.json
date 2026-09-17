@@ -1,7 +1,7 @@
 {
   "name": "llm-accuracy",
-  "description": "Accuracy hygiene for Claude Code and Cowork: claim fidelity, evidence discipline, stale-memory checks, and self-audit.",
-  "version": "0.5.1",
+  "description": "Accuracy hygiene for Claude Code and Cowork: ambiguity checks, claim fidelity, evidence discipline, and self-audit.",
+  "version": "0.5.2",
   "author": {
     "name": "Warwick"
   },

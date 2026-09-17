@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "llm-accuracy",
-      "description": "Claim fidelity, evidence discipline, stale-memory checks, calibrated uncertainty, and self-audit.",
+      "description": "Ambiguity checks, claim fidelity, evidence discipline, stale-memory checks, calibrated uncertainty, and self-audit.",
       "category": "productivity",
       "source": "./plugins/llm-accuracy"
     },

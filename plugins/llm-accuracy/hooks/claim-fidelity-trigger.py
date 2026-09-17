@@ -11,7 +11,7 @@ import sys
 
 BYPASS_RE = re.compile(r"#\s*fidelity-ok\b", re.IGNORECASE)
 TRIGGER_RE = re.compile(
-    r"\b(?:does\s+this\s+prove|can\s+we\s+conclude|"
+    r"\b(?:does\s+(?:this|that)\s+prove|can\s+we\s+conclude|"
     r"claim\s+fidelity|"
     r"evidence\s+supports?|fully\s+sync(?:ed|hronized)|same\s+population|"
     r"complete\s+(?:data|dataset|coverage)|source\s+is\s+current|"

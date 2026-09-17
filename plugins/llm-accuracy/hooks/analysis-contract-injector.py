@@ -30,6 +30,30 @@ LOOKUP = re.compile(
     r"^\s*(what'?s|what is|how many|how much|when|where|who is|list|show|count)\b",
     re.I,
 )
+AMBIGUOUS_REVENUE = re.compile(
+    r"^\s*(?:"
+    r"what(?:'s| is| was)\s+our\s+(?:total\s+)?revenue|"
+    r"(?:can\s+you\s+)?(?:tell|show)\s+me\s+(?:what\s+)?our\s+"
+    r"(?:total\s+)?revenue(?:\s+is)?|"
+    r"how\s+much\s+revenue\s+did\s+we\s+(?:make|generate)"
+    r")(?:\s+(?:today|this\s+(?:week|month|quarter|year)|last\s+"
+    r"(?:week|month|quarter|year)))?\s*[?.!]*\s*$",
+    re.I,
+)
+AMBIGUOUS_CHANNEL = re.compile(
+    r"^\s*which\s+marketing\s+channel\s+"
+    r"(?:performs|performed|is|was)\s+best\s*[?.!]*\s*$",
+    re.I,
+)
+AMBIGUOUS_ONBOARDING = re.compile(
+    r"^\s*did\s+(?:the\s+)?(?:new\s+)?onboarding\s+(?:flow\s+)?"
+    r"improve\s+activation\s*[?.!]*\s*$",
+    re.I,
+)
+AMBIGUOUS_CUSTOMER_RANKING = re.compile(
+    r"^\s*who\s+are\s+our\s+(?:best|top)\s+customers\s*[?.!]*\s*$",
+    re.I,
+)
 EXEC = re.compile(
     r"\b(fix|add|implement|deploy|refactor|merge|push|commit|edit|rename)\b",
     re.I,
@@ -56,6 +80,53 @@ CONTRACT = (
     "Skip only for simple lookups. Mute with `# analysis-ok` or `CC_SKIP_ANALYSIS=1`."
 )
 
+AMBIGUITY_CONTRACT = (
+    "This is a broad business question with more than one reasonable interpretation. "
+    "Do not silently choose the definition, population, success measure, time window, "
+    "comparison, currency, or source. Ask one short clarification with concrete options, "
+    "limited to the choices that would change the answer. {question_guidance} If an "
+    "approved metric catalogue is available, use it. If the user asks to proceed without "
+    "clarifying, state the assumptions and label the result exploratory. This reminder is "
+    "advisory: it does not verify a source or make a value canonical. Mute with "
+    "`# analysis-ok` or `CC_SKIP_ANALYSIS=1`."
+)
+
+
+def is_ambiguous_business_question(prompt: str) -> bool:
+    return any(
+        pattern.match(prompt)
+        for pattern in (
+            AMBIGUOUS_REVENUE,
+            AMBIGUOUS_CHANNEL,
+            AMBIGUOUS_ONBOARDING,
+            AMBIGUOUS_CUSTOMER_RANKING,
+        )
+    )
+
+
+def ambiguity_context(prompt: str) -> str:
+    if AMBIGUOUS_REVENUE.match(prompt):
+        guidance = (
+            "For revenue, offer relevant choices such as MRR, ARR, recognised revenue, "
+            "invoiced revenue, or cash received, then clarify the period, currency, and source."
+        )
+    elif AMBIGUOUS_CHANNEL.match(prompt):
+        guidance = (
+            "For channel performance, clarify the success measure, period, customer "
+            "population, and attribution source."
+        )
+    elif AMBIGUOUS_ONBOARDING.match(prompt):
+        guidance = (
+            "For onboarding impact, clarify the activation definition, cohort, measurement "
+            "window, and comparison or control group."
+        )
+    else:
+        guidance = (
+            "For best customers, clarify whether best means revenue, margin, retention, "
+            "product use, or growth potential, then clarify the period and population."
+        )
+    return AMBIGUITY_CONTRACT.format(question_guidance=guidance)
+
 
 def should_fire(prompt: str) -> bool:
     if not prompt:
@@ -64,6 +135,8 @@ def should_fire(prompt: str) -> bool:
     if any(marker in lowered for marker in BYPASS_MARKERS):
         return False
     p = prompt
+    if is_ambiguous_business_question(p):
+        return True
     if LOOKUP.match(p):
         return False
     if CONCRETE.search(p):
@@ -85,12 +158,17 @@ def main() -> int:
         prompt = payload.get("prompt", "")
         if not isinstance(prompt, str) or not should_fire(prompt):
             return 0
+        context = (
+            ambiguity_context(prompt)
+            if is_ambiguous_business_question(prompt)
+            else CONTRACT
+        )
         print(
             json.dumps(
                 {
                     "hookSpecificOutput": {
                         "hookEventName": "UserPromptSubmit",
-                        "additionalContext": CONTRACT,
+                        "additionalContext": context,
                     }
                 }
             )
