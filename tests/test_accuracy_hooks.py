@@ -74,6 +74,10 @@ FUSION_SILENT_PROMPTS = [
 FIDELITY_FIRE_PROMPTS = [
     "Does this prove the source is current?",
     "Can we conclude the coverage is complete data?",
+    "A survey of 80 trial users says 62% activated. Can we report that 62% of all customers activated?",
+    "Can I report that uptime was 99.9% and met the target?",
+    "Can we report that 62 percent of trial users activated?",
+    "Can we report that the fix is deployed? Can we report that 62% activated?",
     "The totals match. Is this the same population?",
     "Is this provisional calculation aligned with the method?",
     "Does this prove causation for the drop?",
@@ -81,6 +85,15 @@ FIDELITY_FIRE_PROMPTS = [
 
 FIDELITY_SILENT_PROMPTS = [
     "Fix the source adapter in routing.py.",
+    "Can we report this bug to the maintainer?",
+    "Can we report that the fix is deployed?",
+    "Can I report that the ticket is closed?",
+    "Can we report that the meeting starts at 3pm?",
+    "Can I report that ticket 42 is closed?",
+    "Can we report that the results are in?",
+    "Can I report that users were notified?",
+    "The survey data was inconclusive. Can we report that the office relocated?",
+    "Can we report that the fix is deployed? By the way, 60% of the team is away.",
     "Summarise this document.",
     "The unit test failed because of a null check.",
     "The crash was caused by a race condition.",

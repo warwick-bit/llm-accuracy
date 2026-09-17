@@ -11,11 +11,17 @@ import sys
 
 BYPASS_RE = re.compile(r"#\s*fidelity-ok\b", re.IGNORECASE)
 TRIGGER_RE = re.compile(
-    r"\b(?:does\s+this\s+prove|can\s+we\s+conclude|claim\s+fidelity|"
+    r"\b(?:does\s+this\s+prove|can\s+we\s+conclude|"
+    r"claim\s+fidelity|"
     r"evidence\s+supports?|fully\s+sync(?:ed|hronized)|same\s+population|"
     r"complete\s+(?:data|dataset|coverage)|source\s+is\s+current|"
     r"provisional\s+(?:result|calculation)|method\s+(?:matches|aligned)|"
     r"causal\s+claim|prove\s+caus(?:e|ation))\b",
+    re.IGNORECASE,
+)
+REPORT_CLAIM_RE = re.compile(r"\bcan\s+(?:we|i)\s+report\s+that\b", re.IGNORECASE)
+REPORT_PERCENTAGE_RE = re.compile(
+    r"(?:\b\d+(?:\.\d+)?\s*%|\b\d+(?:\.\d+)?\s+percent\b)",
     re.IGNORECASE,
 )
 
@@ -31,7 +37,17 @@ CONTRACT = (
 
 
 def should_fire(prompt: str) -> bool:
-    return not BYPASS_RE.search(prompt) and bool(TRIGGER_RE.search(prompt))
+    if BYPASS_RE.search(prompt):
+        return False
+    if TRIGGER_RE.search(prompt):
+        return True
+    for report_match in REPORT_CLAIM_RE.finditer(prompt):
+        reported_claim = re.split(
+            r"(?:[!?]|\.(?=\s|$))", prompt[report_match.end() :], maxsplit=1
+        )[0]
+        if REPORT_PERCENTAGE_RE.search(reported_claim):
+            return True
+    return False
 
 
 def main() -> int:
