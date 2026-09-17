@@ -88,7 +88,8 @@ itself is correct.
 
 ```json
 {
-  "rows": ["25 fictional records"],
+  "rows": ["fictional records omitted from this example"],
+  "returned_count": 25,
   "has_more": true,
   "next_cursor": "page-2"
 }
@@ -100,9 +101,9 @@ itself is correct.
 
 **With LLM Accuracy**
 
-> This is a partial result: 25 rows were seen on the first page and another page
-> is declared. I need to continue from `page-2`, or report only the 25 rows
-> observed so far. The complete total is withheld.
+> This is a partial result: the response declares 25 returned rows on the first
+> page and another page is available. I need to continue from `page-2`, or
+> report only this page. The complete total is withheld.
 
 **How it changes the answer:** a programmatic post-tool hook detects explicit
 partial-result markers such as `has_more`, a next-page cursor, row-cap warnings
