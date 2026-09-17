@@ -32,7 +32,7 @@ writes to the project or Git, and expires after 30 days. Install it only if you
 accept that the retained record and compact summary can contain sensitive local
 content.
 
-For source-adapter integration, see [tool failures, refreshes and evidence receipts](docs/tool-failure-contract.md), including synthetic regression cases and the limits of structural validation.
+For source-adapter integration, see [tool failures, refreshes and evidence receipts](docs/tool-failure-contract.md), including synthetic regression cases and the limits of structural validation. For output-boundary guidance, see [evidence boundaries and answer publication](docs/answer-boundaries.md), including unsupported derivations and runtime limitations.
 
 Provider-specific verification integrations are intentionally out of scope.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for feedback rules and [SECURITY.md](SECURITY.md)
