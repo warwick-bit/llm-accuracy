@@ -16,6 +16,18 @@ ANALYSIS_FIRE_PROMPTS = [
     "Analyze churn by segment this quarter and tell me what's driving it.",
     "Break down revenue by cohort and explain the patterns.",
     "Find which customers have the strongest activation signals in our data.",
+    "What is our revenue?",
+    "What's our revenue this month?",
+    "What's our total revenue?",
+    "Tell me our revenue last quarter.",
+    "Can you show me what our revenue is?",
+    "How much revenue did we make this year?",
+    "Which marketing channel performs best?",
+    "Which marketing channel was best?",
+    "Did the new onboarding flow improve activation?",
+    "Did onboarding improve activation?",
+    "Who are our best customers?",
+    "Who are our top customers?",
 ]
 
 ANALYSIS_SILENT_PROMPTS = [
@@ -25,6 +37,13 @@ ANALYSIS_SILENT_PROMPTS = [
     "Explore docs/plugin-maintenance.md.",
     "Analyze churn by segment. # analysis-ok",
     "Analyze churn by segment. # Analysis-OK",
+    "What is revenue recognition?",
+    "What is our recognised revenue from the general ledger for September 2026?",
+    "Which marketing channel had the highest trial-to-paid conversion rate in September 2026?",
+    "Did onboarding experiment A improve 14-day activation versus the randomized control?",
+    "Which channel is best?",
+    "Which support channel performed best?",
+    "What's our MRR growth?",
 ]
 
 FUSION_FIRE_PROMPTS = [
@@ -81,6 +100,7 @@ FIDELITY_FIRE_PROMPTS = [
     "The totals match. Is this the same population?",
     "Is this provisional calculation aligned with the method?",
     "Does this prove causation for the drop?",
+    "Sales increased after our pricing change. Does that prove the pricing change caused the increase?",
 ]
 
 FIDELITY_SILENT_PROMPTS = [
@@ -137,6 +157,43 @@ def test_analysis_hook_emits_advisory_context(monkeypatch, capsys) -> None:
     assert (
         "analysis contract" in output["hookSpecificOutput"]["additionalContext"].lower()
     )
+
+
+def test_analysis_hook_emits_ambiguity_context(monkeypatch, capsys) -> None:
+    hook = load_hook("analysis-contract-injector.py")
+    monkeypatch.delenv("CC_SKIP_ANALYSIS", raising=False)
+    monkeypatch.setattr(
+        hook.sys,
+        "stdin",
+        io.StringIO(json.dumps({"prompt": "What is our revenue?"})),
+    )
+
+    assert hook.main() == 0
+
+    output = json.loads(capsys.readouterr().out)
+    context = output["hookSpecificOutput"]["additionalContext"]
+    assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    assert "more than one reasonable interpretation" in context
+    assert "MRR, ARR, recognised revenue" in context
+    assert "period, currency, and source" in context
+    assert "advisory" in context
+
+
+def test_analysis_hook_tailors_ambiguity_context() -> None:
+    hook = load_hook("analysis-contract-injector.py")
+
+    channel_context = hook.ambiguity_context("Which marketing channel performs best?")
+    onboarding_context = hook.ambiguity_context(
+        "Did the new onboarding flow improve activation?"
+    )
+    customer_context = hook.ambiguity_context("Who are our best customers?")
+
+    assert "success measure" in channel_context
+    assert "attribution source" in channel_context
+    assert "activation definition" in onboarding_context
+    assert "comparison or control group" in onboarding_context
+    assert "revenue, margin, retention" in customer_context
+    assert "period and population" in customer_context
 
 
 def test_fusion_hook_precision_battery() -> None:

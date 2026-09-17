@@ -1,11 +1,155 @@
 # LLM Accuracy
 
-Evidence-first accuracy hygiene for Claude Cowork and Claude Code.
+Make everyday Claude answers more predictable, consistent and trustworthy.
 
-LLM Accuracy helps an LLM distinguish direct evidence from inference, keep
-claims inside their source and scope, recheck stale details, calibrate
-confidence, and audit its own prior answers. It does not guarantee truth,
-completeness, timeliness, or domain correctness.
+LLMs are built to give useful answers quickly. When a question is ambiguous,
+they often fill the gaps by choosing a definition, time period, comparison or
+source for you. Those choices can change between sessions, so the same simple
+question can produce different answers.
+
+LLM Accuracy asks Claude to slow down at those decision points: clarify what
+you mean, keep claims within the evidence, preserve conflicts between sources
+and say what is still unknown. Deterministic Data adds your team's reviewed
+definitions and declared source routes when repeat questions need a consistent
+method.
+
+## Start here
+
+Use **LLM Accuracy** for everyday questions where a plausible answer could
+still be the wrong answer. Most people should install only this plugin first.
+
+The basic loop is:
+
+1. You ask Claude a normal question.
+2. A matching Claude Code or Cowork hook adds a short accuracy reminder to the
+   model's context.
+3. Claude is asked to clarify material ambiguity or keep the answer aligned
+   with the source's population, definition, time window, freshness and
+   completeness.
+4. When you want a structured second pass, run
+   `/llm-accuracy:claim-fidelity` or ask Claude to audit its previous answer.
+
+The hooks are advisory. They help Claude reason more carefully, but they do not
+independently verify the source or guarantee the final answer. **Deterministic
+Data** is the separate plugin for applying your own reviewed definitions and
+declared source routes to repeat data questions.
+
+The automatic hooks target common high-risk patterns rather than every possible
+ambiguous question. If a prompt is not detected, ask Claude to run
+`/llm-accuracy:claim-fidelity` explicitly.
+
+### Questions that look simple but are not
+
+- **What is our revenue?** It could mean MRR, ARR, recognised revenue, invoices
+  raised or cash received, for several possible time periods.
+- **Who are our best customers?** "Best" could mean highest revenue, margin,
+  retention, product use or growth potential.
+- **Which marketing channel performs best?** The winner changes when success
+  means leads, conversion, revenue, retention or payback.
+- **Did the new onboarding flow improve activation?** The answer depends on the
+  activation event, cohort, measurement window and comparison group.
+- **Sales increased after our pricing change. Does that prove the pricing
+  change caused the increase?** Timing alone does not rule out seasonality,
+  mix changes, campaigns or other causes.
+
+### Pick the plugin you need
+
+- **LLM Accuracy** — start here for general claim fidelity, evidence hygiene,
+  uncertainty and self-audit. It does not persist prompts or tool output; see
+  [Licence and boundary](#licence-and-boundary).
+- **Deterministic Data** — add this only when you want to maintain your own
+  definitions and route data questions to declared read-only sources. Its
+  bundled catalogue is fictional and fully editable in your own source copy.
+- **Session Ledger** — add this only in Claude Code when accuracy-critical
+  context must survive compaction within the same long session. It stores a
+  bounded local record, so review its data boundary before installing it.
+
+### Try LLM Accuracy in five minutes
+
+Before installing it, ask your current Claude:
+
+> What is our revenue?
+
+Note whether it asks what revenue means or silently chooses a metric, period
+and source. Then install LLM Accuracy.
+
+**A typical answer before installation might be:**
+
+> Revenue was $120k last month.
+
+That answer sounds useful, but it silently chose the revenue definition,
+period, currency and source.
+
+You need a current, signed-in Claude Code installation with the `plugin`
+subcommand. If `/plugin` is unavailable, update Claude Code first; the
+[installation guide](docs/INSTALL.md#claude-code-terminal-or-ide--full-plugin)
+covers the full prerequisites and troubleshooting path.
+
+Install it in Claude Code:
+
+```bash
+claude plugin marketplace add warwick-bit/llm-accuracy --scope user
+claude plugin install llm-accuracy@llm-accuracy --scope user
+```
+
+Run `/reload-plugins`, then ask the same question again:
+
+> What is our revenue?
+
+The reminder should make Claude ask a short, concrete clarification before it
+answers, such as which revenue basis you mean, the period or as-at date,
+currency and source. The exact wording can vary.
+
+**A safer answer after installation might be:**
+
+> Which revenue do you mean: MRR, ARR, recognised revenue, invoiced revenue or
+> cash received? Which period, currency and source should I use?
+
+Then try a question that already supplies those choices:
+
+> What is our recognised revenue from the general ledger for September 2026?
+
+The ambiguity reminder stays silent because the definition, source and period
+are explicit. Claude may still need access to the ledger or ask about currency
+under other instructions.
+
+This test shows an advisory clarification, not independent verification. To
+make the answer repeatable across a team, add **Deterministic Data**, define
+each revenue measure in its editable catalogue and bind each definition to its
+approved read-only source. Then invoke `/deterministic-data:data-routing` with
+the question and your catalogue path. Installing its untouched fictional
+catalogue cannot answer questions about your company.
+
+The [raw-free Claude Code smoke receipt](docs/validation/claude-code-ambiguity-smoke-2026-09-17.json)
+records the paired prompts, negative controls and limits of the test without
+publishing the model responses.
+
+### What the test showed
+
+In a small synthetic Claude Code test using the same Claude model and a fresh
+session for every run:
+
+- Without the plugin, Claude asked for both the revenue definition and time
+  period in **0 of 3** runs of `What is our revenue?`.
+- With LLM Accuracy, Claude asked for both in **3 of 3** runs.
+- Both setups correctly rejected the pricing-causality claim in the one run
+  tested for each setup (`n=1` per setup). No improvement was observed on that
+  prompt.
+- The plugin's programmatic ambiguity check stayed silent for **3 of 3**
+  precise questions that already named the metric, period and source.
+
+This measures whether Claude asked for the missing choices before answering.
+It does not measure a percentage improvement in overall factual accuracy. The
+sample is small and synthetic, so treat it as an exploratory product smoke,
+not a statistically powered benchmark. See the
+[raw-free test receipt](docs/validation/claude-code-ambiguity-smoke-2026-09-17.json)
+for the exact setup and limits.
+
+For Cowork, download the latest
+[`llm-accuracy-<version>.zip`](https://github.com/warwick-bit/llm-accuracy/releases/latest),
+upload it through **Customize → Plugins**, and use the same test prompts. See
+the [installation guide](docs/INSTALL.md) for updates, removal, other Claude
+products and the optional plugins.
 
 ## Licence and boundary
 
@@ -71,8 +215,11 @@ customers.
 
 > **Status:** withheld
 >
-> **Evidence boundary:** 62% of the 80 surveyed trial users activated under the
-> survey's definition and time window.
+> **Evidence boundary:** the survey reports 62% for a group described as 80
+> trial users.
+>
+> **Unknown:** raw activated count, survey method, activation definition and
+> time window.
 >
 > **Overreach:** this does not establish activation for all customers.
 >
@@ -207,9 +354,8 @@ Choose the installation path that matches your Claude environment.
   project-scoped cloud smoke test.
 
 See the complete [installation guide](docs/INSTALL.md), including activation,
-updates, removal, and troubleshooting. The first public release must be
-validated in a clean supported runtime before relying on it for consequential
-work.
+updates, removal, and troubleshooting. Validate each release in a clean
+supported runtime before relying on it for consequential work.
 
 ## Day-to-day use
 
@@ -218,9 +364,10 @@ to run or system prompt to paste for matching prompts. The self-audit workflow
 is also available when you ask the assistant to check one of its earlier
 answers.
 
-In Claude Code, advisory hooks add targeted reminders for matching open-ended
-analysis or source-conflict prompts and after context compaction. They do not
-run on every prompt, block work, fetch evidence, or verify an answer for you.
+In Claude Code, advisory hooks add targeted reminders for matching ambiguous
+business questions, open-ended analysis, evidence-boundary claims and source
+conflicts, and after context compaction. They do not run on every prompt, block
+work, fetch evidence, or verify an answer for you.
 
 Use `/llm-accuracy:claim-fidelity` to check whether a conclusion is supported
 by its source, population, definition, window, freshness and completeness. The
