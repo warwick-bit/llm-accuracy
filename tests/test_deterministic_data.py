@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -74,7 +75,7 @@ def test_catalogue_cli_does_not_echo_values(tmp_path: Path) -> None:
     path.write_text(json.dumps(catalogue), encoding="utf-8")
 
     result = subprocess.run(
-        ["python3", str(VALIDATOR), str(path)],
+        [sys.executable, str(VALIDATOR), str(path)],
         capture_output=True,
         check=False,
         text=True,

@@ -145,7 +145,11 @@ def write_observer_plugin(root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    command = 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/observe.py"'
+    command = (
+        'if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; '
+        'else PLUGIN_PYTHON=python; fi; '
+        '"$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/observe.py"'
+    )
     hooks.write_text(
         json.dumps(
             {
@@ -287,7 +291,8 @@ def run_smoke(
     *, claude: str, config_dir: Path, scenario: str, budget_usd: str, timeout: int
 ) -> dict[str, object]:
     """Run the host smoke, retaining only structural observer receipts."""
-    config_dir = config_dir.expanduser().resolve()
+    # Python 3.9 on Windows can leave a missing relative path unresolved.
+    config_dir = config_dir.expanduser().absolute().resolve()
     config_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="session-ledger-host-smoke-") as temp:
         temporary_root = Path(temp)

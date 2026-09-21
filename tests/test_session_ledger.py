@@ -258,7 +258,9 @@ def test_hook_commands_include_the_script_and_action() -> None:
         (session_start, "session-start"),
     ):
         assert hook["command"] == (
-            'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" '
+            'if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; '
+            'else PLUGIN_PYTHON=python; fi; '
+            '"$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" '
             f'{action} --plugin-data "${{CLAUDE_PLUGIN_DATA}}"'
         )
         assert "args" not in hook

@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -89,7 +90,11 @@ def test_observer_plugin_covers_direct_and_subagent_lifecycle_events(
     assert set(hooks) == smoke.OBSERVED_EVENTS
     assert all(
         entry[0]["hooks"][0]["command"]
-        == 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/observe.py"'
+        == (
+            'if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; '
+            'else PLUGIN_PYTHON=python; fi; '
+            '"$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/observe.py"'
+        )
         for entry in hooks.values()
     )
 
@@ -111,7 +116,7 @@ def test_generated_observer_discards_payload_values(tmp_path: Path) -> None:
     }
 
     result = subprocess.run(
-        ["python3", str(plugin / "hooks" / "observe.py")],
+        [sys.executable, str(plugin / "hooks" / "observe.py")],
         input=json.dumps(payload),
         capture_output=True,
         check=False,

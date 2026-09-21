@@ -20,7 +20,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.5.2"
+    assert claude["version"] == "0.5.3"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -49,7 +49,7 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
     manifest = load_json("plugins/session-ledger/.claude-plugin/plugin.json")
 
     assert manifest["name"] == "session-ledger"
-    assert manifest["version"] == "0.2.3"
+    assert manifest["version"] == "0.2.4"
     assert manifest["license"] == "MIT"
     assert manifest["defaultEnabled"] is False
     assert not (LEDGER / ".codex-plugin").exists()

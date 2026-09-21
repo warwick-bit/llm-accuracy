@@ -4,7 +4,7 @@ description: Start a clean Session Ledger plan boundary for unrelated work in th
 disable-model-invocation: true
 ---
 
-!`python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" begin-plan --session-id "${CLAUDE_SESSION_ID}" --plugin-data "${CLAUDE_PLUGIN_DATA}"`
+!`if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; "$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" begin-plan --session-id "${CLAUDE_SESSION_ID}" --plugin-data "${CLAUDE_PLUGIN_DATA}"`
 
 Use this only when you deliberately begin unrelated work in the current session.
 Starting a plan boundary permanently discards the ledger record captured so far

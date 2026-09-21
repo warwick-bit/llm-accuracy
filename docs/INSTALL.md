@@ -41,8 +41,8 @@ and the targeted advisory hooks.
 
 - Use a current Claude Code installation. If `/plugin` is unavailable, update
   Claude Code first.
-- Have `python3` 3.9 or later and a POSIX-compatible hook shell. The
-  repository's exact command-launcher tests currently run on POSIX only.
+- Have Python 3.9 or later available as `python3` or `python` and a
+  POSIX-compatible hook shell. CI exercises launchers on Linux and native Windows with Git Bash.
 - Install only if you trust the plugin source. It runs local advisory hook
   commands in Claude Code.
 
@@ -120,8 +120,12 @@ record and Claude's compact summary may contain sensitive local content. It is
 unsupported in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude
 Code on the web.
 
-Session Ledger requires `python3` version 3.9 or later (CI-tested 3.9-3.13) on the machine running
-Claude Code. Check it with `python3 --version` before installing.
+Session Ledger requires Python 3.9 or later (CI-tested 3.9-3.13) on the machine
+running Claude Code. Check it with `python3 --version`, or `python --version`
+when `python3` is unavailable (for example, a Windows python.org installation).
+Both plugins select `python3` when present and otherwise use `python`; the
+selected command must run Python 3.9 or later. Windows hooks still require a
+POSIX-compatible shell such as Git Bash. No `python3.exe` copy or alias is needed.
 
 Install it after adding the marketplace:
 
