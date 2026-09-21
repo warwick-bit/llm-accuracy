@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+from conftest import HOOK_SHELL
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = ROOT / "plugins" / "session-ledger"
@@ -32,7 +34,7 @@ EVENT_ACTIONS = {
 }
 
 posix_only = pytest.mark.skipif(
-    os.name != "posix", reason="hook commands run through a POSIX shell"
+    not HOOK_SHELL, reason="requires a configured POSIX hook shell"
 )
 
 
@@ -74,7 +76,7 @@ def run_hook(
         environment["CLAUDE_PLUGIN_DATA"] = str(data_root)
     environment.update(extra_env or {})
     return subprocess.run(
-        ["/bin/sh", "-c", hook_command(event)],
+        [HOOK_SHELL, "-c", hook_command(event)],
         input=stdin_text,
         capture_output=True,
         text=True,
@@ -105,7 +107,7 @@ def run_skill(
     if session_id is not None:
         environment["CLAUDE_SESSION_ID"] = session_id
     return subprocess.run(
-        ["/bin/sh", "-c", skill_command(name)],
+        [HOOK_SHELL, "-c", skill_command(name)],
         capture_output=True,
         text=True,
         env=environment,

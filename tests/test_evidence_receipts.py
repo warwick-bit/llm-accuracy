@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -122,7 +123,7 @@ def test_cli_reports_structure_only_without_echoing_input(tmp_path: Path) -> Non
 
     result = subprocess.run(
         [
-            "python3",
+            sys.executable,
             str(CORE / "scripts" / "validate_evidence_receipt.py"),
             str(path),
         ],

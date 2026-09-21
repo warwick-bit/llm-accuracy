@@ -42,7 +42,7 @@ and the targeted advisory hooks.
 - Use a current Claude Code installation. If `/plugin` is unavailable, update
   Claude Code first.
 - Have Python 3.9 or later available as `python3` or `python` and a
-  POSIX-compatible hook shell. The repository's exact command-launcher tests currently run on POSIX only.
+  POSIX-compatible hook shell. CI exercises launchers on Linux and native Windows with Git Bash.
 - Install only if you trust the plugin source. It runs local advisory hook
   commands in Claude Code.
 

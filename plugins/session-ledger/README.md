@@ -5,7 +5,8 @@ accuracy-relevant carryover through compaction in one long session. It is not a
 general memory system and it never restores information into a new session.
 It requires Python 3.9 or later, available as `python3` or `python`, on the machine running Claude Code
 (CI-tested on 3.9-3.13). Hooks and ledger commands prefer `python3` and fall back
-to `python` when that command is absent.
+to `python` when that command is absent. Windows requires a POSIX-compatible
+hook shell such as Git Bash.
 
 ## What it does
 
@@ -33,6 +34,16 @@ starts a clean plan section for unrelated work within that same session;
 starting a plan boundary permanently discards the ledger record captured so far
 in the session, and it does not store a plan name. `/session-ledger:clear`
 deletes all local ledger state.
+
+## Concurrent updates
+
+Same-session updates hold an operating-system file lock across the full read,
+merge, and atomic replacement. POSIX uses `flock`; Windows uses a one-byte
+`msvcrt` lock with a one-second wait limit. If locking fails or times out, the
+hook skips that update and continues without writing unlocked state. Later
+transcript capture may recover skipped text, but recovery is not guaranteed.
+Locks are released when the descriptor or process closes. This does not change
+the rolling byte limits or make explicit clear/plan-boundary actions lossless.
 
 ## Privacy boundary
 

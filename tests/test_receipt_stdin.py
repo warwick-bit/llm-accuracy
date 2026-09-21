@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,7 +46,7 @@ def test_receipt_validator_accepts_json_on_standard_input() -> None:
     )
 
     result = subprocess.run(
-        ["python3", str(script), "--expected-epoch", "epoch-001"],
+        [sys.executable, str(script), "--expected-epoch", "epoch-001"],
         input=json.dumps(RECEIPT),
         capture_output=True,
         check=False,
@@ -69,7 +70,7 @@ def test_receipt_validator_rejects_stdin_from_another_prompt_epoch() -> None:
     )
 
     result = subprocess.run(
-        ["python3", str(script), "--expected-epoch", "epoch-002"],
+        [sys.executable, str(script), "--expected-epoch", "epoch-002"],
         input=json.dumps(RECEIPT),
         capture_output=True,
         check=False,

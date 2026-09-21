@@ -145,7 +145,11 @@ def write_observer_plugin(root: Path) -> Path:
         + "\n",
         encoding="utf-8",
     )
-    command = 'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/observe.py"'
+    command = (
+        'if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; '
+        'else PLUGIN_PYTHON=python; fi; '
+        '"$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/observe.py"'
+    )
     hooks.write_text(
         json.dumps(
             {

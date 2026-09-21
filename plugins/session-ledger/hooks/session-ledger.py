@@ -11,6 +11,7 @@ Every runtime error fails open so a ledger problem never blocks Claude Code.
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -19,6 +20,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -27,8 +29,15 @@ from typing import Any, Iterator
 
 try:
     import fcntl
-except ImportError:  # pragma: no cover - non-POSIX runtimes keep atomic writes.
+except ImportError:  # Windows uses msvcrt below.
     fcntl = None
+
+try:
+    import msvcrt
+except ImportError:  # POSIX uses fcntl above.
+    msvcrt = None
+
+WINDOWS_LOCK_TIMEOUT_SECONDS = 1.0
 
 
 DATA_ENVIRONMENT_VARIABLE = "CLAUDE_PLUGIN_DATA"
@@ -197,12 +206,40 @@ def write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
             temporary_path.unlink()
 
 
+def lock_descriptor(descriptor: int, *, wait: bool = True) -> None:
+    """Acquire the platform lock; Windows waits less than the hook timeout."""
+    if fcntl is not None:
+        flags = fcntl.LOCK_EX | (0 if wait else fcntl.LOCK_NB)
+        fcntl.flock(descriptor, flags)
+        return
+    if msvcrt is None:
+        raise OSError("Session Ledger file locking is unavailable")
+    deadline = time.monotonic() + WINDOWS_LOCK_TIMEOUT_SECONDS
+    while True:
+        try:
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+            return
+        except OSError as error:
+            if not wait or error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                raise
+            if time.monotonic() >= deadline:
+                raise OSError("Session Ledger lock wait expired") from None
+            time.sleep(0.025)
+
+
+def unlock_descriptor(descriptor: int) -> None:
+    """Release exactly the region acquired by lock_descriptor."""
+    if fcntl is not None:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+    elif msvcrt is not None:
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+
+
 @contextmanager
 def session_lock(data_root: Path, session_id: str) -> Iterator[None]:
-    """Serialize concurrent local updates for one session without blocking Claude."""
-    if fcntl is None:
-        yield
-        return
+    """Serialize local updates; callers fail open if the lock is unavailable."""
     path = lock_path(data_root, session_id)
     secure_directory(data_root)
     secure_directory(state_directory(data_root))
@@ -214,11 +251,14 @@ def session_lock(data_root: Path, session_id: str) -> Iterator[None]:
     try:
         if not stat.S_ISREG(os.fstat(descriptor).st_mode):
             raise OSError("Session Ledger lock path must be a regular file")
-        os.fchmod(descriptor, 0o600)
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
-        yield
+        if os.name == "posix":
+            os.fchmod(descriptor, 0o600)
+        lock_descriptor(descriptor)
+        try:
+            yield
+        finally:
+            unlock_descriptor(descriptor)
     finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
         os.close(descriptor)
 
 
@@ -578,10 +618,7 @@ def remove_file(path: Path) -> None:
 
 
 def remove_unheld_lock(path: Path) -> None:
-    """Remove a lock file only when no live session holds it."""
-    if fcntl is None:
-        remove_file(path)
-        return
+    """Remove an orphan only after proving no live session holds its lock."""
     if path.is_symlink() or not path.is_file():
         return
     try:
@@ -590,16 +627,25 @@ def remove_unheld_lock(path: Path) -> None:
         return
     try:
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_descriptor(descriptor, wait=False)
         except OSError:
             return
-        # A racer opening between this unlink and the release re-creates the
-        # path with a fresh inode; that residual window is accepted for this
-        # local advisory lock.
-        remove_file(path)
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        try:
+            if fcntl is not None:
+                # POSIX permits unlink while open. The existing advisory-lock
+                # inode-replacement window remains limited to orphan cleanup.
+                remove_file(path)
+        finally:
+            unlock_descriptor(descriptor)
     finally:
         os.close(descriptor)
+    if fcntl is None:
+        # Windows refuses deletion while a descriptor is open. A new holder
+        # opening after close also prevents deletion; leave it for a later pass.
+        try:
+            remove_file(path)
+        except OSError:
+            return
 
 
 def prune_orphan_locks(data_root: Path, sessions: Path) -> None:

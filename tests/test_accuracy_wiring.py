@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+from conftest import HOOK_SHELL
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = ROOT / "plugins" / "llm-accuracy"
@@ -39,7 +41,7 @@ EXPECTED_HANDLERS = {
 }
 
 posix_only = pytest.mark.skipif(
-    os.name != "posix", reason="hook commands run through a POSIX shell"
+    not HOOK_SHELL, reason="requires a configured POSIX hook shell"
 )
 
 
@@ -76,7 +78,7 @@ def run_hook(
     command = hook_handler(event, index)["command"]
     assert isinstance(command, str)
     return subprocess.run(
-        ["/bin/sh", "-c", command],
+        [HOOK_SHELL, "-c", command],
         input=stdin_text,
         capture_output=True,
         text=True,
@@ -360,7 +362,7 @@ def test_partial_result_sentinel_completes_within_its_declared_timeout() -> None
         command = hook_handler("PostToolUse", 0)["command"]
         assert isinstance(command, str)
         result = subprocess.run(
-            ["/bin/sh", "-c", command],
+            [HOOK_SHELL, "-c", command],
             input=payload,
             capture_output=True,
             text=True,
