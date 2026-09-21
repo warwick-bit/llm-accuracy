@@ -291,7 +291,8 @@ def run_smoke(
     *, claude: str, config_dir: Path, scenario: str, budget_usd: str, timeout: int
 ) -> dict[str, object]:
     """Run the host smoke, retaining only structural observer receipts."""
-    config_dir = config_dir.expanduser().resolve()
+    # Python 3.9 on Windows can leave a missing relative path unresolved.
+    config_dir = config_dir.expanduser().absolute().resolve()
     config_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="session-ledger-host-smoke-") as temp:
         temporary_root = Path(temp)
