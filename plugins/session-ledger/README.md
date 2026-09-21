@@ -3,8 +3,9 @@
 Session Ledger is an optional Claude Code terminal/IDE plugin for preserving
 accuracy-relevant carryover through compaction in one long session. It is not a
 general memory system and it never restores information into a new session.
-It requires `python3` 3.9 or later on the machine running Claude Code
-(CI-tested on 3.9-3.13).
+It requires Python 3.9 or later, available as `python3` or `python`, on the machine running Claude Code
+(CI-tested on 3.9-3.13). Hooks and ledger commands prefer `python3` and fall back
+to `python` when that command is absent.
 
 ## What it does
 

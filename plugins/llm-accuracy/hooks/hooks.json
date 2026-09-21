@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\"",
+            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\"",
             "timeout": 3,
             "statusMessage": "Checking llm-accuracy analysis contract"
           }
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\"",
+            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\"",
             "timeout": 3,
             "statusMessage": "Checking llm-accuracy fusion evidence"
           }
@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\"",
+            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\"",
             "timeout": 3,
             "statusMessage": "Checking llm-accuracy claim fidelity"
           }
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\"",
+            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\"",
             "timeout": 3,
             "statusMessage": "Checking llm-accuracy partial result signal"
           }
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\" || python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\"",
+            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\"",
             "timeout": 3,
             "statusMessage": "Checking llm-accuracy post-compaction accuracy"
           }

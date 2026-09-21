@@ -134,7 +134,9 @@ def test_hooks_json_shape_matches_the_documented_contract() -> None:
         assert hook["type"] == "command"
         assert hook["timeout"] == 5
         assert hook["command"] == (
-            'python3 "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" '
+            'if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; '
+            'else PLUGIN_PYTHON=python; fi; '
+            '"$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" '
             f'{action} --plugin-data "${{CLAUDE_PLUGIN_DATA}}"'
         )
 
