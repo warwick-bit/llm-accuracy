@@ -5,29 +5,32 @@ products. Use the path below that matches where you work.
 
 ## Validation status
 
-Platform capability and this release's runtime evidence are separate:
+Platform capability and runtime evidence are separate.
 
-- **Claude Code terminal or IDE:** exact shipped hook commands, the automated
-  distribution suite and a clean isolated-profile marketplace installation
-  (marketplace add plus both plugin installs) were re-tested on 16 Sep 2026.
-  Authenticated, non-persistent local sessions also exercised the claim-fidelity
-  hook and skill, Deterministic Data routing, receipt validation and a negative
-  hook control on 16 Sep 2026. A paired candidate smoke on 17 Sep 2026 tested
-  the five ambiguity examples, three negative controls and repeated revenue
-  prompts; see the
-  [raw-free receipt](validation/claude-code-ambiguity-smoke-2026-09-17.json).
-- **Claude Desktop Chat:** not runtime-smoke-tested for this release. The
-  skills-only description follows Anthropic's current plugin documentation.
-- **Claude Cowork:** an initial Desktop 2.110.0 smoke on 16 Sep 2026 verified
-  plugin activation, the claim-fidelity hook and skill, Deterministic Data
-  routing, receipt validation and a negative control. A follow-up Cowork smoke
-  of the final rebuilt ZIP used no `Write` tool, validated its receipt through
-  stdin with a route-bound prompt epoch, preserved the unresolved
-  `latest_complete_month` token and withheld the canonical value. See the
-  [raw-free smoke receipt](validation/cowork-deterministic-data-smoke-2026-09-16.json).
-- **Claude chat on the web:** not runtime-smoke-tested for this release. The
-  skills-only description follows Anthropic's current plugin documentation.
+**LLM Accuracy 0.6.0 candidate — 23 Sep 2026:**
+
+- **Claude Code on Linux/WSL:** a clean, temporary profile installed the candidate
+  through a local-path marketplace. Installed files matched the committed
+  package byte for byte. Authenticated sessions exercised default reminders,
+  a custom phrase and its bypass through the installed plugin, without
+  `--plugin-dir`. A separate profile loaded the release ZIP successfully.
+  See the [raw-free receipt](validation/claude-code-technical-smoke-2026-09-23.json).
+  This tests candidate installation, not the unreleased GitHub marketplace head
+  or another machine's configuration.
+- **Native Windows:** Git Bash hook and diagnostic unit coverage runs in CI;
+  native Windows model execution has not been smoke-tested for this candidate.
+- **Claude Desktop Chat, Cowork and web chat:** the new general reminder and
+  diagnostic behavior has not been runtime-smoke-tested in these hosts.
+  Skills-only hosts cannot run hooks; the doctor needs local Python and a shell,
+  and its live mode needs a local Claude Code CLI.
 - **Claude Code on the web:** untested and unsupported for this release.
+
+**Historical evidence — earlier packages:** Claude Code terminal/IDE and
+Cowork smokes on 16 Sep 2026 covered activation, claim fidelity, Deterministic
+Data routing and receipt validation. A Claude Code ambiguity smoke followed on
+17 Sep 2026. These establish earlier behavior only, not 0.6.0 compatibility:
+[Claude Code receipt](validation/claude-code-ambiguity-smoke-2026-09-17.json),
+[Cowork receipt](validation/cowork-deterministic-data-smoke-2026-09-16.json).
 
 Recheck the linked platform documentation and record a new tested-on date when
 claiming support after a release or host-runtime change.
@@ -35,7 +38,7 @@ claiming support after a release or host-runtime change.
 ## Claude Code terminal or IDE — full plugin
 
 This is the recommended path. It includes the self-audit skill
-and the targeted advisory hooks.
+and the general and targeted advisory hooks.
 
 ### Before you start
 
@@ -70,11 +73,17 @@ Use Claude Code normally. LLM Accuracy has no command to run or system prompt to
 paste for matching prompts. Its self-audit skill is available when you ask
 Claude to check one of its own earlier answers.
 
-The hooks add reminders only for matching ambiguous business questions,
-open-ended analysis, evidence-boundary claims or source conflicts, and after
-context compaction. They do not run on every prompt, fetch evidence, block work,
-or verify facts automatically. The automatic patterns are deliberately bounded;
-use `/llm-accuracy:claim-fidelity` when you want an explicit check.
+Since 0.6.0, the general fidelity reminder runs on each non-empty prompt,
+including technical requests and short follow-ups. Additional reminders target
+ambiguous business questions, open-ended analysis, evidence-boundary claims,
+source conflicts and context compaction. They do not fetch evidence, block work
+or verify facts automatically. Use `/llm-accuracy:claim-fidelity` for an explicit
+check. See [reminder modes](../plugins/llm-accuracy/README.md#reminder-modes) for
+targeted-only behaviour and bypasses. Hook delivery does not prove improved
+diagnostic accuracy on your tasks.
+To extend the targeted checks for your domain, add a user-owned
+[`llm-accuracy.json` configuration](../plugins/llm-accuracy/README.md#custom-trigger-phrases).
+It survives plugin updates and supports literal phrases for each check family.
 
 ## Deterministic Data — editable template
 
@@ -230,7 +239,8 @@ an explicit check of an earlier answer.
 ### Claude Cowork — full plugin
 
 In **Cowork**, the plugin's skills and advisory hooks can run. The hook behavior
-is the same targeted, non-blocking behavior described for Claude Code terminal.
+is the same general-plus-targeted, non-blocking behavior described for Claude
+Code terminal. The new general mode still needs a Cowork runtime smoke.
 
 ## Claude chat on the web — personal marketplace (skills only)
 

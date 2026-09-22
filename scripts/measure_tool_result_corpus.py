@@ -8,7 +8,8 @@ invisible in a fixture suite written by the same person as the rule. So this
 measures instead: it replays real tool results, captured from local host
 transcripts, through the hook and counts what fires.
 
-SCOPE. The sentinel is wired to `mcp__.*`, so only MCP results are in scope. A
+SCOPE. This measurement covers the sentinel's MCP path only; use
+`measure_builtin_result_corpus.py` for the separate Bash/Read metadata path. A
 transcript records a result under a top-level `toolUseResult` with a
 `tool_use_id`, and the assistant turn that issued it names the tool; the two are joined to recover the
 name. This matters more than it sounds: built-in tool results outnumber MCP ones

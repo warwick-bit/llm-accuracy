@@ -35,13 +35,153 @@ mean the underlying claim is correct.
 
 ## Day-to-day use
 
-Once installed and activated, use Claude Code or Cowork normally: there is no
-separate command to run or prompt to paste for matching prompts. These hosts add
-targeted advisory reminders for matching ambiguous business questions,
-analysis and source-conflict prompts, and after context compaction; the plugin
-does not interrupt every prompt or verify facts automatically. Ask the
-assistant to audit one of its earlier answers when you want a direct
-self-check.
+Once installed and activated, use Claude Code or Cowork normally. A general
+fidelity reminder covers each non-empty prompt, including technical requests,
+file paths, implementation requests and brief follow-ups. It asks Claude to
+verify the measurement, population and environment, establish coverage before
+universal claims, test competing causes, and revisit dependent conclusions after
+a correction. It also points diagnoses and fix checks to the verify-technical skill;
+the model still decides whether to invoke it.
+
+For substantive technical diagnoses and verification claims, the reminder asks
+for a compact `Checked / Gap / Next` footer: what was actually checked and its
+scope, what remains unresolved or untested, and the next action (or none).
+Routine replies do not need it. The answer body must retain material uncertainty;
+the footer is a model-written account, not a validated receipt. Hook tests prove
+the instruction is emitted, not that Claude follows it.
+Targeted mode includes this guidance only when a fidelity trigger matches.
+
+Business-ambiguity, analysis and source-conflict reminders remain targeted.
+The post-compaction reminder remains separate. None verifies facts automatically.
+
+## Reminder modes
+
+- **General (default since 0.6.0):** a short evidence reminder on each non-empty
+  prompt. Explicit evidence-boundary prompts also receive the existing detailed
+  fidelity guidance. Greetings and creative tasks receive the general reminder
+  too; it asks Claude to keep non-factual tasks brief. This trades extra context
+  for coverage, not for guaranteed compliance or correctness.
+- **Targeted:** set `CC_CLAIM_FIDELITY_MODE=targeted` in the environment inherited
+  by Claude Code to restore the previous keyword-gated fidelity behaviour.
+  Unset it or use `general` to restore the default. Unknown values use general
+  mode. Restart Claude Code after changing its inherited environment.
+- **Mute:** include `# fidelity-ok` in a prompt, or set
+  `CC_SKIP_CLAIM_FIDELITY=1` in the host environment. These controls mute only the
+  fidelity reminder; the other hooks keep their own controls.
+
+For example, start a targeted-only Claude Code session from a POSIX shell:
+
+```bash
+CC_CLAIM_FIDELITY_MODE=targeted claude
+```
+
+Do not edit installed cache files to configure the mode. Host support for
+inheriting environment settings varies; this shell example is for Claude Code,
+not a Cowork settings control.
+
+## Custom trigger phrases
+
+Create `llm-accuracy.json` in your Claude configuration directory, outside the
+plugin cache. The default is `~/.claude/llm-accuracy.json` on Linux/macOS and
+`%USERPROFILE%\.claude\llm-accuracy.json` on Windows. If you use
+`CLAUDE_CONFIG_DIR`, put it there instead. Alternatively, set
+`LLM_ACCURACY_CONFIG` to the full path of your own JSON file in the environment
+inherited by Claude Code.
+
+```json
+{
+  "schema_version": 1,
+  "extra_triggers": {
+    "claim_fidelity": ["packet capture", "release verification"],
+    "analysis": ["capacity planning"],
+    "fusion_evidence": ["conflicting logs", "replica mismatch"]
+  }
+}
+```
+
+- **Claim fidelity:** evidence scope, measurement, coverage and causal claims.
+  In general mode, a match adds detailed guidance to the short baseline. In
+  targeted mode, it activates the check even when built-in phrases do not match.
+- **Analysis:** the existing open-ended data-analysis contract. Use for analysis
+  of your domain's data, not for every technical word.
+- **Source conflict (`fusion_evidence`):** the existing source-reconciliation
+  contract. Use for wording that signals conflicting or incomplete evidence.
+
+Matches are additive and apply only to the selected check. A custom match takes
+precedence over the built-in file-path, lookup and execution suppressors, but
+never over that hook's bypass marker or skip environment variable. They add the
+plugin's fixed guidance; they do not execute commands, add custom instructions,
+or force a skill invocation.
+
+Phrases ignore case and normalize repeated whitespace. They match whole words
+or phrases: `trace` matches `(trace)` but not `traces` or `trace_id`. Punctuation
+is literal: `net.py` does not match `netXpy`, and `a.*b` is not a regex.
+
+Each family accepts up to 64 phrases of 120 characters each; each phrase must
+contain a letter or number. The entire UTF-8 JSON file is capped at 32 KiB.
+Unknown keys, invalid types, invalid JSON, unreadable files and oversized files
+disable custom triggers for that invocation, leaving built-in behaviour intact.
+Diagnostics contain a fixed code, never the path, phrases or file contents.
+An absent default file is normal and silent. The file is reread on each hook
+invocation; editing it needs no plugin update. Restart Claude Code if you change
+the environment variable that selects the file.
+
+Use non-sensitive phrases. Although the hook does not echo or persist them,
+the configuration file is ordinary local plaintext. Cowork discovery of this
+user-owned file is not runtime-tested; do not assume the desktop host shares the
+same home directory or environment as your terminal.
+
+## Runtime boundaries
+
+The hook requires the documented `prompt` field. Empty, malformed or oversized
+inputs (over 1,000,000 characters of serialized input) fail open without a
+reminder. It does not persist prompts, read transcripts, count retractions or
+enforce a Stop gate. Child sessions that do not emit `UserPromptSubmit` do not
+receive this reminder directly. The partial-result sentinel covers MCP envelope
+signals, text Read line-range metadata, and Bash saved-output metadata. It never
+parses shell stdout or file contents for pagination fields. Missing metadata and
+silently incomplete reads remain invisible. An intentional excerpt is not a
+failure, and no signal certifies full-file or project-wide coverage.
+
+## Diagnose activation
+
+Run `/llm-accuracy:accuracy-doctor` when reminders appear inactive. The local
+report checks package version, general/targeted mode, user-config validity,
+phrase counts, bypasses and actual registered hook commands using synthetic
+prompts. It also lists the host's reported installation versions and enabled
+flags for this plugin. `not_listed` can be normal for an explicit `--plugin-dir`
+load. Neither registration nor a working command proves the current session
+loaded a hook: `current_session_activation` remains `unverified`.
+
+The underlying script is `scripts/accuracy_doctor.py` in the installed plugin.
+Use Python 3; on Windows install Git Bash or pass its path using `--shell`.
+`emitted` means the command returned hook context; `disabled` identifies a
+bypass; `no_context`, `invalid_response`, `execution_failed`, `timeout` and
+`shell_unavailable` need investigation. `missing_default` is normal;
+`config_unavailable` or `invalid_config` leaves only built-in triggers active.
+Unknown reminder modes are reported and fall back to general mode.
+
+Add `--live` only when you want one model request. It uses an existing local
+Claude subscription login in a temporary auth-only profile, explicit plugin
+load, default trigger controls, no tools/MCPs and no saved session. It checks
+hook delivery and a simple acknowledgement. It does not certify factual
+accuracy, your current session, custom phrases, or another host. Authentication
+can require `claude auth login`; never share credentials. This opt-in diagnostic
+invokes local commands and sends a synthetic prompt to Claude; automatic hooks
+do neither. No raw answers or credential values are reported.
+
+## Verify technical work
+
+Use `/llm-accuracy:verify-technical` for a diagnosis, disputed cause or fix claim.
+It asks for a scoped reproduction, competing explanations, the smallest justified
+change, and a rerun of the original check. Local verification, deployment and
+production verification stay separate. Corrections require checking dependent
+conclusions again. The workflow is advisory and respects repository instructions.
+
+Maintainers can run the opt-in synthetic behavioural suite described in
+[`docs/technical-evaluation.md`](https://github.com/warwick-bit/llm-accuracy/blob/main/docs/technical-evaluation.md). Factual
+field support and footer presence are scored independently; neither certifies
+arbitrary prose or real-world accuracy.
 
 ## Freshness and memory
 

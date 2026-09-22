@@ -20,7 +20,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.5.3"
+    assert claude["version"] == "0.6.0"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -106,12 +106,13 @@ def test_docs_state_the_safety_boundary() -> None:
     assert "Session Ledger — Claude Code terminal or IDE only" in install_guide
     assert "Deterministic Data — editable template" in install_guide
     assert "own fork or source copy" in install_guide
-    assert "exact shipped hook commands" in install_guide
-    assert "Authenticated, non-persistent local sessions" in install_guide
-    assert install_guide.count("not runtime-smoke-tested for this release") == 2
-    assert "initial Desktop 2.110.0 smoke" in install_guide
-    assert "A follow-up Cowork smoke" in install_guide
-    assert "`latest_complete_month` token" in install_guide
+    assert "local-path marketplace" in install_guide
+    assert "without\n  `--plugin-dir`" in install_guide
+    assert "native Windows model execution has not been smoke-tested" in install_guide
+    assert "diagnostic behavior has not been runtime-smoke-tested" in install_guide
+    assert "Historical evidence — earlier packages" in install_guide
+    assert "earlier behavior only, not 0.6.0 compatibility" in install_guide
+    assert "validation/claude-code-technical-smoke-2026-09-23.json" in install_guide
     assert "rebuilt ZIP has not yet been re-tested in Cowork" not in install_guide
     assert "temporary scratchpad receipt write" not in install_guide
     assert (
