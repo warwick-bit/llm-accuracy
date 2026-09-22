@@ -78,7 +78,7 @@ when the requested scope is complete. Keep any material uncertainty in the
 answer body too. This is a model-written evidence summary, not a validated
 receipt. Skip it for routine replies without a diagnosis or verification claim.
 
-For consequential factual answers, include concise labels where relevant:
+For other consequential factual answers, include concise labels where relevant:
 
 - Source
 - Time window
