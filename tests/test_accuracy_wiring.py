@@ -234,9 +234,11 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
     assert "competing causes" in context
     assert "repeated reversals" in context
     assert "Checked / Gap / Next" in context
-    assert "actual checks and scope" in context
+    assert "actual checks or supplied evidence, with scope" in context
+    assert "including rejecting" in context
+    assert context.count("Checked: actual") == 1
     assert "Skip this footer for routine replies" in context
-    assert len(context) <= 1200
+    assert len(context) <= 1500
 
 
 @posix_only

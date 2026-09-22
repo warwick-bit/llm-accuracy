@@ -198,3 +198,14 @@ Use synthetic, authorised material in feedback and follow the repository's
 
 No session ledger, prompt history, or tool output is included or persisted by
 this plugin.
+
+### Live diagnostic counters
+
+The doctor includes fixed `counter_definitions` in its live report.
+`fidelity_hook_responses` counts delivered claim-fidelity reminders;
+`hook_response_count` counts all hook-response events, including silent ones.
+`builtin_signal_responses` is a legacy name for events containing a
+`PARTIAL RESULT SIGNAL` warning. It does **not** count keyword matches.
+The tool-free acknowledgement probe normally reports zero for this counter;
+that does not mean prompt checks are inactive. A successful acknowledgement
+proves neither factual accuracy nor activation in your existing conversation.

@@ -26,6 +26,16 @@ PROMPTS = (
     ("claim_fidelity", "Does this prove causation?", "CC_SKIP_CLAIM_FIDELITY"),
 )
 
+LIVE_COUNTER_DEFINITIONS = {
+    "fidelity_hook_responses": "Hook-response events containing claim-fidelity guidance.",
+    "hook_response_count": "All hook-response events, including silent hook responses.",
+    "builtin_signal_responses": (
+        "Legacy name: hook-response events containing PARTIAL RESULT SIGNAL "
+        "warnings, not keyword matches. The tool-free acknowledgement probe "
+        "normally reports zero; zero does not mean prompt checks are inactive."
+    ),
+}
+
 
 def safe_version(value: object) -> str:
     return (
@@ -207,6 +217,7 @@ def main() -> int:
         answers = live.pop("answers", [])
         live["acknowledgement_correct"] = answers == ["OK"]
         live["scope"] = "isolated_explicit_plugin_load_with_default_controls"
+        live["counter_definitions"] = LIVE_COUNTER_DEFINITIONS
         report["live"] = live
         if (
             live["status"] != "ok"

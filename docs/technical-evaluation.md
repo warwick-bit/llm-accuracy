@@ -23,7 +23,8 @@ The factual oracle compares exact declared Answer fields with author-owned
 expected values, comparing decimal numbers by value (for example, `20.0` and
 `20` are equal) without rounding. Missing, duplicate or ambiguous fields fail the output
 contract. A malformed field is a formatting failure, not proof of a wrong belief.
-Footer labels are measured separately; a correct footer cannot rescue a wrong
+Footer labels must be unique, nonempty and appear in Checked / Gap / Next order
+on the final three nonblank lines. They are measured separately; a correct footer cannot rescue a wrong
 fact. The routine control detects footer overapplication. Arbitrary explanation
 text and the truthfulness of footer prose are **not scored**. This is packet
 synthesis, not a test of tool selection, source retrieval or execution of skills.
