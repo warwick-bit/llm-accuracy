@@ -175,7 +175,8 @@ def run_one(item: dict, arm: str, instruction: str, args: argparse.Namespace) ->
                                                   else "unknown" for plugin in event.get("plugins", [])]
                 answer, models, inventory = decode_stream(stdout, set(args.allow_host_plugin),
                                                          getattr(args, "validator", None))
-                # Prose is never persisted or used as an automatic semantic oracle.
+                # Deterministic scoring excludes prose semantics. The optional
+                # model-assisted explanation grader runs separately below.
                 record.update(getattr(args, "scorer", score)(item, answer))
                 record.update({"status": "completed", "observed_models": models,
                                "observed_verdict": answer.get("verdict"),

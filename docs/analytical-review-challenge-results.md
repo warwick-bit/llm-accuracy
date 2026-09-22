@@ -103,9 +103,10 @@ runs; a later candidate-only causal-classification failure and reference-name
 noncompliance provide additional reasons to withhold promotion. No candidate
 advantage remained to validate with the verbosity placebo, so it was not run.
 
-The named, separate-context workflow remains a usable interface for supplying
+The prototype provides a named, separate-context interface for supplying
 artifacts, requirements and authorized checks. Native invocation was observed
-in the earlier smoke, but convenience and context separation are not measured
+in the earlier 0.5.3 smoke; model integration was not rerun after incorporating
+0.6.0 because the host inventory had drifted. Convenience and context separation are not measured
 accuracy improvements. The [usage guide](analytical-review-usage.md) explains
 its purpose alongside claim fidelity and self-audit.
 
