@@ -59,6 +59,7 @@ def clean_environment() -> dict[str, str]:
         "CC_SKIP_ANALYSIS",
         "CC_SKIP_FUSION_EVIDENCE",
         "CC_SKIP_CLAIM_FIDELITY",
+        "CC_CLAIM_FIDELITY_MODE",
         "CC_SKIP_PARTIAL_RESULT",
         "CLAUDE_PLUGIN_ROOT",
     }
@@ -71,9 +72,11 @@ def run_hook(
     stdin_text: str,
     *,
     plugin_root: Path = PLUGIN_ROOT,
+    controls: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run one command exactly as Claude Code receives it from hooks.json."""
     environment = clean_environment()
+    environment.update(controls or {})
     environment["CLAUDE_PLUGIN_ROOT"] = str(plugin_root)
     command = hook_handler(event, index)["command"]
     assert isinstance(command, str)
@@ -201,6 +204,92 @@ def test_user_prompt_commands_fail_open_on_malformed_stdin(
     assert result.returncode == 0
     assert result.stderr == ""
     assert result.stdout == ""
+
+
+@posix_only
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "The editor stalls after login.",
+        "Proceed with the investigation.",
+        "Which explanation survives the latest test?",
+        "Repair retry handling in src/transport.py.",
+        "Are we finished with the patch?",
+        "Draft an update for the service owner.",
+        "The first diagnosis was wrong. Reconsider it.",
+        "Hello!",
+    ],
+)
+def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> None:
+    result = run_hook("UserPromptSubmit", 2, json.dumps({"prompt": prompt}))
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    assert prompt not in result.stdout
+    output = json.loads(result.stdout)
+    assert set(output) == {"hookSpecificOutput"}  # no blocking decision
+    context = output["hookSpecificOutput"]["additionalContext"]
+    assert "process/environment and version" in context
+    assert "previews, samples" in context
+    assert "competing causes" in context
+    assert "repeated reversals" in context
+    assert len(context) <= 1200
+
+
+@posix_only
+@pytest.mark.parametrize(
+    ("prompt", "controls", "fires"),
+    [
+        ("Repair src/transport.py.", {"CC_CLAIM_FIDELITY_MODE": "targeted"}, False),
+        ("Does this prove causation?", {"CC_CLAIM_FIDELITY_MODE": "targeted"}, True),
+        ("Repair src/transport.py.", {"CC_CLAIM_FIDELITY_MODE": " TARGETED "}, False),
+        ("Repair src/transport.py.", {"CC_CLAIM_FIDELITY_MODE": "typo"}, True),
+        ("Repair src/transport.py.", {"CC_SKIP_CLAIM_FIDELITY": "1"}, False),
+        ("Repair src/transport.py. # fidelity-ok", {}, False),
+        ("Repair src/transport.py. # Fidelity-OK", {}, False),
+        (
+            "Does this prove causation? # fidelity-ok",
+            {"CC_CLAIM_FIDELITY_MODE": "targeted"},
+            False,
+        ),
+    ],
+)
+def test_fidelity_modes_and_bypasses(
+    prompt: str, controls: dict[str, str], fires: bool
+) -> None:
+    result = run_hook(
+        "UserPromptSubmit", 2, json.dumps({"prompt": prompt}), controls=controls
+    )
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    if fires:
+        output = json.loads(result.stdout)
+        assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+        assert "CLAIM FIDELITY CHECK" in output["hookSpecificOutput"]["additionalContext"]
+    else:
+        assert result.stdout == ""
+
+
+@posix_only
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"prompt": None}, {"prompt": 42}, {"prompt": []}, {"prompt": "  "},
+     {"user_prompt": "Does this prove causation?"}],
+)
+def test_fidelity_is_silent_without_a_valid_documented_prompt(payload: dict) -> None:
+    result = run_hook("UserPromptSubmit", 2, json.dumps(payload))
+
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == ""
+
+
+@posix_only
+def test_fidelity_input_budget_fails_open() -> None:
+    result = run_hook("UserPromptSubmit", 2, json.dumps({"prompt": "x" * 1_000_001}))
+
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == ""
 
 
 @posix_only

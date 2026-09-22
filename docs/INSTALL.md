@@ -35,7 +35,7 @@ claiming support after a release or host-runtime change.
 ## Claude Code terminal or IDE — full plugin
 
 This is the recommended path. It includes the self-audit skill
-and the targeted advisory hooks.
+and the general and targeted advisory hooks.
 
 ### Before you start
 
@@ -70,11 +70,17 @@ Use Claude Code normally. LLM Accuracy has no command to run or system prompt to
 paste for matching prompts. Its self-audit skill is available when you ask
 Claude to check one of its own earlier answers.
 
-The hooks add reminders only for matching ambiguous business questions,
-open-ended analysis, evidence-boundary claims or source conflicts, and after
-context compaction. They do not run on every prompt, fetch evidence, block work,
-or verify facts automatically. The automatic patterns are deliberately bounded;
-use `/llm-accuracy:claim-fidelity` when you want an explicit check.
+Since 0.6.0, the general fidelity reminder runs on each non-empty prompt,
+including technical requests and short follow-ups. Additional reminders target
+ambiguous business questions, open-ended analysis, evidence-boundary claims,
+source conflicts and context compaction. They do not fetch evidence, block work
+or verify facts automatically. Use `/llm-accuracy:claim-fidelity` for an explicit
+check. See [reminder modes](../plugins/llm-accuracy/README.md#reminder-modes) for
+targeted-only behaviour and bypasses. Hook delivery does not prove improved
+diagnostic accuracy on your tasks.
+To extend the targeted checks for your domain, add a user-owned
+[`llm-accuracy.json` configuration](../plugins/llm-accuracy/README.md#custom-trigger-phrases).
+It survives plugin updates and supports literal phrases for each check family.
 
 ## Deterministic Data — editable template
 
@@ -230,7 +236,8 @@ an explicit check of an earlier answer.
 ### Claude Cowork — full plugin
 
 In **Cowork**, the plugin's skills and advisory hooks can run. The hook behavior
-is the same targeted, non-blocking behavior described for Claude Code terminal.
+is the same general-plus-targeted, non-blocking behavior described for Claude
+Code terminal. The new general mode still needs a Cowork runtime smoke.
 
 ## Claude chat on the web — personal marketplace (skills only)
 

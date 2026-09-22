@@ -1,11 +1,11 @@
 ---
 name: claim-fidelity
-description: Use when checking whether a factual conclusion is supported by its sources, scope, freshness, completeness, comparison, or causal evidence; including claims that data is complete, populations match, a source is current, or a provisional result is reliable.
+description: Use before consequential technical diagnoses, root-cause conclusions, fix-verification claims or external factual drafts; when correcting a prior diagnosis; and when checking source scope, freshness, completeness, comparisons or causality.
 argument-hint: "[claim, evidence, or draft answer to check]"
 skill: claim-fidelity
 plugin: llm-accuracy
 fully_qualified: llm-accuracy:claim-fidelity
-version: "0.1.0"
+version: "0.2.0"
 triggers:
   - pattern: "\\b(does (this|that) prove|can we conclude|claim fidelity|evidence supports|fully synced|same population|complete data|source is current|provisional result)\\b"
     confidence: 0.85
@@ -40,6 +40,30 @@ When an evidence receipt is supplied, validate its structure with
 does not verify source truth, arithmetic, domain correctness, or the resulting
 claim. If the calling workflow supplies the current prompt epoch, pass it with
 `--expected-epoch`; otherwise report prompt binding as unchecked.
+
+## Technical investigations
+
+- Pin the affected process, environment and version. A successful probe from a
+  different process or network path may not reproduce the affected workload.
+- Verify what the instrument measures: field definition, units, denominator,
+  time window and parsing. Match structured status fields, not incidental text
+  inside identifiers. Confirm that a throughput denominator measures the phase
+  being discussed before interpreting the rate.
+- Establish coverage before universal claims. Count the complete input and the
+  matching subset programmatically; a preview, sample or displayed page cannot
+  establish a total. Preserve unknown coverage even without a truncation marker.
+- Keep competing causes until a discriminating test supports one. Correlated
+  candidates do not establish which caused the symptom. If a test is unavailable,
+  report the diagnosis as a hypothesis and name that test.
+- On a correction, identify the new evidence, replace the specific claim and
+  revisit dependent recommendations or drafts. Repeated reversals are a reason
+  to reconsider the framing, not to present the next guess more confidently.
+- Before a fix-verification claim or an external draft, check each load-bearing
+  fact against relevant evidence. A successful command is not proof of the fix;
+  earlier evidence may still be valid when its source, version and scope match.
+
+Use these checks proportionately. Do not invent uncertainty for a directly
+verified fact or require new tool calls merely to repeat still-valid evidence.
 
 ## Output
 

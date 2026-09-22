@@ -21,8 +21,8 @@ still be the wrong answer. Most people should install only this plugin first.
 The basic loop is:
 
 1. You ask Claude a normal question.
-2. A matching Claude Code or Cowork hook adds a short accuracy reminder to the
-   model's context.
+2. A Claude Code or Cowork hook adds a short general evidence reminder on each
+   non-empty prompt, including technical requests and brief follow-ups.
 3. Claude is asked to clarify material ambiguity or keep the answer aligned
    with the source's population, definition, time window, freshness and
    completeness.
@@ -34,9 +34,14 @@ independently verify the source or guarantee the final answer. **Deterministic
 Data** is the separate plugin for applying your own reviewed definitions and
 declared source routes to repeat data questions.
 
-The automatic hooks target common high-risk patterns rather than every possible
-ambiguous question. If a prompt is not detected, ask Claude to run
-`/llm-accuracy:claim-fidelity` explicitly.
+The general reminder asks Claude to verify measurements and coverage, test
+competing causes, and revisit dependent conclusions when correcting a diagnosis.
+Additional business-ambiguity and source-conflict reminders remain targeted.
+Use `/llm-accuracy:claim-fidelity` for an explicit check. See
+[reminder modes](plugins/llm-accuracy/README.md#reminder-modes) to restore the
+previous targeted-only behaviour or mute the fidelity reminder.
+Users can also [add their own trigger phrases](plugins/llm-accuracy/README.md#custom-trigger-phrases)
+for fidelity, analysis or source-conflict checks without editing the plugin cache.
 
 ### Questions that look simple but are not
 
@@ -364,10 +369,13 @@ to run or system prompt to paste for matching prompts. The self-audit workflow
 is also available when you ask the assistant to check one of its earlier
 answers.
 
-In Claude Code, advisory hooks add targeted reminders for matching ambiguous
-business questions, open-ended analysis, evidence-boundary claims and source
-conflicts, and after context compaction. They do not run on every prompt, block
-work, fetch evidence, or verify an answer for you.
+In Claude Code, the general fidelity reminder runs on each non-empty prompt.
+Additional reminders target ambiguous business questions, open-ended analysis,
+evidence-boundary claims, source conflicts and context compaction. They do not
+block work, fetch evidence, or verify an answer for you. General mode adds context
+even to greetings and creative tasks; it asks Claude to keep those tasks brief.
+Delivery coverage is not proof that the model follows the reminder or answers
+more accurately.
 
 Use `/llm-accuracy:claim-fidelity` to check whether a conclusion is supported
 by its source, population, definition, window, freshness and completeness. The
