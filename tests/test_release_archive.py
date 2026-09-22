@@ -35,9 +35,10 @@ def test_release_archive_has_plugin_root_contents_only(tmp_path: Path) -> None:
         manifest = json.loads(archive.read(".claude-plugin/plugin.json"))
 
     assert manifest["name"] == "llm-accuracy"
-    assert manifest["version"] == "0.5.3"
+    assert manifest["version"] == "0.6.0"
     assert "LICENSE.md" in names
     assert "hooks/hooks.json" in names
+    assert "hooks/accuracy_config.py" in names
     assert "skills/self-audit/SKILL.md" in names
     assert not any(name.startswith("plugins/") for name in names)
     assert not any("__pycache__" in name for name in names)
