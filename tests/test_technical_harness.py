@@ -4,8 +4,10 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -127,6 +129,56 @@ def test_probe_cleans_up_on_interruption_and_unexpected_errors(
                 stream = getattr(child, name)
                 if stream is not None:
                     stream.close()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX termination semantics")
+def test_sigterm_cleans_up_probe_process_and_temporary_profile(tmp_path):
+    ready = tmp_path / "ready.json"
+    auth = tmp_path / "auth"
+    auth.mkdir()
+    (auth / ".credentials.json").write_text("{}")  # Synthetic, never real auth.
+    child_code = (
+        "import json,os,time; from pathlib import Path; "
+        f"Path({str(ready)!r}).write_text(json.dumps({{'pid':os.getpid(),"
+        "'root':str(Path.cwd()),'auth_copy':"
+        "(Path.cwd()/'profile/.credentials.json').is_file()})); time.sleep(60)"
+    )
+    runner_code = (
+        "import sys; "
+        f"sys.path.insert(0, {str(PLUGIN / 'scripts')!r}); "
+        "import host_probe; host_probe.shutil.which=lambda name:sys.executable; "
+        "original=host_probe.communicate; "
+        "host_probe.communicate=lambda command,cwd,env,stdin,timeout: "
+        f"original([sys.executable,'-c',{child_code!r}],cwd,env,stdin,timeout); "
+        "host_probe.run_probe(['synthetic'],None)"
+    )
+    env = {**os.environ, "CLAUDE_CONFIG_DIR": str(auth)}
+    runner = subprocess.Popen([sys.executable, "-c", runner_code], env=env)
+    record = None
+    try:
+        deadline = time.monotonic() + 5
+        while not ready.is_file() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert ready.is_file(), "owned child never started"
+        record = json.loads(ready.read_text())
+        assert record["auth_copy"]
+        runner.send_signal(signal.SIGTERM)
+        runner.wait(timeout=5)
+        assert not Path(record["root"]).exists()
+        with pytest.raises(ProcessLookupError):
+            os.kill(record["pid"], 0)
+    finally:
+        if runner.poll() is None:
+            runner.kill()
+            runner.wait()
+        if record:
+            try:
+                os.killpg(record["pid"], signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            import shutil
+
+            shutil.rmtree(record["root"], ignore_errors=True)
 
 
 def test_footer_cannot_rescue_wrong_fact(modules):

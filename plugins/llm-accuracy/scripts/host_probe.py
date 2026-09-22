@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import json
 import os
 import queue
@@ -219,6 +220,23 @@ def communicate(
     return parse_events(stdout, stderr, process.returncode)
 
 
+def _terminate(signum, frame) -> None:
+    raise SystemExit(128 + signum)
+
+
+@contextmanager
+def _termination_cleanup():
+    """Let POSIX CLI termination unwind owned-process and temporary-file cleanup."""
+    if os.name != "posix" or threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    previous = signal.signal(signal.SIGTERM, _terminate)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
 def run_probe(
     prompts: list[str], plugin: Path | None, *, model: str = "sonnet", timeout: int = 60
 ) -> dict:
@@ -229,7 +247,10 @@ def run_probe(
     if not executable:
         return {"status": "host_unavailable", "answers": []}
     auth_root = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
-    with tempfile.TemporaryDirectory(prefix="accuracy-probe-") as directory:
+    with (
+        _termination_cleanup(),
+        tempfile.TemporaryDirectory(prefix="accuracy-probe-") as directory,
+    ):
         root = Path(directory)
         profile = root / "profile"
         profile.mkdir()
