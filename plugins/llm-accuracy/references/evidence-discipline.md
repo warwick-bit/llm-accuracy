@@ -70,6 +70,14 @@ before asserting them. Recall is not evidence.
 
 ## Evidence footer
 
+For substantive technical diagnoses and verification claims, use a compact
+footer with `Checked`, `Gap` and `Next`. `Checked` names checks actually
+performed, their outcome and scope, or explicitly says none. `Gap` names
+unresolved or untested parts. `Next` names the smallest useful action, or none
+when the requested scope is complete. Keep any material uncertainty in the
+answer body too. This is a model-written evidence summary, not a validated
+receipt. Skip it for routine replies without a diagnosis or verification claim.
+
 For consequential factual answers, include concise labels where relevant:
 
 - Source

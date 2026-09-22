@@ -35,6 +35,13 @@ REPORT_PERCENTAGE_RE = re.compile(
 MODE_ENV = "CC_CLAIM_FIDELITY_MODE"
 MAX_INPUT_CHARS = 1_000_000
 
+TECHNICAL_FOOTER = (
+    "For substantive technical diagnoses or verification claims, end with "
+    "Checked / Gap / Next: actual checks and scope; unresolved or untested parts; "
+    "next action (or none). Keep uncertainty in the answer body too. Skip this "
+    "footer for routine replies."
+)
+
 GENERAL_CONTRACT = (
     "CLAIM FIDELITY CHECK: Before material factual claims, check evidence that "
     "actually supports the claim; a tool call alone is not verification. Separate "
@@ -46,9 +53,9 @@ GENERAL_CONTRACT = (
     "and revisit conclusions that depended on it; repeated reversals require "
     "rechecking the framing. Apply these checks before drafting external claims "
     "or declaring a fix verified. Use llm-accuracy:claim-fidelity for consequential "
-    "diagnoses. Keep non-factual tasks brief. This is an advisory reminder, not "
+    "diagnoses. This is an advisory reminder, not "
     "independent verification."
-)
+) + " " + TECHNICAL_FOOTER
 
 CONTRACT = (
     "CLAIM FIDELITY CHECK: Keep every load-bearing conclusion inside the observed "
@@ -83,7 +90,7 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     if not prompt.strip() or BYPASS_RE.search(prompt):
         return ""
     if mode == "targeted":
-        return CONTRACT if should_fire(prompt) else ""
+        return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
     if should_fire(prompt):
         return GENERAL_CONTRACT + " " + CONTRACT
     return GENERAL_CONTRACT

@@ -67,6 +67,23 @@ verified fact or require new tool calls merely to repeat still-valid evidence.
 
 ## Output
 
+For a substantive technical diagnosis or verification claim, lead with the
+conclusion and its uncertainty, then end with three short evidence bullets:
+
+- **Checked:** checks actually performed, their result and relevant scope. If
+  none were performed, say so; proposed checks do not belong here.
+- **Gap:** unresolved causes, incomplete coverage or untested environments.
+  Say no material gap identified only when the evidence supports that statement.
+- **Next:** the smallest action that resolves the gap, or none if no action
+  remains within the requested scope.
+
+Do not add this footer to greetings, acknowledgements, creative tasks or routine
+replies without a diagnosis or verification claim. It is a model-written account
+of evidence, not an independently validated receipt. Never hide a material
+qualification in the footer while stating certainty in the answer body.
+
+For an explicit claim-by-claim audit, use the fuller format instead:
+
 - **Claim:** the exact conclusion checked.
 - **Status:** supported, qualified, withheld, or unchecked.
 - **Evidence boundary:** what the observed evidence establishes.

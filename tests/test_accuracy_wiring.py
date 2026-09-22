@@ -233,6 +233,9 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
     assert "previews, samples" in context
     assert "competing causes" in context
     assert "repeated reversals" in context
+    assert "Checked / Gap / Next" in context
+    assert "actual checks and scope" in context
+    assert "Skip this footer for routine replies" in context
     assert len(context) <= 1200
 
 
@@ -267,6 +270,7 @@ def test_fidelity_modes_and_bypasses(
         output = json.loads(result.stdout)
         assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
         assert "CLAIM FIDELITY CHECK" in output["hookSpecificOutput"]["additionalContext"]
+        assert "Checked / Gap / Next" in output["hookSpecificOutput"]["additionalContext"]
     else:
         assert result.stdout == ""
 

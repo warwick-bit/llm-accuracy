@@ -43,6 +43,14 @@ universal claims, test competing causes, and revisit dependent conclusions after
 a correction. It also points consequential diagnoses to the claim-fidelity skill;
 the model still decides whether to invoke it.
 
+For substantive technical diagnoses and verification claims, the reminder asks
+for a compact `Checked / Gap / Next` footer: what was actually checked and its
+scope, what remains unresolved or untested, and the next action (or none).
+Routine replies do not need it. The answer body must retain material uncertainty;
+the footer is a model-written account, not a validated receipt. Hook tests prove
+the instruction is emitted, not that Claude follows it.
+Targeted mode includes this guidance only when a fidelity trigger matches.
+
 Business-ambiguity, analysis and source-conflict reminders remain targeted.
 The post-compaction reminder remains separate. None verifies facts automatically.
 
