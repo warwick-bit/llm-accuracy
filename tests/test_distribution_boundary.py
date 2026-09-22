@@ -102,3 +102,18 @@ def test_python_network_import_is_rejected(tmp_path: Path) -> None:
     (tmp_path / "hook.py").write_text("import subprocess\n", encoding="utf-8")
 
     assert boundary_violations(tmp_path) == ["network-capable import: hook.py"]
+
+
+def test_diagnostic_exception_is_path_profile_and_import_scoped(tmp_path: Path) -> None:
+    script = tmp_path / "scripts/accuracy_doctor.py"
+    script.parent.mkdir()
+    script.write_text("import subprocess\n")
+    assert boundary_violations(tmp_path) == []
+    assert boundary_violations(tmp_path, profile="session-ledger")
+    script.write_text("import socket\n")
+    assert boundary_violations(tmp_path)
+    script.write_text("import subprocess\n")
+    hook = tmp_path / "hooks/accuracy_doctor.py"
+    hook.parent.mkdir()
+    hook.write_text(script.read_text())
+    assert boundary_violations(tmp_path) == ["network-capable import: hooks/accuracy_doctor.py"]

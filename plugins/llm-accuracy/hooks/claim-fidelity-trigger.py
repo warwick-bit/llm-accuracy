@@ -36,9 +36,9 @@ MODE_ENV = "CC_CLAIM_FIDELITY_MODE"
 MAX_INPUT_CHARS = 1_000_000
 
 TECHNICAL_FOOTER = (
-    "For substantive technical diagnoses or verification claims, end with "
-    "Checked / Gap / Next: actual checks and scope; unresolved or untested parts; "
-    "next action (or none). Keep uncertainty in the answer body too. Skip this "
+    "For substantive technical diagnoses or verification claims, end with three "
+    "short Checked / Gap / Next lines: Checked: actual checks and scope; Gap: unknowns; "
+    "Next: action (or none). Keep uncertainty in the answer body too. Skip this "
     "footer for routine replies."
 )
 
@@ -52,8 +52,8 @@ GENERAL_CONTRACT = (
     "declaring a root cause. When correcting a diagnosis, name the new evidence "
     "and revisit conclusions that depended on it; repeated reversals require "
     "rechecking the framing. Apply these checks before drafting external claims "
-    "or declaring a fix verified. Use llm-accuracy:claim-fidelity for consequential "
-    "diagnoses. Keep non-factual tasks brief. This is an advisory reminder, not "
+    "or declaring a fix verified. Use llm-accuracy:verify-technical for diagnosis "
+    "and fix checks. Keep non-factual tasks brief. This is an advisory reminder, not "
     "independent verification."
 ) + " " + TECHNICAL_FOOTER
 

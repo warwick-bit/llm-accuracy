@@ -40,7 +40,7 @@ fidelity reminder covers each non-empty prompt, including technical requests,
 file paths, implementation requests and brief follow-ups. It asks Claude to
 verify the measurement, population and environment, establish coverage before
 universal claims, test competing causes, and revisit dependent conclusions after
-a correction. It also points consequential diagnoses to the claim-fidelity skill;
+a correction. It also points diagnoses and fix checks to the verify-technical skill;
 the model still decides whether to invoke it.
 
 For substantive technical diagnoses and verification claims, the reminder asks
@@ -137,8 +137,51 @@ The hook requires the documented `prompt` field. Empty, malformed or oversized
 inputs (over 1,000,000 characters of serialized input) fail open without a
 reminder. It does not persist prompts, read transcripts, count retractions or
 enforce a Stop gate. Child sessions that do not emit `UserPromptSubmit` do not
-receive this reminder directly. The partial-result sentinel still covers MCP
-results only, not Bash output or silently incomplete reads.
+receive this reminder directly. The partial-result sentinel covers MCP envelope
+signals, text Read line-range metadata, and Bash saved-output metadata. It never
+parses shell stdout or file contents for pagination fields. Missing metadata and
+silently incomplete reads remain invisible. An intentional excerpt is not a
+failure, and no signal certifies full-file or project-wide coverage.
+
+## Diagnose activation
+
+Run `/llm-accuracy:accuracy-doctor` when reminders appear inactive. The local
+report checks package version, general/targeted mode, user-config validity,
+phrase counts, bypasses and actual registered hook commands using synthetic
+prompts. It also lists the host's reported installation versions and enabled
+flags for this plugin. `not_listed` can be normal for an explicit `--plugin-dir`
+load. Neither registration nor a working command proves the current session
+loaded a hook: `current_session_activation` remains `unverified`.
+
+The underlying script is `scripts/accuracy_doctor.py` in the installed plugin.
+Use Python 3; on Windows install Git Bash or pass its path using `--shell`.
+`emitted` means the command returned hook context; `disabled` identifies a
+bypass; `no_context`, `invalid_response`, `execution_failed`, `timeout` and
+`shell_unavailable` need investigation. `missing_default` is normal;
+`config_unavailable` or `invalid_config` leaves only built-in triggers active.
+Unknown reminder modes are reported and fall back to general mode.
+
+Add `--live` only when you want one model request. It uses an existing local
+Claude subscription login in a temporary auth-only profile, explicit plugin
+load, default trigger controls, no tools/MCPs and no saved session. It checks
+hook delivery and a simple acknowledgement. It does not certify factual
+accuracy, your current session, custom phrases, or another host. Authentication
+can require `claude auth login`; never share credentials. This opt-in diagnostic
+invokes local commands and sends a synthetic prompt to Claude; automatic hooks
+do neither. No raw answers or credential values are reported.
+
+## Verify technical work
+
+Use `/llm-accuracy:verify-technical` for a diagnosis, disputed cause or fix claim.
+It asks for a scoped reproduction, competing explanations, the smallest justified
+change, and a rerun of the original check. Local verification, deployment and
+production verification stay separate. Corrections require checking dependent
+conclusions again. The workflow is advisory and respects repository instructions.
+
+Maintainers can run the opt-in synthetic behavioural suite described in
+[`docs/technical-evaluation.md`](https://github.com/warwick-bit/llm-accuracy/blob/main/docs/technical-evaluation.md). Factual
+field support and footer presence are scored independently; neither certifies
+arbitrary prose or real-world accuracy.
 
 ## Freshness and memory
 

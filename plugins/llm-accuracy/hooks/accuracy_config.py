@@ -48,26 +48,32 @@ def trigger_lists(payload: object) -> dict[str, list[str]]:
     return families
 
 
-def read_triggers() -> dict[str, list[str]]:
-    """Read a bounded regular file; never include paths or contents in errors."""
+def read_configuration() -> tuple[dict[str, list[str]], str]:
+    """Return validated phrases and a fixed status without printing user content."""
     override = os.environ.get(CONFIG_ENV)
-    root = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
-    path = Path(override).expanduser() if override else root / "llm-accuracy.json"
     try:
+        root = Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+        path = Path(override).expanduser() if override else root / "llm-accuracy.json"
         if not stat.S_ISREG(path.stat().st_mode):
             raise ValueError("not_regular_file")
         with path.open("rb") as source:
             raw = source.read(MAX_CONFIG_BYTES + 1)
         if len(raw) > MAX_CONFIG_BYTES:
             raise ValueError("oversized_config")
-        return trigger_lists(json.loads(raw.decode("utf-8-sig")))
+        return trigger_lists(json.loads(raw.decode("utf-8-sig"))), "ok"
     except FileNotFoundError:
-        code = "config_unavailable" if override else ""
-    except (OSError, ValueError, RecursionError):
+        code = "config_unavailable" if override else "missing_default"
+    except (OSError, ValueError, RuntimeError):
         code = "invalid_config"
-    if code:
+    return {}, code
+
+
+def read_triggers() -> dict[str, list[str]]:
+    """Read a bounded regular file; never include paths or contents in errors."""
+    phrases, code = read_configuration()
+    if code not in {"ok", "missing_default"}:
         print(f"LLM Accuracy: {code}; built-in checks remain active.", file=sys.stderr)
-    return {}
+    return phrases
 
 
 def custom_trigger_matches(family: str, prompt: str) -> bool:

@@ -98,7 +98,7 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
     assert set(config) == {"hooks"}
     assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse"}
     assert config["hooks"]["SessionStart"][0]["matcher"] == "compact"
-    assert config["hooks"]["PostToolUse"][0]["matcher"] == "mcp__.*"
+    assert config["hooks"]["PostToolUse"][0]["matcher"] == "^(mcp__.*|Bash|Read)$"
 
     for key, (filename, status_message) in EXPECTED_HANDLERS.items():
         handler = hook_handler(*key)
@@ -328,6 +328,12 @@ def blocks(body: object) -> list[dict]:
 
 
 SENTINEL_END_TO_END_CASES = [
+    ({"tool_name": "Read", "tool_response": {"type": "text", "file": {"startLine": 10, "numLines": 3, "totalLines": 31}}},
+     "file_read_excerpt", "actual Read metadata fires"),
+    ({"tool_name": "Bash", "tool_response": {"stdout": "x" * 30, "persistedOutputPath": "/tmp/synthetic", "persistedOutputSize": 100}},
+     "bash_output_excerpt", "actual Bash metadata fires"),
+    ({"tool_name": "Bash", "tool_response": {"stdout": '{"has_more":true}', "has_more": True}},
+     "", "Bash payload never enters the MCP detector"),
     (
         {
             "hook_event_name": "PostToolUse",

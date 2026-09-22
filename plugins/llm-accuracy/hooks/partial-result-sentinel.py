@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Advisory hook: flag explicit partial-result evidence in an MCP tool result.
+"""Advisory hook: flag explicit partial-result evidence in supported tool results.
+
+Bash and Read use separate, host-metadata-only detectors. The envelope traversal
+below applies only to MCP results; it never interprets shell or file contents.
 
 This hook detects *evidence of partiality* only. It runs on one tool result at a
 time and keeps no state, so it can never observe that a later page was fetched
@@ -596,7 +599,18 @@ def main() -> int:
         payload = json.loads(raw or "{}")
         if not isinstance(payload, dict):
             return 0
-        codes = collect_codes(payload.get("tool_response"))
+        tool = payload.get("tool_name", "")
+        response = payload.get("tool_response")
+        advice = ADVICE
+        if tool in ("Bash", "Read"):
+            from builtin_result_signals import BUILTIN_ADVICE, builtin_codes
+
+            codes = builtin_codes(tool, response)
+            advice = BUILTIN_ADVICE
+        elif isinstance(tool, str) and (not tool or tool.startswith("mcp__")):
+            codes = collect_codes(response)
+        else:
+            return 0
         if not codes:
             return 0
         print(
@@ -604,7 +618,7 @@ def main() -> int:
                 {
                     "hookSpecificOutput": {
                         "hookEventName": "PostToolUse",
-                        "additionalContext": ADVICE.format(
+                        "additionalContext": advice.format(
                             codes=", ".join(sorted(codes)), env=BYPASS_ENV
                         ),
                     }

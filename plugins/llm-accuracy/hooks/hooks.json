@@ -34,7 +34,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "mcp__.*",
+        "matcher": "^(mcp__.*|Bash|Read)$",
         "hooks": [
           {
             "type": "command",

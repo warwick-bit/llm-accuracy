@@ -43,6 +43,12 @@ previous targeted-only behaviour or mute the fidelity reminder.
 Users can also [add their own trigger phrases](plugins/llm-accuracy/README.md#custom-trigger-phrases)
 for fidelity, analysis or source-conflict checks without editing the plugin cache.
 
+For technical work, `/llm-accuracy:verify-technical` guides reproduction,
+competing-cause checks and verification after a fix. Use
+`/llm-accuracy:accuracy-doctor` to inspect activation and configuration when
+machines behave differently. Substantive technical diagnoses request a compact
+Checked / Gap / Next footer. These are advisory workflows, not accuracy guarantees.
+
 ### Questions that look simple but are not
 
 - **What is our revenue?** It could mean MRR, ARR, recognised revenue, invoices
