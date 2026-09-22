@@ -36,10 +36,15 @@ MODE_ENV = "CC_CLAIM_FIDELITY_MODE"
 MAX_INPUT_CHARS = 1_000_000
 
 TECHNICAL_FOOTER = (
-    "For substantive technical diagnoses or verification claims, end with three "
-    "short Checked / Gap / Next lines: Checked: actual checks and scope; Gap: unknowns; "
-    "Next: action (or none). Keep uncertainty in the answer body too. Skip this "
-    "footer for routine replies."
+    "Before sending a substantive technical diagnosis, verification claim, or "
+    "answer about whether evidence proves a technical claim (including rejecting "
+    "or withholding that claim), end with this compact three-line Checked / Gap / Next footer:\n"
+    "Checked: actual checks or supplied evidence, with scope\n"
+    "Gap: remaining unknowns (or none)\n"
+    "Next: smallest useful check or action (or none)\n"
+    "Fill each line honestly; supplied evidence is not a check you performed. "
+    "Keep uncertainty in the answer body too. Skip this footer for routine replies "
+    "and creative requests."
 )
 
 GENERAL_CONTRACT = (
@@ -55,7 +60,7 @@ GENERAL_CONTRACT = (
     "or declaring a fix verified. Use llm-accuracy:verify-technical for diagnosis "
     "and fix checks. Keep non-factual tasks brief. This is an advisory reminder, not "
     "independent verification."
-) + " " + TECHNICAL_FOOTER
+)
 
 CONTRACT = (
     "CLAIM FIDELITY CHECK: Keep every load-bearing conclusion inside the observed "
@@ -92,8 +97,8 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     if mode == "targeted":
         return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
     if should_fire(prompt):
-        return GENERAL_CONTRACT + " " + CONTRACT
-    return GENERAL_CONTRACT
+        return GENERAL_CONTRACT + " " + CONTRACT + " " + TECHNICAL_FOOTER
+    return GENERAL_CONTRACT + " " + TECHNICAL_FOOTER
 
 
 def main() -> int:

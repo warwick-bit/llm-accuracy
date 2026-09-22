@@ -23,7 +23,8 @@ The factual oracle compares exact declared Answer fields with author-owned
 expected values, comparing decimal numbers by value (for example, `20.0` and
 `20` are equal) without rounding. Missing, duplicate or ambiguous fields fail the output
 contract. A malformed field is a formatting failure, not proof of a wrong belief.
-Footer labels are measured separately; a correct footer cannot rescue a wrong
+Footer labels must be unique, nonempty and appear in Checked / Gap / Next order
+on the final three nonblank lines. They are measured separately; a correct footer cannot rescue a wrong
 fact. The routine control detects footer overapplication. Arbitrary explanation
 text and the truthfulness of footer prose are **not scored**. This is packet
 synthesis, not a test of tool selection, source retrieval or execution of skills.
@@ -80,3 +81,28 @@ This run followed fixes for decimal-value comparison. An earlier candidate run
 recorded baseline 6/7 and candidate 7/7; those historical results were not
 rescored or pooled. The current observation shows no factual-field advantage.
 It neither establishes nor rules out improvement on real technical work.
+
+## Natural footer comparison
+
+`eval_footer_behavior.py` compares two loaded plugin versions on the same pinned
+model. It uses natural synthetic questions with no requested Answer field or
+footer. Extract a trusted released plugin ZIP into a temporary directory, then run:
+
+```sh
+python3 scripts/eval_footer_behavior.py --live --baseline-plugin /path/to/released-plugin --rung ramp
+python3 scripts/eval_footer_behavior.py --live --baseline-plugin /path/to/released-plugin --rung full
+python3 scripts/eval_footer_behavior.py --live --baseline-plugin /path/to/released-plugin --rung repeat
+```
+
+The default model is `claude-opus-5-5`; a missing or different resolved model
+makes the pair unscorable. Both arms must deliver fidelity guidance on every
+turn. The ramp is one two-turn causal/scope case. Full adds deployment scope,
+conflicting build reports, thanks and a creative slogan. Repeat runs the three
+technical cases unchanged once more. Each arm runs sequentially with provider
+defaults and the same tool-free, auth-only isolation as the field suite.
+
+This measures footer presence and routine/creative overapplication only.
+Natural-prose correctness and the truthfulness of Checked/Gap/Next content are
+**not scored**. A zero exit means all pairs were scorable, not that the candidate
+passed a quality threshold. Treat each rung separately; do not pool the repeated
+cases as independent examples or keep rerunning until a preferred result appears.

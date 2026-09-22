@@ -82,11 +82,24 @@ CASES = (
 def labelled_values(answer: str, label: str) -> list[str]:
     """Accept label decoration, reject prose mentions and duplicate claims."""
     pattern = (
-        r"^\s*(?:[-*]\s+)?(?:\*\*)?"
+        r"^[ \t]*(?:[-*][ \t]+)?(?:\*\*)?"
         + re.escape(label)
-        + r"(?:\*\*)?\s*:(?:\*\*)?\s*(.*?)\s*$"
+        + r"(?:\*\*)?[ \t]*:(?:\*\*)?[ \t]*(.*?)[ \t\r]*$"
     )
     return re.findall(pattern, answer, flags=re.M | re.I)
+
+
+def footer_present(answer: str) -> bool:
+    """Require unique, nonempty labels on the final three nonblank lines."""
+    keys = ("Checked", "Gap", "Next")
+    values = [labelled_values(answer, key) for key in keys]
+    if any(len(value) != 1 or not value[0].strip() for value in values):
+        return False
+    lines = [line for line in answer.splitlines() if line.strip()]
+    return len(lines) >= 3 and all(
+        labelled_values(line, key) == value
+        for line, key, value in zip(lines[-3:], keys, values)
+    )
 
 
 def factual_value(values: list[str]) -> str | Decimal | None:
@@ -120,12 +133,7 @@ def score(
     values = [factual_value(labelled_values(answer, "Answer")) for answer in answers]
     fields_valid = all(value is not None for value in values) if expected else True
     factual = fields_valid and values == [factual_value([value]) for value in expected]
-    footers = [
-        all(
-            len(labelled_values(answer, key)) == 1 for key in ("Checked", "Gap", "Next")
-        )
-        for answer in answers
-    ]
+    footers = [footer_present(answer) for answer in answers]
     overapplied = not technical and any(
         labelled_values(answer, key)
         for answer in answers

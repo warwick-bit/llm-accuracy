@@ -7,7 +7,10 @@ products. Use the path below that matches where you work.
 
 Platform capability and runtime evidence are separate.
 
-**LLM Accuracy 0.6.0 candidate — 23 Sep 2026:**
+**LLM Accuracy 0.6.1:** see the [patch release notes](release-0.6.1.md) for
+current validation and upgrade tests. The records below describe earlier builds.
+
+**Historical 0.6.0 candidate — 23 Sep 2026:**
 
 - **Claude Code on Linux/WSL:** a clean, temporary profile installed the candidate
   through a local-path marketplace. Installed files matched the committed
