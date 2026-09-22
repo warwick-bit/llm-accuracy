@@ -20,7 +20,8 @@ Only the candidate loads this plugin. Hook events attest delivery and detect
 baseline contamination. Turns are sent after the preceding result event.
 
 The factual oracle compares exact declared Answer fields with author-owned
-expected values. Missing, duplicate or ambiguous fields fail the output
+expected values, comparing decimal numbers by value (for example, `20.0` and
+`20` are equal) without rounding. Missing, duplicate or ambiguous fields fail the output
 contract. A malformed field is a formatting failure, not proof of a wrong belief.
 Footer labels are measured separately; a correct footer cannot rescue a wrong
 fact. The routine control detects footer overapplication. Arbitrary explanation
@@ -65,3 +66,17 @@ Network-library imports remain excluded, and automatic hooks have no subprocess
 exception. The live runner temporarily copies the existing subscription auth
 file, deletes that temporary profile on exit and never prints its values. The
 pattern scanner is a packaging guard, not a security sandbox for arbitrary code.
+
+## Candidate observation — 23 Sep 2026
+
+The [typed receipt](validation/technical-behavior-2026-09-23.json) records the
+post-review candidate and scorer identities. All eight pairs were scorable.
+Both arms passed all seven factual cases, with no invalid Answer fields. The
+candidate emitted complete footers in five technical conversations; baseline
+emitted none. Neither arm emitted a greeting footer. The denominator and
+two-turn correction cases did not have complete candidate footers on every turn.
+
+This run followed fixes for decimal-value comparison. An earlier candidate run
+recorded baseline 6/7 and candidate 7/7; those historical results were not
+rescored or pooled. The current observation shows no factual-field advantage.
+It neither establishes nor rules out improvement on real technical work.
