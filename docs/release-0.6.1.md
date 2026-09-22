@@ -52,3 +52,10 @@ or creative control in the full run. Every pair was scorable and resolved
 `claude-opus-5-5`. This small authored set measures format, not factual accuracy
 or general improvement. The affected remote setup, native Windows model
 behavior and Cowork remain unverified.
+
+A [clean local-marketplace and ZIP smoke](validation/claude-code-smoke-0.6.1.json)
+passed on Claude Code 2.1.280 on Linux/WSL. Installed default, custom-phrase and
+bypass sessions plus the separate ZIP session returned the expected hook and
+acknowledgement outcomes on `claude-sonnet-5`. These installation checks do not
+score factual accuracy. All 473 offline tests, lint, manifest parsing, Python
+compilation and all three plugin distribution boundaries passed.
