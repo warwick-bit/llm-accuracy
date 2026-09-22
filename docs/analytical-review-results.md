@@ -4,6 +4,11 @@ The candidate has **not demonstrated an advantage over default Claude review**.
 Keep it experimental. This is an instruction comparison on synthetic artifacts,
 not a production accuracy benchmark or a release recommendation.
 
+The [follow-up comparison](analytical-review-challenge-results.md) uses explicit
+claim semantics, harder multi-claim packets and separately calibrated
+explanation grading. This page preserves the original exploration and its
+limitations; its scores are not retrospectively relabeled.
+
 ## Paired development rung
 
 The [typed receipt](evaluation-results/analytical-review-development.json)

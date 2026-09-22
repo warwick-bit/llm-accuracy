@@ -89,7 +89,7 @@ def communicate(command: list[str], prompt: str, cwd: Path,
         raise
 
 
-def decode_answer(stdout: str) -> tuple[dict, list[str]]:
+def decode_answer(stdout: str, validator=None) -> tuple[dict, list[str]]:
     response = json.loads(stdout)
     if response.get("is_error") or response.get("type") != "result":
         raise ValueError("model_error")
@@ -99,6 +99,9 @@ def decode_answer(stdout: str) -> tuple[dict, list[str]]:
         if text.startswith("```"):
             text = text.split("\n", 1)[1].rsplit("```", 1)[0]
         answer = json.loads(text)
+    if validator is not None:
+        validator(answer)
+        return answer, list(response.get("modelUsage", {}))
     if (set(answer) != set(SCHEMA["required"])
             or answer["verdict"] not in SCHEMA["properties"]["verdict"]["enum"]
             or not isinstance(answer["reason"], str)
@@ -110,7 +113,7 @@ def decode_answer(stdout: str) -> tuple[dict, list[str]]:
     return answer, list(response.get("modelUsage", {}))
 
 
-def decode_stream(stdout: str, allowed_plugins: set[str]) -> tuple[dict, list[str], list[str]]:
+def decode_stream(stdout: str, allowed_plugins: set[str], validator=None) -> tuple[dict, list[str], list[str]]:
     events = [json.loads(line) for line in stdout.splitlines() if line.strip()]
     initial = [event for event in events if event.get("type") == "system" and event.get("subtype") == "init"]
     results = [event for event in events if event.get("type") == "result"]
@@ -123,7 +126,7 @@ def decode_stream(stdout: str, allowed_plugins: set[str]) -> tuple[dict, list[st
     names = {plugin.get("name", "unknown") for plugin in initial[0].get("plugins", [])}
     if names - allowed_plugins:
         raise ValueError("unexpected_plugin")
-    answer, models = decode_answer(json.dumps(results[0]))
+    answer, models = decode_answer(json.dumps(results[0]), validator)
     return answer, models, tool_names
 
 
@@ -145,12 +148,14 @@ def run_one(item: dict, arm: str, instruction: str, args: argparse.Namespace) ->
                    "--setting-sources", "", "--strict-mcp-config", "--mcp-config", str(work / "mcp.json"),
                    "--tools", "", "--allowedTools", "mcp__review__*",
                    "--permission-mode", "dontAsk", "--output-format", "stream-json", "--verbose",
-                   "--json-schema", json.dumps(SCHEMA), "--disable-slash-commands"]
+                   "--json-schema", json.dumps(getattr(args, "output_schema", SCHEMA)), "--disable-slash-commands"]
         prompt = (instruction + "\n\nTask: Review the artifact available through the evidence tool. "
                   "All source data is fictional. The provided tools are the only evidence and "
                   "calculation facilities. Return the requested verdict, numeric value (as a "
                   "string, or null when unknown), reason and checks actually performed. "
                   "Use the output schema. Do not guess missing inputs.")
+        if getattr(args, "review_contract", None):
+            prompt = instruction + "\n\nTask: " + args.review_contract
         try:
             environment = clean_environment(work)
             code, stdout, stderr = communicate(command, prompt, work, environment, args.timeout)
@@ -168,13 +173,14 @@ def run_one(item: dict, arm: str, instruction: str, args: argparse.Namespace) ->
                         record["plugin_count"] = len(event.get("plugins", []))
                         record["plugin_names"] = [plugin.get("name", "unknown") if isinstance(plugin, dict)
                                                   else "unknown" for plugin in event.get("plugins", [])]
-                answer, models, inventory = decode_stream(stdout, set(args.allow_host_plugin))
+                answer, models, inventory = decode_stream(stdout, set(args.allow_host_plugin),
+                                                         getattr(args, "validator", None))
                 # Prose is never persisted or used as an automatic semantic oracle.
-                record.update(score(item, answer))
+                record.update(getattr(args, "scorer", score)(item, answer))
                 record.update({"status": "completed", "observed_models": models,
-                               "observed_verdict": answer["verdict"],
+                               "observed_verdict": answer.get("verdict"),
                                "tool_inventory": inventory,
-                               "reason_bytes": len(answer["reason"].encode())})
+                               "reason_bytes": len(answer.get("reason", "").encode())})
         except subprocess.TimeoutExpired:
             record["failure"] = "timeout"
         except ValueError as exc:
@@ -189,6 +195,8 @@ def run_one(item: dict, arm: str, instruction: str, args: argparse.Namespace) ->
         if record["status"] == "completed" and not record["tools"].get("evidence"):
             record.update({"status": "process_failure", "failure": "evidence_not_read"})
     record["seconds"] = round(time.monotonic() - started, 3)
+    if record["status"] == "completed" and getattr(args, "explanation_grader", None):
+        record.update(args.explanation_grader(item, answer, stdout))
     return record
 
 
