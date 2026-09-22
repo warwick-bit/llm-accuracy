@@ -1,0 +1,44 @@
+{
+  "status": "completed",
+  "model": "claude-sonnet-5",
+  "native_skill": true,
+  "case": "join-total",
+  "raw_responses_persisted": false,
+  "exit_code": 0,
+  "stderr_bytes": 0,
+  "output_sha256": "59e19339b01670f35eb1431ec1625d58357a8d8738c2f1e06c9c0dff9846c4ff",
+  "target_skill_invoked": true,
+  "target_skill_succeeded": false,
+  "event_types": {
+    "system": 1,
+    "assistant": 4,
+    "user": 2,
+    "rate_limit_event": 1,
+    "result": 1
+  },
+  "plugins": [
+    "llm-accuracy",
+    "review-observer",
+    "telemetry"
+  ],
+  "tool_inventory": [
+    "Task",
+    "Skill",
+    "StructuredOutput",
+    "mcp__review__calculate",
+    "mcp__review__evidence",
+    "mcp__review__query"
+  ],
+  "verdict_correct": false,
+  "value_correct": false,
+  "objective_pass": false,
+  "explanation_review": "not_measured",
+  "observed_models": [
+    "claude-sonnet-5"
+  ],
+  "subagent_events": {},
+  "tools": {},
+  "passed": false,
+  "negative_control": true,
+  "child_lifecycle_causal_binding": "not_verified"
+}

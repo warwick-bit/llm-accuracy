@@ -1,0 +1,438 @@
+{
+  "created_at": "2026-09-22T21:56:01.596737+00:00",
+  "model": "claude-sonnet-5",
+  "effort": "high",
+  "timeout_seconds": 120,
+  "split": "development",
+  "cases": [
+    "join-total",
+    "retry-safe",
+    "missing-fx"
+  ],
+  "arms": [
+    "default",
+    "audit",
+    "reviewer"
+  ],
+  "repeats": 1,
+  "prompt_hashes": {
+    "default": "50031cfd93bb3a42eb7401be994539344a7c673a0601a2f4da4be23db48ae894",
+    "audit": "2d2561b556a900072cc7d41cc0e0a034cb94a10f4707fe382ba9e8bf9578dcf9",
+    "reviewer": "f91016cb683fe86b8ca8c54b9682deb907ddfc1d4226dde6cc12d0a531908f68"
+  },
+  "case_hash": "a50496eebae9991fc9aa50ad1de0090901795f394cbd20cac94d9e76186a5164",
+  "cli_binary_name": "2.1.280",
+  "allowed_host_plugins": [
+    "telemetry"
+  ],
+  "measurement": "verdict_and_value_only; explanation correctness not measured",
+  "isolation": "auth-only config; fresh cwd; no built-in tools; synthetic MCP only",
+  "rows": [
+    {
+      "case": "join-total",
+      "domain": "data",
+      "arm": "default",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 22475,
+      "output_sha256": "1a9406397a3bfd9bb5ec4a44d0ef80564d2e2a13b02874d3c6ee054b686e4e7a",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 5,
+        "assistant": 9,
+        "rate_limit_event": 1,
+        "user": 6,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": true,
+      "value_correct": true,
+      "objective_pass": true,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 475,
+      "tools": {
+        "evidence": 1,
+        "query": 3,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 13.545
+    },
+    {
+      "case": "join-total",
+      "domain": "data",
+      "arm": "audit",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 23963,
+      "output_sha256": "629fb43e1853234466f9266295f5d9f56bbd1cb75883b82c2162b5e5da907a62",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 9,
+        "assistant": 9,
+        "user": 5,
+        "rate_limit_event": 1,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": true,
+      "value_correct": true,
+      "objective_pass": true,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 349,
+      "tools": {
+        "evidence": 1,
+        "query": 2,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 18.482
+    },
+    {
+      "case": "join-total",
+      "domain": "data",
+      "arm": "reviewer",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 25755,
+      "output_sha256": "6da740ab509d4757dbfc6c5a3dde9033ec52506c1577bc06f3176bf5c8a887bf",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 8,
+        "assistant": 9,
+        "user": 5,
+        "rate_limit_event": 1,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": true,
+      "value_correct": true,
+      "objective_pass": true,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 780,
+      "tools": {
+        "evidence": 1,
+        "query": 3
+      },
+      "tool_errors": 0,
+      "seconds": 20.334
+    },
+    {
+      "case": "retry-safe",
+      "domain": "systems",
+      "arm": "reviewer",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 34956,
+      "output_sha256": "61190009f0a9bbbd7c85092252b15529f135380080c1048ce02f9268a8df3d70",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 16,
+        "assistant": 10,
+        "user": 5,
+        "rate_limit_event": 1,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": true,
+      "value_correct": true,
+      "objective_pass": true,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 532,
+      "tools": {
+        "evidence": 1,
+        "query": 1,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 41.476
+    },
+    {
+      "case": "retry-safe",
+      "domain": "systems",
+      "arm": "audit",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 26692,
+      "output_sha256": "a1f5b4dd344252823e53b327fc1e7fd0218aaf4d38bc8a39f0517d3297dd1e3a",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 13,
+        "assistant": 7,
+        "user": 4,
+        "rate_limit_event": 1,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": true,
+      "value_correct": true,
+      "objective_pass": true,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 846,
+      "tools": {
+        "evidence": 1,
+        "query": 1,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 27.919
+    },
+    {
+      "case": "retry-safe",
+      "domain": "systems",
+      "arm": "default",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 19061,
+      "output_sha256": "5d86251975a5399163b57f852a2717c3753751606cf6aabe3f689b09625da117",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 5,
+        "assistant": 8,
+        "rate_limit_event": 1,
+        "user": 4,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": true,
+      "value_correct": true,
+      "objective_pass": true,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 377,
+      "tools": {
+        "evidence": 1,
+        "query": 1,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 11.253
+    },
+    {
+      "case": "missing-fx",
+      "domain": "finance",
+      "arm": "default",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 25106,
+      "output_sha256": "2ae68959ba40139b32a465ed7546925e320052a4a091f2e8a33e2bf6d71c2b4d",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 12,
+        "assistant": 9,
+        "rate_limit_event": 1,
+        "user": 4,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": true,
+      "value_correct": true,
+      "objective_pass": true,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 606,
+      "tools": {
+        "evidence": 1,
+        "query": 1,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 22.739
+    },
+    {
+      "case": "missing-fx",
+      "domain": "finance",
+      "arm": "audit",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 26060,
+      "output_sha256": "214f183a4faf54b53b22a6f14eb99a2ea39c5ecb68b246f7248f7bdbe3842b73",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 12,
+        "assistant": 8,
+        "rate_limit_event": 1,
+        "user": 4,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": false,
+      "value_correct": true,
+      "objective_pass": false,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 924,
+      "tools": {
+        "evidence": 1,
+        "query": 1,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 21.676
+    },
+    {
+      "case": "missing-fx",
+      "domain": "finance",
+      "arm": "reviewer",
+      "repeat": 0,
+      "status": "completed",
+      "exit_code": 0,
+      "output_bytes": 30393,
+      "output_sha256": "9572c993d77c44eb1b3a13286ebe2490fd6f4ff5decd216c94371ac6340700d8",
+      "stderr_bytes": 0,
+      "event_types": {
+        "system": 13,
+        "assistant": 9,
+        "user": 4,
+        "rate_limit_event": 1,
+        "result": 1
+      },
+      "tool_inventory": [
+        "StructuredOutput",
+        "mcp__review__calculate",
+        "mcp__review__evidence",
+        "mcp__review__query"
+      ],
+      "plugin_count": 1,
+      "plugin_names": [
+        "telemetry"
+      ],
+      "verdict_correct": false,
+      "value_correct": true,
+      "objective_pass": false,
+      "explanation_review": "not_measured",
+      "observed_models": [
+        "claude-sonnet-5"
+      ],
+      "reason_bytes": 1362,
+      "tools": {
+        "evidence": 1,
+        "query": 1,
+        "calculate": 1
+      },
+      "tool_errors": 0,
+      "seconds": 31.354
+    }
+  ],
+  "summary": {
+    "audit": {
+      "completed": 3,
+      "process_failures": 0,
+      "objective_passes": 2,
+      "seconds": 68.1
+    },
+    "default": {
+      "completed": 3,
+      "process_failures": 0,
+      "objective_passes": 3,
+      "seconds": 47.5
+    },
+    "reviewer": {
+      "completed": 3,
+      "process_failures": 0,
+      "objective_passes": 2,
+      "seconds": 93.2
+    }
+  }
+}
