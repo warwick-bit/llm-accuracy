@@ -72,8 +72,10 @@ correct work wrong merely because more information could exist elsewhere.
 
 ## Return a decision-useful review
 
-Lead with `supported`, `needs correction`, or `insufficient evidence`, scoped to
-the supplied work. Then give:
+Use the user's requested output format when one is supplied. Otherwise lead
+with `supported`, `needs correction`, or `insufficient evidence`, scoped to
+the supplied work. Distinguish individual claim findings from the overall
+review verdict. Then give:
 
 - Material findings, each tied to an exact query, formula, file location or
   evidence statement; explain the consequence and smallest correction/check.
