@@ -229,7 +229,7 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
     output = json.loads(result.stdout)
     assert set(output) == {"hookSpecificOutput"}  # no blocking decision
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert "process/environment and version" in context
+    assert "environment and version" in context
     assert "previews, samples" in context
     assert "competing causes" in context
     assert "repeated reversals" in context
@@ -272,7 +272,9 @@ def test_fidelity_modes_and_bypasses(
         output = json.loads(result.stdout)
         assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
         assert "CLAIM FIDELITY CHECK" in output["hookSpecificOutput"]["additionalContext"]
-        assert "Checked / Gap / Next" in output["hookSpecificOutput"]["additionalContext"]
+        assert "Checked:" in output["hookSpecificOutput"]["additionalContext"]
+        assert "Gap:" in output["hookSpecificOutput"]["additionalContext"]
+        assert "Next:" in output["hookSpecificOutput"]["additionalContext"]
     else:
         assert result.stdout == ""
 

@@ -20,6 +20,20 @@ disabled checks, host-listed installations and command-probe outcomes. The repor
 phrases, paths, prompts, tool output or credentials. Explain fixed diagnostic
 codes using the plugin README. Do not dump settings files or ask for credentials.
 
+Lead with `presentation.headline` verbatim. Report the diagnostic details, then
+end with `Checked:`, `Gap:` and `Next:` using the corresponding `presentation`
+values verbatim. Do not upgrade the headline to "working", "healthy" or
+"nothing needs fixing". These fields describe bounded probes, not the whole
+runtime. If an older doctor lacks `presentation`, preserve the same scope and
+explicitly mark current-session activation and factual accuracy unverified.
+
+The host inventory filters the plugin name before `@`; the marketplace name
+after `@` is not the plugin identity. Every returned installation is for
+LLM Accuracy. An unknown version does not mean the row belongs to another
+plugin. Multiple rows, disabled entries, unknown versions or mismatches need
+inspection in the host's plugin interface; do not guess their origin or remove
+them automatically. Registration alone does not prove activation.
+
 The offline probe executes this package's hook commands with synthetic prompts.
 It cannot prove the running host loaded the plugin. Verify host registration in
 the host's plugin and hook interfaces before attributing a missing reminder to
