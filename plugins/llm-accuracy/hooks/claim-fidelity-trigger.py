@@ -53,7 +53,7 @@ GENERAL_CONTRACT = (
     "and revisit conclusions that depended on it; repeated reversals require "
     "rechecking the framing. Apply these checks before drafting external claims "
     "or declaring a fix verified. Use llm-accuracy:claim-fidelity for consequential "
-    "diagnoses. This is an advisory reminder, not "
+    "diagnoses. Keep non-factual tasks brief. This is an advisory reminder, not "
     "independent verification."
 ) + " " + TECHNICAL_FOOTER
 
