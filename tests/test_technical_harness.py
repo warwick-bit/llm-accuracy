@@ -430,3 +430,74 @@ def test_builtin_corpus_reports_only_aggregate_counts(monkeypatch, tmp_path):
         "baseline_firing": 0,
     }
     assert "private-needle" not in json.dumps(report)
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "Checked:\nGap: unknown\nNext: test",
+        "Checked: supplied data\nGap:\nNext: test",
+        "Checked: supplied data\nGap: unknown\nNext:",
+        "Checked: supplied data\nGap: unknown",
+        "Checked: supplied data\nNext: test\nGap: unknown",
+        "Checked: supplied data\nGap: unknown\nNext: test\nChecked: repeated",
+        "Checked: supplied data\nGap: unknown\nNext: test\nMore claims afterward.",
+    ],
+)
+def test_footer_requires_nonempty_unique_terminal_order(modules, answer):
+    assert not modules[2].footer_present(answer)
+
+
+def test_footer_accepts_markdown_and_blank_line_separators(modules):
+    assert modules[2].footer_present(
+        "Conclusion.\n\n- **Checked:** supplied data\n\n- **Gap:** unknown\n\n- **Next:** test\n"
+    )
+
+
+def test_empty_answer_label_does_not_consume_next_line(modules):
+    assert modules[2].labelled_values("Answer:\nno", "Answer") == [""]
+
+
+def test_live_doctor_explains_legacy_counter(modules, monkeypatch, capsys):
+    doctor = modules[0]
+    monkeypatch.setattr(sys, "argv", ["doctor", "--live"])
+    monkeypatch.setattr(doctor, "diagnose", lambda **kw: {"status": "ok"})
+    monkeypatch.setattr(doctor, "installation_inventory", lambda: {"status": "listed"})
+    monkeypatch.setattr(
+        doctor, "run_probe", lambda *a, **kw: result("OK", builtin_signal_responses=0)
+    )
+    assert doctor.main() == 0
+    live = json.loads(capsys.readouterr().out)["live"]
+    explanation = live["counter_definitions"]["builtin_signal_responses"]
+    assert "PARTIAL RESULT SIGNAL" in explanation
+    assert "not keyword" in explanation
+    assert "zero" in explanation
+    assert "answers" not in live
+
+
+@pytest.mark.parametrize("model", ["claude-opus-5-5", "unexpected-model"])
+def test_natural_footer_comparison_requires_both_plugins_and_pinned_model(
+    modules, monkeypatch, model
+):
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
+    import eval_footer_behavior as natural
+
+    roots = []
+
+    def probe(prompts, plugin, **kwargs):
+        roots.append(plugin)
+        return result(
+            "Checked: supplied evidence\nGap: environment\nNext: test",
+            resolved_model=model,
+        )
+
+    monkeypatch.setattr(natural, "run_probe", probe)
+    baseline = Path("synthetic-baseline")
+    row = natural.compare_case(
+        ("synthetic", ["Synthetic evidence?"], True), baseline, "claude-opus-5-5", 0
+    )
+    assert roots == [baseline, natural.PLUGIN]
+    for arm in ("baseline", "candidate"):
+        assert row[arm]["scorable"] == (model == "claude-opus-5-5")
+        assert "factual_pass" not in row[arm]
+        assert row[arm]["footer_present_all_turns"]
