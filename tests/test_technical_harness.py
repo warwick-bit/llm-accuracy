@@ -139,9 +139,11 @@ def test_sigterm_cleans_up_probe_process_and_temporary_profile(tmp_path):
     (auth / ".credentials.json").write_text("{}")  # Synthetic, never real auth.
     child_code = (
         "import json,os,time; from pathlib import Path; "
-        f"Path({str(ready)!r}).write_text(json.dumps({{'pid':os.getpid(),"
+        f"ready=Path({str(ready)!r}); pending=ready.with_suffix('.tmp'); "
+        "pending.write_text(json.dumps({'pid':os.getpid(),"
         "'root':str(Path.cwd()),'auth_copy':"
-        "(Path.cwd()/'profile/.credentials.json').is_file()})); time.sleep(60)"
+        "(Path.cwd()/'profile/.credentials.json').is_file()})); "
+        "pending.replace(ready); time.sleep(60)"
     )
     runner_code = (
         "import sys; "
@@ -169,8 +171,12 @@ def test_sigterm_cleans_up_probe_process_and_temporary_profile(tmp_path):
             os.kill(record["pid"], 0)
     finally:
         if runner.poll() is None:
-            runner.kill()
-            runner.wait()
+            runner.terminate()
+            try:
+                runner.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                runner.kill()
+                runner.wait()
         if record:
             try:
                 os.killpg(record["pid"], signal.SIGKILL)
