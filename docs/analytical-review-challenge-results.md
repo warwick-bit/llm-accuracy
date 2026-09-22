@@ -51,6 +51,72 @@ Candidate reviewer   311.5           112.7
 These are summed observed elapsed times for six calls per arm, not stable speed
 estimates. No monetary cost or confidence interval was measured.
 
+## Repeats and stability
+
+An [unchanged FX repeat](evaluation-results/analytical-review-challenge-fx-repeat.json)
+across all three arms returned every required verdict/value correctly, with
+all four explanations per arm graded sound and all global flags absent.
+Each arm failed the missing-basis claim once and handled it correctly once.
+Prompt/harness/rubric/calibration hashes and recorded runtime settings match the
+first pass. This is observed run-to-run variation, not evidence of a prompt fix.
+The original failures remain in the record; repeat outcomes are not substituted
+for them or pooled into a general accuracy percentage.
+
+The finance repeat and the source-reference repeat ran as separate overlapping
+case groups. Their elapsed times are not used for comparative latency claims.
+
+The [source-reference repeat](evaluation-results/analytical-review-challenge-reference-repeat.json)
+reruns packets a/d/e across all arms, with unchanged prompts and fixtures:
+
+```text
+Arm                  Verdict + value  Sound explanations*  Exact ref IDs
+Plain review         12/12            12/12                5/12
+Audit text (0.5.3)    12/12            12/12                4/12
+Candidate reviewer   11/12            11/12                0/12
+```
+
+All nine review/judge pairs completed. Reference naming remains unreliable in
+all arms; the saved observations do not establish a semantic citation defect.
+The candidate additionally misclassifies claim d4, an unsupported causal claim,
+while returning its required null value. Its explanation is graded unsound.
+It handled this claim correctly in the first pass. The other two arms handle
+it correctly in both completed runs. This is an observed candidate failure and
+variation, not an estimated persistent regression rate.
+
+An attempted further all-arm replication of packet d was stopped after the
+first call exposed an unexpected `agents-md` host plugin alongside `telemetry`.
+The [rejected run fragment](evaluation-results/analytical-review-challenge-rejected-causal-repeat.json)
+records that call as an inventory/process failure, not a scored answer. The
+following in-flight audit call was interrupted and the candidate call was not
+attempted. No quality denominator includes any of these calls, and no retry
+with a widened plugin allowance was treated as equivalent. Consequently, the
+candidate's new causal-claim error remains unreplicated after its discovery.
+The thirty completed review/judge pairs used only the originally allowed host
+plugin; fourteen separate calibration calls preceded them.
+
+## Conclusion and release position
+
+Keep the reviewer experimental. The extra instructions have not earned an
+accuracy-upgrade claim over plain review with the same evidence, tools and
+claim contract. The first pass ties; the missing-input error varies across
+runs; a later candidate-only causal-classification failure and reference-name
+noncompliance provide additional reasons to withhold promotion. No candidate
+advantage remained to validate with the verbosity placebo, so it was not run.
+
+The named, separate-context workflow remains a usable interface for supplying
+artifacts, requirements and authorized checks. Native invocation was observed
+in the earlier smoke, but convenience and context separation are not measured
+accuracy improvements. The [usage guide](analytical-review-usage.md) explains
+its purpose alongside claim fidelity and self-audit.
+
+The practical direction is explicit definitions, counterexamples and executable
+reconciliations around material claims. This study holds those facilities equal
+and therefore does not estimate their independent benefit. It also does not
+validate real-company work, every SQL dialect, accounting-policy selection or
+production-system correctness. Further superiority claims require independently
+adjudicated work and a stable, attested host; simply adding more review prose
+has not justified them here. No release or installed-plugin change is proposed.
+
 ## What this comparison measures
 
 The [frozen contract](analytical-review-challenge-contract.md) compares the
@@ -60,6 +126,14 @@ contract, fresh context and synthetic evidence/query/calculator tools. This
 isolates incremental prompt effects within that setup. It does not compare
 native installed hooks, Anthropic's GitHub Code Review product, or an everyday
 freestyle conversation without those facilities.
+
+The audit arm uses version 0.5.3's instruction bodies. PR #31 merged version
+0.6.0's broader technical guidance while this frozen experiment was running.
+It is not silently substituted into these comparisons. Reproduce the historical
+experiment from [source snapshot 2afd89f](https://github.com/warwick-bit/llm-accuracy/tree/2afd89f),
+which contains the tested prompts, cases and harness. Running the same commands
+on newer source may measure a different audit arm. Neither the native 0.6.0
+hooks nor the user's installed configuration were compared here.
 
 There are six newly authored packets, four claims each: offsetting join errors,
 cash/revenue/run-rate and FX distinctions, stale event ordering, cohort boundaries,
