@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from decimal import Decimal
 import json
 from pathlib import Path
 import re
@@ -88,14 +89,17 @@ def labelled_values(answer: str, label: str) -> list[str]:
     return re.findall(pattern, answer, flags=re.M | re.I)
 
 
-def factual_value(values: list[str]) -> str | None:
+def factual_value(values: list[str]) -> str | Decimal | None:
     if len(values) != 1:
         return None
     enum = r"yes|no|\d+(?:\.\d+)?"
     match = re.fullmatch(
         r"(?:\*\*(" + enum + r")\.?\*\*\.?|(" + enum + r")\.?)", values[0], re.I
     )
-    return (match[1] or match[2]).lower() if match else None
+    if not match:
+        return None
+    value = (match[1] or match[2]).lower()
+    return value if value in {"yes", "no"} else Decimal(value)
 
 
 def score(
@@ -115,7 +119,7 @@ def score(
         return {"scorable": False, "failure": "activation"}
     values = [factual_value(labelled_values(answer, "Answer")) for answer in answers]
     fields_valid = all(value is not None for value in values) if expected else True
-    factual = fields_valid and values == expected
+    factual = fields_valid and values == [factual_value([value]) for value in expected]
     footers = [
         all(
             len(labelled_values(answer, key)) == 1 for key in ("Checked", "Gap", "Next")

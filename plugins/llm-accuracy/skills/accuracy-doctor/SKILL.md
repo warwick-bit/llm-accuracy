@@ -10,6 +10,11 @@ Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/accuracy_doctor.py"` (use `python`
 when Python 3 is installed under that name). On Windows, the command probe needs
 Git Bash; `--shell` accepts its executable path.
 
+The command probe requires local Python and a shell. Host inventory and `--live`
+also require a locally installed Claude Code CLI. In a skills-only host or a
+host without these tools, report the check as unavailable; do not imply that
+this command diagnoses that host's activation.
+
 Report the package version, reminder mode, configuration status, phrase counts,
 disabled checks, host-listed installations and command-probe outcomes. The report contains no configured
 phrases, paths, prompts, tool output or credentials. Explain fixed diagnostic

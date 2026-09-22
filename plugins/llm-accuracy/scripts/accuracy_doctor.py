@@ -76,12 +76,22 @@ def installation_inventory() -> dict:
 
 def find_shell() -> str | None:
     if os.name == "nt":
-        candidate = (
-            Path(os.environ.get("ProgramFiles", "C:/Program Files"))
-            / "Git/bin/bash.exe"
-        )
-        return str(candidate) if candidate.is_file() else shutil.which("bash")
+        return find_windows_shell()
     return shutil.which("sh")
+
+
+def find_windows_shell() -> str | None:
+    candidate = (
+        Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git/bin/bash.exe"
+    )
+    if candidate.is_file():
+        return str(candidate)
+    discovered = shutil.which("bash")
+    if discovered:
+        normalized = discovered.replace("\\", "/").lower()
+        if normalized.endswith(("/system32/bash.exe", "/sysnative/bash.exe")):
+            return None  # Windows' WSL launcher is not a native hook shell.
+    return discovered
 
 
 def probe_command(command: str, prompt: str, root: Path, shell: str) -> str:

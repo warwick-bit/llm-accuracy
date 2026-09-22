@@ -211,6 +211,11 @@ def communicate(
             else "timeout"
         )
         return {"status": status, "answers": []}
+    except BaseException:
+        # Cancellation and unexpected failures must not leave a detached model
+        # process running. Preserve the exception after stopping the owned tree.
+        _kill(process)
+        raise
     return parse_events(stdout, stderr, process.returncode)
 
 
