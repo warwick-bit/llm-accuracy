@@ -8,6 +8,8 @@ import os
 import re
 import sys
 
+from accuracy_config import custom_trigger_matches
+
 
 SOURCE_MARKER = re.compile(
     r"\b("
@@ -71,6 +73,8 @@ def should_fire(prompt: str) -> bool:
     lowered = prompt.lower()
     if any(marker in lowered for marker in BYPASS_MARKERS):
         return False
+    if custom_trigger_matches("fusion_evidence", prompt):
+        return True
     if CODE_OR_EXECUTION.search(prompt):
         return False
     if GENERAL_ANALYSIS.search(prompt) and not SOURCE_MARKER.search(prompt):

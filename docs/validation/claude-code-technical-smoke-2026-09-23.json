@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "scope": "isolated_candidate_marketplace_and_archive",
+  "source_commit": "de2b73e743ec2501510e0cb7f3c89668e0306cbb",
+  "host_version": "2.1.280 (Claude Code)",
+  "checks": {
+    "marketplace_add": true,
+    "plugin_install": true,
+    "installed_enabled_version": true,
+    "installed_files_match_source": true,
+    "new_skills_present": true,
+    "installed_default_session": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "installed_custom_phrase": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "installed_bypass": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 0,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "archive_session": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "isolated_cleanup": true
+  },
+  "archive_sha256": "c77831729bc20169200ff176e700b27b3751a9c6855feb0e01a686cd6948edd3",
+  "passed": true,
+  "tested_on": "2026-09-23",
+  "platform": "Linux/WSL",
+  "limitations": [
+    "Local-path candidate marketplace, not hosted GitHub main installation",
+    "Auth-only temporary profiles; current session and remote machine unverified",
+    "Native Windows model execution, Cowork and skills-only hosts not tested",
+    "Acknowledgement and hook delivery do not establish factual accuracy"
+  ],
+  "plugin_tree": "f2795abdbd759ee9f3dd85d75aaadc6069971255"
+}

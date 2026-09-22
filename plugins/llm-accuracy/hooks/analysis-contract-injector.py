@@ -8,6 +8,8 @@ import os
 import re
 import sys
 
+from accuracy_config import custom_trigger_matches
+
 
 STRONG = re.compile(
     r"\b(analy[sz]e|segment|break\s?down|cohort|funnel|"
@@ -134,6 +136,8 @@ def should_fire(prompt: str) -> bool:
     lowered = prompt.lower()
     if any(marker in lowered for marker in BYPASS_MARKERS):
         return False
+    if custom_trigger_matches("analysis", prompt):
+        return True
     p = prompt
     if is_ambiguous_business_question(p):
         return True

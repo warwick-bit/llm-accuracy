@@ -1,0 +1,202 @@
+{
+  "tested_on": "2026-09-23",
+  "source_commit": "88a4448d32b9f7227003aa84829c42e3648fed6c",
+  "plugin_tree": "b7a168e310fe80ad60f0256f8d136e4478c7a875",
+  "harness_sha256": "7a30245c14b4d3893fec260bb849df4516bda12773a2071ac95f7c4efd9379ac",
+  "cases": [
+    {
+      "case": "sample_scope",
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": true,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    },
+    {
+      "case": "competing_causes",
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": true,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    },
+    {
+      "case": "denominator",
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    },
+    {
+      "case": "wrong_environment",
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": true,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    },
+    {
+      "case": "supported_fix",
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": true,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    },
+    {
+      "case": "source_conflict",
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": true,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    },
+    {
+      "case": "correction",
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": true,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    },
+    {
+      "case": "routine_control",
+      "candidate": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": null,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      },
+      "baseline": {
+        "scorable": true,
+        "factual_fields_valid": true,
+        "factual_pass": null,
+        "footer_present_all_turns": false,
+        "footer_overapplied": false,
+        "host_status": "ok",
+        "resolved_model": "claude-sonnet-5"
+      }
+    }
+  ],
+  "result": {
+    "scope": "synthetic_packet_fields_only",
+    "summary": {
+      "paired_cases": 8,
+      "excluded_pairs": 0,
+      "baseline": {
+        "factual_passes": 7,
+        "factual_cases": 7,
+        "invalid_factual_fields": 0,
+        "footer_cases": 0,
+        "overapplication_cases": 0
+      },
+      "candidate": {
+        "factual_passes": 7,
+        "factual_cases": 7,
+        "invalid_factual_fields": 0,
+        "footer_cases": 5,
+        "overapplication_cases": 0
+      }
+    },
+    "variance": "not_measured_single_run_per_case_arm",
+    "prose_correctness": "not_scored",
+    "model": "sonnet",
+    "sampling": "all_declared_cases"
+  },
+  "interpretation": "One exploratory run; no observed factual-field advantage, no general accuracy-lift conclusion. Free prose and footer truthfulness unscored."
+}

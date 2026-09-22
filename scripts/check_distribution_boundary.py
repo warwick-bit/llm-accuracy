@@ -26,9 +26,16 @@ FORBIDDEN_TEXT = (
     "contract-receipt",
 )
 FORBIDDEN_PYTHON_IMPORT = re.compile(
-    r"^\s*(?:from\s+(?:requests|urllib|httpx|socket|subprocess)\b|"
-    r"import\s+(?:requests|urllib|httpx|socket|subprocess)(?:\s|,|$))",
+    r"^\s*(?:from\s+(?:requests|urllib|httpx|socket)\b|"
+    r"import\s+(?:requests|urllib|httpx|socket)(?:\s|,|$))",
     re.MULTILINE,
+)
+SUBPROCESS_IMPORT = re.compile(
+    r"^\s*(?:from\s+subprocess\b|import\s+subprocess(?:\s|,|$))", re.MULTILINE
+)
+# Explicit, user-invoked diagnostics only; automatic hooks get no exception.
+ACCURACY_DIAGNOSTICS = frozenset(
+    {"scripts/accuracy_doctor.py", "scripts/host_probe.py"}
 )
 
 
@@ -44,7 +51,11 @@ def forbidden_path_prefixes(profile: str) -> tuple[str, ...]:
 
 
 def artifact_violations(
-    path: Path, relative: Path, *, forbidden_prefixes: tuple[str, ...]
+    path: Path,
+    relative: Path,
+    *,
+    forbidden_prefixes: tuple[str, ...],
+    allow_subprocess: bool = False,
 ) -> list[str]:
     """Return boundary violations for one plugin artifact."""
     if path.is_symlink():
@@ -67,7 +78,10 @@ def artifact_violations(
         for term in FORBIDDEN_TEXT
         if term in text.lower()
     ]
-    if path.suffix.lower() == ".py" and FORBIDDEN_PYTHON_IMPORT.search(text):
+    if path.suffix.lower() == ".py" and (
+        FORBIDDEN_PYTHON_IMPORT.search(text)
+        or (SUBPROCESS_IMPORT.search(text) and not allow_subprocess)
+    ):
         violations.append(f"network-capable import: {relative}")
     return violations
 
@@ -81,7 +95,13 @@ def boundary_violations(plugin: Path, *, profile: str = "accuracy-core") -> list
         if "__pycache__" in relative.parts:
             continue
         violations.extend(
-            artifact_violations(path, relative, forbidden_prefixes=forbidden_prefixes)
+            artifact_violations(
+                path,
+                relative,
+                forbidden_prefixes=forbidden_prefixes,
+                allow_subprocess=profile == "accuracy-core"
+                and relative.as_posix() in ACCURACY_DIAGNOSTICS,
+            )
         )
     return sorted(set(violations))
 
