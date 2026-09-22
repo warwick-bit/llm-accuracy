@@ -81,3 +81,28 @@ This run followed fixes for decimal-value comparison. An earlier candidate run
 recorded baseline 6/7 and candidate 7/7; those historical results were not
 rescored or pooled. The current observation shows no factual-field advantage.
 It neither establishes nor rules out improvement on real technical work.
+
+## Natural footer comparison
+
+`eval_footer_behavior.py` compares two loaded plugin versions on the same pinned
+model. It uses natural synthetic questions with no requested Answer field or
+footer. Extract a trusted released plugin ZIP into a temporary directory, then run:
+
+```sh
+python3 scripts/eval_footer_behavior.py --live --baseline-plugin /path/to/released-plugin --rung ramp
+python3 scripts/eval_footer_behavior.py --live --baseline-plugin /path/to/released-plugin --rung full
+python3 scripts/eval_footer_behavior.py --live --baseline-plugin /path/to/released-plugin --rung repeat
+```
+
+The default model is `claude-opus-5-5`; a missing or different resolved model
+makes the pair unscorable. Both arms must deliver fidelity guidance on every
+turn. The ramp is one two-turn causal/scope case. Full adds deployment scope,
+conflicting build reports, thanks and a creative slogan. Repeat runs the three
+technical cases unchanged once more. Each arm runs sequentially with provider
+defaults and the same tool-free, auth-only isolation as the field suite.
+
+This measures footer presence and routine/creative overapplication only.
+Natural-prose correctness and the truthfulness of Checked/Gap/Next content are
+**not scored**. A zero exit means all pairs were scorable, not that the candidate
+passed a quality threshold. Treat each rung separately; do not pool the repeated
+cases as independent examples or keep rerunning until a preferred result appears.

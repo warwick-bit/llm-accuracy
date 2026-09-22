@@ -1,0 +1,236 @@
+{
+  "schema_version": 1,
+  "tested_on": "2026-09-23",
+  "scope": "synthetic_natural_footer_structure_only",
+  "host_version": "2.1.280 (Claude Code)",
+  "baseline_version": "0.6.0",
+  "candidate_version": "0.6.1",
+  "source_commit": "66cb985c4d8586adf51931326be9424e2f3342b0",
+  "baseline_zip_sha256": "c77831729bc20169200ff176e700b27b3751a9c6855feb0e01a686cd6948edd3",
+  "harness_sha256": {
+    "scripts/eval_footer_behavior.py": "11be2e3668e849a05faa4c1197a5ef673b285a040b22dac9b3d1e705a182a56e",
+    "scripts/eval_technical_behavior.py": "865136e8a9e81d4de5035fb34df280b87605a6002799fd52c8653107bcf296c2"
+  },
+  "runs": {
+    "ramp": [
+      {
+        "case": "causal_scope",
+        "technical": true,
+        "turns": 2,
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "scope": "synthetic_natural_footer_only",
+        "rung": "ramp",
+        "model": "claude-opus-5-5",
+        "prose_correctness": "not_scored",
+        "hook_sha256": {
+          "baseline": "8af73c588ff48ac55c95da7e8d8e59e8420b00864e47667d4943edf2998f8b5c",
+          "candidate": "64620e770f3a346194f52b55318178e29491ea3deb5f9f10004f8a2239613e56"
+        },
+        "paired_cases": 1,
+        "declared_cases": 1
+      }
+    ],
+    "full": [
+      {
+        "case": "causal_scope",
+        "technical": true,
+        "turns": 2,
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "case": "deployment_scope",
+        "technical": true,
+        "turns": 1,
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "case": "source_conflict",
+        "technical": true,
+        "turns": 1,
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": false,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "case": "routine",
+        "technical": false,
+        "turns": 1,
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": false,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": false,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "case": "creative",
+        "technical": false,
+        "turns": 1,
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": false,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": false,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "scope": "synthetic_natural_footer_only",
+        "rung": "full",
+        "model": "claude-opus-5-5",
+        "prose_correctness": "not_scored",
+        "hook_sha256": {
+          "baseline": "8af73c588ff48ac55c95da7e8d8e59e8420b00864e47667d4943edf2998f8b5c",
+          "candidate": "64620e770f3a346194f52b55318178e29491ea3deb5f9f10004f8a2239613e56"
+        },
+        "paired_cases": 5,
+        "declared_cases": 5
+      }
+    ],
+    "repeat": [
+      {
+        "case": "causal_scope",
+        "technical": true,
+        "turns": 2,
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "case": "deployment_scope",
+        "technical": true,
+        "turns": 1,
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "case": "source_conflict",
+        "technical": true,
+        "turns": 1,
+        "baseline": {
+          "scorable": true,
+          "footer_present_all_turns": false,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        },
+        "candidate": {
+          "scorable": true,
+          "footer_present_all_turns": true,
+          "footer_overapplied": false,
+          "resolved_model": "claude-opus-5-5",
+          "host_status": "ok"
+        }
+      },
+      {
+        "scope": "synthetic_natural_footer_only",
+        "rung": "repeat",
+        "model": "claude-opus-5-5",
+        "prose_correctness": "not_scored",
+        "hook_sha256": {
+          "baseline": "8af73c588ff48ac55c95da7e8d8e59e8420b00864e47667d4943edf2998f8b5c",
+          "candidate": "64620e770f3a346194f52b55318178e29491ea3deb5f9f10004f8a2239613e56"
+        },
+        "paired_cases": 3,
+        "declared_cases": 3
+      }
+    ]
+  },
+  "limitations": [
+    "Ramp ran before formatting-only harness edits; hashes identify full and repeat harness.",
+    "Auth-only temporary profiles, no tools/MCPs, provider defaults, sequential requests.",
+    "Three authored technical cases; same cases repeated, not independent evidence.",
+    "Footer content truthfulness and natural prose correctness not scored.",
+    "No placebo, broad accuracy-lift claim or affected remote runtime verification."
+  ]
+}
