@@ -1,5 +1,7 @@
 # LLM Accuracy 0.7.0
 
+**Unreleased candidate:** [conversational validation is not established](technical-review-conversation-validation.md); keep the PR draft.
+
 Adds `/llm-accuracy:technical-review model=<available Claude model>`: an explicit
 review of a complete technical draft against supplied, attributed evidence.
 Normal reminders, custom phrase triggers and bypasses are unchanged.

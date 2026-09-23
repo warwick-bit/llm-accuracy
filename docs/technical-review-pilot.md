@@ -1,5 +1,7 @@
 # Explicit technical review pilot
 
+**Unreleased candidate:** [conversational validation is not established](technical-review-conversation-validation.md); keep the PR draft.
+
 The new command reviews a complete question/draft/evidence packet in a fresh
 Claude context. It is explicit-only and advisory. The automatic reminders are
 unchanged. It does not promise a resolution of general model overconfidence.

@@ -1,0 +1,463 @@
+{
+  "schema_version": 1,
+  "scope": "failed_auditor_calibration_no_conversational_result",
+  "attempts": [
+    {
+      "attempt": 1,
+      "passed": false,
+      "identity": {
+        "accuracy-conversation-run.py": "a659e91bb18347137c0d6ff2f3ae71f20d6bf6af6052c5f7a88a15d36577e073",
+        "accuracy-conversation-cases.json": "5034d8fdd3870d6a544c3cdeac90a7ff9651cd605a217f56a2f4d0a5836870e1",
+        "accuracy-conversation-plan.md": "089487173f24181e0e67eef3ae7e5ed00c538619c5b02095e357ab21f5b6e4f3",
+        "technical_review.py": "e87aff7127718c32c24d78abb4f9abf44d32548ad6792da70d411a3c6b407906",
+        "host_probe.py": "06031c3d38cd3b429e7daeda6ca33b422203f7c116d7dd40f3209c475519916f",
+        "accuracy_attested_probe.py": "a92c7dc4203b721a36e07da489265d37e2a329c5dd2750c32e134ee3a79dc1d4"
+      },
+      "rows": [
+        {
+          "case": 0,
+          "matched": false,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": false
+          }
+        }
+      ],
+      "subject_sessions_run": 0
+    },
+    {
+      "attempt": 2,
+      "passed": false,
+      "identity": {
+        "accuracy-conversation2-run.py": "ef0520fe8c87682b53440b4bd65765aa7939a770feae3f667e56e9536b284556",
+        "accuracy-conversation2-cases.json": "5034d8fdd3870d6a544c3cdeac90a7ff9651cd605a217f56a2f4d0a5836870e1",
+        "accuracy-conversation2-plan.md": "bf4ee06c1a23e3c8a3845656e7d01c3e475baf39c82fd9b6c2f05f0e8fa7731c",
+        "technical_review.py": "e87aff7127718c32c24d78abb4f9abf44d32548ad6792da70d411a3c6b407906",
+        "host_probe.py": "06031c3d38cd3b429e7daeda6ca33b422203f7c116d7dd40f3209c475519916f",
+        "accuracy_attested_probe.py": "a92c7dc4203b721a36e07da489265d37e2a329c5dd2750c32e134ee3a79dc1d4"
+      },
+      "rows": [
+        {
+          "case": 0,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "supported",
+            "review_verdict": "appropriate",
+            "quote_anchor": "draft",
+            "quote_start": 37,
+            "quote_length": 66
+          }
+        },
+        {
+          "case": 1,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "unsupported",
+            "review_verdict": "missed",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 24
+          }
+        },
+        {
+          "case": 2,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "unsupported",
+            "review_verdict": "appropriate",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 24
+          }
+        },
+        {
+          "case": 3,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "supported",
+            "review_verdict": "spurious",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 103
+          }
+        },
+        {
+          "case": 4,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "incomplete",
+            "review_verdict": "appropriate",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 17
+          }
+        },
+        {
+          "case": 5,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "overhedged",
+            "review_verdict": "appropriate",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 53
+          }
+        },
+        {
+          "case": 5,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "overhedged",
+            "review_verdict": "appropriate",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 53
+          }
+        },
+        {
+          "case": 4,
+          "matched": false,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-sonnet-5"
+            },
+            "scorable": true,
+            "answer_verdict": "incomplete",
+            "review_verdict": "missed",
+            "quote_anchor": "question",
+            "quote_start": 0,
+            "quote_length": 28
+          }
+        }
+      ],
+      "subject_sessions_run": 0
+    },
+    {
+      "attempt": 3,
+      "passed": false,
+      "identity": {
+        "accuracy-conversation3-run.py": "a606fab9edd1ea57564618e0d4fbda7c216151b0f524c6f1da12b6fee72d63f3",
+        "accuracy-conversation3-cases.json": "5034d8fdd3870d6a544c3cdeac90a7ff9651cd605a217f56a2f4d0a5836870e1",
+        "accuracy-conversation3-plan.md": "c1bcc2944e1179a02f6317322d6443e7fe1493d66978131a24e5b34c50a625fe",
+        "technical_review.py": "e87aff7127718c32c24d78abb4f9abf44d32548ad6792da70d411a3c6b407906",
+        "host_probe.py": "06031c3d38cd3b429e7daeda6ca33b422203f7c116d7dd40f3209c475519916f",
+        "accuracy_attested_probe.py": "a92c7dc4203b721a36e07da489265d37e2a329c5dd2750c32e134ee3a79dc1d4"
+      },
+      "rows": [
+        {
+          "case": 0,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-opus-5-5"
+            },
+            "scorable": true,
+            "answer_verdict": "supported",
+            "review_verdict": "appropriate",
+            "quote_anchor": "draft",
+            "quote_start": 37,
+            "quote_length": 66
+          }
+        },
+        {
+          "case": 1,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-opus-5-5"
+            },
+            "scorable": true,
+            "answer_verdict": "unsupported",
+            "review_verdict": "missed",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 24
+          }
+        },
+        {
+          "case": 2,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-opus-5-5"
+            },
+            "scorable": true,
+            "answer_verdict": "unsupported",
+            "review_verdict": "appropriate",
+            "quote_anchor": "draft",
+            "quote_start": 0,
+            "quote_length": 24
+          }
+        },
+        {
+          "case": 3,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-opus-5-5"
+            },
+            "scorable": true,
+            "answer_verdict": "supported",
+            "review_verdict": "spurious",
+            "quote_anchor": "draft",
+            "quote_start": 37,
+            "quote_length": 66
+          }
+        },
+        {
+          "case": 4,
+          "matched": true,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-opus-5-5"
+            },
+            "scorable": true,
+            "answer_verdict": "incomplete",
+            "review_verdict": "appropriate",
+            "quote_anchor": "question",
+            "quote_start": 0,
+            "quote_length": 28
+          }
+        },
+        {
+          "case": 5,
+          "matched": false,
+          "audit": {
+            "host": {
+              "status": "ok",
+              "result_count": 1,
+              "fidelity_hook_responses": 0,
+              "hook_response_count": 0,
+              "builtin_signal_responses": 0,
+              "host_inventory": {
+                "status": "reported",
+                "tool_count": 0,
+                "mcp_count": 0,
+                "plugin_count": 1,
+                "accuracy_plugin_count": 0,
+                "telemetry_plugin_count": 1
+              },
+              "resolved_model": "claude-opus-5-5"
+            },
+            "scorable": false
+          }
+        }
+      ],
+      "subject_sessions_run": 0
+    }
+  ],
+  "release_decision": "keep_draft",
+  "no_accuracy_conclusion": true
+}
