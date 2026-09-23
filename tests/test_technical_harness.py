@@ -548,3 +548,53 @@ def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, later_turn):
     )
     assert result == {"status": "timeout", "answers": []}
     assert time.monotonic() - started < 3
+
+
+def test_stream_input_uses_newline_framing_only(modules, tmp_path):
+    program = "import sys,json\nfor line in sys.stdin:\n print(json.dumps({'type':'result','result':line.rstrip('\\n')}),flush=True)"
+    result = modules[1].communicate(
+        [sys.executable, "-c", program], tmp_path, dict(os.environ), "a\u2028b\n", 3
+    )
+    assert result["answers"] == ["a\u2028b"]
+
+
+def test_early_auth_error_survives_failed_later_input(modules, tmp_path):
+    program = (
+        "import sys,json\n"
+        "sys.stdin.readline()\n"
+        "print(json.dumps({'type':'result','is_error':True,'result':'authentication expired'}),flush=True)\n"
+        "sys.exit(1)"
+    )
+    result = modules[1].communicate(
+        [sys.executable, "-c", program],
+        tmp_path,
+        dict(os.environ),
+        "first\n" + "x" * 131072 + "\n",
+        3,
+    )
+    assert result["status"] == "authentication"
+
+
+def test_kill_leaves_stdin_to_its_feeder(modules, tmp_path, monkeypatch):
+    probe = modules[1]
+    process = probe.subprocess.Popen(
+        [sys.executable, "-c", "import time;time.sleep(5)"],
+        stdin=probe.subprocess.PIPE,
+        start_new_session=os.name == "posix",
+    )
+    actual_stdin = process.stdin
+
+    class FeederOwnedStream:
+        def close(self):
+            pytest.fail("caller must not race or block on feeder-owned stdin")
+
+    process.stdin = FeederOwnedStream()
+    process._accuracy_feeder_owned = True
+    try:
+        probe._kill(process)
+        assert process.poll() is not None
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        actual_stdin.close()

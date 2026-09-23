@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import io
 import json
 import os
 import queue
@@ -162,7 +163,7 @@ def _feed(stream, prompts, ready, stopped, events) -> None:
             pass
 
 
-def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
+def _exchange(process, stdin: str, timeout: int) -> tuple[str, str, bool]:
     """Bound both input delivery and output capture, including stalled readers."""
     deadline = time.monotonic() + timeout
     events: queue.Queue = queue.Queue()
@@ -171,11 +172,18 @@ def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
             target=_drain, args=(getattr(process, name), name, events), daemon=True
         ).start()
     ready, stopped = threading.Semaphore(1), threading.Event()
-    threading.Thread(
+    feeder = threading.Thread(
         target=_feed,
-        args=(process.stdin, stdin.splitlines(keepends=True), ready, stopped, events),
+        args=(process.stdin, io.StringIO(stdin), ready, stopped, events),
         daemon=True,
-    ).start()
+    )
+    process._accuracy_feeder_owned = True
+    try:
+        feeder.start()
+    except RuntimeError:
+        process._accuracy_feeder_owned = False
+        raise
+    input_failed = False
     outputs, closed, size, line = {"stdout": [], "stderr": []}, 0, 0, ""
     try:
         while closed < 2:
@@ -183,7 +191,8 @@ def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
             if name == "overflow":
                 raise OverflowError
             if name == "stdin_error":
-                raise OSError("stdin_delivery_failed")
+                input_failed = True
+                continue
             if chunk is None:
                 closed += 1
                 continue
@@ -198,7 +207,7 @@ def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
                         ready.release()
                     line = ""
         process.wait(timeout=max(0, deadline - time.monotonic()))
-        return "".join(outputs["stdout"]), "".join(outputs["stderr"])
+        return "".join(outputs["stdout"]), "".join(outputs["stderr"]), input_failed
     finally:
         # Unblock a feeder waiting for the next result on every exit path.
         # communicate kills the owned child before closing a blocked writer.
@@ -233,8 +242,11 @@ def _kill(process) -> None:
     except ProcessLookupError:
         pass
     process.wait()
-    if not process.stdin.closed:
-        process.stdin.close()
+    if not getattr(process, "_accuracy_feeder_owned", False):
+        try:
+            process.stdin.close()
+        except (OSError, ValueError):
+            pass
 
 
 def communicate(
@@ -257,7 +269,7 @@ def communicate(
     except OSError:
         return {"status": "host_unavailable", "answers": []}
     try:
-        stdout, stderr = _exchange(process, stdin, timeout)
+        stdout, stderr, input_failed = _exchange(process, stdin, timeout)
     except (subprocess.TimeoutExpired, queue.Empty, OverflowError, OSError) as exc:
         _kill(process)
         status = (
@@ -273,7 +285,10 @@ def communicate(
         # process running. Preserve the exception after stopping the owned tree.
         _kill(process)
         raise
-    return parse_events(stdout, stderr, process.returncode)
+    result = parse_events(stdout, stderr, process.returncode)
+    if input_failed and result["status"] == "ok":
+        return {"status": "host_error", "answers": []}
+    return result
 
 
 def _terminate(signum, frame) -> None:
