@@ -83,7 +83,9 @@ unscored stage was repeated. No reminder tuning followed the behavioral runs.
 
 These are fallible model judgments on a small synthetic packet, not human
 ground truth, an accuracy percentage or a demonstrated general accuracy lift.
-The observed judge disagreements matter. Native Windows model behavior,
+Paired answers were adjacent in the judge packet; reversing the order does not
+remove the possibility of relative grading. The observed judge disagreements
+matter. Native Windows model behavior,
 Cowork and the affected remote configuration require separate runtime testing.
 The plugin remains advisory; substantive answers still need review.
 
@@ -94,6 +96,19 @@ ambiguity, live acknowledgement boundaries, inventory drift, custom triggers,
 privacy and packaging. Ruff, JSON parsing, Python compilation and all three
 distribution profiles pass. The archive test now compares its packaged version
 with the source manifest, while the distribution test pins the release version.
+
+A [fresh-profile installation and ZIP smoke](validation/claude-code-smoke-0.6.2.json)
+passed on Claude Code 2.1.280, Linux/WSL. Default, custom-phrase and bypass
+requests produced the expected hook counts and acknowledgements. The installed
+doctor command ran under Opus 5.5 and its final answer preserved all four
+generated presentation values. One earlier smoke was unscored after a parser
+type error; the parser was fixed before the successful full repeat.
+
+The native doctor and later custom/bypass sessions reported one additional
+host component beyond Accuracy and telemetry. Its identity was not retained.
+These are functional installation/rendering observations in that host, not
+fully isolated causal evidence. The tool-free behavioral comparison above
+separately required exactly Accuracy plus telemetry and rejected inventory drift.
 
 ## Lineage
 

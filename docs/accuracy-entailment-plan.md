@@ -57,7 +57,9 @@ pin medium effort and record provider-default sampling. The host also reports a
 `telemetry` plugin in an auth-only no-plugin probe; record and match this shared
 host component rather than claiming a completely plugin-free runtime. Reject
 other inventory differences. Infrastructure
-or activation failure excludes the pair from both denominators.
+or activation failure excludes the pair from both denominators. The bounded
+driver stops and leaves the entire stage unscored when this happens; any
+instrumentation repair and subsequent repeat must be disclosed separately.
 
 Ramp one plumbing pair, then three distinct families. Stop comparative expansion
 on a clear null/ceiling; additional positive and regression controls then serve
