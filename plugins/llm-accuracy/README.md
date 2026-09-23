@@ -153,6 +153,14 @@ flags for this plugin. `not_listed` can be normal for an explicit `--plugin-dir`
 load. Neither registration nor a working command proves the current session
 loaded a hook: `current_session_activation` remains `unverified`.
 
+The doctor generates a bounded `presentation` with a headline and Checked/Gap/Next
+text. `local_probes_passed` means only these local checks passed. `attention`
+means a diagnostic check needs investigation. Neither means the assistant is
+factually accurate. Missing, disabled, multiple, unknown-version or mismatched
+host registrations get an inspection prompt even when local probes pass.
+Inventory rows identify **LLM Accuracy**, not every plugin from its marketplace;
+an unknown version must not be guessed to belong to Session Ledger.
+
 The underlying script is `scripts/accuracy_doctor.py` in the installed plugin.
 Use Python 3; on Windows install Git Bash or pass its path using `--shell`.
 `emitted` means the command returned hook context; `disabled` identifies a
@@ -178,6 +186,12 @@ change, and a rerun of the original check. Local verification, deployment and
 production verification stay separate. Corrections require checking dependent
 conclusions again. The workflow is advisory and respects repository instructions.
 
+Before concluding, check intermediate assertions as well as the final verdict.
+A plausible alternative that the evidence cannot distinguish leaves the claim
+unresolved. State directly supported narrow facts plainly, and keep the same
+scope in the headline, body and footer. Passing unspecified tests does not
+establish a particular fix; relative build age does not establish patch contents.
+
 Maintainers can run the opt-in synthetic behavioural suite described in
 [`docs/technical-evaluation.md`](https://github.com/warwick-bit/llm-accuracy/blob/main/docs/technical-evaluation.md). Factual
 field support and footer presence are scored independently; neither certifies
@@ -202,6 +216,11 @@ this plugin.
 ### Live diagnostic counters
 
 The doctor includes fixed `counter_definitions` in its live report.
+`host_inventory` reports only allowlisted counts from the host's init event;
+missing inventory is `unreported`, not evidence of an empty host. A host may
+include its own shared components, such as a reported `telemetry` plugin.
+Identical per-turn inventories are accepted; changed entries report `changed`.
+Model identity is `unreported` if it differs between turns.
 `fidelity_hook_responses` counts delivered claim-fidelity reminders;
 `hook_response_count` counts all hook-response events, including silent ones.
 `builtin_signal_responses` is a legacy name for events containing a

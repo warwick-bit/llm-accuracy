@@ -36,30 +36,29 @@ MODE_ENV = "CC_CLAIM_FIDELITY_MODE"
 MAX_INPUT_CHARS = 1_000_000
 
 TECHNICAL_FOOTER = (
-    "Before sending a substantive technical diagnosis, verification claim, or "
-    "answer about whether evidence proves a technical claim (including rejecting "
-    "or withholding that claim), end with this compact three-line Checked / Gap / Next footer:\n"
+    "End substantive technical diagnoses, verification claims and evidence-sufficiency "
+    "answers (including rejecting or withholding a claim) with this three-line Checked / Gap / Next footer:\n"
     "Checked: actual checks or supplied evidence, with scope\n"
     "Gap: remaining unknowns (or none)\n"
     "Next: smallest useful check or action (or none)\n"
-    "Fill each line honestly; supplied evidence is not a check you performed. "
-    "Keep uncertainty in the answer body too. Skip this footer for routine replies "
-    "and creative requests."
+    "Supplied evidence is not a check you performed. Keep headline, body and footer "
+    "consistent; a Gap cannot excuse a stronger claim above. Skip this footer for "
+    "routine replies and creative requests."
 )
 
 GENERAL_CONTRACT = (
-    "CLAIM FIDELITY CHECK: Before material factual claims, check evidence that "
-    "actually supports the claim; a tool call alone is not verification. Separate "
-    "observations, hypotheses and unknowns. In technical work, verify the measured "
-    "field, units, denominator, process/environment and version. Before saying all, "
-    "none, total or ruled out, establish coverage beyond previews, samples and "
-    "truncated output; otherwise qualify the scope. Test competing causes before "
-    "declaring a root cause. When correcting a diagnosis, name the new evidence "
-    "and revisit conclusions that depended on it; repeated reversals require "
-    "rechecking the framing. Apply these checks before drafting external claims "
-    "or declaring a fix verified. Use llm-accuracy:verify-technical for diagnosis "
-    "and fix checks. Keep non-factual tasks brief. This is an advisory reminder, not "
-    "independent verification."
+    "CLAIM FIDELITY CHECK: Before concluding, identify what the evidence establishes "
+    "and what is missing. For each material claim, including intermediate assertions, "
+    "check whether a plausible alternative could produce the same observation "
+    "without that claim being true. If evidence cannot distinguish it, qualify or "
+    "withhold the claim; conclude on the surviving evidence. State supported narrow "
+    "facts plainly, without speculative hedging. Separate observations, hypotheses "
+    "and unknowns. Check field, units, denominator, environment and version; "
+    "all/none claims need coverage beyond previews, samples and truncated output. "
+    "A tool call alone is not verification. Test competing causes before declaring "
+    "a root cause. Corrections must revisit dependent conclusions; repeated "
+    "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
+    "for diagnosis and fix checks. Advisory guidance, not independent verification."
 )
 
 CONTRACT = (

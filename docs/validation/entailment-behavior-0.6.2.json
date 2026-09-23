@@ -1,0 +1,516 @@
+{
+  "scope": "authored_synthetic_transfer_checks_not_general_accuracy",
+  "source_commit": "7d949f39ad1012a95e310c282325f4a53c986858",
+  "subject_model": "claude-opus-5-5",
+  "subject_effort": "medium",
+  "subject_sampling": "provider_default",
+  "judge_model": "claude-fable-5-1",
+  "judge_effort": "provider_default",
+  "judge_order": "forward_then_reverse",
+  "shared_host_component": "telemetry",
+  "raw_answers_retained": false,
+  "stages": {
+    "plumbing": {
+      "rows": [
+        {
+          "case": "local",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "unsupported",
+            "unsupported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 196,
+              "length": 56
+            },
+            {
+              "offset": 159,
+              "length": 94
+            }
+          ]
+        },
+        {
+          "case": "local",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 270,
+              "length": 111
+            },
+            {
+              "offset": 270,
+              "length": 111
+            }
+          ]
+        }
+      ],
+      "disagreements": 0,
+      "receipt_sha256": "5d9aed75d68c5e399a5033fa1573b872a10278f3606384d7fb4ab3a47488d7af",
+      "subject_inventory_attested": true,
+      "quote_matches_verified": true
+    },
+    "ramp": {
+      "rows": [
+        {
+          "case": "sample",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 1164,
+              "length": 117
+            },
+            {
+              "offset": 1164,
+              "length": 117
+            }
+          ]
+        },
+        {
+          "case": "sample",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 879,
+              "length": 45
+            },
+            {
+              "offset": 148,
+              "length": 42
+            }
+          ]
+        },
+        {
+          "case": "cause",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 2,
+              "length": 38
+            },
+            {
+              "offset": 2,
+              "length": 38
+            }
+          ]
+        },
+        {
+          "case": "cause",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 2,
+              "length": 41
+            },
+            {
+              "offset": 2,
+              "length": 41
+            }
+          ]
+        },
+        {
+          "case": "positive",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "unsupported"
+          ],
+          "unlisted_flags": [
+            false,
+            true
+          ],
+          "quote_checks": [
+            {
+              "offset": 9,
+              "length": 60
+            },
+            {
+              "offset": 837,
+              "length": 66
+            }
+          ]
+        },
+        {
+          "case": "positive",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 2,
+              "length": 69
+            },
+            {
+              "offset": 2,
+              "length": 69
+            }
+          ]
+        }
+      ],
+      "disagreements": 1,
+      "receipt_sha256": "5bfeffe71f9b7aa10912851980d0b4cb06540765161d7ba8a016c4f816f8e4fd",
+      "subject_inventory_attested": true,
+      "quote_matches_verified": true
+    },
+    "compatibility": {
+      "rows": [
+        {
+          "case": "conflict",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 410,
+              "length": 116
+            },
+            {
+              "offset": 485,
+              "length": 41
+            }
+          ]
+        },
+        {
+          "case": "membership",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 8,
+              "length": 102
+            },
+            {
+              "offset": 8,
+              "length": 102
+            }
+          ]
+        },
+        {
+          "case": "correction",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 42,
+              "length": 71
+            },
+            {
+              "offset": 2,
+              "length": 37
+            }
+          ]
+        },
+        {
+          "case": "correction",
+          "arm": "candidate",
+          "turn": 1,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 485,
+              "length": 120
+            },
+            {
+              "offset": 2,
+              "length": 37
+            }
+          ]
+        },
+        {
+          "case": "units",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 2,
+              "length": 69
+            },
+            {
+              "offset": 2,
+              "length": 69
+            }
+          ]
+        },
+        {
+          "case": "routine",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 0,
+              "length": 45
+            },
+            {
+              "offset": 0,
+              "length": 34
+            }
+          ]
+        },
+        {
+          "case": "creative",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 0,
+              "length": 85
+            },
+            {
+              "offset": 0,
+              "length": 85
+            }
+          ]
+        }
+      ],
+      "disagreements": 0,
+      "receipt_sha256": "e34b827895e7e59dacc22a604c94d70454fc9206e3bc7449b34bb79b21e3a8c3",
+      "subject_inventory_attested": true,
+      "quote_matches_verified": true
+    },
+    "repeat": {
+      "rows": [
+        {
+          "case": "local",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "unsupported",
+            "unsupported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 530,
+              "length": 45
+            },
+            {
+              "offset": 530,
+              "length": 45
+            }
+          ]
+        },
+        {
+          "case": "local",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 459,
+              "length": 64
+            },
+            {
+              "offset": 459,
+              "length": 64
+            }
+          ]
+        },
+        {
+          "case": "positive",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "unsupported"
+          ],
+          "unlisted_flags": [
+            false,
+            true
+          ],
+          "quote_checks": [
+            {
+              "offset": 2,
+              "length": 75
+            },
+            {
+              "offset": 622,
+              "length": 43
+            }
+          ]
+        },
+        {
+          "case": "positive",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "verdicts": [
+            "supported",
+            "supported"
+          ],
+          "unlisted_flags": [
+            false,
+            false
+          ],
+          "quote_checks": [
+            {
+              "offset": 2,
+              "length": 37
+            },
+            {
+              "offset": 2,
+              "length": 37
+            }
+          ]
+        }
+      ],
+      "disagreements": 1,
+      "receipt_sha256": "1c599962a8e1fa9d4dc1d7b7776166db4415e7c07d5a8fa8d12e838526e2e368",
+      "subject_inventory_attested": true,
+      "quote_matches_verified": true
+    }
+  },
+  "calibration": {
+    "controls": 16,
+    "matched": 16,
+    "unlisted_detected": true
+  },
+  "excluded_attempt": {
+    "stage": "compatibility",
+    "reason": "gate_rejected_repeated_identical_init_events",
+    "completed_subject_sessions": 3,
+    "completed_subject_answers": 4,
+    "answers_scored": 0,
+    "resolution": "gate_accepts_identical_inventory_but_rejects_changed_entries; entire_unscored_stage_repeated"
+  },
+  "case_packet_sha256": "2c617ffefcd6134ded0e46f923935006f68e4de5ca11d2f7242cf3c0d55c16e0"
+}

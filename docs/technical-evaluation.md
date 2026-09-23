@@ -106,3 +106,10 @@ Natural-prose correctness and the truthfulness of Checked/Gap/Next content are
 **not scored**. A zero exit means all pairs were scorable, not that the candidate
 passed a quality threshold. Treat each rung separately; do not pool the repeated
 cases as independent examples or keep rerunning until a preferred result appears.
+# Full-answer follow-up
+
+The [0.6.2 transfer check](release-0.6.2.md#behavioral-evidence-and-limits)
+adds a separate, model-adjudicated view of intermediate and unlisted claims.
+Its authored cases, disagreements and excluded instrumentation attempt are
+recorded separately. This does not change the constrained-field or footer
+scorers into general factuality validators. No raw model answers are retained.

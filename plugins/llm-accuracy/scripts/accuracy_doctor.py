@@ -72,6 +72,7 @@ def installation_inventory() -> dict:
     ]
     return {
         "status": "listed" if matches else "not_listed",
+        "plugin": "llm-accuracy",
         "installations": [
             {
                 "version": safe_version(row.get("version")),
@@ -196,6 +197,67 @@ def diagnose(root: Path = ROOT, shell: str | None = None) -> dict:
     }
 
 
+def live_passed(live: dict) -> bool:
+    return (
+        live.get("status") == "ok"
+        and bool(live.get("fidelity_hook_responses"))
+        and live.get("acknowledgement_correct") is True
+    )
+
+
+def registration_matches(report: dict) -> bool:
+    registration = report.get("host_registration", {})
+    rows = registration.get("installations", [])
+    return (
+        registration.get("status") == "listed"
+        and len(rows) == 1
+        and rows[0].get("enabled") is True
+        and rows[0].get("version") not in (None, "unknown")
+        and rows[0].get("version") == report.get("package_version")
+    )
+
+
+def presentation(report: dict) -> dict[str, str]:
+    """Render bounded diagnostic claims from results, never infer host correctness."""
+    emitted = sum(
+        report.get("hook_commands", {}).get(family) == "emitted"
+        for family, _, _ in PROMPTS
+    )
+    live = report.get("live")
+    live_ok = isinstance(live, dict) and live_passed(live)
+    registration_ok = registration_matches(report)
+    attention = (
+        report.get("status") != "ok"
+        or emitted != len(PROMPTS)
+        or (live is not None and not live_ok)
+    )
+    live_text = (
+        "live check not run"
+        if live is None
+        else "isolated live check passed"
+        if live_ok
+        else "isolated live check did not pass"
+    )
+    return {
+        "status": "attention" if attention else "local_probes_passed",
+        "headline": "Diagnostic checks need attention."
+        if attention
+        else "Local package probes passed; current-session activation is unverified.",
+        "checked": f"{emitted}/{len(PROMPTS)} prompt-hook command probes emitted reminders; {live_text}.",
+        "gap": (
+            "Current-session activation, substantive response compliance and factual accuracy remain unverified."
+            + ("" if registration_ok else " Host registration requires inspection.")
+        ),
+        "next": "Resolve the reported diagnostic issues, then rerun the doctor."
+        if attention
+        else "Inspect LLM Accuracy entries in the host's plugin interface, then test in a fresh session."
+        if not registration_ok
+        else "Test a substantive answer in a fresh session and inspect its claim support."
+        if live_ok
+        else "Use --live for an isolated delivery check, then test a substantive answer in a fresh session.",
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -219,12 +281,9 @@ def main() -> int:
         live["scope"] = "isolated_explicit_plugin_load_with_default_controls"
         live["counter_definitions"] = LIVE_COUNTER_DEFINITIONS
         report["live"] = live
-        if (
-            live["status"] != "ok"
-            or not live.get("fidelity_hook_responses")
-            or answers != ["OK"]
-        ):
+        if not live_passed(live):
             report["status"] = "attention"
+    report["presentation"] = presentation(report)
     print(json.dumps(report, indent=2))
     return 0 if report["status"] == "ok" else 1
 
