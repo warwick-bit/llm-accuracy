@@ -66,3 +66,17 @@ python3 -m pytest tests/test_technical_review.py -q
 
 Live use is deliberately opt-in. See the
 [command guide](../plugins/llm-accuracy/README.md#opt-in-technical-review).
+
+## Packaged command smoke
+
+[Installation receipt](validation/technical-review-install-2026-09-23.json)
+records the exact committed package, local marketplace installation, matching
+installed files, normal/custom/bypass reminders and ZIP loading on Linux/WSL.
+The first native-command run returned tool errors under narrow test permission
+rules and failed. A diagnostic repeat also failed; neither produced a review.
+With Bash and Skill allowed in the isolated synthetic test, the unchanged
+package invoked the reviewer once, flagged the seeded unsupported lifecycle
+status, preserved all presentation fields and reported unknown author identity.
+This is a test-permission correction, not a successful reroll of a bad review.
+Normal installations can ask for command approval. No user permission setting
+is modified by the plugin. Native Windows and Cowork remain unverified.

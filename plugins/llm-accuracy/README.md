@@ -244,8 +244,8 @@ normal reminders. Choose a reviewer model available in your Claude account;
 there is no silent fallback. A different model is only established relative to
 a known, caller-reported author identity; unknown identity remains unknown.
 
-This requires local Python 3 and a signed-in Claude Code CLI. Each invocation
-makes one additional model request, with medium effort and a default 180-second
+This requires local Python 3 and a signed-in Claude Code CLI. Your normal command permissions still apply; approve the displayed helper
+command if prompted. Each invocation makes one additional model request, with medium effort and a default 180-second
 limit, consuming account usage. The helper disables tools, MCPs and session
 persistence, checks reported host inventory, and temporarily copies local CLI
 authentication into an isolated profile that is deleted afterwards. It saves no
