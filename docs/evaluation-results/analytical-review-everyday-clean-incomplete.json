@@ -1,0 +1,1096 @@
+{
+  "config": {
+    "model": "claude-sonnet-5",
+    "extractor_model": "claude-sonnet-5",
+    "effort": "high",
+    "binary_sha256": "1e08503dbdf3c2cb0d706d32f3408277388d1c76ef108673e8fe42c1b322925b",
+    "host_plugins": [
+      "telemetry"
+    ],
+    "plugin_version": "0.6.1",
+    "source_hashes": {
+      "run_review_everyday.py": "4d8f0e3323c66aba51d3c7823229b4fec76ca8062b618d1dac05064a9484920d",
+      "review_everyday_extract.py": "ff8eece1100f34bd5ce6565b416a934052259d2419e0ef6efec25a5964201058",
+      "review_everyday_cases.py": "8c10dd87d0e4fb6155d8c21049b4ac9f50507195fa9038e2eecf09b2f04c8149",
+      "run_review_eval.py": "044af1f8b103f1ea72e1d11f61ec8c7e851f02cdcfb48d0bc31069d8c170603f",
+      "review_eval_tools.py": "941d88bfc3466a9f122a896f7c83749b40dcaf7ab76a467bb1427f407843f773"
+    },
+    "plugin_sha256": "c9d31dddac7049b47fa90163e528d61a4ea694c7f41c5f02cd9f9711a58474b0",
+    "prompt_hashes": {
+      "default": "4053a94a11994fcb7eb44214680e145fbad9f8b5ab575bc2f38762d1845c0bf7",
+      "plugin": "82e1a1d5967214543d16475d11da376c9c052a766c19481b0188642001a0be64",
+      "reviewer": "a4a0cbe7915b5d11a5493b15451cdd7678d1d19ac8335afb0c3f76298fa989a4",
+      "placebo": "ddc6f01aae8fe4e00d031799e32b1b8ec268504d69ff90ef5f74f08ba2959c41"
+    }
+  },
+  "mode": "comparison",
+  "round": 2,
+  "rows": [
+    {
+      "case": "everyday_sql_cohort",
+      "domain": "data",
+      "arm": "reviewer",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "d1513e6c9d8bc60e2371182b4f15b3b205474550c95d9233ed5aa4fb1d033a4d",
+        "output_bytes": 45044,
+        "stderr_bytes": 0,
+        "hook_checks": [
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": true
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          }
+        ],
+        "observed_plugin_count": 2,
+        "observed_plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 1,
+        "hook_responses": 6,
+        "seconds": 50.448,
+        "tool_calls": {
+          "evidence": 1,
+          "query": 2
+        },
+        "tool_errors": 0
+      },
+      "extraction": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "9955f4bfe22f63ddf99b26bd974cf64d1fe51942f8da6bd35b3c1bfd4b51b597",
+        "output_bytes": 13540,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 13.142,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "9955f4bfe22f63ddf99b26bd974cf64d1fe51942f8da6bd35b3c1bfd4b51b597",
+            "output_bytes": 13540,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 13.142
+          }
+        ]
+      },
+      "score": {
+        "claims": [
+          {
+            "id": "rate",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "boundary",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "mobile",
+            "status_correct": false,
+            "value_correct": true,
+            "observed_status": "omitted",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 0
+          }
+        ],
+        "all_claims_match": false
+      }
+    },
+    {
+      "case": "everyday_sql_cohort",
+      "domain": "data",
+      "arm": "default",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "c1aba7aaf4792a5973a4c5a97df421876be51827bcdd4716ed8d0c3c3c45f9d7",
+        "output_bytes": 28946,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 31.194,
+        "tool_calls": {
+          "evidence": 1,
+          "query": 1
+        },
+        "tool_errors": 0
+      },
+      "extraction": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "0dfbdbff178e100f3f91b4689c7ca98e10add734ffb5bdf8de3c8b5addfe0d31",
+        "output_bytes": 9973,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 9.078,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "0dfbdbff178e100f3f91b4689c7ca98e10add734ffb5bdf8de3c8b5addfe0d31",
+            "output_bytes": 9973,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 9.078
+          }
+        ]
+      },
+      "score": {
+        "claims": [
+          {
+            "id": "rate",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "boundary",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 2
+          },
+          {
+            "id": "mobile",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "unresolved",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          }
+        ],
+        "all_claims_match": true
+      }
+    },
+    {
+      "case": "everyday_sql_cohort",
+      "domain": "data",
+      "arm": "plugin",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "9f839eed4382ef24e2fba7a05226b7f2528bf3a91cb056ca8f2f6e24b0570f21",
+        "output_bytes": 43325,
+        "stderr_bytes": 0,
+        "hook_checks": [
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": true
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          }
+        ],
+        "observed_plugin_count": 2,
+        "observed_plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 1,
+        "hook_responses": 6,
+        "seconds": 43.936,
+        "tool_calls": {
+          "evidence": 1,
+          "query": 2
+        },
+        "tool_errors": 1
+      },
+      "extraction": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "48a1f32cdc8ee356a8795eb8f6c1a37f65c6453501e061a95a1e19275a61b23f",
+        "output_bytes": 14161,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 14.235,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "48a1f32cdc8ee356a8795eb8f6c1a37f65c6453501e061a95a1e19275a61b23f",
+            "output_bytes": 14161,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 14.235
+          }
+        ]
+      },
+      "score": {
+        "claims": [
+          {
+            "id": "rate",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 3
+          },
+          {
+            "id": "boundary",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "mobile",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "unresolved",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          }
+        ],
+        "all_claims_match": true
+      }
+    },
+    {
+      "case": "everyday_finance_reconcile",
+      "domain": "finance",
+      "arm": "default",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "2fb6f034067ed43798a97168e9c4525af3a91486f0990d7564a8430d8d40daa7",
+        "output_bytes": 25673,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 20.588,
+        "tool_calls": {
+          "evidence": 1,
+          "query": 1,
+          "calculate": 3
+        },
+        "tool_errors": 0
+      },
+      "extraction": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "b9d7de48b16620395da4a75bab8579f14bb6470c9e86edec7d1cd6f43ea3940a",
+        "output_bytes": 8443,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 6.532,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "b9d7de48b16620395da4a75bab8579f14bb6470c9e86edec7d1cd6f43ea3940a",
+            "output_bytes": 8443,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 6.532
+          }
+        ]
+      },
+      "score": {
+        "claims": [
+          {
+            "id": "closing",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "net",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "global",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "unresolved",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          }
+        ],
+        "all_claims_match": true
+      }
+    },
+    {
+      "case": "everyday_finance_reconcile",
+      "domain": "finance",
+      "arm": "plugin",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "d4c6447d9a8d1d890c036af21e35810b902c9e6901804745ce3d83d93de76a1b",
+        "output_bytes": 38516,
+        "stderr_bytes": 0,
+        "hook_checks": [
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": true
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          }
+        ],
+        "observed_plugin_count": 2,
+        "observed_plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 1,
+        "hook_responses": 8,
+        "seconds": 29.235,
+        "tool_calls": {
+          "evidence": 1,
+          "calculate": 3,
+          "query": 1
+        },
+        "tool_errors": 0
+      },
+      "extraction": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "a89341b697d737a59b4d8152f8fa6b2f19a225e5f678aaf32c7ee7bfb494253d",
+        "output_bytes": 8341,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 5.28,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "a89341b697d737a59b4d8152f8fa6b2f19a225e5f678aaf32c7ee7bfb494253d",
+            "output_bytes": 8341,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 5.28
+          }
+        ]
+      },
+      "score": {
+        "claims": [
+          {
+            "id": "closing",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "net",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          },
+          {
+            "id": "global",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "unresolved",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 1
+          }
+        ],
+        "all_claims_match": true
+      }
+    },
+    {
+      "case": "everyday_finance_reconcile",
+      "domain": "finance",
+      "arm": "reviewer",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "b97decf8bb7992af3ad316f01b76b3cca39d401dd6e555b50c277c7a85acc3bf",
+        "output_bytes": 34346,
+        "stderr_bytes": 0,
+        "hook_checks": [
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": true
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          }
+        ],
+        "observed_plugin_count": 2,
+        "observed_plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 1,
+        "hook_responses": 8,
+        "seconds": 18.352,
+        "tool_calls": {
+          "evidence": 1,
+          "calculate": 4
+        },
+        "tool_errors": 0
+      },
+      "extraction": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "f8b381c05a4f6e89cc4ba4a4f01985ba03b5b1cc444aa5aa7d54cf27607d4d6f",
+        "output_bytes": 8741,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 5.982,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "f8b381c05a4f6e89cc4ba4a4f01985ba03b5b1cc444aa5aa7d54cf27607d4d6f",
+            "output_bytes": 8741,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 5.982
+          }
+        ]
+      },
+      "score": {
+        "claims": [
+          {
+            "id": "closing",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 2
+          },
+          {
+            "id": "net",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "supported",
+            "value_extracted": true,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 2
+          },
+          {
+            "id": "global",
+            "status_correct": true,
+            "value_correct": true,
+            "observed_status": "unresolved",
+            "value_extracted": false,
+            "required_correction": false,
+            "value_acceptable": true,
+            "evidence_lines_valid": true,
+            "evidence_line_count": 2
+          }
+        ],
+        "all_claims_match": true
+      }
+    },
+    {
+      "case": "everyday_systems_fencing",
+      "domain": "systems",
+      "arm": "plugin",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "9768490cbb85ca49e196250d20ccfe4fed4183f04127db3de3b0a4dd3383ad21",
+        "output_bytes": 34266,
+        "stderr_bytes": 0,
+        "hook_checks": [
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": true
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": true,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          },
+          {
+            "prompt_event": false,
+            "prompt_name": false,
+            "exit_ok": true,
+            "outcome_ok": true,
+            "fidelity_marker": false
+          }
+        ],
+        "observed_plugin_count": 2,
+        "observed_plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "llm-accuracy",
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 1,
+        "hook_responses": 5,
+        "seconds": 29.83,
+        "tool_calls": {
+          "evidence": 1,
+          "query": 1
+        },
+        "tool_errors": 0
+      },
+      "extraction": {
+        "status": "process_failure",
+        "exit_code": 0,
+        "output_sha256": "2f9649683bf6f6143cf38919a3be2aa1d9fdb6767d44e621ec867f2760dea56e",
+        "output_bytes": 8864,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 7.443,
+        "failure": "extract_value",
+        "attempts": [
+          {
+            "status": "process_failure",
+            "exit_code": 0,
+            "output_sha256": "2f9649683bf6f6143cf38919a3be2aa1d9fdb6767d44e621ec867f2760dea56e",
+            "output_bytes": 8864,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 7.443,
+            "failure": "extract_value"
+          }
+        ]
+      }
+    }
+  ],
+  "complete": false,
+  "calibration_sha256": "dbab91c9d882b074b606b0e8131d607201d29a7c07ee8bdd33f76273edd9a2a3"
+}

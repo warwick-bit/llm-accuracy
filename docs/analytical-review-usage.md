@@ -2,9 +2,9 @@
 
 This draft provides a named artifact-review workflow for Claude Code. It does
 not establish that an additional reviewer prompt is more accurate than a plain
-Claude review. Read the [follow-up results](analytical-review-challenge-results.md) and
-the [comparison contract](analytical-review-challenge-contract.md) before drawing
-performance conclusions. The skill is not part of a released plugin version.
+Claude review. Read the [free-form comparison](analytical-review-everyday-results.md) and
+[earlier structured comparison](analytical-review-challenge-results.md) before
+drawing performance conclusions. The skill is not part of a released plugin version.
 
 With a plugin build containing this skill loaded, invoke:
 

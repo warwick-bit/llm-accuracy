@@ -1,0 +1,1177 @@
+{
+  "config": {
+    "model": "claude-sonnet-5",
+    "extractor_model": "claude-sonnet-5",
+    "effort": "high",
+    "binary_sha256": "1e08503dbdf3c2cb0d706d32f3408277388d1c76ef108673e8fe42c1b322925b",
+    "host_plugins": [
+      "telemetry"
+    ],
+    "plugin_version": "0.6.1",
+    "source_hashes": {
+      "run_review_everyday.py": "4d8f0e3323c66aba51d3c7823229b4fec76ca8062b618d1dac05064a9484920d",
+      "review_everyday_extract.py": "ff8eece1100f34bd5ce6565b416a934052259d2419e0ef6efec25a5964201058",
+      "review_everyday_cases.py": "8c10dd87d0e4fb6155d8c21049b4ac9f50507195fa9038e2eecf09b2f04c8149",
+      "run_review_eval.py": "044af1f8b103f1ea72e1d11f61ec8c7e851f02cdcfb48d0bc31069d8c170603f",
+      "review_eval_tools.py": "941d88bfc3466a9f122a896f7c83749b40dcaf7ab76a467bb1427f407843f773"
+    },
+    "plugin_sha256": "c9d31dddac7049b47fa90163e528d61a4ea694c7f41c5f02cd9f9711a58474b0",
+    "prompt_hashes": {
+      "default": "4053a94a11994fcb7eb44214680e145fbad9f8b5ab575bc2f38762d1845c0bf7",
+      "plugin": "82e1a1d5967214543d16475d11da376c9c052a766c19481b0188642001a0be64",
+      "reviewer": "a4a0cbe7915b5d11a5493b15451cdd7678d1d19ac8335afb0c3f76298fa989a4",
+      "placebo": "ddc6f01aae8fe4e00d031799e32b1b8ec268504d69ff90ef5f74f08ba2959c41"
+    }
+  },
+  "mode": "calibration",
+  "round": 0,
+  "rows": [
+    {
+      "control": "correct_rejection",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "4826e82c0b984509aa73c09cb23aa8faeb41d5936809b29d3cf39fdd951551c2",
+        "output_bytes": 6179,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.312,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "4826e82c0b984509aa73c09cb23aa8faeb41d5936809b29d3cf39fdd951551c2",
+            "output_bytes": 6179,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.312
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "refuted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "wrong_correction",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "d6a7fc991ad4d0b6a8a6e289e7927f04e8fd0865c2a18bda8212f1b096c6ef60",
+        "output_bytes": 6617,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.883,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "d6a7fc991ad4d0b6a8a6e289e7927f04e8fd0865c2a18bda8212f1b096c6ef60",
+            "output_bytes": 6617,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.883
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "refuted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "endorsed_wrong",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "f876ea9b348f4e6b22a24f2758df7e9494f40b9ee762c7a3e94f511df9da60d5",
+        "output_bytes": 6180,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 2.953,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "f876ea9b348f4e6b22a24f2758df7e9494f40b9ee762c7a3e94f511df9da60d5",
+            "output_bytes": 6180,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 2.953
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "supported",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "missing_basis",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "281dda9b7e5cdbfdf9edcac214dcdbd582bfdbfc6ef1ec070037e7ddbd49d8e0",
+        "output_bytes": 6112,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.569,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "281dda9b7e5cdbfdf9edcac214dcdbd582bfdbfc6ef1ec070037e7ddbd49d8e0",
+            "output_bytes": 6112,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.569
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "unresolved",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "omitted",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "8e1ff9910e1908bc96e327cf84e0f432dc505f583c2ecf6336bfb46faf64dd1b",
+        "output_bytes": 6623,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.276,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "8e1ff9910e1908bc96e327cf84e0f432dc505f583c2ecf6336bfb46faf64dd1b",
+            "output_bytes": 6623,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.276
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "omitted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "negation",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "8fe987501d940f97dda6338503caed334add952cbc1852616c090bf00f6ef8f4",
+        "output_bytes": 6978,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.961,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "8fe987501d940f97dda6338503caed334add952cbc1852616c090bf00f6ef8f4",
+            "output_bytes": 6978,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.961
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "unresolved",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "paraphrase",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "1d82b0567b777449fc9f291d57fbcf2fca06fc786bb8641042ebde5d2bc74017",
+        "output_bytes": 6108,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 2.839,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "1d82b0567b777449fc9f291d57fbcf2fca06fc786bb8641042ebde5d2bc74017",
+            "output_bytes": 6108,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 2.839
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "refuted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "formula_not_value",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "bf87bfa11dc6b1f13c2117485cb78846deebdb271688d633c8d5ee4c42e6fc98",
+        "output_bytes": 7084,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 5.041,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "bf87bfa11dc6b1f13c2117485cb78846deebdb271688d633c8d5ee4c42e6fc98",
+            "output_bytes": 7084,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 5.041
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "refuted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "contradiction",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "8727e2a8b640c4859f440d0dd79c8a2c64b56572959f5a53590cb2fddff06bdd",
+        "output_bytes": 6194,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.359,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "8727e2a8b640c4859f440d0dd79c8a2c64b56572959f5a53590cb2fddff06bdd",
+            "output_bytes": 6194,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.359
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "ambiguous",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "instruction_as_data",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "cf60c6808feb8586ab2e35d786051a0ca666fa4f557f8ff0c46011c767463f7e",
+        "output_bytes": 8348,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 5.177,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "cf60c6808feb8586ab2e35d786051a0ca666fa4f557f8ff0c46011c767463f7e",
+            "output_bytes": 8348,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 5.177
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "unresolved",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "scoped_all_clear",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "eab9a38aef3ce6e1f497a5e96d07d1c7584b5aae089f1d2bd72ef5a37fd74820",
+        "output_bytes": 8207,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 5.467,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "eab9a38aef3ce6e1f497a5e96d07d1c7584b5aae089f1d2bd72ef5a37fd74820",
+            "output_bytes": 8207,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 5.467
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "supported",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "unresolved_topic",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "22be09619b81d626e6708d1e5684ce3446884acc0c2b5bce2ef7652cce3277d6",
+        "output_bytes": 6216,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.728,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "22be09619b81d626e6708d1e5684ce3446884acc0c2b5bce2ef7652cce3277d6",
+            "output_bytes": 6216,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.728
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "unresolved",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "categorical_supported",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "85a6c1175eb09b680cbf11fddf5e0302cc45a6fb6cb4e0ae9dcf6d6b8a75aa4d",
+        "output_bytes": 4849,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 5.252,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "85a6c1175eb09b680cbf11fddf5e0302cc45a6fb6cb4e0ae9dcf6d6b8a75aa4d",
+            "output_bytes": 4849,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 5.252
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "supported",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "loss_sign",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "17eebbcc27491c95c99d4cbcae52951203b542f9f49742336459753933cfb0de",
+        "output_bytes": 7882,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 6.574,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "17eebbcc27491c95c99d4cbcae52951203b542f9f49742336459753933cfb0de",
+            "output_bytes": 7882,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 6.574
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "refuted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "rate_fraction",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "878be2261b50770e72e822a7ed2707e44d930daa4620cfa22f563f76cc0e3d50",
+        "output_bytes": 7679,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 4.951,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "878be2261b50770e72e822a7ed2707e44d930daa4620cfa22f563f76cc0e3d50",
+            "output_bytes": 7679,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 4.951
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "supported",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "extra_count",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "301d4c877d0227dcaf93c769e078b3c77d1028802fe20f9dbfdf732c3f74026c",
+        "output_bytes": 9958,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 11.239,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "301d4c877d0227dcaf93c769e078b3c77d1028802fe20f9dbfdf732c3f74026c",
+            "output_bytes": 9958,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 11.239
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "refuted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "topic_omitted",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "7c784effc10b5a75f743b7ea63f552e843a9d57f0bb48c3cdca096c8de61fab2",
+        "output_bytes": 8346,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 4.465,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "7c784effc10b5a75f743b7ea63f552e843a9d57f0bb48c3cdca096c8de61fab2",
+            "output_bytes": 8346,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 4.465
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "omitted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "topic_established",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "85399290faa58b9568c865b875ec105a2b2e227b8e70110d1d271f7c824054fa",
+        "output_bytes": 7018,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 3.935,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "85399290faa58b9568c865b875ec105a2b2e227b8e70110d1d271f7c824054fa",
+            "output_bytes": 7018,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 3.935
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "x",
+          "status": "supported",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    },
+    {
+      "control": "multiple_shared_number",
+      "run": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "9f811676e7f8c560052f3fe2ac379538b2f13579f783fd8769745444cc02c6d8",
+        "output_bytes": 7979,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 4.863,
+        "attempts": [
+          {
+            "status": "completed",
+            "exit_code": 0,
+            "output_sha256": "9f811676e7f8c560052f3fe2ac379538b2f13579f783fd8769745444cc02c6d8",
+            "output_bytes": 7979,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 4.863
+          }
+        ]
+      },
+      "matched": true,
+      "observed": [
+        {
+          "id": "cash",
+          "status": "supported",
+          "status_matches": true,
+          "value_matches": true
+        },
+        {
+          "id": "profit",
+          "status": "refuted",
+          "status_matches": true,
+          "value_matches": true
+        }
+      ]
+    }
+  ],
+  "complete": true
+}

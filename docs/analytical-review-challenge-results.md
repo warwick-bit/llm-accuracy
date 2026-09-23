@@ -4,6 +4,10 @@ The frozen first pass shows **no incremental verdict/value or explanation gain
 from the candidate prompt**. All arms miss the same underdetermined FX claim.
 This is not proof of equivalence or a general accuracy estimate.
 
+A later [free-form comparison](analytical-review-everyday-results.md) removes
+the reviewer-facing claim schema and tests 0.6.1 guidance plus native hooks.
+Its results are separate and must not be pooled with this study.
+
 ## First-pass results
 
 The [first-half receipt](evaluation-results/analytical-review-challenge-first-half.json)

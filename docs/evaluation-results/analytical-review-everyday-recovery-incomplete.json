@@ -1,0 +1,116 @@
+{
+  "config": {
+    "model": "claude-sonnet-5",
+    "extractor_model": "claude-sonnet-5",
+    "effort": "high",
+    "binary_sha256": "1e08503dbdf3c2cb0d706d32f3408277388d1c76ef108673e8fe42c1b322925b",
+    "host_plugins": [
+      "telemetry"
+    ],
+    "plugin_version": "0.6.1",
+    "source_hashes": {
+      "run_review_everyday.py": "4d8f0e3323c66aba51d3c7823229b4fec76ca8062b618d1dac05064a9484920d",
+      "review_everyday_extract.py": "ff8eece1100f34bd5ce6565b416a934052259d2419e0ef6efec25a5964201058",
+      "review_everyday_cases.py": "8c10dd87d0e4fb6155d8c21049b4ac9f50507195fa9038e2eecf09b2f04c8149",
+      "run_review_eval.py": "044af1f8b103f1ea72e1d11f61ec8c7e851f02cdcfb48d0bc31069d8c170603f",
+      "review_eval_tools.py": "941d88bfc3466a9f122a896f7c83749b40dcaf7ab76a467bb1427f407843f773"
+    },
+    "plugin_sha256": "c9d31dddac7049b47fa90163e528d61a4ea694c7f41c5f02cd9f9711a58474b0",
+    "prompt_hashes": {
+      "default": "4053a94a11994fcb7eb44214680e145fbad9f8b5ab575bc2f38762d1845c0bf7",
+      "plugin": "82e1a1d5967214543d16475d11da376c9c052a766c19481b0188642001a0be64",
+      "reviewer": "a4a0cbe7915b5d11a5493b15451cdd7678d1d19ac8335afb0c3f76298fa989a4",
+      "placebo": "ddc6f01aae8fe4e00d031799e32b1b8ec268504d69ff90ef5f74f08ba2959c41"
+    }
+  },
+  "mode": "comparison",
+  "round": 3,
+  "rows": [
+    {
+      "case": "everyday_systems_fencing",
+      "domain": "systems",
+      "arm": "default",
+      "review": {
+        "status": "completed",
+        "exit_code": 0,
+        "output_sha256": "1208c118094d4100e43fdbdbf52d983e6dfd7f9cdfd377409fae6eb0e9d64f99",
+        "output_bytes": 20185,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "mcp__review__calculate",
+          "mcp__review__evidence",
+          "mcp__review__query"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 19.542,
+        "tool_calls": {
+          "evidence": 1
+        },
+        "tool_errors": 0
+      },
+      "extraction": {
+        "status": "process_failure",
+        "exit_code": 0,
+        "output_sha256": "db8fde0c2955297118413bb2b2dadb3e4cb5b4b832eaaca3b41fea5469e5d508",
+        "output_bytes": 9378,
+        "stderr_bytes": 0,
+        "observed_plugin_count": 1,
+        "observed_plugins": [
+          "telemetry"
+        ],
+        "models": [
+          "claude-sonnet-5"
+        ],
+        "plugins": [
+          "telemetry"
+        ],
+        "tools": [
+          "StructuredOutput"
+        ],
+        "fidelity_hook_responses": 0,
+        "hook_responses": 0,
+        "seconds": 7.958,
+        "failure": "extract_value",
+        "attempts": [
+          {
+            "status": "process_failure",
+            "exit_code": 0,
+            "output_sha256": "db8fde0c2955297118413bb2b2dadb3e4cb5b4b832eaaca3b41fea5469e5d508",
+            "output_bytes": 9378,
+            "stderr_bytes": 0,
+            "observed_plugin_count": 1,
+            "observed_plugins": [
+              "telemetry"
+            ],
+            "models": [
+              "claude-sonnet-5"
+            ],
+            "plugins": [
+              "telemetry"
+            ],
+            "tools": [
+              "StructuredOutput"
+            ],
+            "fidelity_hook_responses": 0,
+            "hook_responses": 0,
+            "seconds": 7.958,
+            "failure": "extract_value"
+          }
+        ]
+      }
+    }
+  ],
+  "complete": false,
+  "calibration_sha256": "dbab91c9d882b074b606b0e8131d607201d29a7c07ee8bdd33f76273edd9a2a3"
+}
