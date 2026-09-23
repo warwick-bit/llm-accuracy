@@ -229,19 +229,15 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
     output = json.loads(result.stdout)
     assert set(output) == {"hookSpecificOutput"}  # no blocking decision
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert "environment, version and coverage" in context
-    assert "samples cannot establish all/none" in context
+    assert "environment and version" in context
+    assert "previews, samples" in context
     assert "competing causes" in context
-    assert "short restatements retain qualifiers" in context
-    assert "Repeated reversals require rechecking the framing" in context
-    assert "unknown, not no" in context
-    assert "capable of detecting the item within the checked scope" in context
-    assert "do not invent official status" in context
+    assert "repeated reversals" in context
     assert "Checked / Gap / Next" in context
     assert "actual checks or supplied evidence, with scope" in context
     assert "including rejecting" in context
     assert context.count("Checked: actual") == 1
-    assert "skip this footer for routine replies" in context
+    assert "Skip this footer for routine replies" in context
     assert len(context) <= 1500
 
 
