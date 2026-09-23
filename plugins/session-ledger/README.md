@@ -30,11 +30,12 @@ check that the Errors tab is empty. Then exit and start a new Claude Code
 session. After updating Claude Code itself, check the new session's version;
 an already-open process continues to use its previous version.
 
-For an existing installation, refresh the marketplace and update the plugin:
+For an existing installation, run these commands in your terminal, outside
+Claude Code, to refresh the marketplace and update the plugin:
 
-```text
-/plugin marketplace update llm-accuracy
-/plugin update session-ledger@llm-accuracy
+```sh
+claude plugin marketplace update llm-accuracy
+claude plugin update session-ledger@llm-accuracy
 ```
 
 Confirm version 0.2.6 or later and the enabled state in `/plugin`, then restart
