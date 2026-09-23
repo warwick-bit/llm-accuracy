@@ -131,3 +131,29 @@ that the candidate would then improve.
 No merge, release or installed-plugin change follows from this result.
 Real-work benefit still needs authorized representative artifacts, independent
 reference checks and an evaluator that handles the full prespecified set.
+
+Main advanced to 0.6.2 (`66af41f`) during testing and was integrated after the
+frozen comparison, without changing the experimental skill. The measurements
+above apply to 0.6.1, not the newer plugin guidance or hooks. Reproduce them
+from the frozen source commit; rerunning on current main changes the treatment.
+Native subagent invocation with the integrated 0.6.2 build remains untested.
+
+## Final adjudication and integration checks
+
+The final independent review completed successfully using requested alias
+`fable`, medium effort, with the full 62,919-byte evidence packet and no
+truncation. Resolved underlying model identity was unavailable. It found no
+blocking issue in the bounded conclusion, reconciled the case denominators,
+and emphasized the uncompleted repeats and semantic-extraction limits.
+Its examples of possible malformed categorical values or count representations
+are hypotheses, not recovered facts about the raw answers.
+
+The reviewer did not receive receipt JSON. The parent separately verified
+telemetry-only host allowances, identical configuration/calibration hashes and
+rung rotations against those receipts. This was conclusion/design adjudication,
+not an independent review of every original answer or the complete PR.
+
+After integrating 0.6.2, all 585 local tests passed; Ruff, JSON parsing, plugin
+Python compilation, all three distribution boundaries and Claude plugin
+manifest validation passed. These establish local packaging/test behavior,
+not comparative performance or a clean native release installation.
