@@ -137,16 +137,31 @@ def call(args, work, cmd, prompt, *, structured=False, plugin=False):
 
 
 def extract(item, review, args):
-    with tempfile.TemporaryDirectory(prefix="review-extract-", ignore_cleanup_errors=True) as directory:
-        answer, record = call(args, Path(directory), command(args, True), encode_payload(item, review), structured=True)
-    if record["status"] == "completed":
-        try:
-            validate_extraction(answer, item, review)
-        except (ValueError, TypeError) as exc:
-            known = {"extract_shape", "extract_representation", "extract_omission", "extract_quote", "extract_value", "extract_coverage"}
-            record.update(status="process_failure", failure=str(exc) if str(exc) in known else "extraction_validation")
-            answer = None
+    attempts = []
+    for _ in range(2):
+        with tempfile.TemporaryDirectory(prefix="review-extract-", ignore_cleanup_errors=True) as directory:
+            answer, record = call(args, Path(directory), command(args, True), encode_payload(item, review), structured=True)
+        if record["status"] == "completed":
+            try:
+                validate_extraction(answer, item, review)
+            except (ValueError, TypeError) as exc:
+                known = {"extract_shape", "extract_representation", "extract_omission", "extract_quote", "extract_value", "extract_coverage"}
+                record.update(status="process_failure", failure=str(exc) if str(exc) in known else "extraction_validation")
+                answer = None
+        attempts.append(dict(record))
+        # Retry only invalid excerpts/shapes, with the identical prompt. Never
+        # retry a valid but incorrect extraction or runtime/model/plugin drift.
+        if record.get("failure") not in {"extract_quote", "extract_shape", "extract_coverage"}:
+            break
+    record["attempts"] = attempts
     return answer, record
+
+
+def calibration_value_matches(row, gold, expected, control):
+    observed = normalize(row, gold)
+    return equal_value(observed, expected) or (
+        "alternate_value" in control and row["status"] == "supported"
+        and equal_value(observed, control["alternate_value"]))
 
 
 def review(item, arm, args):
@@ -208,13 +223,13 @@ def main():
             answer, run = extract(control, control["review"], args)
             expected = control.get("expected_rows", {"x": (control.get("expected_status"), control.get("expected_value"))})
             matched = answer is not None and all(
-                row["status"] == expected[row["id"]][0] and equal_value(
-                    normalize(row, next(g for g in control["gold"] if g["id"] == row["id"])), expected[row["id"]][1])
+                row["status"] == expected[row["id"]][0] and calibration_value_matches(
+                    row, next(g for g in control["gold"] if g["id"] == row["id"]), expected[row["id"]][1], control)
                 for row in answer["claims"])
             observed = [] if answer is None else [
                 {"id": row["id"], "status": row["status"],
                  "status_matches": row["status"] == expected[row["id"]][0],
-                 "value_matches": equal_value(normalize(row, next(g for g in control["gold"] if g["id"] == row["id"])), expected[row["id"]][1])}
+                 "value_matches": calibration_value_matches(row, next(g for g in control["gold"] if g["id"] == row["id"]), expected[row["id"]][1], control)}
                 for row in answer["claims"]]
             receipt["rows"].append({"control": control["id"], "run": run, "matched": matched, "observed": observed})
             args.output.write_text(json.dumps(receipt, indent=2)+"\n")

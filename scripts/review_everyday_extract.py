@@ -28,8 +28,11 @@ support claims within that scope; generic praise does not endorse every claim.
 For claims marked numeric_target, value is the reviewer's explicitly stated corrected
 value; for supported numeric claims use the explicitly endorsed value. For other
 claims or unknown numbers use null. Do not compute a number from a formula. Numeric
-values must be decimal strings, with no units or separators. Never copy a number
-that occurs only in the supplied claim. Use representation canonical normally.
+values must be decimal strings, with no units or separators. A clear scoped
+endorsement of a claim may retain that claim's stated number, or leave it null
+if not restated. Mere mention or generic praise does not endorse a number.
+For refuted claims never copy the original number as the corrected value.
+Use representation canonical normally.
 When explicitly permitted by numeric_unit, fraction means a conversion rate
 expressed as a proportion (0.5 instead of 50%); loss_magnitude means a positive
 magnitude described as a loss rather than signed profit; additional_count means
@@ -62,7 +65,8 @@ def quote_matches(quote, review):
         text = re.sub(r"(?<![\w*])(\*\*|\*)(\S(?:.*?\S)?)\1(?![\w*])", r"\2", text)
         text = re.sub(r"`([^`]+)`", r"\1", text)
         return re.sub(r"\s+", " ", text).strip()
-    return bool(quote.strip()) and (quote in review or plain(quote) in plain(review))
+    normalized = plain(quote)
+    return bool(normalized) and (quote in review or normalized in plain(review))
 
 
 def validate_extraction(answer, item, review):
@@ -84,7 +88,8 @@ def validate_extraction(answer, item, review):
             raise ValueError("extract_quote")
         if row["value"] is not None:
             try:
-                if not isinstance(row["value"], str) or not Decimal(row["value"]).is_finite():
+                if (not isinstance(row["value"], str) or not Decimal(row["value"]).is_finite()
+                        or abs(Decimal(row["value"]).adjusted()) > 100):
                     raise ValueError("extract_value")
             except InvalidOperation as exc:
                 raise ValueError("extract_value") from exc
@@ -152,7 +157,8 @@ def calibration_cases():
              "expected_status": status, "expected_value": value} for name, review, status, value in controls]
     result.extend([
         {"id": "scoped_all_clear", "gold": [{"id": "x", "claim": "The report's total is 40.", "status": "supported", "value": "40"}],
-         "review": "I checked the report's total; it is correct as written.", "expected_status": "supported", "expected_value": None},
+         "review": "I checked the report's total; it is correct as written.", "expected_status": "supported", "expected_value": None,
+         "alternate_value": "40"},
         {"id": "unresolved_topic", "gold": [{"id": "x", "claim": "Mobile-only conversion rate.", "status": "unresolved", "value": None}],
          "review": "The mobile-only rate must remain pending because device membership is unavailable.", "expected_status": "unresolved", "expected_value": None},
         {"id": "categorical_supported", "gold": [{"id": "x", "claim": "Final stored value is fresh.", "status": "supported", "value": None}],

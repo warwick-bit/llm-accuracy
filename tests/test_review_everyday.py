@@ -65,7 +65,7 @@ def test_wrong_profit_sign_still_fails():
     assert extraction.equal_value("30.00", "30")
 
 
-@pytest.mark.parametrize("change", ["invent_quote", "missing", "duplicate", "nan", "omit_quote"])
+@pytest.mark.parametrize("change", ["invent_quote", "missing", "duplicate", "nan", "huge", "omit_quote"])
 def test_invalid_extractions_rejected(change):
     response = answer()
     if change == "invent_quote":
@@ -76,6 +76,8 @@ def test_invalid_extractions_rejected(change):
         response["claims"] *= 2
     elif change == "nan":
         response["claims"][0]["value"] = "NaN"
+    elif change == "huge":
+        response["claims"][0]["value"] = "1e9999999"
     elif change == "omit_quote":
         response["claims"][0]["status"] = "omitted"
     with pytest.raises(ValueError):
@@ -153,6 +155,7 @@ def test_quote_matching_accepts_formatting_not_changed_claim():
     assert not extraction.quote_matches("Profit 3000", "Profit -3000")
     assert not extraction.quote_matches("23", "2*3")
     assert not extraction.quote_matches("23", "2**3")
+    assert not extraction.quote_matches("` `", "Any unrelated review")
 
 
 @pytest.mark.parametrize("key,value", [("exit_code", 1), ("outcome", "error"), ("hook_event", "Stop"), ("hook_name", "Other:2")])
@@ -173,3 +176,33 @@ def test_truncated_tool_trace_preserves_failure_row(monkeypatch):
     assert result["review"]["status"] == "process_failure"
     assert result["review"]["failure"] == "timeout"
     assert result["review"]["trace_failure"] == "invalid_tool_trace"
+
+
+def test_extraction_retries_bad_quote_once_with_same_prompt(monkeypatch):
+    prompts = []
+    def fake_call(args, work, cmd, prompt, **kwargs):
+        prompts.append(prompt)
+        return answer(quote="fabricated" if len(prompts) == 1 else "Actually 30, not 40."), {"status": "completed"}
+    monkeypatch.setattr(runner, "call", fake_call)
+    result, receipt = runner.extract(item(), "Actually 30, not 40.", args())
+    assert result is not None and len(prompts) == 2 and prompts[0] == prompts[1]
+    assert receipt["attempts"][0]["failure"] == "extract_quote"
+    assert receipt["status"] == "completed"
+
+
+def test_valid_wrong_extraction_is_never_retried(monkeypatch):
+    calls = []
+    def fake_call(*args, **kwargs):
+        calls.append(1)
+        return answer("supported", "40"), {"status": "completed"}
+    monkeypatch.setattr(runner, "call", fake_call)
+    result, receipt = runner.extract(item(), "Actually 30, not 40.", args())
+    assert len(calls) == 1 and receipt["status"] == "completed"
+    assert not extraction.score_extraction(result, item())["all_claims_match"]
+
+
+def test_scoped_control_accepts_endorsed_value_not_arbitrary_number():
+    control = next(c for c in extraction.calibration_cases() if c["id"] == "scoped_all_clear")
+    gold = control["gold"][0]
+    assert runner.calibration_value_matches(answer("supported", "40")["claims"][0], gold, None, control)
+    assert not runner.calibration_value_matches(answer("supported", "35")["claims"][0], gold, None, control)
