@@ -80,3 +80,8 @@ status, preserved all presentation fields and reported unknown author identity.
 This is a test-permission correction, not a successful reroll of a bad review.
 Normal installations can ask for command approval. No user permission setting
 is modified by the plugin. Native Windows and Cowork remain unverified.
+
+After independent code review, the parser was strengthened to reject overlapping
+ambiguous quotes. The final committed package then passed the complete clean
+installation, native command, custom/bypass and ZIP smoke in one run; see
+`final_smoke` in the same receipt. The exact final archive hash is recorded there.
