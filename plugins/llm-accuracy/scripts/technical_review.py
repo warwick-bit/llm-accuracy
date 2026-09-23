@@ -59,11 +59,14 @@ def finding_anchor(finding: dict, packet: dict) -> dict:
     quote = finding["question_quote"] if omission else finding["draft_quote"]
     anchor = "question" if omission else "draft"
     text = packet[anchor]
-    if not isinstance(quote, str) or not quote or text.count(quote) != 1:
+    if not isinstance(quote, str) or not quote:
+        raise ValueError("invalid_quote")
+    start = text.find(quote)
+    if start < 0 or text.find(quote, start + 1) >= 0:
         raise ValueError("invalid_quote")
     if (finding["draft_quote"] if omission else finding["question_quote"]) != "":
         raise ValueError("invalid_other_quote")
-    return {"anchor": anchor, "start": text.index(quote), "length": len(quote)}
+    return {"anchor": anchor, "start": start, "length": len(quote)}
 
 
 def validate_finding(finding: object, packet: dict) -> dict:

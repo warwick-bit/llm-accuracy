@@ -397,3 +397,23 @@ def test_incomplete_result_diagnostic_never_says_ok(monkeypatch, change):
         review.review_packet(PACKET, model="fable")["reason"]
         == "incomplete_host_result"
     )
+
+
+def test_overlapping_quote_is_ambiguous():
+    finding = FINDING | {"draft_quote": "aa"}
+    answer = json.dumps({"findings": [finding]})
+    assert (
+        review.parse_review(answer, PACKET | {"draft": "aaa"})["status"]
+        == "invalid_quote"
+    )
+    finding = FINDING | {
+        "category": "omission",
+        "draft_quote": "",
+        "question_quote": "aa",
+    }
+    assert (
+        review.parse_review(
+            json.dumps({"findings": [finding]}), PACKET | {"question": "aaa"}
+        )["status"]
+        == "invalid_quote"
+    )
