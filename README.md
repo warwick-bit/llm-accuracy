@@ -156,6 +156,34 @@ not a statistically powered benchmark. See the
 [raw-free test receipt](docs/validation/claude-code-ambiguity-smoke-2026-09-17.json)
 for the exact setup and limits.
 
+### What broader prototype testing taught us
+
+The public-plugin test above showed that LLM Accuracy made Claude ask for the
+missing revenue definition and period. Separately, we tested early prototypes
+of stricter fact checking. These prototypes are not part of the plugins you can
+install today.
+
+- **A narrow fact checker rejected 102 of 102 deliberately altered answers.**
+  It also refused expired information and did not reuse an old answer after a
+  failed refresh. It checked a fixed set of rules; it did not prove that the
+  original data source was correct.
+- **Known facts remained available when other information was missing.** In
+  four hand-written examples covering revenue, customer support and product
+  usage, the prototype kept supported facts and withheld calculations that
+  needed missing data. Tools were disabled, and normal explanatory text could
+  still add unsupported claims.
+
+These prototype tests support the direction of stricter checking, but they do
+not show that the current plugins improve overall accuracy. **LLM Accuracy**
+helps Claude clarify ambiguous questions. **Deterministic Data** gives teams
+consistent definitions and approved source routes. Neither guarantees that
+every sentence Claude writes is true.
+
+The [detailed test record](docs/validation/broader-fidelity-evidence-2026-09.json)
+lists the numbers and limitations. It includes totals only, not the original
+questions or answers, so other people cannot rerun the same tests from this
+repository alone.
+
 For Cowork, download the latest
 [`llm-accuracy-<version>.zip`](https://github.com/warwick-bit/llm-accuracy/releases/latest),
 upload it through **Customize → Plugins**, and use the same test prompts. See
