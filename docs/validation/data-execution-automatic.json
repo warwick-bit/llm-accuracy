@@ -1,0 +1,739 @@
+{
+  "scope": "Isolated synthetic feasibility probes, no live config changes. Single observations, not generalizable savings. Original failures retained. Source text available to hooks may already be truncated. Log scan is transcript-visible applicability, not live-hook hit rate or token savings.",
+  "runs": {
+    "table-mcp-v3": [
+      {
+        "case": "table_mcp",
+        "arm": "native",
+        "infra": "permission",
+        "scorable": false,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 18076,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 3,
+        "permission_denials": 1,
+        "total_tokens": 88521,
+        "usage": {
+          "input_tokens": 8,
+          "cache_creation_input_tokens": 16127,
+          "cache_read_input_tokens": 71239,
+          "output_tokens": 1147
+        }
+      }
+    ],
+    "table-mcp-v3-cat-permitted": [
+      {
+        "case": "table_mcp",
+        "arm": "native",
+        "infra": "permission",
+        "scorable": false,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 18076,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 6,
+        "permission_denials": 1,
+        "total_tokens": 165694,
+        "usage": {
+          "input_tokens": 14,
+          "cache_creation_input_tokens": 17863,
+          "cache_read_input_tokens": 145006,
+          "output_tokens": 2811
+        }
+      }
+    ],
+    "bash-large-v1": [
+      {
+        "case": "bash_large",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 152453,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": true,
+        "tool_calls": 3,
+        "permission_denials": 0,
+        "total_tokens": 65408,
+        "usage": {
+          "input_tokens": 8,
+          "cache_creation_input_tokens": 8361,
+          "cache_read_input_tokens": 56004,
+          "output_tokens": 1035
+        }
+      },
+      {
+        "case": "bash_large",
+        "arm": "hook",
+        "infra": "permission",
+        "scorable": false,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 152453,
+        "source_calls": 2,
+        "saved_files": 1,
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": true,
+        "tool_calls": 8,
+        "permission_denials": 1,
+        "total_tokens": 255976,
+        "usage": {
+          "input_tokens": 18,
+          "cache_creation_input_tokens": 27316,
+          "cache_read_input_tokens": 226642,
+          "output_tokens": 2000
+        }
+      }
+    ],
+    "bash-large-v2": [
+      {
+        "case": "bash_large",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 152453,
+        "source_calls": 4,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": true,
+        "tool_calls": 4,
+        "permission_denials": 0,
+        "total_tokens": 82716,
+        "usage": {
+          "input_tokens": 10,
+          "cache_creation_input_tokens": 8712,
+          "cache_read_input_tokens": 72999,
+          "output_tokens": 995
+        }
+      },
+      {
+        "case": "bash_large",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 152453,
+        "source_calls": 4,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": true,
+        "tool_calls": 4,
+        "permission_denials": 0,
+        "total_tokens": 82112,
+        "usage": {
+          "input_tokens": 10,
+          "cache_creation_input_tokens": 8436,
+          "cache_read_input_tokens": 72745,
+          "output_tokens": 921
+        }
+      }
+    ],
+    "tiny-v2": [
+      {
+        "case": "tiny",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 596,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 45527,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 6656,
+          "cache_read_input_tokens": 38471,
+          "output_tokens": 394
+        }
+      },
+      {
+        "case": "tiny",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 596,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 45497,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 6645,
+          "cache_read_input_tokens": 38463,
+          "output_tokens": 383
+        }
+      }
+    ],
+    "large-boundary-probe": [
+      {
+        "case": "bash_large",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 152453,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_sizes": [
+          30000
+        ],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": true,
+        "tool_calls": 1,
+        "permission_denials": 0,
+        "total_tokens": 29566,
+        "usage": {
+          "input_tokens": 4,
+          "cache_creation_input_tokens": 6265,
+          "cache_read_input_tokens": 23217,
+          "output_tokens": 80
+        }
+      }
+    ],
+    "mcp-large-boundary": [
+      {
+        "case": "mcp_large",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 152453,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 1,
+        "permission_denials": 0,
+        "total_tokens": 29908,
+        "usage": {
+          "input_tokens": 4,
+          "cache_creation_input_tokens": 6451,
+          "cache_read_input_tokens": 23387,
+          "output_tokens": 66
+        }
+      }
+    ],
+    "table-bash-v3": [
+      {
+        "case": "table_bash",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 16813,
+        "source_calls": 2,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 61773,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 14921,
+          "cache_read_input_tokens": 46352,
+          "output_tokens": 494
+        }
+      },
+      {
+        "case": "table_bash",
+        "arm": "columns",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 16813,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_sizes": [
+          16812
+        ],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": true,
+        "saved_source_tail_present": true,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 49895,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 8934,
+          "cache_read_input_tokens": 39622,
+          "output_tokens": 1333
+        }
+      }
+    ],
+    "mcp-medium-v1": [
+      {
+        "case": "mcp_medium",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 22685,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 72097,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 28574,
+          "cache_read_input_tokens": 43118,
+          "output_tokens": 399
+        }
+      },
+      {
+        "case": "mcp_medium",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 22685,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_source_exact": true,
+        "saved_source_differs_only_final_newline": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": false,
+        "tool_calls": 6,
+        "permission_denials": 0,
+        "total_tokens": 177597,
+        "usage": {
+          "input_tokens": 14,
+          "cache_creation_input_tokens": 21146,
+          "cache_read_input_tokens": 155303,
+          "output_tokens": 1134
+        }
+      }
+    ],
+    "bash-medium-v1": [
+      {
+        "case": "bash_medium",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 21055,
+        "source_calls": 2,
+        "saved_files": 0,
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 70062,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 19107,
+          "cache_read_input_tokens": 50393,
+          "output_tokens": 556
+        }
+      },
+      {
+        "case": "bash_medium",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 21055,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": true,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": false,
+        "tool_calls": 5,
+        "permission_denials": 0,
+        "total_tokens": 144815,
+        "usage": {
+          "input_tokens": 12,
+          "cache_creation_input_tokens": 20394,
+          "cache_read_input_tokens": 122984,
+          "output_tokens": 1425
+        }
+      }
+    ],
+    "table-mcp-v3-attempt2": [
+      {
+        "case": "table_mcp",
+        "arm": "native",
+        "infra": "permission",
+        "scorable": false,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 18076,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 3,
+        "permission_denials": 1,
+        "total_tokens": 87726,
+        "usage": {
+          "input_tokens": 8,
+          "cache_creation_input_tokens": 15902,
+          "cache_read_input_tokens": 70763,
+          "output_tokens": 1053
+        }
+      }
+    ],
+    "mcp-medium-v2": [
+      {
+        "case": "mcp_medium",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 22685,
+        "source_calls": 1,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 71944,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 19744,
+          "cache_read_input_tokens": 51925,
+          "output_tokens": 269
+        }
+      },
+      {
+        "case": "mcp_medium",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 22685,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_sizes": [
+          22685
+        ],
+        "saved_source_exact": true,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": true,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": false,
+        "tool_calls": 4,
+        "permission_denials": 0,
+        "total_tokens": 81736,
+        "usage": {
+          "input_tokens": 10,
+          "cache_creation_input_tokens": 8658,
+          "cache_read_input_tokens": 72311,
+          "output_tokens": 757
+        }
+      }
+    ],
+    "smoke": [
+      {
+        "case": "smoke",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 6790,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_source_exact": false,
+        "replacement_observed": true,
+        "native_spill_observed": false,
+        "tool_calls": 3,
+        "permission_denials": 0,
+        "total_tokens": 64288,
+        "usage": {
+          "input_tokens": 8,
+          "cache_creation_input_tokens": 8663,
+          "cache_read_input_tokens": 55138,
+          "output_tokens": 479
+        }
+      }
+    ],
+    "smoke-diagnostic": [
+      {
+        "case": "smoke",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 6790,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": true,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": false,
+        "tool_calls": 3,
+        "permission_denials": 0,
+        "total_tokens": 64966,
+        "usage": {
+          "input_tokens": 8,
+          "cache_creation_input_tokens": 8839,
+          "cache_read_input_tokens": 55628,
+          "output_tokens": 491
+        }
+      }
+    ],
+    "bash-medium-v2": [
+      {
+        "case": "bash_medium",
+        "arm": "native",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 21055,
+        "source_calls": 2,
+        "saved_files": 0,
+        "saved_sizes": [],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": false,
+        "saved_source_tail_present": false,
+        "saved_hashes_valid": true,
+        "replacement_observed": false,
+        "native_spill_observed": false,
+        "tool_calls": 2,
+        "permission_denials": 0,
+        "total_tokens": 70790,
+        "usage": {
+          "input_tokens": 6,
+          "cache_creation_input_tokens": 19390,
+          "cache_read_input_tokens": 50731,
+          "output_tokens": 663
+        }
+      },
+      {
+        "case": "bash_medium",
+        "arm": "hook",
+        "infra": null,
+        "scorable": true,
+        "answer_exact": true,
+        "inventory_ok": true,
+        "model_matches": true,
+        "source_bytes": 21055,
+        "source_calls": 1,
+        "saved_files": 1,
+        "saved_sizes": [
+          21054
+        ],
+        "saved_source_exact": false,
+        "saved_source_differs_only_final_newline": true,
+        "saved_source_tail_present": true,
+        "saved_hashes_valid": true,
+        "replacement_observed": true,
+        "native_spill_observed": false,
+        "tool_calls": 4,
+        "permission_denials": 0,
+        "total_tokens": 103340,
+        "usage": {
+          "input_tokens": 10,
+          "cache_creation_input_tokens": 20156,
+          "cache_read_input_tokens": 82191,
+          "output_tokens": 983
+        }
+      }
+    ]
+  },
+  "offline": {
+    "offline": {
+      "checks": [
+        "bash_bytes_exact_duplicate_keys_precision_unicode_newlines",
+        "private_permissions",
+        "repeat_idempotent",
+        "small_unchanged",
+        "stderr_unchanged",
+        "interrupted_unchanged",
+        "image_unchanged",
+        "native_pointer_unchanged",
+        "native_preview_unchanged",
+        "mcp_text_replaced",
+        "mcp_text_replaced",
+        "mcp_error_unchanged",
+        "mcp_structured_unchanged",
+        "mcp_mixed_unchanged",
+        "mcp_unknown_unchanged",
+        "unsupported_tool_unchanged",
+        "tamper_no_replacement"
+      ],
+      "passed": 17,
+      "scorer_controls": {
+        "positive": 2,
+        "negative": 6
+      }
+    },
+    "columns-offline": {
+      "roundtrips": 36,
+      "invalid_rejected": 5,
+      "numeric_lexemes_and_missing_null_false_preserved": true
+    },
+    "wiring": {
+      "passed": 8,
+      "checks": [
+        "table_bash_full_packet_size_and_wire_roundtrip_and_original",
+        "table_mcp_full_packet_size_and_wire_roundtrip_and_original",
+        "mcp_wire_roundtrip",
+        "mcp_wire_roundtrip",
+        "mcp_structured_unchanged",
+        "tiny_unchanged",
+        "bash_medium_unchanged",
+        "native_saved_unchanged"
+      ]
+    },
+    "log-opportunity-full": {
+      "selection": "All available top-level Claude transcript files modified within30days; file cap 100MB. Transcript-visible outputs, not actual pre-hook payloads; opportunity estimate only. No provider data, tool names, paths or responses retained.",
+      "available_files": 144,
+      "selected_files": 144,
+      "counts": {
+        "files_read": 144,
+        "tool_results_bash": 2941,
+        "medium_text_examined": 347,
+        "not_strict_supported_json": 269,
+        "errors_skipped": 251,
+        "tool_results_mcp": 634,
+        "strict_json_medium": 78,
+        "eligible_mcp": 5
+      },
+      "size_bands": {
+        "under_4kb": 2953,
+        "4_to_30kb": 347,
+        "over_30kb": 24
+      },
+      "text_result_bytes": 6563831,
+      "eligible_source_bytes": 36589,
+      "candidate_bytes_including_750_per_result": 26384,
+      "elapsed_seconds": 0.9
+    }
+  }
+}

@@ -80,3 +80,23 @@ proof:native-selective-comparison=proved; evidence=docs/validation/data-executio
 proof:strict-model-output=missing; evidence=docs/validation/data-execution-native.json partial-v4; caveat=embedded values exact does not satisfy JSON-only output contract
 proof:activation-instructions=proved; evidence=docs/validation/data-execution-native.json activation; caveat=isolated session activation, no live user installation
 ```
+
+## Everyday automatic investigation
+
+The new report and sanitized receipt preserve the no-go decision and all failed
+host attempts. No production hook or Python changes are included in this follow-up.
+The local experimental hook is intentionally not distributed or registered.
+
+### Quality Scorecard — investigation follow-up
+
+- Function-length distribution: no production function changes in this follow-up; original PR AST measurements remain above.
+- Duplicate-block delta: not measured; no clone tool run for documentation.
+- Type-coverage delta: not measured; no typed surface changed.
+- Complexity delta: not measured; no production code changed.
+- Per-file: no new production file touched. Validation report/receipt WATCH — bounded synthetic probes and transcript-visible applicability, not population token savings.
+
+```text
+proof:automatic-interception=proved; evidence=docs/validation/data-execution-automatic.json; caveat=isolated Bash/MCP text probes, not every tool or installed-hook coexistence
+proof:everyday-token-benefit=missing; evidence=docs/data-execution-automatic-validation.md; caveat=medium offload increases usage; table-heavy Bash benefit is a favorable stratum and MCP table comparison is incomplete
+proof:universal-source-fidelity=missing; evidence=large-boundary-probe in docs/validation/data-execution-automatic.json; caveat=host may truncate before hook; corrected candidate skips native persisted outputs
+```

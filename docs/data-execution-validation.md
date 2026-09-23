@@ -57,3 +57,11 @@ The [native workflow pilot](data-execution-native-validation.md) measures actual
 reported tokens and preserves failed host/format checks. It confirms snapshot
 usefulness, finds overhead versus the existing compact file control, and keeps
 this plugin experimental. The installation instructions now require explicit enable.
+
+## Everyday automatic requirement
+
+The [automatic integration investigation](data-execution-automatic-validation.md)
+concludes **no-go for a broad everyday compressor**. Automatic interception works,
+but file offload increased usage in tested medium workflows; a narrow lossless
+table variant had limited observed applicability. This manual-snapshot pilot does
+not satisfy the everyday automatic requirement and remains a parked draft.
