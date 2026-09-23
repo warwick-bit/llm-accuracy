@@ -49,6 +49,12 @@ competing-cause checks and verification after a fix. Use
 machines behave differently. Substantive technical diagnoses request a compact
 Checked / Gap / Next footer. These are advisory workflows, not accuracy guarantees.
 
+For an opt-in review by a separate model context, run
+`/llm-accuracy:technical-review model=<your-model>` with the original question,
+complete draft and attributed evidence. It adds a Claude request and checks
+claims against that packet; it cannot verify sources. See the
+[technical review guide](plugins/llm-accuracy/README.md#opt-in-technical-review).
+
 ### Questions that look simple but are not
 
 - **What is our revenue?** It could mean MRR, ARR, recognised revenue, invoices

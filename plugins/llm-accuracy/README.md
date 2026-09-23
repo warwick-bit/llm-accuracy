@@ -228,3 +228,69 @@ Model identity is `unreported` if it differs between turns.
 The tool-free acknowledgement probe normally reports zero for this counter;
 that does not mean prompt checks are inactive. A successful acknowledgement
 proves neither factual accuracy nor activation in your existing conversation.
+
+## Opt-in technical review
+
+From 0.7.0, explicitly invoke:
+
+```text
+/llm-accuracy:technical-review model=<available Claude model>
+```
+
+Supply the original question, complete draft and attributed evidence. The command
+uses a fresh Claude context to flag unsupported assertions, missing requested
+content and unwarranted uncertainty. It does not run automatically or change the
+normal reminders. Choose a reviewer model available in your Claude account;
+there is no silent fallback. A different model is only established relative to
+a known, caller-reported author identity; unknown identity remains unknown.
+
+This requires local Python 3 and a signed-in Claude Code CLI. Each invocation
+makes one additional model request, with medium effort and a default 180-second
+limit, consuming account usage. The helper disables tools, MCPs and session
+persistence, checks reported host inventory, and temporarily copies local CLI
+authentication into an isolated profile that is deleted afterwards. It saves no
+packet or response. The parent conversation and provider retention still apply.
+A host-reported shared `telemetry` component is tolerated; the plugin adds none.
+Native Windows and Cowork execution of this command are unverified.
+
+Missing or oversized packets are rejected rather than silently trimmed: maximum
+24,000 characters on stdin and after JSON serialization, with 1..20 evidence
+items. The helper returns only fixed categories, exact character locations,
+evidence IDs, model metadata and a scoped Checked / Gap / Next receipt. Findings
+are model judgments to recheck against the cited evidence. A failed review is
+unavailable, never a clean verdict. No findings means only that the reviewer
+found no material issue in the supplied packet. It does not establish source
+truth, packet completeness, factual accuracy or task completion.
+
+A synthetic check you can paste after the command:
+
+```text
+Question: What is the incident status?
+Draft: Status: Open. Local tests reportedly pass.
+Evidence e1, user report: Local tests pass. Production is unchecked.
+No incident tracker status was supplied.
+```
+
+Look for a finding on the unsupported `Status: Open` assertion; reporting local
+tests as a user claim should remain valid. As a separate control, supply an
+authoritative tracker status of Closed and a draft that attributes Closed to
+that tracker while leaving recovery unverified. The reviewer should preserve
+that supported narrow fact. These checks are fallible model behavior, not
+installation or accuracy guarantees.
+
+The underlying CLI is available to trusted local callers:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/technical_review.py" --model <model>
+```
+
+Pass JSON via stdin with exactly `question`, `draft`, and `evidence` keys.
+Each evidence item has `id`, `source`, and `text`. Use local IDs such as `e1`.
+Optional `--author-model` accepts a known full `claude-...` identity; omit when
+unknown. Optional `--timeout` accepts 1..180 seconds. Exit 0 means parsed review,
+exit 2 means unavailable. `start` and `length` are zero-based Python character
+positions in the indicated question/draft anchor, not byte offsets.
+
+See [pilot evidence](https://github.com/warwick-bit/llm-accuracy/blob/main/docs/technical-review-pilot.md)
+for the small authored test, earlier failed gates and its limits. Broader
+real-answer accuracy improvement has not been demonstrated.
