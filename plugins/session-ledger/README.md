@@ -35,6 +35,37 @@ starting a plan boundary permanently discards the ledger record captured so far
 in the session, and it does not store a plan name. `/session-ledger:clear`
 deletes all local ledger state.
 
+If the workspace path changes within the same session, automatic capture,
+initialization, and summary writes skip the new workspace while preserving the
+original unexpired record. No carryover is injected into the different workspace.
+Returning to the original workspace resumes capture. To deliberately switch the
+ledger to the new workspace, use `/session-ledger:begin-plan`; this explicitly
+discards the previous record. Expiry and rolling byte limits still apply.
+This protects the record from replacement; it is not per-message workspace
+filtering. Capture reads the shared session transcript, so returning to the
+original workspace can recover text from turns whose writes were skipped.
+
+## Capture and retention warnings
+
+Successful captures stay quiet. Hooks emit a short `systemMessage` when capture
+is skipped for a workspace mismatch, missing identity/data directory, or locking
+failure; when a storage/internal error prevents confirming an update; or when
+rolling entries, a compact summary, or restored context are shortened. A rolling
+limit warning can mean omission as well as shortening. A restore warning does
+not mean the stored record was changed.
+
+Warnings contain fixed text only, never transcript content, file paths, or
+exception details. They are deduplicated within each invocation, not across
+turns, and are not stored in a separate diagnostics file. They never block a
+turn. Warnings cannot report hooks that never run or a process killed before
+it emits output. Malformed hook JSON is still ignored.
+
+Claude Code's [hook output contract](https://code.claude.com/docs/en/hooks#json-output)
+supports these warnings on ordinary prompt, turn-end, and session-start hooks.
+Its compaction hooks discard `systemMessage`, so pre/post-compaction-only warnings
+are not guaranteed to appear in the UI. The plugin does not queue them for a
+later turn. Client versions can differ in how warnings are displayed.
+
 ## Concurrent updates
 
 Same-session updates hold an operating-system file lock across the full read,
