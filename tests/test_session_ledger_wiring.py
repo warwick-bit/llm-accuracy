@@ -374,3 +374,37 @@ def test_clear_skill_command_reports_failure_without_plugin_data(
     assert (
         result.stdout == "Could not confirm local Session Ledger state was cleared.\n"
     )
+
+
+@posix_only
+def test_navigation_and_compaction_use_same_session_record(tmp_path: Path) -> None:
+    data_root = tmp_path / "data"
+    payload = {"session_id": "synthetic-navigation", "cwd": str(tmp_path / "first")}
+    events = [
+        ("SessionStart", {**payload, "source": "startup"}),
+        ("UserPromptSubmit", {**payload, "prompt": "Synthetic earlier decision."}),
+        ("Stop", {**payload, "cwd": str(tmp_path / "second"),
+                  "last_assistant_message": "Synthetic later answer."}),
+        ("PreCompact", {**payload, "cwd": str(tmp_path / "second")}),
+        # The observed host order restores before PostCompact writes the summary.
+        ("SessionStart", {**payload, "cwd": str(tmp_path / "second"), "source": "compact"}),
+        ("PostCompact", {**payload, "cwd": str(tmp_path / "second"),
+                         "compact_summary": "Synthetic compact summary."}),
+    ]
+    for event, body in events:
+        result = run_hook(event, json.dumps(body), data_root=data_root)
+        assert result.returncode == 0 and result.stderr == ""
+        if event == "SessionStart" and body["source"] == "compact":
+            context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+            assert "Synthetic earlier decision." in context
+            assert "Synthetic later answer." in context
+    assert len(list(data_root.glob("session-ledger/sessions/*/record.json"))) == 1
+    for cwd in (payload["cwd"], str(tmp_path / "third")):
+        result = run_hook("SessionStart", json.dumps({**payload, "cwd": cwd, "source": "resume"}),
+                          data_root=data_root)
+        assert "Synthetic compact summary." in result.stdout
+    result = run_hook("SessionStart", json.dumps({**payload, "source": "compact",
+                      "session_id": "synthetic-other-session"}), data_root=data_root)
+    response = json.loads(result.stdout)
+    assert "hookSpecificOutput" not in response
+    assert "Restore skipped" in response["systemMessage"]

@@ -91,12 +91,14 @@ SECRET_PATTERNS = tuple(
 
 
 NOTICE_TEXT = {
-    "workspace": "Capture skipped: workspace changed; the original ledger is preserved.",
+    "plan_history": "Transcript history skipped: this plan has no valid capture cutoff. Current hook text can still be captured; begin a new plan to restore transcript capture.",
+    "plan_timestamp": "Transcript entries without timestamps were skipped to preserve the explicit plan cutoff.",
+    "restore_unavailable": "Restore skipped: no valid record for this session and plan; capture may resume on a later turn.",
     "lock_timeout": "Capture skipped: ledger lock timed out.",
     "lock_unavailable": "Capture skipped: ledger locking is unavailable.",
     "storage": "Ledger update could not be confirmed: storage or I/O failed.",
     "missing_data": "Capture skipped: plugin data directory is unavailable.",
-    "invalid_identity": "Capture skipped: session or workspace identity is unavailable.",
+    "invalid_identity": "Ledger capture, summary writes, and restore unavailable: session identity or initial directory is missing.",
     "retention": "Rolling history reached its byte limit; entries were omitted or shortened.",
     "summary": "Compact summary exceeded its byte limit and was shortened.",
     "restore": "Restored context was shortened to fit the host limit; stored history is unchanged.",
@@ -508,14 +510,31 @@ def message_text_entries(entry: object, raw_line: str) -> list[dict[str, str]]:
         text = text_content(content)
     else:
         return []
-    if not text:
+    if not text or (role == "user" and is_host_message(entry, text)):
         return []
     return [
         {"role": role, "text": redact_secrets(text), "fingerprint": digest(raw_line)}
     ]
 
 
-def transcript_entries(transcript: str) -> list[dict[str, str]]:
+def is_host_message(entry: dict[str, Any], text: str) -> bool:
+    """Exclude summary copies and explicitly marked, whole host envelopes only."""
+    if entry.get("isCompactSummary") is True:
+        return True
+    if entry.get("isMeta") is not True:
+        return False
+    # Generic metadata can carry useful steering. Do not discard mixed prose,
+    # unfamiliar envelopes, or unmarked user quotations of a host message.
+    for tag in ("local-command-caveat", "local-command-stdout", "task-notification"):
+        match = re.fullmatch(rf"<{tag}>([\s\S]*)</{tag}>", text.strip())
+        if match and not any(token in match[1] for token in (f"<{tag}>", f"</{tag}>")):
+            return True
+    return False
+
+
+def transcript_entries(
+    transcript: str, *, after: datetime | None = None
+) -> list[dict[str, str]]:
     """Decode all user/assistant text entries from a Claude JSONL transcript."""
     entries: list[dict[str, str]] = []
     for line in transcript.splitlines():
@@ -526,8 +545,32 @@ def transcript_entries(transcript: str) -> list[dict[str, str]]:
             entry = json.loads(stripped)
         except json.JSONDecodeError:
             continue
+        if after is not None:
+            if not isinstance(entry, dict):
+                continue
+            created = parse_timestamp(entry.get("timestamp"))
+            if created is None:
+                if message_text_entries(entry, line):
+                    note_notice("plan_timestamp")
+                continue
+            if created <= after:
+                continue
         entries.extend(message_text_entries(entry, line))
     return entries
+
+
+def plan_transcript_entries(
+    transcript: str, root: Path, session_id: str, plan_id: str, now: datetime
+) -> list[dict[str, str]]:
+    """Do not reimport pre-reset history into an explicit plan."""
+    if plan_id == DEFAULT_PLAN_ID:
+        return transcript_entries(transcript)
+    scope = read_json(scope_path(root, session_id))
+    cutoff = parse_timestamp(scope.get("started_at")) if scope else None
+    if not scope or not is_current(scope, now) or scope.get("plan_id") != plan_id or cutoff is None:
+        note_notice("plan_history")
+        return []
+    return transcript_entries(transcript, after=cutoff)
 
 
 def hook_payload_entries(
@@ -797,11 +840,26 @@ def refresh_plan_scope(
         scope_path(data_root, session_id),
         {
             "expires_at": timestamp(expires_at(now)),
+            "started_at": scope.get("started_at"),
             "plan_id": plan_id,
             "schema_version": SCHEMA_VERSION,
             "workspace_hash": workspace_hash,
         },
     )
+
+
+def session_workspace_hash(
+    root: Path, session_id: str, cwd: str, now: datetime
+) -> str:
+    """Reuse the plan/session anchor; shell navigation does not change identity."""
+    # A plan marker wins even if a failed reset left the previous record behind.
+    for path in (scope_path(root, session_id), record_path(root, session_id)):
+        saved = read_json(path)
+        if saved and is_current(saved, now):
+            anchor = saved.get("workspace_hash")
+            if isinstance(anchor, str) and anchor:
+                return anchor
+    return canonical_workspace_hash(cwd)
 
 
 def load_current_record(
@@ -814,7 +872,7 @@ def load_current_record(
         return None
     if not state_paths_are_safe(data_root, session_id):
         return None
-    workspace_hash = canonical_workspace_hash(cwd)
+    workspace_hash = session_workspace_hash(data_root, session_id, cwd, now)
     record = read_json(record_path(data_root, session_id))
     if (
         not record
@@ -840,17 +898,7 @@ def session_identity(
     if not state_paths_are_safe(root, session_id):
         note_notice("invalid_identity")
         return None
-    workspace_hash = canonical_workspace_hash(cwd)
-    existing = read_json(record_path(root, session_id))
-    if (
-        existing
-        and is_current(existing, now)
-        and existing.get("workspace_hash") != workspace_hash
-    ):
-        # A read-scope mismatch is not permission to replace another workspace's
-        # record. Writers repeat this check under the session lock.
-        note_notice("workspace")
-        return None
+    workspace_hash = session_workspace_hash(root, session_id, cwd, now)
     return (
         session_id,
         workspace_hash,
@@ -934,9 +982,9 @@ def update_current_ledger(
             workspace_hash=workspace_hash, plan_id=plan_id, now=current_time
         )
     transcript = read_transcript_tail(payload.get("transcript_path"))
-    discovered = transcript_entries(transcript) + hook_payload_entries(
-        payload, transcript
-    )
+    discovered = plan_transcript_entries(
+        transcript, root, session_id, plan_id, current_time
+    ) + hook_payload_entries(payload, transcript)
     current_entries = valid_entries(existing)
     entries = merged_entries(current_entries, discovered)
     changed = entries != current_entries
@@ -1096,6 +1144,7 @@ def session_start_context(
         return None
     record = load_current_record(payload, data_root=root, now=current_time)
     if not record:
+        note_notice("restore_unavailable")
         return None
     return bounded_context(
         valid_entries(record), redact_secrets(record["compact_summary"])
@@ -1126,6 +1175,7 @@ def begin_plan(
     }
     try:
         with session_lock(root, session_id):
+            scope["started_at"] = timestamp(now or utc_now())
             # Scope first: a failure part-way may leave the old record behind,
             # but must never discard it without the new boundary in place.
             write_json_atomic(scope_path(root, session_id), scope)
