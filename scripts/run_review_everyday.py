@@ -29,6 +29,13 @@ def digest(value):
     return hashlib.sha256(data).hexdigest()
 
 
+def temporary_directory(prefix):
+    # ignore_cleanup_errors was added in Python 3.10; offline tests also run
+    # on 3.9. Live measurements use 3.12 and retain the race-tolerant cleanup.
+    options = {"ignore_cleanup_errors": True} if sys.version_info >= (3, 10) else {}
+    return tempfile.TemporaryDirectory(prefix=prefix, **options)
+
+
 def prompts():
     guidance = "\n\n".join(body(PLUGIN / p) for p in (
         "skills/claim-fidelity/SKILL.md", "skills/verify-technical/SKILL.md",
@@ -85,7 +92,6 @@ def parse(output, code, args, *, structured=False, plugin=False):
     hooks = [e for e in events if e.get("type") == "system" and e.get("subtype") == "hook_response"]
     fidelity = sum("CLAIM FIDELITY CHECK" in str(e.get("stdout", ""))
                    and e.get("hook_event") == "UserPromptSubmit"
-                   and str(e.get("hook_name", "")).startswith("UserPromptSubmit:")
                    and e.get("exit_code") == 0 and e.get("outcome") == "success" for e in hooks)
     if (plugin and fidelity != 1) or (not plugin and hooks):
         raise ValueError("hook_activation_failure")
@@ -139,7 +145,7 @@ def call(args, work, cmd, prompt, *, structured=False, plugin=False):
 def extract(item, review, args):
     attempts = []
     for _ in range(2):
-        with tempfile.TemporaryDirectory(prefix="review-extract-", ignore_cleanup_errors=True) as directory:
+        with temporary_directory("review-extract-") as directory:
             answer, record = call(args, Path(directory), command(args, True), encode_payload(item, review), structured=True)
         if record["status"] == "completed":
             try:
@@ -165,7 +171,7 @@ def calibration_value_matches(row, gold, expected, control):
 
 
 def review(item, arm, args):
-    with tempfile.TemporaryDirectory(prefix="review-everyday-", ignore_cleanup_errors=True) as directory:
+    with temporary_directory("review-everyday-") as directory:
         work = Path(directory)
         (work / "fixture.json").write_text(json.dumps(item["fixture"]))
         shutil.copyfile(ROOT / "scripts/review_eval_tools.py", work / "tools.py")

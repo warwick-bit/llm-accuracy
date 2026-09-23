@@ -158,7 +158,7 @@ def test_quote_matching_accepts_formatting_not_changed_claim():
     assert not extraction.quote_matches("` `", "Any unrelated review")
 
 
-@pytest.mark.parametrize("key,value", [("exit_code", 1), ("outcome", "error"), ("hook_event", "Stop"), ("hook_name", "Other:2")])
+@pytest.mark.parametrize("key,value", [("exit_code", 1), ("outcome", "error"), ("hook_event", "Stop")])
 def test_failed_or_wrong_hook_does_not_attest_activation(key, value):
     data = events(True)
     data[-1][key] = value
@@ -206,3 +206,18 @@ def test_scoped_control_accepts_endorsed_value_not_arbitrary_number():
     gold = control["gold"][0]
     assert runner.calibration_value_matches(answer("supported", "40")["claims"][0], gold, None, control)
     assert not runner.calibration_value_matches(answer("supported", "35")["claims"][0], gold, None, control)
+
+
+def test_hook_display_name_does_not_replace_event_success_and_marker():
+    data = events(True)
+    data[-1]["hook_name"] = "Checking llm-accuracy claim fidelity"
+    _, receipt = runner.parse(encoded(data), 0, args(), plugin=True)
+    assert receipt["fidelity_hook_responses"] == 1
+
+
+def test_python39_temp_directory_compatibility(monkeypatch):
+    seen = []
+    monkeypatch.setattr(runner.sys, "version_info", (3, 9))
+    monkeypatch.setattr(runner.tempfile, "TemporaryDirectory", lambda **kwargs: seen.append(kwargs))
+    runner.temporary_directory("offline-test-")
+    assert seen == [{"prefix": "offline-test-"}]
