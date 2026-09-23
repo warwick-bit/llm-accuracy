@@ -5,6 +5,8 @@ import json
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -41,6 +43,90 @@ def load_ledger():
     ledger = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ledger)
     return ledger
+
+
+@pytest.mark.parametrize(
+    "action", ["initialize_session", "update_ledger", "write_compact_summary"]
+)
+def test_workspace_change_preserves_record_and_return_resumes_capture(tmp_path, action):
+    ledger = load_ledger()
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    original = {"session_id": "synthetic-session", "cwd": str(tmp_path / "first"),
+                "prompt": "Synthetic first", "compact_summary": "Synthetic summary"}
+    assert ledger.update_ledger(original, data_root=tmp_path, now=now)
+    assert ledger.write_compact_summary(original, data_root=tmp_path, now=now)
+    path = ledger.record_path(tmp_path, "synthetic-session")
+    before = path.read_bytes()
+    other = {**original, "cwd": str(tmp_path / "other"),
+             "prompt": "Synthetic other", "compact_summary": "Other summary"}
+
+    assert not getattr(ledger, action)(other, data_root=tmp_path, now=now + timedelta(hours=1))
+    assert path.read_bytes() == before
+    assert ledger.session_start_context(
+        {**other, "source": "resume"}, data_root=tmp_path, now=now
+    ) is None
+
+    assert ledger.update_ledger(
+        {**original, "prompt": "Synthetic returned"}, data_root=tmp_path,
+        now=now + timedelta(hours=2),
+    )
+    record = json.loads(path.read_text())
+    assert record["created_at"] == json.loads(before)["created_at"]
+    assert record["compact_summary"] == "Synthetic summary"
+    assert [entry["text"] for entry in record["entries"]] == [
+        "Synthetic first", "Synthetic returned"
+    ]
+
+
+def test_explicit_plan_boundary_allows_workspace_change(tmp_path):
+    ledger = load_ledger()
+    original = {"session_id": "synthetic-session", "cwd": str(tmp_path / "first"),
+                "prompt": "Synthetic first"}
+    assert ledger.update_ledger(original, data_root=tmp_path)
+    other = {**original, "cwd": str(tmp_path / "other"), "prompt": "Synthetic other"}
+    assert ledger.begin_plan("synthetic-session", data_root=tmp_path, cwd=other["cwd"])
+    assert ledger.update_ledger(other, data_root=tmp_path)
+    record = json.loads(ledger.record_path(tmp_path, "synthetic-session").read_text())
+    assert [entry["text"] for entry in record["entries"]] == ["Synthetic other"]
+
+
+@pytest.mark.parametrize(
+    "action", ["initialize_session", "update_ledger", "write_compact_summary"]
+)
+def test_workspace_owner_is_rechecked_after_acquiring_lock(tmp_path, monkeypatch, action):
+    ledger = load_ledger()
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path / "first"),
+               "prompt": "Synthetic first", "compact_summary": "Synthetic summary"}
+    owner = ledger.record_for(
+        workspace_hash=ledger.canonical_workspace_hash(str(tmp_path / "other")),
+        plan_id=ledger.DEFAULT_PLAN_ID, now=now,
+    )
+    original_lock = ledger.session_lock
+
+    @contextmanager
+    def lock_after_other_writer(root, session_id):
+        with original_lock(root, session_id):
+            ledger.write_json_atomic(ledger.record_path(root, session_id), owner)
+            yield
+
+    monkeypatch.setattr(ledger, "session_lock", lock_after_other_writer)
+    assert not getattr(ledger, action)(payload, data_root=tmp_path, now=now)
+    assert json.loads(ledger.record_path(tmp_path, "synthetic-session").read_text()) == owner
+
+
+def test_expired_workspace_record_does_not_prevent_new_capture(tmp_path):
+    ledger = load_ledger()
+    now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path / "first"),
+               "prompt": "Synthetic first"}
+    assert ledger.update_ledger(payload, data_root=tmp_path, now=now)
+    assert ledger.update_ledger(
+        {**payload, "cwd": str(tmp_path / "other"), "prompt": "Synthetic other"},
+        data_root=tmp_path, now=now + timedelta(days=31),
+    )
+    record = json.loads(ledger.record_path(tmp_path, "synthetic-session").read_text())
+    assert [entry["text"] for entry in record["entries"]] == ["Synthetic other"]
 
 
 def start_writer(root, label, unlocked):

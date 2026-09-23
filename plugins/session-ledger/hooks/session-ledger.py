@@ -780,6 +780,15 @@ def session_identity(
     if not state_paths_are_safe(root, session_id):
         return None
     workspace_hash = canonical_workspace_hash(cwd)
+    existing = read_json(record_path(root, session_id))
+    if (
+        existing
+        and is_current(existing, now)
+        and existing.get("workspace_hash") != workspace_hash
+    ):
+        # A read-scope mismatch is not permission to replace another workspace's
+        # record. Writers repeat this check under the session lock.
+        return None
     return (
         session_id,
         workspace_hash,

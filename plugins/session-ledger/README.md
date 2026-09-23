@@ -35,6 +35,13 @@ starting a plan boundary permanently discards the ledger record captured so far
 in the session, and it does not store a plan name. `/session-ledger:clear`
 deletes all local ledger state.
 
+If the workspace path changes within the same session, automatic capture,
+initialization, and summary writes skip the new workspace while preserving the
+original unexpired record. No carryover is injected into the different workspace.
+Returning to the original workspace resumes capture. To deliberately switch the
+ledger to the new workspace, use `/session-ledger:begin-plan`; this explicitly
+discards the previous record. Expiry and rolling byte limits still apply.
+
 ## Concurrent updates
 
 Same-session updates hold an operating-system file lock across the full read,
