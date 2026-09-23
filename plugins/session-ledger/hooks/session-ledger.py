@@ -23,6 +23,7 @@ import tempfile
 import time
 import uuid
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator
@@ -87,6 +88,53 @@ SECRET_PATTERNS = tuple(
         ),
     )
 )
+
+
+NOTICE_TEXT = {
+    "workspace": "Capture skipped: workspace changed; the original ledger is preserved.",
+    "lock_timeout": "Capture skipped: ledger lock timed out.",
+    "lock_unavailable": "Capture skipped: ledger locking is unavailable.",
+    "storage": "Ledger update could not be confirmed: storage or I/O failed.",
+    "missing_data": "Capture skipped: plugin data directory is unavailable.",
+    "invalid_identity": "Capture skipped: session or workspace identity is unavailable.",
+    "retention": "Rolling history reached its byte limit; entries were omitted or shortened.",
+    "summary": "Compact summary exceeded its byte limit and was shortened.",
+    "restore": "Restored context was shortened to fit the host limit; stored history is unchanged.",
+    "unexpected": "Ledger operation could not be confirmed: an internal error occurred.",
+}
+HOOK_NOTICES: ContextVar[set[str] | None] = ContextVar("ledger_notices", default=None)
+
+
+def note_notice(code: str) -> None:
+    """Collect only fixed reason labels during one hook invocation."""
+    notices = HOOK_NOTICES.get()
+    if notices is not None:
+        notices.add(code)
+
+
+def note_write_failure() -> None:
+    """Do not claim retention was saved when an attempted write failed."""
+    notices = HOOK_NOTICES.get()
+    if notices is None:
+        return
+    notices.difference_update({"retention", "summary"})
+    if not notices:
+        notices.add("storage")
+
+
+def hook_response(context: str | None = None) -> dict[str, Any]:
+    """Build one host response without paths, content, or exception details."""
+    response: dict[str, Any] = {}
+    if context is not None:
+        response["hookSpecificOutput"] = {
+            "additionalContext": context, "hookEventName": "SessionStart"
+        }
+    notices = HOOK_NOTICES.get()
+    if notices:
+        response["systemMessage"] = "Session Ledger: " + " ".join(
+            NOTICE_TEXT[code] for code in sorted(notices)
+        )
+    return response
 
 
 def utc_now() -> datetime:
@@ -213,6 +261,7 @@ def lock_descriptor(descriptor: int, *, wait: bool = True) -> None:
         fcntl.flock(descriptor, flags)
         return
     if msvcrt is None:
+        note_notice("lock_unavailable")
         raise OSError("Session Ledger file locking is unavailable")
     deadline = time.monotonic() + WINDOWS_LOCK_TIMEOUT_SECONDS
     while True:
@@ -224,6 +273,7 @@ def lock_descriptor(descriptor: int, *, wait: bool = True) -> None:
             if not wait or error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
                 raise
             if time.monotonic() >= deadline:
+                note_notice("lock_timeout")
                 raise OSError("Session Ledger lock wait expired") from None
             time.sleep(0.025)
 
@@ -253,7 +303,12 @@ def session_lock(data_root: Path, session_id: str) -> Iterator[None]:
             raise OSError("Session Ledger lock path must be a regular file")
         if os.name == "posix":
             os.fchmod(descriptor, 0o600)
-        lock_descriptor(descriptor)
+        try:
+            lock_descriptor(descriptor)
+        except OSError:
+            if "lock_timeout" not in (HOOK_NOTICES.get() or set()):
+                note_notice("lock_unavailable")
+            raise
         try:
             yield
         finally:
@@ -604,7 +659,11 @@ def merged_entries(
                 continue
         additions.append(entry)
         fingerprints.add(fingerprint)
-    return bounded_entries(existing + additions)
+    candidates = existing + additions
+    retained = bounded_entries(candidates)
+    if retained != candidates:
+        note_notice("retention")
+    return retained
 
 
 def remove_file(path: Path) -> None:
@@ -776,8 +835,10 @@ def session_identity(
     session_id = payload.get("session_id")
     cwd = payload.get("cwd")
     if not isinstance(session_id, str) or not isinstance(cwd, str):
+        note_notice("invalid_identity")
         return None
     if not state_paths_are_safe(root, session_id):
+        note_notice("invalid_identity")
         return None
     workspace_hash = canonical_workspace_hash(cwd)
     existing = read_json(record_path(root, session_id))
@@ -788,6 +849,7 @@ def session_identity(
     ):
         # A read-scope mismatch is not permission to replace another workspace's
         # record. Writers repeat this check under the session lock.
+        note_notice("workspace")
         return None
     return (
         session_id,
@@ -806,6 +868,7 @@ def initialize_session(
     root = data_root or data_directory()
     current_time = now or utc_now()
     if not root:
+        note_notice("missing_data")
         return False
     prune_expired(root, current_time)
     identity = session_identity(payload, root, current_time)
@@ -828,6 +891,7 @@ def initialize_session(
                 ),
             )
     except OSError:
+        note_write_failure()
         return False
     return True
 
@@ -842,6 +906,7 @@ def update_ledger(
     root = data_root or data_directory()
     current_time = now or utc_now()
     if not root:
+        note_notice("missing_data")
         return False
     identity = session_identity(payload, root, current_time)
     if not identity:
@@ -851,6 +916,7 @@ def update_ledger(
         with session_lock(root, session_id):
             return update_current_ledger(payload, root, current_time)
     except OSError:
+        note_write_failure()
         return False
 
 
@@ -898,7 +964,11 @@ def write_compact_summary(
     root = data_root or data_directory()
     current_time = now or utc_now()
     summary = payload.get("compact_summary")
-    if not root or not isinstance(summary, str):
+    if not root:
+        note_notice("missing_data")
+        return False
+    if not isinstance(summary, str):
+        note_notice("invalid_identity")
         return False
     identity = session_identity(payload, root, current_time)
     if not identity:
@@ -931,7 +1001,10 @@ def write_compact_summary(
             )
             refresh_plan_scope(root, session_id, workspace_hash, plan_id, current_time)
     except OSError:
+        note_write_failure()
         return False
+    if summary_truncated:
+        note_notice("summary")
     return True
 
 
@@ -967,22 +1040,8 @@ def context_text(entries: list[dict[str, str]], summary: str, truncated: bool) -
 
 
 def emitted_context_length(text: str) -> int:
-    """Return the exact serialized hook-response length the host receives.
-
-    JSON encoding re-escapes quotes, backslashes, and non-ASCII characters,
-    so the serialized response can be much longer than the inner text; the
-    host cap applies to the emitted output, not the decoded context.
-    """
-    return len(
-        json.dumps(
-            {
-                "hookSpecificOutput": {
-                    "additionalContext": text,
-                    "hookEventName": "SessionStart",
-                }
-            }
-        )
-    )
+    """Measure the complete JSON response, including diagnostic notices."""
+    return len(json.dumps(hook_response(text)))
 
 
 def bounded_context(entries: list[dict[str, str]], summary: str) -> str:
@@ -997,6 +1056,7 @@ def bounded_context(entries: list[dict[str, str]], summary: str) -> str:
     text = context_text(entries, summary, False)
     if emitted_context_length(text) <= HOST_CONTEXT_CHARACTER_BUDGET:
         return text
+    note_notice("restore")
     entry_budget = RENDER_ENTRY_BYTES
     while True:
         rendered_entries = bounded_entries(entries, limit=entry_budget)
@@ -1021,6 +1081,7 @@ def session_start_context(
     root = data_root or data_directory()
     current_time = now or utc_now()
     if not root:
+        note_notice("missing_data")
         return None
     prune_expired(root, current_time)
     source = payload.get("source")
@@ -1099,34 +1160,38 @@ def hook_payload() -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
-def emit_session_context(context: str) -> None:
-    """Emit the SessionStart-specific additional context response."""
-    print(
-        json.dumps(
-            {
-                "hookSpecificOutput": {
-                    "additionalContext": context,
-                    "hookEventName": "SessionStart",
-                }
-            }
-        )
-    )
+def execute_hook_action(action: str, payload: dict[str, Any]) -> str | None:
+    """Dispatch one hook; diagnostics remain separate from historical context."""
+    if action == "session-start":
+        return session_start_context(payload)
+    handler = write_compact_summary if action == "post-compact" else update_ledger
+    handler(payload)
+    return None
 
 
 def run_hook_action(action: str) -> None:
-    """Run one payload-based hook action without raising into Claude Code."""
+    """Emit a single non-blocking response, clearing invocation-local notices."""
     payload = hook_payload()
     if not payload:
         return
-    if action == "pre-compact":
-        update_ledger(payload)
-        return
-    if action == "session-start":
-        context = session_start_context(payload)
-        if context:
-            emit_session_context(context)
-        return
-    {"capture": update_ledger, "post-compact": write_compact_summary}[action](payload)
+    token = HOOK_NOTICES.set(set())
+    context = None
+    try:
+        try:
+            context = execute_hook_action(action, payload)
+        except OSError:
+            note_write_failure()
+        except Exception:
+            # Fail open without copying exception text or payload values to output.
+            notices = HOOK_NOTICES.get()
+            if notices is not None:
+                notices.difference_update({"retention", "summary"})
+            note_notice("unexpected")
+        response = hook_response(context)
+        if response:
+            print(json.dumps(response))
+    finally:
+        HOOK_NOTICES.reset(token)
 
 
 def run_local_action(action: str, session_id: str) -> None:

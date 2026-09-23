@@ -1,6 +1,7 @@
 """Cross-process ledger serialization, including a lost-update negative control."""
 
 import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -8,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -127,6 +129,100 @@ def test_expired_workspace_record_does_not_prevent_new_capture(tmp_path):
     )
     record = json.loads(ledger.record_path(tmp_path, "synthetic-session").read_text())
     assert [entry["text"] for entry in record["entries"]] == ["Synthetic other"]
+
+
+def invoke_hook(ledger, monkeypatch, capsys, root, payload, action="capture"):
+    monkeypatch.setenv("CLAUDE_PLUGIN_DATA", str(root))
+    monkeypatch.setattr(ledger.sys, "stdin", io.StringIO(json.dumps(payload)))
+    assert ledger.main([action]) == 0
+    output = capsys.readouterr()
+    assert output.err == ""
+    assert ledger.HOOK_NOTICES.get() is None
+    return json.loads(output.out) if output.out else {}
+
+
+def test_workspace_skip_notice_has_no_payload_and_does_not_leak_to_next_call(
+    tmp_path, monkeypatch, capsys
+):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path / "first"),
+               "prompt": "PRIVATE_FIXTURE_TEXT"}
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+    result = invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                         {**payload, "cwd": str(tmp_path / "other")})
+    assert result == {"systemMessage": "Session Ledger: " + ledger.NOTICE_TEXT["workspace"]}
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+
+
+@pytest.mark.parametrize("failure", ["timeout", "unavailable", "storage", "unexpected"])
+def test_failure_notices_are_specific_sanitized_and_nonblocking(
+    tmp_path, monkeypatch, capsys, failure
+):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path), "prompt": "synthetic"}
+    expected = failure
+    if failure in {"timeout", "unavailable"}:
+        monkeypatch.setattr(ledger, "fcntl", None)
+        monkeypatch.setattr(ledger, "msvcrt", None)
+        expected = "lock_" + failure
+    if failure == "timeout":
+        def busy(*args):
+            raise OSError(ledger.errno.EACCES, "PRIVATE_EXCEPTION_TEXT")
+        monkeypatch.setattr(ledger, "msvcrt", SimpleNamespace(locking=busy, LK_NBLCK=1))
+        monkeypatch.setattr(ledger, "WINDOWS_LOCK_TIMEOUT_SECONDS", 0)
+    if failure in {"storage", "unexpected"}:
+        def fail_write(*args):
+            error = OSError if failure == "storage" else RuntimeError
+            raise error("PRIVATE_EXCEPTION_TEXT")
+        monkeypatch.setattr(ledger, "write_json_atomic", fail_write)
+    result = invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    assert result == {"systemMessage": "Session Ledger: " + ledger.NOTICE_TEXT[expected]}
+    assert not ledger.record_path(tmp_path, "synthetic-session").exists()
+
+
+def test_rolling_retention_notice_and_failed_write_do_not_claim_saved_trimming(
+    tmp_path, monkeypatch, capsys
+):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path), "prompt": "x" * 20000}
+    result = invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    assert result == {"systemMessage": "Session Ledger: " + ledger.NOTICE_TEXT["retention"]}
+    path = ledger.record_path(tmp_path, "synthetic-session")
+    original = path.read_bytes()
+    assert ledger.ENTRY_TRUNCATION_MARKER in json.loads(original)["entries"][0]["text"]
+    def fail_write(*args):
+        raise OSError("PRIVATE_EXCEPTION_TEXT")
+    monkeypatch.setattr(ledger, "write_json_atomic", fail_write)
+    result = invoke_hook(ledger, monkeypatch, capsys, tmp_path, {**payload, "prompt": "y" * 20000})
+    assert result == {"systemMessage": "Session Ledger: " + ledger.NOTICE_TEXT["storage"]}
+    assert path.read_bytes() == original
+
+
+def test_rolling_eviction_is_reported(tmp_path, monkeypatch, capsys):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path)}
+    for index in range(8):
+        result = invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                             {**payload, "prompt": str(index) * 12000})
+    assert ledger.NOTICE_TEXT["retention"] in result["systemMessage"]
+    record = json.loads(ledger.record_path(tmp_path, "synthetic-session").read_text())
+    assert len(record["entries"]) < 8
+
+
+def test_restore_notice_shares_one_bounded_json_response(tmp_path, monkeypatch, capsys):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
+               "compact_summary": "x" * 50000}
+    result = invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload, "post-compact")
+    assert ledger.NOTICE_TEXT["summary"] in result["systemMessage"]
+    path = ledger.record_path(tmp_path, "synthetic-session")
+    original = path.read_bytes()
+    result = invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                         {**payload, "source": "resume"}, "session-start")
+    assert ledger.NOTICE_TEXT["restore"] in result["systemMessage"]
+    assert result["hookSpecificOutput"]["hookEventName"] == "SessionStart"
+    assert len(json.dumps(result)) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+    assert path.read_bytes() == original
 
 
 def start_writer(root, label, unlocked):

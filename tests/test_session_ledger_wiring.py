@@ -281,7 +281,9 @@ def test_missing_plugin_data_environment_fails_open(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert result.stderr == ""
-    assert result.stdout == ""
+    assert json.loads(result.stdout) == {
+        "systemMessage": "Session Ledger: Capture skipped: plugin data directory is unavailable."
+    }
     assert not list(tmp_path.rglob("record.json"))
 
 
