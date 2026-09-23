@@ -35,20 +35,30 @@ starting a plan boundary permanently discards the ledger record captured so far
 in the session, and it does not store a plan name. `/session-ledger:clear`
 deletes all local ledger state.
 
-If the workspace path changes within the same session, automatic capture,
-initialization, and summary writes skip the new workspace while preserving the
-original unexpired record. No carryover is injected into the different workspace.
-Returning to the original workspace resumes capture. To deliberately switch the
-ledger to the new workspace, use `/session-ledger:begin-plan`; this explicitly
-discards the previous record. Expiry and rolling byte limits still apply.
-This protects the record from replacement; it is not per-message workspace
-filtering. Capture reads the shared session transcript, so returning to the
-original workspace can recover text from turns whose writes were skipped.
+Shell directory changes do not reset or disable the ledger. The first captured
+workspace hash is reused for the same session and plan, including after `cd`,
+compaction, and resume. Existing unexpired records remain readable without a
+migration. An explicit plan marker takes precedence over a prior record, so a
+partially failed reset cannot restore the previous plan. New session IDs never
+inherit this record. `/session-ledger:begin-plan` remains the deliberate way to
+discard earlier work within a session. This is a same-session boundary, not
+workspace isolation: starting in one project and navigating to another retains
+both projects' conversation in that session.
+
+Host summary copies marked `isCompactSummary: true` are excluded from new
+transcript capture. Records marked `isMeta: true` are excluded only when their
+entire text is a recognised `local-command-caveat`, `local-command-stdout`, or
+`task-notification` envelope. Mixed prose and unknown metadata remain eligible.
+Compact summaries are still kept separately through `PostCompact`. Unmarked command
+output and task notifications remain eligible: text that resembles a host
+wrapper can also be a genuine user message, so text alone never triggers
+exclusion. Existing stored entries without origin metadata are not retroactively
+removed; ordinary retention limits and explicit clear/reset still apply.
 
 ## Capture and retention warnings
 
 Successful captures stay quiet. Hooks emit a short `systemMessage` when capture
-is skipped for a workspace mismatch, missing identity/data directory, or locking
+is skipped for missing identity/data directory or locking
 failure; when a storage/internal error prevents confirming an update; or when
 rolling entries, a compact summary, or restored context are shortened. A rolling
 limit warning can mean omission as well as shortening. A restore warning does
@@ -57,7 +67,8 @@ not mean the stored record was changed.
 Warnings contain fixed text only, never transcript content, file paths, or
 exception details. They are deduplicated within each invocation, not across
 turns, and are not stored in a separate diagnostics file. They never block a
-turn. Warnings cannot report hooks that never run or a process killed before
+turn. A compact/resume with no valid record reports that restore was skipped;
+a directory change alone is not a failure. Warnings cannot report hooks that never run or a process killed before
 it emits output. Malformed hook JSON is still ignored.
 
 Claude Code's [hook output contract](https://code.claude.com/docs/en/hooks#json-output)
@@ -107,7 +118,10 @@ The restored context injected after compaction is additionally bounded to fit
 Claude Code's hook-output limit: when the stored record renders larger than
 that limit, the injection keeps the newest entries within a reduced render
 budget, shortens the compact summary as needed, marks the restore truncated,
-and leaves the stored record on disk unchanged.
+and leaves the stored record on disk unchanged. Older decisions can be omitted;
+newest-first selection is not a relevance or correctness judgement. A synthetic
+[selection comparison](../../docs/validation/session-ledger-selection.md)
+demonstrates why reserving space for older entries is not a universal improvement.
 
 Records are never read or injected after 30 days and are purged on the next
 Session Ledger hook. Claude Code's default final-scope uninstall also removes

@@ -138,21 +138,17 @@ def test_new_or_different_session_never_receives_carryover(tmp_path: Path) -> No
     )
 
 
-def test_workspace_mismatch_and_clear_fail_closed_without_injection(
+def test_navigation_restores_same_session_and_clear_removes_record(
     tmp_path: Path,
 ) -> None:
     ledger = load_ledger()
     data_root = tmp_path / "plugin-data"
     ledger.write_compact_summary(compact_payload(), data_root=data_root, now=NOW)
 
-    assert (
-        ledger.session_start_context(
-            session_start_payload(source="resume", cwd="/work/other"),
-            data_root=data_root,
-            now=NOW,
-        )
-        is None
-    )
+    assert ledger.session_start_context(
+        session_start_payload(source="resume", cwd="/work/other"),
+        data_root=data_root, now=NOW,
+    ) is not None
     assert (
         ledger.session_start_context(
             session_start_payload(source="clear"), data_root=data_root, now=NOW
@@ -1332,3 +1328,109 @@ def test_escape_heavy_restore_stays_under_the_serialized_budget(
         ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
     )
     assert ledger.CONTEXT_TRUNCATION_NOTICE in context
+
+
+def test_plan_reset_anchor_survives_navigation_before_first_write(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    assert ledger.write_compact_summary(compact_payload(), data_root=tmp_path, now=NOW)
+    assert ledger.begin_plan("session-one", data_root=tmp_path, cwd="/new-plan", now=NOW)
+    scope = ledger.read_json(ledger.scope_path(tmp_path, "session-one"))
+    assert ledger.write_compact_summary(
+        compact_payload(cwd="/another-directory", summary="Synthetic new plan."),
+        data_root=tmp_path, now=NOW,
+    )
+    record = ledger.read_json(ledger.record_path(tmp_path, "session-one"))
+    assert record["workspace_hash"] == scope["workspace_hash"]
+    assert record["plan_id"] == scope["plan_id"]
+    context = ledger.session_start_context(
+        session_start_payload(source="compact", cwd="/work/project"),
+        data_root=tmp_path, now=NOW,
+    )
+    assert "Synthetic new plan." in context
+    assert "Synthetic verified source" not in context
+
+
+def test_partial_plan_reset_cannot_restore_previous_plan_after_navigation(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    assert ledger.write_compact_summary(compact_payload(), data_root=tmp_path, now=NOW)
+    old = ledger.read_json(ledger.record_path(tmp_path, "session-one"))
+    assert ledger.begin_plan("session-one", data_root=tmp_path, cwd="/new-plan", now=NOW)
+    # Simulate scope saved but the old record not removed after an I/O failure.
+    ledger.write_json_atomic(ledger.record_path(tmp_path, "session-one"), old)
+    for cwd in ("/work/project", "/new-plan", "/third-directory"):
+        assert ledger.session_start_context(
+            session_start_payload(source="resume", cwd=cwd), data_root=tmp_path, now=NOW
+        ) is None
+
+
+def test_host_metadata_filters_injections_without_matching_user_prose() -> None:
+    ledger = load_ledger()
+    for text in (
+        "/compact", "<local-command-stdout>Synthetic result</local-command-stdout>",
+        "<task-notification>Synthetic task</task-notification>",
+        "This session is being continued from a previous conversation.",
+    ):
+        user = {"type": "user", "message": {"role": "user", "content": text}}
+        assert ledger.message_text_entries(user, json.dumps(user))[0]["text"] == text
+        for flag in ("isMeta", "isCompactSummary"):
+            marked = {**user, flag: True}
+            filtered = flag == "isCompactSummary" or text.startswith((
+                "<local-command-stdout>", "<task-notification>"))
+            assert bool(ledger.message_text_entries(marked, json.dumps(marked))) is not filtered
+            # Malformed/truthy metadata is not evidence of host origin.
+            ambiguous = {**user, flag: "true"}
+            assert ledger.message_text_entries(ambiguous, json.dumps(ambiguous))
+
+
+def test_host_summary_not_duplicated_in_stored_entries(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    transcript = tmp_path / "synthetic.jsonl"
+    rows = [
+        {"message": {"role": "user", "content": "Synthetic user decision."}},
+        {"isCompactSummary": True, "message": {
+            "role": "user", "content": "Synthetic host summary."}},
+        {"isMeta": True, "message": {"role": "user", "content": [
+            {"type": "text", "text": "<local-command-caveat>Synthetic host caveat.</local-command-caveat>"}]}},
+        {"message": {"role": "assistant", "content": "Synthetic answer."}},
+    ]
+    transcript.write_text("\n".join(json.dumps(row) for row in rows))
+    assert ledger.update_ledger(transcript_payload(transcript), data_root=tmp_path, now=NOW)
+    assert ledger.write_compact_summary(
+        compact_payload(summary="Synthetic host summary."), data_root=tmp_path, now=NOW
+    )
+    record = ledger.read_json(ledger.record_path(tmp_path, "session-one"))
+    assert [entry["text"] for entry in record["entries"]] == [
+        "Synthetic user decision.", "Synthetic answer."]
+    assert record["compact_summary"] == "Synthetic host summary."
+
+
+def test_metadata_preserves_unknown_and_mixed_steering() -> None:
+    ledger = load_ledger()
+    for text in (
+        "Synthetic user steering carried as metadata.",
+        "<system-reminder>Synthetic steering.</system-reminder>",
+        "<local-command-caveat>Host caveat.</local-command-caveat> Keep this decision.",
+        "Keep this decision. <task-notification>Host task.</task-notification>",
+        "<task-notification>One</task-notification> Keep this. "
+        "<task-notification>Two</task-notification>",
+    ):
+        entry = {"isMeta": True, "message": {"role": "user", "content": text}}
+        assert ledger.message_text_entries(entry, json.dumps(entry))[0]["text"] == text
+
+
+def test_partial_reset_writers_discard_old_history(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    for action in ("initialize_session", "update_ledger", "write_compact_summary"):
+        root = tmp_path / action
+        assert ledger.write_compact_summary(compact_payload(), data_root=root, now=NOW)
+        old = ledger.read_json(ledger.record_path(root, "session-one"))
+        assert ledger.begin_plan("session-one", data_root=root, cwd="/new-plan", now=NOW)
+        scope = ledger.read_json(ledger.scope_path(root, "session-one"))
+        ledger.write_json_atomic(ledger.record_path(root, "session-one"), old)
+        payload = {**compact_payload(cwd="/third-directory", summary="New summary."),
+                   "prompt": "New decision."}
+        assert getattr(ledger, action)(payload, data_root=root, now=NOW)
+        record = ledger.read_json(ledger.record_path(root, "session-one"))
+        assert record["plan_id"] == scope["plan_id"]
+        assert record["workspace_hash"] == scope["workspace_hash"]
+        assert "Synthetic verified source" not in json.dumps(record)

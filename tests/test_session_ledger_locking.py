@@ -50,7 +50,7 @@ def load_ledger():
 @pytest.mark.parametrize(
     "action", ["initialize_session", "update_ledger", "write_compact_summary"]
 )
-def test_workspace_change_preserves_record_and_return_resumes_capture(tmp_path, action):
+def test_navigation_preserves_history_and_continues_each_writer(tmp_path, action):
     ledger = load_ledger()
     now = datetime(2026, 1, 1, tzinfo=timezone.utc)
     original = {"session_id": "synthetic-session", "cwd": str(tmp_path / "first"),
@@ -62,11 +62,11 @@ def test_workspace_change_preserves_record_and_return_resumes_capture(tmp_path, 
     other = {**original, "cwd": str(tmp_path / "other"),
              "prompt": "Synthetic other", "compact_summary": "Other summary"}
 
-    assert not getattr(ledger, action)(other, data_root=tmp_path, now=now + timedelta(hours=1))
-    assert path.read_bytes() == before
+    assert getattr(ledger, action)(other, data_root=tmp_path, now=now + timedelta(hours=1))
+    assert json.loads(path.read_text())["workspace_hash"] == json.loads(before)["workspace_hash"]
     assert ledger.session_start_context(
         {**other, "source": "resume"}, data_root=tmp_path, now=now
-    ) is None
+    ) is not None
 
     assert ledger.update_ledger(
         {**original, "prompt": "Synthetic returned"}, data_root=tmp_path,
@@ -74,10 +74,13 @@ def test_workspace_change_preserves_record_and_return_resumes_capture(tmp_path, 
     )
     record = json.loads(path.read_text())
     assert record["created_at"] == json.loads(before)["created_at"]
-    assert record["compact_summary"] == "Synthetic summary"
-    assert [entry["text"] for entry in record["entries"]] == [
-        "Synthetic first", "Synthetic returned"
-    ]
+    assert record["compact_summary"] == (
+        "Other summary" if action == "write_compact_summary" else "Synthetic summary"
+    )
+    expected = ["Synthetic first"]
+    if action == "update_ledger":
+        expected.append("Synthetic other")
+    assert [entry["text"] for entry in record["entries"]] == expected + ["Synthetic returned"]
 
 
 def test_explicit_plan_boundary_allows_workspace_change(tmp_path):
@@ -95,7 +98,7 @@ def test_explicit_plan_boundary_allows_workspace_change(tmp_path):
 @pytest.mark.parametrize(
     "action", ["initialize_session", "update_ledger", "write_compact_summary"]
 )
-def test_workspace_owner_is_rechecked_after_acquiring_lock(tmp_path, monkeypatch, action):
+def test_session_anchor_is_rechecked_after_acquiring_lock(tmp_path, monkeypatch, action):
     ledger = load_ledger()
     now = datetime(2026, 1, 1, tzinfo=timezone.utc)
     payload = {"session_id": "synthetic-session", "cwd": str(tmp_path / "first"),
@@ -113,8 +116,9 @@ def test_workspace_owner_is_rechecked_after_acquiring_lock(tmp_path, monkeypatch
             yield
 
     monkeypatch.setattr(ledger, "session_lock", lock_after_other_writer)
-    assert not getattr(ledger, action)(payload, data_root=tmp_path, now=now)
-    assert json.loads(ledger.record_path(tmp_path, "synthetic-session").read_text()) == owner
+    assert getattr(ledger, action)(payload, data_root=tmp_path, now=now)
+    record = json.loads(ledger.record_path(tmp_path, "synthetic-session").read_text())
+    assert record["workspace_hash"] == owner["workspace_hash"]
 
 
 def test_expired_workspace_record_does_not_prevent_new_capture(tmp_path):
@@ -141,7 +145,7 @@ def invoke_hook(ledger, monkeypatch, capsys, root, payload, action="capture"):
     return json.loads(output.out) if output.out else {}
 
 
-def test_workspace_skip_notice_has_no_payload_and_does_not_leak_to_next_call(
+def test_navigation_does_not_emit_a_false_capture_failure(
     tmp_path, monkeypatch, capsys
 ):
     ledger = load_ledger()
@@ -150,7 +154,7 @@ def test_workspace_skip_notice_has_no_payload_and_does_not_leak_to_next_call(
     assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
     result = invoke_hook(ledger, monkeypatch, capsys, tmp_path,
                          {**payload, "cwd": str(tmp_path / "other")})
-    assert result == {"systemMessage": "Session Ledger: " + ledger.NOTICE_TEXT["workspace"]}
+    assert result == {}
     assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
 
 
