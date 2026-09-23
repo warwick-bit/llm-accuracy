@@ -502,4 +502,19 @@ def test_natural_footer_comparison_requires_both_plugins_and_pinned_model(
     for arm in ("baseline", "candidate"):
         assert row[arm]["scorable"] == (model == "claude-opus-5-5")
         assert "factual_pass" not in row[arm]
-        assert row[arm]["footer_present_all_turns"]
+        if model == "claude-opus-5-5":
+            assert row[arm]["footer_present_all_turns"]
+        else:
+            assert "footer_present_all_turns" not in row[arm]
+
+
+def test_natural_footer_never_scores_incomplete_pair(modules, monkeypatch):
+    monkeypatch.syspath_prepend(str(ROOT / "scripts"))
+    import eval_footer_behavior as natural
+
+    monkeypatch.setattr(natural, "run_probe", lambda *a, **kw: {"status": "timeout", "answers": []})
+    monkeypatch.setattr(natural, "score", lambda *a, **kw: pytest.fail("incomplete pair must not reach scorer"))
+    row = natural.compare_case(("synthetic", ["Question"], True), Path("baseline"), "claude-opus-5-5", 0, 2)
+    assert row["transport_status"] == "transport_exhausted"
+    assert len(row["transport_attempts"]) == 2
+    assert not row["baseline"]["scorable"] and not row["candidate"]["scorable"]

@@ -106,6 +106,22 @@ Natural-prose correctness and the truthfulness of Checked/Gap/Next content are
 **not scored**. A zero exit means all pairs were scorable, not that the candidate
 passed a quality threshold. Treat each rung separately; do not pool the repeated
 cases as independent examples or keep rerunning until a preferred result appears.
+
+### Bounded transport recovery
+
+Choose `--transport-attempts 2` or `3` **before** a natural-footer run to recover
+from incomplete host calls. The default remains one attempt. Each attempt runs
+both versions; a timeout, missing result or host transport error discards both
+answers before another whole-pair attempt, with the order reversed. A completed
+pair is never retried because of its footer or factual quality. Authentication,
+rate limits, wrong model identities and activation failures stop recovery.
+
+Every attempt's fixed status codes, validity and result counts are reported in
+`transport_attempts`; raw answers stay in memory. Report failures and recovery
+rates alongside any comparison. Recovered results describe successfully completed
+pairs, not the unsuccessful calls, equal reliability or general accuracy. The
+per-call timeout still applies, so three attempts can cost up to six calls per
+case. Cancellation immediately stops the run.
 # Full-answer follow-up
 
 The [0.6.2 transfer check](release-0.6.2.md#behavioral-evidence-and-limits)

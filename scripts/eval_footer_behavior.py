@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from eval_technical_behavior import PLUGIN, run_probe, score
+from paired_probe import run_pair
 
 # Author-owned synthetic cases: no footer request or constrained Answer field.
 CASES = (
@@ -37,20 +38,44 @@ CASES = (
 )
 
 
-def compare_case(case, baseline: Path, model: str, index: int) -> dict:
+def compare_case(
+    case, baseline: Path, model: str, index: int, transport_attempts: int = 1
+) -> dict:
     case_id, prompts, technical = case
     row = {"case": case_id, "technical": technical, "turns": len(prompts)}
     arms = ("baseline", "candidate") if index % 2 == 0 else ("candidate", "baseline")
-    for arm in arms:
-        result = run_probe(
+    def probe(arm):
+        return run_probe(
             prompts, baseline if arm == "baseline" else PLUGIN, model=model, timeout=120
         )
+
+    def valid(result):
+        return (
+            result.get("status") == "ok"
+            and result.get("result_count") == len(prompts)
+            and len(result.get("answers", [])) == len(prompts)
+            and result.get("fidelity_hook_responses") == len(prompts)
+            and result.get("resolved_model") == model
+        )
+
+    pair = run_pair(probe, valid, arms=arms, max_attempts=transport_attempts)
+    row["transport_status"] = pair["status"]
+    row["transport_attempts"] = pair["attempts"]
+    if pair["status"] != "complete":
+        for arm in arms:
+            row[arm] = {
+                "scorable": False,
+                "failure": pair["status"],
+                "host_status": pair["attempts"][-1][arm]["status"],
+            }
+        return row
+    for arm, result in pair["results"].items():
         scored = score(result, [], len(prompts), technical, True)
         # Neither unconstrained prose nor receipt truthfulness has an oracle here.
         scored.pop("factual_pass", None)
         scored.pop("factual_fields_valid", None)
         scored["resolved_model"] = result.get("resolved_model", "unreported")
-        scored["host_status"] = result["status"]
+        scored["host_status"] = result.get("status", "unrecognized_status")
         row[arm] = scored
     if any(row[arm]["resolved_model"] != model for arm in arms):
         for arm in arms:
@@ -64,6 +89,7 @@ def main() -> int:
     parser.add_argument("--baseline-plugin", type=Path, required=True)
     parser.add_argument("--model", default="claude-opus-5-5")
     parser.add_argument("--rung", choices=("ramp", "full", "repeat"), required=True)
+    parser.add_argument("--transport-attempts", type=int, choices=(1, 2, 3), default=1)
     args = parser.parse_args()
     roots = {"baseline": args.baseline_plugin, "candidate": PLUGIN}
     relative = "hooks/claim-fidelity-trigger.py"
@@ -78,7 +104,9 @@ def main() -> int:
     )
     rows = []
     for index, case in enumerate(cases):
-        row = compare_case(case, args.baseline_plugin, args.model, index)
+        row = compare_case(
+            case, args.baseline_plugin, args.model, index, args.transport_attempts
+        )
         rows.append(row)
         print(json.dumps(row), flush=True)
     print(
@@ -93,7 +121,7 @@ def main() -> int:
                     for arm, root in roots.items()
                 },
                 "paired_cases": sum(
-                    all(row[a]["scorable"] for a in roots) for row in rows
+                    row["transport_status"] == "complete" for row in rows
                 ),
                 "declared_cases": len(rows),
             }
