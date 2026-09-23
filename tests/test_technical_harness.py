@@ -512,9 +512,204 @@ def test_natural_footer_never_scores_incomplete_pair(modules, monkeypatch):
     monkeypatch.syspath_prepend(str(ROOT / "scripts"))
     import eval_footer_behavior as natural
 
-    monkeypatch.setattr(natural, "run_probe", lambda *a, **kw: {"status": "timeout", "answers": []})
-    monkeypatch.setattr(natural, "score", lambda *a, **kw: pytest.fail("incomplete pair must not reach scorer"))
-    row = natural.compare_case(("synthetic", ["Question"], True), Path("baseline"), "claude-opus-5-5", 0, 2)
+    monkeypatch.setattr(
+        natural, "run_probe", lambda *a, **kw: {"status": "timeout", "answers": []}
+    )
+    monkeypatch.setattr(
+        natural,
+        "score",
+        lambda *a, **kw: pytest.fail("incomplete pair must not reach scorer"),
+    )
+    row = natural.compare_case(
+        ("synthetic", ["Question"], True), Path("baseline"), "claude-opus-5-5", 0, 2
+    )
     assert row["transport_status"] == "transport_exhausted"
     assert len(row["transport_attempts"]) == 2
     assert not row["baseline"]["scorable"] and not row["candidate"]["scorable"]
+
+
+@pytest.mark.parametrize("later_turn", [False, True])
+def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, later_turn):
+    import time
+
+    program = "import time;time.sleep(5)"
+    payload = "x" * 131072 + "\n"
+    if later_turn:
+        program = (
+            "import sys,time,json\n"
+            "sys.stdin.readline()\n"
+            "print(json.dumps({'type':'result','result':'first'}),flush=True)\n"
+            "time.sleep(5)"
+        )
+        payload = "first\n" + payload
+    started = time.monotonic()
+    result = modules[1].communicate(
+        [sys.executable, "-c", program], tmp_path, dict(os.environ), payload, 0.2
+    )
+    assert result == {"status": "timeout", "answers": []}
+    assert time.monotonic() - started < 3
+
+
+@pytest.mark.parametrize("separator", ["\u0085", "\u2028", "\u2029"])
+def test_stream_input_and_output_use_newline_framing_only(modules, tmp_path, separator):
+    program = "import sys,json\nfor line in sys.stdin:\n print(json.dumps({'type':'result','result':line.rstrip('\\n')},ensure_ascii=False),flush=True)"
+    result = modules[1].communicate(
+        [sys.executable, "-X", "utf8", "-c", program],
+        tmp_path,
+        dict(os.environ),
+        f"a{separator}b\nsecond\n",
+        3,
+    )
+    assert result["status"] == "ok"
+    assert result["answers"] == [f"a{separator}b", "second"]
+
+
+@pytest.mark.parametrize("separator", ["\u0085", "\u2028", "\u2029"])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_event_framing_preserves_unicode_in_context_and_answer(modules, separator, newline):
+    events = [
+        {"type": "system", "subtype": "hook_response", "stdout": f"CLAIM FIDELITY CHECK{separator}context"},
+        {"type": "result", "result": f"first{separator}answer"},
+        {"type": "result", "result": "second answer"},
+    ]
+    payload = newline.join(json.dumps(event, ensure_ascii=False) for event in events)
+    parsed = modules[1].parse_events(payload, "", 0)
+    assert parsed["status"] == "ok"
+    assert parsed["answers"] == [f"first{separator}answer", "second answer"]
+    assert parsed["result_count"] == 2
+    assert parsed["fidelity_hook_responses"] == 1
+
+
+def test_early_auth_error_survives_failed_later_input(modules, tmp_path):
+    program = (
+        "import sys,json\n"
+        "sys.stdin.readline()\n"
+        "print(json.dumps({'type':'result','is_error':True,'result':'authentication expired'}),flush=True)\n"
+        "sys.exit(1)"
+    )
+    result = modules[1].communicate(
+        [sys.executable, "-c", program],
+        tmp_path,
+        dict(os.environ),
+        "first\n" + "x" * 131072 + "\n",
+        3,
+    )
+    assert result["status"] == "authentication"
+
+
+@pytest.mark.parametrize("auth_error", [False, True])
+def test_late_input_failure_is_consumed_after_output_eof(
+    modules, tmp_path, monkeypatch, auth_error
+):
+    import threading
+
+    probe = modules[1]
+    outputs_closed = threading.Event()
+    failure_observed = threading.Event()
+
+    class ScheduledQueue(probe.queue.Queue):
+        closed = 0
+
+        def put(self, item, *args, **kwargs):
+            if item[0] == "stdin_error":
+                failure_observed.set()
+                outputs_closed.wait(3)
+            return super().put(item, *args, **kwargs)
+
+        def get(self, *args, **kwargs):
+            item = super().get(*args, **kwargs)
+            if item[0] in {"stdout", "stderr"} and item[1] is None:
+                self.closed += 1
+                if self.closed == 2:
+                    outputs_closed.set()
+            return item
+
+    monkeypatch.setattr(probe.queue, "Queue", ScheduledQueue)
+    event = {"type": "result", "result": "first"}
+    if auth_error:
+        event.update(is_error=True, result="authentication expired")
+    program = (
+        "import sys,os,json\n"
+        "sys.stdin.readline()\n"
+        "os.close(0)\n"
+        f"print({json.dumps(event)!r},flush=True)\n"
+    )
+    try:
+        outcome = probe.communicate(
+            [sys.executable, "-c", program],
+            tmp_path,
+            dict(os.environ),
+            "first\n" + "x" * 131072 + "\n",
+            5,
+        )
+        assert failure_observed.wait(1)
+        assert outcome["status"] == ("authentication" if auth_error else "host_error")
+    finally:
+        outputs_closed.set()
+
+
+@pytest.mark.parametrize("noise", ["synthetic-429-marker", "authentication expired"])
+def test_error_category_ignores_nonerror_event_content(modules, noise):
+    events = [
+        {"type": "system", "subtype": "init", "session_id": noise},
+        {"type": "system", "subtype": "hook_response", "stdout": noise},
+        {"type": "result", "result": noise},
+        {
+            "type": "result",
+            "is_error": True,
+            "result": "The model's tool call could not be parsed.",
+            "session_id": noise,
+        },
+    ]
+    payload = "\n".join(json.dumps(event) for event in events)
+    assert modules[1].parse_events(payload, "", 0)["status"] == "host_error"
+
+
+@pytest.mark.parametrize(
+    "failure,expected",
+    [
+        ({"is_error": True, "result": "authentication expired"}, "authentication"),
+        ({"is_error": True, "errors": ["HTTP 429: rate limit"]}, "rate_limit"),
+        ({"subtype": "error_during_execution", "errors": ["login required"]}, "authentication"),
+        ({"is_error": True, "errors": [None, 429, {"id": "login"}]}, "host_error"),
+        ({"is_error": True, "result": 429, "errors": {"id": "login"}}, "host_error"),
+        ({"is_error": True, "result": "Tool execution deadline expired"}, "host_error"),
+        ({"is_error": True, "result": "OAuth token expired"}, "authentication"),
+        ({"is_error": True, "result": "Failure on request 14290"}, "host_error"),
+        ({"is_error": True, "result": "You hit your session limit; synthetic reset notice"}, "rate_limit"),
+    ],
+)
+def test_error_category_uses_failed_result_fields(modules, failure, expected):
+    payload = json.dumps({"type": "result", **failure})
+    assert modules[1].parse_events(payload, "", 0)["status"] == expected
+
+
+@pytest.mark.parametrize("stderr,expected", [("", "host_error"), ("rate limit", "rate_limit")])
+def test_exit_error_does_not_classify_successful_answer(modules, stderr, expected):
+    payload = json.dumps({"type": "result", "result": "Check whether authentication expired."})
+    assert modules[1].parse_events(payload, stderr, 1)["status"] == expected
+
+
+def test_kill_leaves_stdin_to_its_feeder(modules, tmp_path, monkeypatch):
+    probe = modules[1]
+    process = probe.subprocess.Popen(
+        [sys.executable, "-c", "import time;time.sleep(5)"],
+        stdin=probe.subprocess.PIPE,
+        start_new_session=os.name == "posix",
+    )
+    actual_stdin = process.stdin
+
+    class FeederOwnedStream:
+        def close(self):
+            pytest.fail("caller must not race or block on feeder-owned stdin")
+
+    process.stdin = FeederOwnedStream()
+    process._accuracy_feeder_owned = True
+    try:
+        probe._kill(process)
+        assert process.poll() is not None
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+        actual_stdin.close()
