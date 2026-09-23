@@ -1,0 +1,1263 @@
+{
+  "boundary": "Synthetic single-observation native workflow pilot; reported tokens include cached input, not billing. Failed attempts retained. Large-v3 predates output-format skill clarification. No promotion claim.",
+  "claude_code": "2.1.280",
+  "requested_model": "claude-sonnet-5",
+  "effort": "low",
+  "activation": [
+    {
+      "explicitly_enabled": false,
+      "observed_enabled": false,
+      "returncode": 0
+    },
+    {
+      "explicitly_enabled": true,
+      "observed_enabled": true,
+      "returncode": 0
+    }
+  ],
+  "runs": {
+    "precision-v3": [
+      {
+        "case": "precision",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 154484,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 15124,
+              "cache_read_input_tokens": 99301,
+              "output_tokens": 865
+            },
+            "elapsed_seconds": 17.7,
+            "total_tokens": 115300,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 1,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 4,
+              "cache_creation_input_tokens": 10202,
+              "cache_read_input_tokens": 28544,
+              "output_tokens": 434
+            },
+            "elapsed_seconds": 8.0,
+            "total_tokens": 39184,
+            "exact": false,
+            "mismatch": [
+              "invalid_json_or_fence"
+            ],
+            "required_tool_observed": true,
+            "phase": "followup"
+          }
+        ]
+      }
+    ],
+    "partial-diagnostic": [
+      {
+        "case": "partial",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 94856,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 4,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 0,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 8,
+              "cache_creation_input_tokens": 15845,
+              "cache_read_input_tokens": 78024,
+              "output_tokens": 979
+            },
+            "elapsed_seconds": 17.0,
+            "total_tokens": 94856,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": false,
+            "mismatch": [
+              "invalid_json_or_fence"
+            ],
+            "diagnostic_embedded_json_exact": true,
+            "diagnostic_has_json_object": true,
+            "diagnostic_answer_chars": 443,
+            "required_tool_observed": true,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "smoke-fresh-profile": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 138239,
+        "phases": [
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 4,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 12,
+              "cache_creation_input_tokens": 15745,
+              "cache_read_input_tokens": 121327,
+              "output_tokens": 1155
+            },
+            "elapsed_seconds": 16.5,
+            "total_tokens": 138239,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "smoke-quoted-rule": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": true,
+        "total_tokens": 159528,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 3,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 16117,
+              "cache_read_input_tokens": 102392,
+              "output_tokens": 996
+            },
+            "elapsed_seconds": 12.5,
+            "total_tokens": 119515,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 1,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 4,
+              "cache_creation_input_tokens": 10644,
+              "cache_read_input_tokens": 28554,
+              "output_tokens": 811
+            },
+            "elapsed_seconds": 10.7,
+            "total_tokens": 40013,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "followup"
+          }
+        ]
+      }
+    ],
+    "smoke-enabled": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 65730,
+        "phases": [
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 2,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 0,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 6,
+              "cache_creation_input_tokens": 13896,
+              "cache_read_input_tokens": 51238,
+              "output_tokens": 590
+            },
+            "elapsed_seconds": 9.4,
+            "total_tokens": 65730,
+            "raw_preserved": false,
+            "snapshot_integrity": false,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "smoke-v1": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 101292,
+        "phases": [
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 4,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": false,
+            "plugin_count": 1,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 21936,
+              "cache_read_input_tokens": 78235,
+              "output_tokens": 1111
+            },
+            "elapsed_seconds": 21.9,
+            "total_tokens": 101292,
+            "raw_preserved": false,
+            "snapshot_integrity": false,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "partial-v4": [
+      {
+        "case": "partial",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 92352,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 2,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 0,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 8,
+              "cache_creation_input_tokens": 15017,
+              "cache_read_input_tokens": 76496,
+              "output_tokens": 831
+            },
+            "elapsed_seconds": 15.2,
+            "total_tokens": 92352,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": false,
+            "mismatch": [
+              "invalid_json_or_fence"
+            ],
+            "diagnostic_embedded_json_exact": true,
+            "diagnostic_has_json_object": true,
+            "diagnostic_answer_chars": 371,
+            "required_tool_observed": true,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "smoke-denial-diagnostic": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 131165,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 8,
+              "cache_creation_input_tokens": 15082,
+              "cache_read_input_tokens": 75952,
+              "output_tokens": 858
+            },
+            "elapsed_seconds": 18.8,
+            "total_tokens": 91900,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 1,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 4,
+              "cache_creation_input_tokens": 10389,
+              "cache_read_input_tokens": 28547,
+              "output_tokens": 325
+            },
+            "elapsed_seconds": 5.9,
+            "total_tokens": 39265,
+            "phase": "followup"
+          }
+        ]
+      }
+    ],
+    "smoke-scoped": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 132203,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 8,
+              "cache_creation_input_tokens": 15325,
+              "cache_read_input_tokens": 76567,
+              "output_tokens": 927
+            },
+            "elapsed_seconds": 11.8,
+            "total_tokens": 92827,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 1,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 4,
+              "cache_creation_input_tokens": 10440,
+              "cache_read_input_tokens": 28557,
+              "output_tokens": 375
+            },
+            "elapsed_seconds": 7.2,
+            "total_tokens": 39376,
+            "phase": "followup"
+          }
+        ]
+      }
+    ],
+    "smoke-absolute": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 182589,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 15196,
+              "cache_read_input_tokens": 99619,
+              "output_tokens": 884
+            },
+            "elapsed_seconds": 16.2,
+            "total_tokens": 115709,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 2,
+              "Read": 1,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": false,
+            "plugin_count": 3,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 6,
+              "cache_creation_input_tokens": 14415,
+              "cache_read_input_tokens": 51756,
+              "output_tokens": 703
+            },
+            "elapsed_seconds": 8.4,
+            "total_tokens": 66880,
+            "phase": "followup"
+          }
+        ]
+      }
+    ],
+    "partial-v3": [
+      {
+        "case": "partial",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 60457,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 2,
+              "Read": 1,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 0,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 6,
+              "cache_creation_input_tokens": 11100,
+              "cache_read_input_tokens": 48817,
+              "output_tokens": 534
+            },
+            "elapsed_seconds": 7.2,
+            "total_tokens": 60457,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": false,
+            "mismatch": [
+              "invalid_json_or_fence"
+            ],
+            "required_tool_observed": true,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "large-v2": [
+      {
+        "case": "large",
+        "arm": "raw",
+        "complete": false,
+        "total_tokens": 179782,
+        "phases": [
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": true,
+              "truncated": false,
+              "saved_to_file": true
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 4,
+              "Read": 1,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 1,
+              "detail": 0,
+              "raw": 1,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 1,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 0,
+            "candidate_skill_in_inventory": false,
+            "usage": {
+              "input_tokens": 12,
+              "cache_creation_input_tokens": 32055,
+              "cache_read_input_tokens": 146819,
+              "output_tokens": 896
+            },
+            "elapsed_seconds": 15.4,
+            "total_tokens": 179782,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "smoke-diagnostic": [
+      {
+        "case": "smoke",
+        "arm": "plugin",
+        "complete": false,
+        "total_tokens": 104466,
+        "phases": [
+          {
+            "infra": "permission",
+            "model_requested": "claude-sonnet-5",
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 4,
+              "Read": 1,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": false,
+            "plugin_count": 1,
+            "mcp_count": 0,
+            "permission_denials": 1,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 0,
+            "candidate_skill_in_inventory": false,
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 14258,
+              "cache_read_input_tokens": 89056,
+              "output_tokens": 1142
+            },
+            "elapsed_seconds": 16.2,
+            "total_tokens": 104466,
+            "raw_preserved": false,
+            "snapshot_integrity": false,
+            "phase": "initial"
+          }
+        ]
+      }
+    ],
+    "large-v3": [
+      {
+        "case": "large",
+        "arm": "raw",
+        "complete": true,
+        "total_tokens": 236331,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": true,
+              "truncated": false,
+              "saved_to_file": true
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 2,
+              "detail": 0,
+              "raw": 1,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 1,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 0,
+            "candidate_skill_in_inventory": false,
+            "usage": {
+              "input_tokens": 12,
+              "cache_creation_input_tokens": 32251,
+              "cache_read_input_tokens": 167263,
+              "output_tokens": 803
+            },
+            "elapsed_seconds": 14.8,
+            "total_tokens": 200329,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 1,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 1,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 0,
+            "candidate_skill_in_inventory": false,
+            "usage": {
+              "input_tokens": 4,
+              "cache_creation_input_tokens": 8695,
+              "cache_read_input_tokens": 27015,
+              "output_tokens": 288
+            },
+            "elapsed_seconds": 9.5,
+            "total_tokens": 36002,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "followup"
+          }
+        ]
+      },
+      {
+        "case": "large",
+        "arm": "file",
+        "complete": true,
+        "total_tokens": 90383,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 2,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 1,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 0,
+            "candidate_skill_in_inventory": false,
+            "usage": {
+              "input_tokens": 6,
+              "cache_creation_input_tokens": 8943,
+              "cache_read_input_tokens": 45093,
+              "output_tokens": 333
+            },
+            "elapsed_seconds": 7.6,
+            "total_tokens": 54375,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 1,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 1,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 0,
+            "candidate_skill_in_inventory": false,
+            "usage": {
+              "input_tokens": 4,
+              "cache_creation_input_tokens": 8698,
+              "cache_read_input_tokens": 27015,
+              "output_tokens": 291
+            },
+            "elapsed_seconds": 5.3,
+            "total_tokens": 36008,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "followup"
+          }
+        ]
+      },
+      {
+        "case": "large",
+        "arm": "plugin",
+        "complete": true,
+        "total_tokens": 183275,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 15336,
+              "cache_read_input_tokens": 99978,
+              "output_tokens": 915
+            },
+            "elapsed_seconds": 13.4,
+            "total_tokens": 116239,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 2,
+              "Read": 1,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 1,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 6,
+              "cache_creation_input_tokens": 14491,
+              "cache_read_input_tokens": 51795,
+              "output_tokens": 744
+            },
+            "elapsed_seconds": 14.3,
+            "total_tokens": 67036,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "followup"
+          }
+        ]
+      }
+    ],
+    "precision-v4": [
+      {
+        "case": "precision",
+        "arm": "plugin",
+        "complete": true,
+        "total_tokens": 175044,
+        "phases": [
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 3,
+              "Read": 2,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 1,
+              "sum": 1,
+              "detail": 0,
+              "raw": 0,
+              "export": 1
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 10,
+              "cache_creation_input_tokens": 15237,
+              "cache_read_input_tokens": 99728,
+              "output_tokens": 867
+            },
+            "elapsed_seconds": 14.2,
+            "total_tokens": 115842,
+            "raw_preserved": true,
+            "snapshot_integrity": true,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "initial"
+          },
+          {
+            "infra": null,
+            "model_requested": "claude-sonnet-5",
+            "observed_model_matches": true,
+            "spill_markers": {
+              "output_too_large": false,
+              "truncated": false,
+              "saved_to_file": false
+            },
+            "effort": "low",
+            "tool_calls": {
+              "Bash": 2,
+              "Read": 0,
+              "Skill": 0
+            },
+            "operations": {
+              "capture": 0,
+              "sum": 0,
+              "detail": 2,
+              "raw": 0,
+              "export": 0
+            },
+            "inventory_ok": true,
+            "plugin_count": 2,
+            "mcp_count": 0,
+            "permission_denials": 0,
+            "telemetry_plugins": 1,
+            "candidate_plugins": 1,
+            "candidate_skill_in_inventory": true,
+            "usage": {
+              "input_tokens": 6,
+              "cache_creation_input_tokens": 10671,
+              "cache_read_input_tokens": 47940,
+              "output_tokens": 585
+            },
+            "elapsed_seconds": 12.3,
+            "total_tokens": 59202,
+            "exact": true,
+            "mismatch": [],
+            "required_tool_observed": true,
+            "phase": "followup"
+          }
+        ]
+      }
+    ]
+  }
+}

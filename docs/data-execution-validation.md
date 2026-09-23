@@ -50,3 +50,10 @@ Synthetic coverage does not establish live provider completeness, model reasonin
 accuracy, legal retention compliance or measured token savings. User adapters and
 exporters must be reviewed; the plugin does not verify their source assertions.
 Native MCP interception, Windows and Cowork are outside this pilot.
+
+## Native host follow-up
+
+The [native workflow pilot](data-execution-native-validation.md) measures actual
+reported tokens and preserves failed host/format checks. It confirms snapshot
+usefulness, finds overhead versus the existing compact file control, and keeps
+this plugin experimental. The installation instructions now require explicit enable.

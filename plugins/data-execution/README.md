@@ -16,7 +16,16 @@ or its evidence-receipt schema. Session Ledger remains independent.
 
 Requires Python 3.9+ and a private local POSIX filesystem (Linux, macOS or WSL).
 Linux/WSL is the tested pilot; native Windows and Cowork are unsupported.
-Install from this marketplace, then invoke `/data-execution:local-data`.
+Install from this marketplace, explicitly enable it, then invoke
+`/data-execution:local-data`:
+
+```bash
+claude plugin install data-execution@llm-accuracy
+claude plugin enable data-execution@llm-accuracy
+```
+
+It installs disabled (`defaultEnabled: false`). Confirm it is enabled in
+`claude plugin list` before starting a new session.
 Installation alone captures nothing. User confirmation of the source, scope and
 storage location is needed before the first capture; subsequent authorized
 captures in that scope can proceed without repeated confirmation.

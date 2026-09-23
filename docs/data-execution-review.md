@@ -48,3 +48,35 @@ proof:retention=proved; evidence=tests/test_data_execution.py; caveat=expired re
 proof:context-saving=proved; evidence=docs/validation/data-execution-synthetic.json; caveat=selected synthetic output-byte comparison only; no native-token or existing-optimized-workflow lift claim
 proof:host-install=proved; evidence=docs/validation/data-execution-install.json; caveat=isolated local installation, not model skill execution
 ```
+
+## Native pilot follow-up review
+
+The native pilot report was independently reviewed by Claude: no blocking finding
+in the report's inference/measurement boundaries. That reviewer received the report,
+not source receipts; the parent checked the receipts and ratios separately.
+Local correctness and silent-failure review covered activation instructions,
+format guidance and retained failure reporting. No runtime Python changed.
+The unresolved partial-output contract failure prevents promotion.
+
+### Quality Scorecard follow-up
+
+The original PR scorecard above remains the runtime-code measurement. This
+follow-up changes documentation, skill guidance and a raw-free evidence receipt.
+Function-size delta: no Python functions touched in this follow-up. Duplicate-block,
+type-coverage and numerical complexity deltas: not measured; no corresponding
+measurement tool was run for this documentation-only follow-up.
+
+- `plugins/data-execution/README.md`: PASS — enable step matches isolated activation probe.
+- `plugins/data-execution/skills/local-data/SKILL.md`: WATCH — explicit format guidance remains advisory; partial-source output still fails strict formatting.
+- `docs/INSTALL.md`: PASS — explicit opt-in activation documented.
+- Validation reports/receipt: WATCH — single-observation synthetic host evidence, failures retained, local exploratory harness is not distributed.
+
+Local validation: 617 pytest tests passed, Ruff passed, five manifests parsed,
+eight hook modules compiled, Data Execution distribution boundary and diff whitespace
+check passed. These checks do not override the failing model-output contract.
+
+```text
+proof:native-selective-comparison=proved; evidence=docs/validation/data-execution-native.json large-v3; caveat=one observation per arm, before format clarification, cached tokens included
+proof:strict-model-output=missing; evidence=docs/validation/data-execution-native.json partial-v4; caveat=embedded values exact does not satisfy JSON-only output contract
+proof:activation-instructions=proved; evidence=docs/validation/data-execution-native.json activation; caveat=isolated session activation, no live user installation
+```

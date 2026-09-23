@@ -44,5 +44,10 @@ configure provider integrations as part of this skill.
    capture time, atomicity caveat and snapshot reference. A snapshot ID is a local
    reference, not a provider link or independent evidence certification. Use the
    existing evidence-receipt schema separately if another workflow requires it.
+   Respect an explicitly requested machine-readable output format. For JSON-only
+   requests, return the requested JSON object without a preamble, trailing prose
+   or Markdown fence. Preserve material qualifications in the requested fields;
+   if the schema cannot express a necessary qualification, report that limitation
+   rather than silently dropping it.
 8. `purge` deletes expired snapshots only; `delete SNAPSHOT` removes a specified
    snapshot. Never delete unrelated files or change global Claude retention.

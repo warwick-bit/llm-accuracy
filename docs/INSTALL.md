@@ -314,7 +314,8 @@ feedback issue form.
 
 ## Data Execution — experimental Linux/WSL pilot
 
-Install separately with `claude plugin install data-execution@llm-accuracy`, then
+Install separately with `claude plugin install data-execution@llm-accuracy`, enable
+with `claude plugin enable data-execution@llm-accuracy`, then start a new session and
 invoke `/data-execution:local-data`. Installation starts no captures or hooks.
 Read [the workflow and storage boundary](../plugins/data-execution/README.md)
 before capturing source data. Configure your own JSON/CSV adapter and read-only
