@@ -3,10 +3,43 @@
 Session Ledger is an optional Claude Code terminal/IDE plugin for preserving
 accuracy-relevant carryover through compaction in one long session. It is not a
 general memory system and it never restores information into a new session.
-It requires Python 3.9 or later, available as `python3` or `python`, on the machine running Claude Code
+It requires Claude Code 2.1.78 or later: `PostCompact` was added in 2.1.76
+and `${CLAUDE_PLUGIN_DATA}` in 2.1.78. Use a current Claude Code release;
+the live Windows smoke test for this release used 2.1.281. See the
+[Claude Code changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
+
+It also requires Python 3.9 or later, available as `python3` or `python`, on the machine running Claude Code
 (CI-tested on 3.9-3.13). Hooks and ledger commands prefer `python3` and fall back
 to `python` when that command is absent. Windows requires a POSIX-compatible
 hook shell such as Git Bash.
+
+## Install and enable
+
+In Claude Code, run these commands separately:
+
+```text
+/plugin marketplace add warwick-bit/llm-accuracy
+/plugin install session-ledger@llm-accuracy
+/plugin enable session-ledger@llm-accuracy
+```
+
+The plugin is deliberately disabled by default because it persists local
+conversation text. Installing it alone does not confirm that its hooks run.
+Open `/plugin`, show disabled plugins if needed, enable Session Ledger, and
+check that the Errors tab is empty. Then exit and start a new Claude Code
+session. After updating Claude Code itself, check the new session's version;
+an already-open process continues to use its previous version.
+
+For an existing installation, refresh the marketplace and update the plugin:
+
+```text
+/plugin marketplace update llm-accuracy
+/plugin update session-ledger@llm-accuracy
+```
+
+Confirm version 0.2.6 or later and the enabled state in `/plugin`, then restart
+Claude Code. This production plugin is separate from any temporary QA plugin;
+close the QA launcher and use your normal Claude Code launch for everyday work.
 
 ## What it does
 
