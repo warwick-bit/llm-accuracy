@@ -40,7 +40,9 @@ def error_category(text: str) -> str:
         for word in ("unauthorized", "authentication", "login", "oauth", "credential")
     ):
         return "authentication"
-    if any(word in lowered for word in ("rate limit", "rate_limit")) or re.search(
+    if any(
+        word in lowered for word in ("rate limit", "rate_limit", "hit your session limit")
+    ) or re.search(
         r"\b429\b", lowered
     ):
         return "rate_limit"

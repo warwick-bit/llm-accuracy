@@ -607,6 +607,7 @@ def test_error_category_ignores_nonerror_event_content(modules, noise):
         ({"is_error": True, "result": "Tool execution deadline expired"}, "host_error"),
         ({"is_error": True, "result": "OAuth token expired"}, "authentication"),
         ({"is_error": True, "result": "Failure on request 14290"}, "host_error"),
+        ({"is_error": True, "result": "You hit your session limit; synthetic reset notice"}, "rate_limit"),
     ],
 )
 def test_error_category_uses_failed_result_fields(modules, failure, expected):

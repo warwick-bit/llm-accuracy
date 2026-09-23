@@ -58,13 +58,27 @@ This is development evidence, not a held-out accuracy comparison. Earlier
 unsuccessful reminder candidates and reviewer pilots remain failed and separate.
 [Details and limitations](technical-review-pilot.md).
 
-Deterministic tests exercise input, output, identity and error handling. A clean
-local marketplace/ZIP smoke and native skill invocation ran on Claude Code
-2.1.280 under Linux/WSL before the later stdin-deadline fix. A fresh final-build
-installation smoke is still required before release. The initial narrow test permissions prevented the
-helper from running; correcting those permissions allowed one review and the
-required presentation receipt. Product permissions were not changed.
-[Installation receipt](validation/technical-review-install-2026-09-23.json).
+Deterministic tests exercise input, output, identity and error handling. A fresh
+local marketplace/ZIP smoke and native skill invocation passed on Claude Code
+2.1.280 under Linux/WSL at `3cb2a244aad75412b49bc5903f4b5301a5229c1c`, after the
+transport and error-classification fixes. Default/custom/bypass behavior and
+native evidence-receipt rendering passed. An additional unidentified host
+component in native/custom/bypass sessions limits isolation claims.
+[Current installation receipt](validation/technical-review-install-current-2026-09-23.json).
+The [earlier receipt](validation/technical-review-install-2026-09-23.json) preserves
+initial narrow-permission failures; product permissions were not changed.
+
+The subsequent conversational run attempted four scenarios. Three were invalid
+because of host errors or timeouts; one single-turn repository inspection and
+review completed with no identified defect. No valid multi-turn reviewer result
+or added detection benefit was established. [Full result](technical-review-conversation-validation.md).
+Error diagnosis now excludes IDs, successful answers and other non-error content
+from authentication/rate-limit classification; these remain heuristic indicators.
+The authenticated installation smoke predates a final explicit session-limit
+phrase addition. Its deterministic tests pass; the next multi-turn evaluation
+hit an explicit account usage limit, so its remaining cases and another final-build
+authenticated smoke remain pending. The successful plain-text clarification
+diagnostic was unscored and used altered system context.
 
 Native Windows and Cowork execution of the new command remain unverified.
 The reviewer cannot authenticate sources, establish packet completeness or

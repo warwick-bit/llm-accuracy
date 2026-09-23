@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "scope": "altered_system_context_arm_blocked_by_usage_limit",
+  "source_commit": "3cb2a244aad75412b49bc5903f4b5301a5229c1c",
+  "changed_author_context": "Tools are unavailable in this test session. Respond in text. If clarification is needed, ask your question in plain text.",
+  "changes_product": false,
+  "causal_transport_fix_established": false,
+  "unscored_diagnostic": {
+    "status": "ok",
+    "result_count": 3,
+    "fidelity_hook_responses": 3,
+    "hook_response_count": 9,
+    "builtin_signal_responses": 0,
+    "host_inventory": {
+      "status": "reported",
+      "tool_count": 0,
+      "mcp_count": 0,
+      "plugin_count": 2,
+      "accuracy_plugin_count": 1,
+      "telemetry_plugin_count": 1
+    },
+    "resolved_model": "claude-opus-5-5",
+    "context_attestation": {
+      "expected_context_count": 3,
+      "observed_context_count": 3,
+      "exact_context_sequence_match": true,
+      "malformed_context_count": 0,
+      "init_models": [
+        "claude-opus-5-5",
+        "claude-opus-5-5",
+        "claude-opus-5-5"
+      ],
+      "event_count": 35,
+      "elapsed_seconds": 26.88,
+      "last_event_seconds": 26.44,
+      "last_assistant_seconds": 26.43,
+      "silence_seconds": 0.45,
+      "observer_complete": true
+    },
+    "answer_count": 3,
+    "answers_scored": false
+  },
+  "planned_cases": 3,
+  "attempted_cases": 1,
+  "subject_result": {
+    "subject": {
+      "status": "host_error",
+      "result_count": 3,
+      "fidelity_hook_responses": 3,
+      "hook_response_count": 9,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 2,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 1
+      },
+      "resolved_model": "claude-opus-5-5",
+      "context_attestation": {
+        "expected_context_count": 3,
+        "observed_context_count": 3,
+        "exact_context_sequence_match": true,
+        "malformed_context_count": 0,
+        "init_models": [
+          "claude-opus-5-5",
+          "claude-opus-5-5",
+          "claude-opus-5-5"
+        ],
+        "event_count": 28,
+        "elapsed_seconds": 3.0,
+        "last_event_seconds": 2.44,
+        "last_assistant_seconds": 2.44,
+        "silence_seconds": 0.56,
+        "observer_complete": true
+      },
+      "session_continuity_verified": true,
+      "fixture_unchanged": null
+    },
+    "status": "subject_unavailable",
+    "tool_result_count": 0
+  },
+  "explicit_session_limit_notice_observed": true,
+  "product_review_ran": false,
+  "blind_assessor_ran": false,
+  "remaining_cases_not_attempted": [
+    1,
+    2
+  ],
+  "stop_reason": "explicit_account_usage_limit_no_further_model_calls",
+  "identity": {
+    "accuracy-conversation-text-run.py": "e3c174ee1f37dc4a529ffdd298bdb091565191433063eb1f3851daa0e3d7b23d",
+    "tests/fixtures/technical-review-conversations.json": "1828bb71622a7b3c1a71c2707339e31b4744dc94f3d16c23fc47a6701c4ec627",
+    "accuracy-conversation-text-plan.md": "30e0d8cf0a3749e9e52ea16d7313bbd64a233bbf71d5b70cc0ffb8a041c92071",
+    "accuracy_attested_probe.py": "a92c7dc4203b721a36e07da489265d37e2a329c5dd2750c32e134ee3a79dc1d4",
+    "plugins/llm-accuracy/.claude-plugin/plugin.json": "e6e3833d18c6fdf33945a47ee68eb4069fa3a383cc69028a53e286b443b7e217",
+    "plugins/llm-accuracy/AGENTS.md": "bdbcea1c0eb186557e9c70da2f9e0bb0e7d58a130aab2d4205688951ee8adcc0",
+    "plugins/llm-accuracy/LICENSE.md": "a09ece9cf3b5433e0e1a97be90233e2ad4602420638c9d3be3ca81616d5d2af7",
+    "plugins/llm-accuracy/README.md": "ee685cf6e23f5675ff3b74024da10780e80240f5986e832b22b12d4273d07277",
+    "plugins/llm-accuracy/hooks/accuracy_config.py": "728c948e8b7376aa70d034357303b3eb58f563d9f801e2416a3741eb82b7be7b",
+    "plugins/llm-accuracy/hooks/analysis-contract-injector.py": "70fa478c1b94f3c3bc986a61e22bbabba082be976cb54ae7676d4a49631188b9",
+    "plugins/llm-accuracy/hooks/builtin_result_signals.py": "443369be8efca627f4a5373a80e7999e1ea9dab7ec87b82f2b4c75092490af01",
+    "plugins/llm-accuracy/hooks/claim-fidelity-trigger.py": "4bff718a7b5dceac59c0277c440ed28dfc385d81a0f7450f9c089655720c8a0a",
+    "plugins/llm-accuracy/hooks/fusion-evidence-trigger.py": "52df26894471ba6e3f3f1550524ee6492858edc762b721ba8c52f8e898df5a14",
+    "plugins/llm-accuracy/hooks/hooks.json": "c83f0d835cfd2e4a40e89ec08b51364d285983798a81743a169a026a239caf44",
+    "plugins/llm-accuracy/hooks/partial-result-sentinel.py": "4f0a628196b23b3d9db8bee77cf7f890c4846de82809320eeb6f827ece7607bc",
+    "plugins/llm-accuracy/hooks/post-compact-accuracy.py": "649ec8aa84f7b3eb20fb50d6171cadb73d826c2679efed0485e716b18750c3a9",
+    "plugins/llm-accuracy/references/evidence-discipline.md": "b00699e7da84a9504d753542e8a7f6addd6c72c1b89f8d140e743920ec28f493",
+    "plugins/llm-accuracy/references/evidence-receipt.schema.json": "8d4f52400f375aa3e83982b39f6f00738db03596990e2bef3f0c3ef066eb8cb9",
+    "plugins/llm-accuracy/scripts/accuracy_doctor.py": "d1e3bfd66332cf2bc6044e436badf0790a9729c11a1127775f4fdcea892d4acd",
+    "plugins/llm-accuracy/scripts/host_probe.py": "97f462421b4c0fa463cf1bed4663f56b91d4f83b057376abdada03aa4b3a0fe2",
+    "plugins/llm-accuracy/scripts/technical_review.py": "e87aff7127718c32c24d78abb4f9abf44d32548ad6792da70d411a3c6b407906",
+    "plugins/llm-accuracy/scripts/validate_evidence_receipt.py": "94dcea7155de94ac019db0d505b1a5c2ec9b79accdfb0e7e0d598b2c4ee5bdac",
+    "plugins/llm-accuracy/skills/accuracy-doctor/SKILL.md": "4cec380db1a7126d07639bb6d11ba9117ba8181e3133060ced7a251133903927",
+    "plugins/llm-accuracy/skills/claim-fidelity/SKILL.md": "51d8ce67ad6c2156dc4ab848f6906b297043305390df3f8e87ef29e956195d8d",
+    "plugins/llm-accuracy/skills/self-audit/SKILL.md": "44ecd03f62757108df25f27f2339c16d49fd3dc61774b7c1022ac20980a4c5c3",
+    "plugins/llm-accuracy/skills/technical-review/SKILL.md": "cba1356dfe9fc952410d4888b3b4577df3f10f50d7d1a264d234109f0671cdfc",
+    "plugins/llm-accuracy/skills/verify-technical/SKILL.md": "06c5c1b7a8ed36cdfbe956abb6f07be7e36dcc402ee7d6e4d61d0a6b5d4f9f5b"
+  },
+  "original_direct_cohort_replaced": false,
+  "accuracy_conclusion": "not_established",
+  "release_decision": "keep_draft"
+}

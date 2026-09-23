@@ -44,7 +44,7 @@ or coverage of long context, compaction, tools and private runtime policies.
 
 A separate method ran the four prepared scenarios in real Claude Code processes
 at source commit `6bfc6a3ce1c38824f817878b966be18176c799bf`. Opus 5.5 medium authored
-the answers; the public command's Fable reviewer received only complete questions,
+the answers; the public runner’s Fable reviewer received only complete questions,
 drafts and attributed evidence, never fixture gold. A fresh-context Codex reviewer
 first froze its claim inventory without seeing product findings, then reconciled
 the findings with the parent. Four direct inspection controls distinguished a
@@ -96,6 +96,29 @@ excluded the user's private harness. The headless failures do not establish the
 same behavior in an ordinary interactive session or on the user's other machine.
 
 **Keep draft/unreleased.** Reliable multi-turn completion and meaningful error
-detection remain unestablished. The fixed host classification needs its separate
-code tests and final-build installation check; it does not turn this evaluation
-into an accuracy pass.
+detection remain unestablished. The fixed host classification passed its separate code tests and a
+[fresh installation check](validation/technical-review-install-current-2026-09-23.json);
+that does not turn this evaluation into an accuracy pass.
+
+## Altered-context follow-up: usage limit
+
+An unscored diagnostic added only a generic instruction to respond in text and
+ask clarification questions in plain text when tools are unavailable. The same
+scope-correction conversation completed all three turns in 26.9 seconds with
+the exact hook sequence. This is one completion observation, not proof that the
+instruction fixes the earlier intermittent failure. It also changes the author's
+system context, so it is not an ordinary-session or unchanged-context result.
+
+A new frozen arm declared one pass of the three multi-turn cases under that
+context, with fresh blind Sonnet assessment before exposing Fable findings.
+Its first subject returned an explicit session usage-limit notice. No product
+review or assessor ran; the other two cases were left unattempted to avoid
+repeating calls against the account limit. No model substitution, repetition or
+replacement of the earlier cohort occurred. [Typed record](validation/technical-review-conversation-text-2026-09-23.json).
+
+The host now also recognizes that explicit session-limit phrase as a limit
+indicator. The earlier authenticated installation smoke predates this final
+classification-only addition. Deterministic regression tests cover the addition;
+another authenticated final-build smoke and the unfinished multi-turn assessment
+must wait for account availability. Login refresh is not indicated by a usage
+limit. Release remains held; there is no conversational accuracy conclusion.
