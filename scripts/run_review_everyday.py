@@ -83,7 +83,10 @@ def parse(output, code, args, *, structured=False, plugin=False):
     if init[0].get("model") != model or set(finals[0].get("modelUsage", {})) != {model}:
         raise ValueError("model_drift")
     hooks = [e for e in events if e.get("type") == "system" and e.get("subtype") == "hook_response"]
-    fidelity = sum("CLAIM FIDELITY CHECK" in str(e.get("stdout", "")) for e in hooks)
+    fidelity = sum("CLAIM FIDELITY CHECK" in str(e.get("stdout", ""))
+                   and e.get("hook_event") == "UserPromptSubmit"
+                   and str(e.get("hook_name", "")).startswith("UserPromptSubmit:")
+                   and e.get("exit_code") == 0 and e.get("outcome") == "success" for e in hooks)
     if (plugin and fidelity != 1) or (not plugin and hooks):
         raise ValueError("hook_activation_failure")
     result = finals[0].get("structured_output") if structured else finals[0].get("result")
@@ -111,6 +114,12 @@ def call(args, work, cmd, prompt, *, structured=False, plugin=False):
                 known = {"telemetry", "agents-md", "llm-accuracy"}
                 record["observed_plugins"] = [p.get("name") if p.get("name") in known else "unknown"
                                               for p in event.get("plugins", [])]
+            if event.get("type") == "system" and event.get("subtype") == "hook_response":
+                record.setdefault("hook_checks", []).append({
+                    "prompt_event": event.get("hook_event") == "UserPromptSubmit",
+                    "prompt_name": str(event.get("hook_name", "")).startswith("UserPromptSubmit:"),
+                    "exit_ok": event.get("exit_code") == 0, "outcome_ok": event.get("outcome") == "success",
+                    "fidelity_marker": "CLAIM FIDELITY CHECK" in str(event.get("stdout", ""))})
         result, metadata = parse(output, code, args, structured=structured, plugin=plugin)
         record.update(status="completed", **metadata)
         return result, record
@@ -154,7 +163,16 @@ def review(item, arm, args):
             shutil.copytree(PLUGIN, work / "plugin", ignore=shutil.ignore_patterns("__pycache__"))
             cmd += ["--plugin-dir", str(work / "plugin")]
         answer, record = call(args, work, cmd, prompts()[arm], plugin=arm != "default")
-        calls = [json.loads(line) for line in trace.read_text().splitlines()] if trace.exists() else []
+        try:
+            calls = [json.loads(line) for line in trace.read_text().splitlines()] if trace.exists() else []
+            if any(set(c) != {"tool", "ok"} or c["tool"] not in {"evidence", "query", "calculate", "unknown"}
+                   or type(c["ok"]) is not bool for c in calls):
+                raise ValueError("invalid_trace")
+        except (ValueError, TypeError, OSError):
+            calls = []
+            record["trace_failure"] = "invalid_tool_trace"
+            if record["status"] == "completed":
+                record.update(status="process_failure", failure="invalid_tool_trace")
         record["tool_calls"] = dict(Counter(c["tool"] for c in calls if c["ok"]))
         record["tool_errors"] = sum(not c["ok"] for c in calls)
         if record["status"] == "completed" and not record["tool_calls"].get("evidence"):

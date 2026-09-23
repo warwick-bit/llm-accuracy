@@ -93,7 +93,8 @@ def events(plugin=False):
              "plugins": [{"name": n} for n in names], "tools": sorted(runner.TOOLS)},
             {"type": "result", "result": "Actually 30, not 40.", "modelUsage": {"claude-sonnet-5": {}}}]
     if plugin:
-        data.append({"type": "system", "subtype": "hook_response", "stdout": "CLAIM FIDELITY CHECK"})
+        data.append({"type": "system", "subtype": "hook_response", "stdout": "CLAIM FIDELITY CHECK",
+                     "hook_event": "UserPromptSubmit", "hook_name": "UserPromptSubmit:2", "exit_code": 0, "outcome": "success"})
     return data
 
 
@@ -150,3 +151,25 @@ def test_quote_matching_accepts_formatting_not_changed_claim():
     assert extraction.quote_matches("A loss of 3000", "A **loss** of\n`3000`")
     assert not extraction.quote_matches("A profit of 3000", "A **loss** of 3000")
     assert not extraction.quote_matches("Profit 3000", "Profit -3000")
+    assert not extraction.quote_matches("23", "2*3")
+    assert not extraction.quote_matches("23", "2**3")
+
+
+@pytest.mark.parametrize("key,value", [("exit_code", 1), ("outcome", "error"), ("hook_event", "Stop"), ("hook_name", "Other:2")])
+def test_failed_or_wrong_hook_does_not_attest_activation(key, value):
+    data = events(True)
+    data[-1][key] = value
+    with pytest.raises(ValueError, match="hook_activation_failure"):
+        runner.parse(encoded(data), 0, args(), plugin=True)
+
+
+def test_truncated_tool_trace_preserves_failure_row(monkeypatch):
+    def fake_call(args, work, cmd, prompt, **kwargs):
+        (work / "trace.jsonl").write_text('{"tool":')
+        return None, {"status": "process_failure", "failure": "timeout"}
+    monkeypatch.setattr(runner, "call", fake_call)
+    case = {"id": "synthetic", "domain": "data", "fixture": {"sources": {}, "setup_sql": ""}}
+    result = runner.review(case, "default", args())
+    assert result["review"]["status"] == "process_failure"
+    assert result["review"]["failure"] == "timeout"
+    assert result["review"]["trace_failure"] == "invalid_tool_trace"

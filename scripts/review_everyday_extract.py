@@ -59,7 +59,9 @@ def quote_matches(quote, review):
     # Accept whitespace and Markdown emphasis/code decoration only. Preserve
     # words, numbers, signs and punctuation; invented paraphrases still fail.
     def plain(text):
-        return re.sub(r"\s+", " ", text.replace("*", "").replace("`", "")).strip()
+        text = re.sub(r"(?<![\w*])(\*\*|\*)(\S(?:.*?\S)?)\1(?![\w*])", r"\2", text)
+        text = re.sub(r"`([^`]+)`", r"\1", text)
+        return re.sub(r"\s+", " ", text).strip()
     return bool(quote.strip()) and (quote in review or plain(quote) in plain(review))
 
 
