@@ -192,7 +192,12 @@ def main():
                 row["status"] == expected[row["id"]][0] and equal_value(
                     normalize(row, next(g for g in control["gold"] if g["id"] == row["id"])), expected[row["id"]][1])
                 for row in answer["claims"])
-            receipt["rows"].append({"control": control["id"], "run": run, "matched": matched})
+            observed = [] if answer is None else [
+                {"id": row["id"], "status": row["status"],
+                 "status_matches": row["status"] == expected[row["id"]][0],
+                 "value_matches": equal_value(normalize(row, next(g for g in control["gold"] if g["id"] == row["id"])), expected[row["id"]][1])}
+                for row in answer["claims"]]
+            receipt["rows"].append({"control": control["id"], "run": run, "matched": matched, "observed": observed})
             args.output.write_text(json.dumps(receipt, indent=2)+"\n")
             print(json.dumps({"control": control["id"], "status": run["status"], "matched": matched}), flush=True)
             if not matched:
