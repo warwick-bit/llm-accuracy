@@ -58,3 +58,7 @@ See [the pilot contract](../../docs/customer-metrics-pilot-contract.md). Both ar
 receive existing LLM Accuracy guidance, the same SQL, contract, synthetic source
 rows and observed query output. One also gets the executed checker report.
 This is a constrained packet review, not a natural tool-enabled workflow.
+
+The first pilot stopped unscored. A [separate follow-up](../../docs/customer-metrics-v2-results.md)
+completed both pairs: both arms answered both cases correctly, so no incremental
+model-quality gain was demonstrated on this example.

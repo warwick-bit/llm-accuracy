@@ -1,0 +1,165 @@
+{
+  "protocol": "customer_metrics_v2",
+  "config": {
+    "model": "claude-sonnet-5",
+    "effort": "high",
+    "plugin_version": "0.6.2",
+    "binary_sha256": "1e08503dbdf3c2cb0d706d32f3408277388d1c76ef108673e8fe42c1b322925b",
+    "source_sha256": {
+      "examples/customer-metrics-review/README.md": "c42b425bedaebf094a2cfb579085a7cffecd853e03e7e911f8bee7249cd5de19",
+      "examples/customer-metrics-review/UPSTREAM_LICENSE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+      "examples/customer-metrics-review/contract.md": "28d207b263de9d5962db7ae3d0401d725c8467e1c5f3a6230c797cdcb82e710b",
+      "examples/customer-metrics-review/fixture.json": "3da734bf7ae4af23bcefecfb1c77fc91fc9ab71e8c5f713d75d3444f650dd19e",
+      "examples/customer-metrics-review/joined_customers.sql": "fa9679b2a38de74468da0e0886d935dc2aff4e9ddda989b27f12ca89c8938c0c",
+      "examples/customer-metrics-review/provenance.json": "997f215517ea79c05eb006197ab00fa9aa4e08bcf26e516a1921532959ffccb2",
+      "examples/customer-metrics-review/upstream_customers.sql": "455b90a31f418ae776213ad9932c7cb72d19a5269a8c722bd9f4e44957313ce8",
+      "plugins/llm-accuracy/.claude-plugin/plugin.json": "cd74b1c316cb8f9a7e688a3bbfd1e9b2e1dd5ee25ef72c22a8f75abc34191c1a",
+      "plugins/llm-accuracy/AGENTS.md": "bdbcea1c0eb186557e9c70da2f9e0bb0e7d58a130aab2d4205688951ee8adcc0",
+      "plugins/llm-accuracy/LICENSE.md": "a09ece9cf3b5433e0e1a97be90233e2ad4602420638c9d3be3ca81616d5d2af7",
+      "plugins/llm-accuracy/README.md": "c159c4500ae1b1b7660ebb573748c5cd802b1e6d11d27d74ea68a7ecef6796f1",
+      "plugins/llm-accuracy/hooks/accuracy_config.py": "728c948e8b7376aa70d034357303b3eb58f563d9f801e2416a3741eb82b7be7b",
+      "plugins/llm-accuracy/hooks/analysis-contract-injector.py": "70fa478c1b94f3c3bc986a61e22bbabba082be976cb54ae7676d4a49631188b9",
+      "plugins/llm-accuracy/hooks/builtin_result_signals.py": "443369be8efca627f4a5373a80e7999e1ea9dab7ec87b82f2b4c75092490af01",
+      "plugins/llm-accuracy/hooks/claim-fidelity-trigger.py": "4bff718a7b5dceac59c0277c440ed28dfc385d81a0f7450f9c089655720c8a0a",
+      "plugins/llm-accuracy/hooks/fusion-evidence-trigger.py": "52df26894471ba6e3f3f1550524ee6492858edc762b721ba8c52f8e898df5a14",
+      "plugins/llm-accuracy/hooks/hooks.json": "c83f0d835cfd2e4a40e89ec08b51364d285983798a81743a169a026a239caf44",
+      "plugins/llm-accuracy/hooks/partial-result-sentinel.py": "4f0a628196b23b3d9db8bee77cf7f890c4846de82809320eeb6f827ece7607bc",
+      "plugins/llm-accuracy/hooks/post-compact-accuracy.py": "649ec8aa84f7b3eb20fb50d6171cadb73d826c2679efed0485e716b18750c3a9",
+      "plugins/llm-accuracy/references/evidence-discipline.md": "b00699e7da84a9504d753542e8a7f6addd6c72c1b89f8d140e743920ec28f493",
+      "plugins/llm-accuracy/references/evidence-receipt.schema.json": "8d4f52400f375aa3e83982b39f6f00738db03596990e2bef3f0c3ef066eb8cb9",
+      "plugins/llm-accuracy/scripts/accuracy_doctor.py": "d1e3bfd66332cf2bc6044e436badf0790a9729c11a1127775f4fdcea892d4acd",
+      "plugins/llm-accuracy/scripts/host_probe.py": "e1a92869dd8d54a2767a2795a465df2156545a069a21f69dbe4ca1a2c46d2b11",
+      "plugins/llm-accuracy/scripts/validate_evidence_receipt.py": "94dcea7155de94ac019db0d505b1a5c2ec9b79accdfb0e7e0d598b2c4ee5bdac",
+      "plugins/llm-accuracy/skills/accuracy-doctor/SKILL.md": "4cec380db1a7126d07639bb6d11ba9117ba8181e3133060ced7a251133903927",
+      "plugins/llm-accuracy/skills/claim-fidelity/SKILL.md": "51d8ce67ad6c2156dc4ab848f6906b297043305390df3f8e87ef29e956195d8d",
+      "plugins/llm-accuracy/skills/self-audit/SKILL.md": "44ecd03f62757108df25f27f2339c16d49fd3dc61774b7c1022ac20980a4c5c3",
+      "plugins/llm-accuracy/skills/verify-technical/SKILL.md": "06c5c1b7a8ed36cdfbe956abb6f07be7e36dcc402ee7d6e4d61d0a6b5d4f9f5b",
+      "scripts/check_customer_metrics.py": "b806ab2be5b6feca6782c623097f6c840ab82d2cbcd2a7ea1098b4e05c8e39b4",
+      "scripts/eval_customer_metrics.py": "a342f2008d217f853ae9317d956284b314ad82ce79972a29c409650b45c01947",
+      "scripts/eval_customer_metrics_v2.py": "a020c43829a34efe2d48cc6567cf15efa6e55950092b803de87febf5916f9e4a"
+    }
+  },
+  "rows": [
+    {
+      "variant": "upstream_customers.sql",
+      "arm": "existing",
+      "prompt_sha256": "bb0f284c222e8eaca65dae25ed91329bf16cf0f901d333bdb896ded0b1c0b655",
+      "runtime": {
+        "status": "ok",
+        "resolved_model": "claude-sonnet-5",
+        "result_count": 1,
+        "fidelity_hook_responses": 1,
+        "host_inventory": {
+          "status": "reported",
+          "tool_count": 0,
+          "mcp_count": 0,
+          "plugin_count": 2,
+          "accuracy_plugin_count": 1,
+          "telemetry_plugin_count": 1
+        },
+        "successful_fidelity_hooks": 1,
+        "usage_model_matches": true
+      },
+      "score": {
+        "scorable": true,
+        "decision_correct": true,
+        "metrics_correct": true,
+        "customer_coverage_correct": true,
+        "all_scored_fields_correct": true,
+        "rendering": "single_fence"
+      },
+      "answer_sha256": "b5d5f9644287c07438ccda30f41a068fa8579a354625cc1a608d44cf5ceb9eee"
+    },
+    {
+      "variant": "upstream_customers.sql",
+      "arm": "executed_checks",
+      "prompt_sha256": "616305c0303f8569fa90ba1c2b87815c11b2b1975089e14440635ece75e97c06",
+      "runtime": {
+        "status": "ok",
+        "resolved_model": "claude-sonnet-5",
+        "result_count": 1,
+        "fidelity_hook_responses": 1,
+        "host_inventory": {
+          "status": "reported",
+          "tool_count": 0,
+          "mcp_count": 0,
+          "plugin_count": 2,
+          "accuracy_plugin_count": 1,
+          "telemetry_plugin_count": 1
+        },
+        "successful_fidelity_hooks": 1,
+        "usage_model_matches": true
+      },
+      "score": {
+        "scorable": true,
+        "decision_correct": true,
+        "metrics_correct": true,
+        "customer_coverage_correct": true,
+        "all_scored_fields_correct": true,
+        "rendering": "single_fence"
+      },
+      "answer_sha256": "533b01c079eeb4b5042375f7cc25dec9c8432a7f8dbae07b76f5356d75cd7a6c"
+    },
+    {
+      "variant": "joined_customers.sql",
+      "arm": "executed_checks",
+      "prompt_sha256": "e93073ae04e53319bd3d7231f470d52d6733e7b4eb76abfc5bd3a1c60cd794a4",
+      "runtime": {
+        "status": "ok",
+        "resolved_model": "claude-sonnet-5",
+        "result_count": 1,
+        "fidelity_hook_responses": 1,
+        "host_inventory": {
+          "status": "reported",
+          "tool_count": 0,
+          "mcp_count": 0,
+          "plugin_count": 2,
+          "accuracy_plugin_count": 1,
+          "telemetry_plugin_count": 1
+        },
+        "successful_fidelity_hooks": 1,
+        "usage_model_matches": true
+      },
+      "score": {
+        "scorable": true,
+        "decision_correct": true,
+        "metrics_correct": true,
+        "customer_coverage_correct": true,
+        "all_scored_fields_correct": true,
+        "rendering": "single_fence"
+      },
+      "answer_sha256": "63c4ecad1f351b37f0417c1496df658863e2864fb374a9577e12d666ac4cc83a"
+    },
+    {
+      "variant": "joined_customers.sql",
+      "arm": "existing",
+      "prompt_sha256": "a507a4c7ef7a449f0b2465601f6c2a5670acf304239c759d3188762142c29a14",
+      "runtime": {
+        "status": "ok",
+        "resolved_model": "claude-sonnet-5",
+        "result_count": 1,
+        "fidelity_hook_responses": 1,
+        "host_inventory": {
+          "status": "reported",
+          "tool_count": 0,
+          "mcp_count": 0,
+          "plugin_count": 2,
+          "accuracy_plugin_count": 1,
+          "telemetry_plugin_count": 1
+        },
+        "successful_fidelity_hooks": 1,
+        "usage_model_matches": true
+      },
+      "score": {
+        "scorable": true,
+        "decision_correct": true,
+        "metrics_correct": true,
+        "customer_coverage_correct": true,
+        "all_scored_fields_correct": true,
+        "rendering": "single_fence"
+      },
+      "answer_sha256": "42c65246c66de12738f9270b99ed6bc31ee6795062a0e638264359195816ccde"
+    }
+  ],
+  "complete": true
+}
