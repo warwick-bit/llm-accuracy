@@ -42,7 +42,6 @@ def test_inventory_counts_without_raw_host_details():
     "events",
     [
         [],
-        [initial(), initial()],
         [initial(tools=None)],
         [initial(plugins={})],
         [initial(mcp_servers="PRIVATE_SENTINEL")],
@@ -80,6 +79,35 @@ def test_shared_host_component_is_distinguished_from_accuracy():
     result = probe.host_inventory([initial(plugins=[{"name": "telemetry"}])])
     assert result["plugin_count"] == result["telemetry_plugin_count"] == 1
     assert result["accuracy_plugin_count"] == 0
+
+
+def test_repeated_identical_turn_inventories_are_valid():
+    assert probe.host_inventory([initial(), initial()]) == probe.host_inventory(
+        [initial()]
+    )
+
+
+def test_same_counts_with_changed_plugin_path_are_not_isolation_evidence():
+    assert probe.host_inventory(
+        [
+            initial(),
+            initial(
+                plugins=[{"name": "llm-accuracy", "path": "OTHER_PRIVATE_SENTINEL"}]
+            ),
+        ]
+    ) == {"status": "changed"}
+
+
+def test_model_drift_is_not_hidden_by_first_turn_identity():
+    payload = "\n".join(
+        json.dumps(e)
+        for e in [
+            initial(model="claude-opus-5-5"),
+            initial(model="claude-sonnet-5"),
+            {"type": "result", "result": "OK"},
+        ]
+    )
+    assert probe.parse_events(payload, "", 0)["resolved_model"] == "unreported"
 
 
 def test_explicit_effort_is_passed_to_cli(monkeypatch, tmp_path):

@@ -66,14 +66,12 @@ def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
     context_count = sum(
         "CLAIM FIDELITY CHECK" in str(e.get("stdout", "")) for e in hooks
     )
-    model = next(
-        (
-            e.get("model")
-            for e in events
-            if e.get("type") == "system" and e.get("subtype") == "init"
-        ),
-        None,
-    )
+    models = [
+        e.get("model")
+        for e in events
+        if e.get("type") == "system" and e.get("subtype") == "init"
+    ]
+    model = models[0] if models and all(m == models[0] for m in models) else None
     return {
         "status": error_category(stdout + stderr)
         if errors
@@ -101,13 +99,21 @@ def host_inventory(events: list[dict]) -> dict:
     initial = [
         e for e in events if e.get("type") == "system" and e.get("subtype") == "init"
     ]
-    if len(initial) != 1:
+    if not initial:
         return {"status": "unreported"}
     event = initial[0]
     if not all(
-        isinstance(event.get(k), list) for k in ("tools", "mcp_servers", "plugins")
+        isinstance(e.get(k), list)
+        for e in initial
+        for k in ("tools", "mcp_servers", "plugins")
     ):
         return {"status": "unreported"}
+    if any(
+        e[k] != event[k]
+        for e in initial[1:]
+        for k in ("tools", "mcp_servers", "plugins")
+    ):
+        return {"status": "changed"}
     return {
         "status": "reported",
         "tool_count": len(event["tools"]),

@@ -219,6 +219,8 @@ The doctor includes fixed `counter_definitions` in its live report.
 `host_inventory` reports only allowlisted counts from the host's init event;
 missing inventory is `unreported`, not evidence of an empty host. A host may
 include its own shared components, such as a reported `telemetry` plugin.
+Identical per-turn inventories are accepted; changed entries report `changed`.
+Model identity is `unreported` if it differs between turns.
 `fidelity_hook_responses` counts delivered claim-fidelity reminders;
 `hook_response_count` counts all hook-response events, including silent ones.
 `builtin_signal_responses` is a legacy name for events containing a
