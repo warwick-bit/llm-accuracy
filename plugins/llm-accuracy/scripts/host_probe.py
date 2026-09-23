@@ -144,45 +144,66 @@ def _drain(stream, label: str, events: queue.Queue) -> None:
         stream.close()
 
 
+def _feed(stream, prompts, ready, stopped, events) -> None:
+    """Write off the deadline thread; one prompt is released per result."""
+    try:
+        for prompt in prompts:
+            ready.acquire()
+            if stopped.is_set():
+                break
+            stream.write(prompt)
+            stream.flush()
+    except (OSError, ValueError):
+        events.put(("stdin_error", None))
+    finally:
+        try:
+            stream.close()
+        except (OSError, ValueError):
+            pass
+
+
 def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
-    """Send each turn only after the previous result; cap captured output."""
+    """Bound both input delivery and output capture, including stalled readers."""
+    deadline = time.monotonic() + timeout
     events: queue.Queue = queue.Queue()
     for name in ("stdout", "stderr"):
         threading.Thread(
             target=_drain, args=(getattr(process, name), name, events), daemon=True
         ).start()
-    prompts = iter(stdin.splitlines(keepends=True))
-    pending = next(prompts, "")
-    process.stdin.write(pending)
-    process.stdin.flush()
-    pending = next(prompts, None)
-    if pending is None:
-        process.stdin.close()
+    ready, stopped = threading.Semaphore(1), threading.Event()
+    threading.Thread(
+        target=_feed,
+        args=(process.stdin, stdin.splitlines(keepends=True), ready, stopped, events),
+        daemon=True,
+    ).start()
     outputs, closed, size, line = {"stdout": [], "stderr": []}, 0, 0, ""
-    deadline = time.monotonic() + timeout
-    while closed < 2:
-        name, chunk = events.get(timeout=max(0, deadline - time.monotonic()))
-        if name == "overflow":
-            raise OverflowError
-        if chunk is None:
-            closed += 1
-            continue
-        size += len(chunk)
-        if size > 4_000_000:
-            raise OverflowError
-        outputs[name].append(chunk)
-        if name == "stdout":
-            line += chunk
-            if line.endswith("\n"):
-                if pending is not None and _is_result(line):
-                    process.stdin.write(pending)
-                    process.stdin.flush()
-                    pending = next(prompts, None)
-                    if pending is None:
-                        process.stdin.close()
-                line = ""
-    process.wait(timeout=max(0, deadline - time.monotonic()))
-    return "".join(outputs["stdout"]), "".join(outputs["stderr"])
+    try:
+        while closed < 2:
+            name, chunk = events.get(timeout=max(0, deadline - time.monotonic()))
+            if name == "overflow":
+                raise OverflowError
+            if name == "stdin_error":
+                raise OSError("stdin_delivery_failed")
+            if chunk is None:
+                closed += 1
+                continue
+            size += len(chunk)
+            if size > 4_000_000:
+                raise OverflowError
+            outputs[name].append(chunk)
+            if name == "stdout":
+                line += chunk
+                if line.endswith("\n"):
+                    if _is_result(line):
+                        ready.release()
+                    line = ""
+        process.wait(timeout=max(0, deadline - time.monotonic()))
+        return "".join(outputs["stdout"]), "".join(outputs["stderr"])
+    finally:
+        # Unblock a feeder waiting for the next result on every exit path.
+        # communicate kills the owned child before closing a blocked writer.
+        stopped.set()
+        ready.release()
 
 
 def _is_result(line: str) -> bool:

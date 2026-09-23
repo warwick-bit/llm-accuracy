@@ -512,9 +512,39 @@ def test_natural_footer_never_scores_incomplete_pair(modules, monkeypatch):
     monkeypatch.syspath_prepend(str(ROOT / "scripts"))
     import eval_footer_behavior as natural
 
-    monkeypatch.setattr(natural, "run_probe", lambda *a, **kw: {"status": "timeout", "answers": []})
-    monkeypatch.setattr(natural, "score", lambda *a, **kw: pytest.fail("incomplete pair must not reach scorer"))
-    row = natural.compare_case(("synthetic", ["Question"], True), Path("baseline"), "claude-opus-5-5", 0, 2)
+    monkeypatch.setattr(
+        natural, "run_probe", lambda *a, **kw: {"status": "timeout", "answers": []}
+    )
+    monkeypatch.setattr(
+        natural,
+        "score",
+        lambda *a, **kw: pytest.fail("incomplete pair must not reach scorer"),
+    )
+    row = natural.compare_case(
+        ("synthetic", ["Question"], True), Path("baseline"), "claude-opus-5-5", 0, 2
+    )
     assert row["transport_status"] == "transport_exhausted"
     assert len(row["transport_attempts"]) == 2
     assert not row["baseline"]["scorable"] and not row["candidate"]["scorable"]
+
+
+@pytest.mark.parametrize("later_turn", [False, True])
+def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, later_turn):
+    import time
+
+    program = "import time;time.sleep(5)"
+    payload = "x" * 131072 + "\n"
+    if later_turn:
+        program = (
+            "import sys,time,json\n"
+            "sys.stdin.readline()\n"
+            "print(json.dumps({'type':'result','result':'first'}),flush=True)\n"
+            "time.sleep(5)"
+        )
+        payload = "first\n" + payload
+    started = time.monotonic()
+    result = modules[1].communicate(
+        [sys.executable, "-c", program], tmp_path, dict(os.environ), payload, 0.2
+    )
+    assert result == {"status": "timeout", "answers": []}
+    assert time.monotonic() - started < 3
