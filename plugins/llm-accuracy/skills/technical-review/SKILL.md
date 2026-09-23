@@ -42,7 +42,7 @@ raw provider payloads in the packet. Existing conversation/provider retention
 still applies. The helper saves neither packet nor response; it temporarily
 copies local CLI authentication and deletes the isolated profile afterwards.
 
-Input is limited to 24,000 characters both on stdin and after JSON serialization,
+Input is limited to 24,000 characters both on stdin and after ASCII-escaped JSON serialization,
 with 1..20 evidence entries. Missing, invalid or oversized input is rejected,
 never truncated. Ask the user to narrow the review scope explicitly if needed.
 A host without a local Python 3 interpreter and signed-in Claude Code CLI cannot

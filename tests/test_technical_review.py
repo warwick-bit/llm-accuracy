@@ -366,3 +366,34 @@ def test_frozen_pilot_receipt_matches_current_prompt_and_seeded_spans():
                 covered.update(matches)
             assert covered == set(range(len(case["defects"])))
     assert len(seen) == 20 and all(seen.count(key) == 2 for key in cases)
+
+
+@pytest.mark.parametrize("error", [OSError, RuntimeError, ValueError])
+def test_host_exception_has_safe_failure_receipt(monkeypatch, error):
+    def probe(*a, **kw):
+        raise error("PRIVATE SENTINEL")
+
+    monkeypatch.setattr(review, "run_probe", probe)
+    result = review.review_packet(PACKET, model="fable")
+    assert result["status"] == "review_unavailable"
+    assert result["reason"] == "host_exception"
+    assert "PRIVATE" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("error", [KeyboardInterrupt, SystemExit])
+def test_cancellation_propagates_after_host_cleanup(monkeypatch, error):
+    def probe(*a, **kw):
+        raise error()
+
+    monkeypatch.setattr(review, "run_probe", probe)
+    with pytest.raises(error):
+        review.review_packet(PACKET, model="fable")
+
+
+@pytest.mark.parametrize("change", [{"answers": []}, {"result_count": 2}])
+def test_incomplete_result_diagnostic_never_says_ok(monkeypatch, change):
+    monkeypatch.setattr(review, "run_probe", lambda *a, **kw: host(**change))
+    assert (
+        review.review_packet(PACKET, model="fable")["reason"]
+        == "incomplete_host_result"
+    )

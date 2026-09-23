@@ -254,7 +254,7 @@ A host-reported shared `telemetry` component is tolerated; the plugin adds none.
 Native Windows and Cowork execution of this command are unverified.
 
 Missing or oversized packets are rejected rather than silently trimmed: maximum
-24,000 characters on stdin and after JSON serialization, with 1..20 evidence
+24,000 characters on stdin and after ASCII-escaped JSON serialization, with 1..20 evidence
 items. The helper returns only fixed categories, exact character locations,
 evidence IDs, model metadata and a scoped Checked / Gap / Next receipt. Findings
 are model judgments to recheck against the cited evidence. A failed review is

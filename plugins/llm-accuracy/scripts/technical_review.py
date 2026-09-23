@@ -191,13 +191,21 @@ def review_packet(
         not isinstance(author_model, str) or not AUTHOR_RE.fullmatch(author_model)
     ):
         return with_presentation({"status": "invalid_author_model"})
-    response = run_probe(
-        [PROMPT + json.dumps(packet)],
-        None,
-        model=model,
-        effort="medium",
-        timeout=timeout,
-    )
+    try:
+        response = run_probe(
+            [PROMPT + json.dumps(packet)],
+            None,
+            model=model,
+            effort="medium",
+            timeout=timeout,
+        )
+    except Exception:
+        # Deliberate host boundary: no raw exception text in a diagnostic.
+        # run_probe cleans up its process before reraising; cancellation and
+        # SystemExit still propagate because they are not Exception subclasses.
+        return with_presentation(
+            {"status": "review_unavailable", "reason": "host_exception"}
+        )
     answers = response.pop("answers", [])
     metadata = {
         "requested_model": model,
@@ -212,7 +220,9 @@ def review_packet(
     ):
         result = {
             "status": "review_unavailable",
-            "reason": response.get("status", "host_error"),
+            "reason": "incomplete_host_result"
+            if response.get("status") == "ok"
+            else response.get("status", "host_error"),
         }
     elif not isolated_host(response):
         result = {"status": "identity_unverified"}
