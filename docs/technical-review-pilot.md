@@ -84,6 +84,9 @@ Normal installations can ask for command approval. No user permission setting
 is modified by the plugin. Native Windows and Cowork remain unverified.
 
 After independent code review, the parser was strengthened to reject overlapping
-ambiguous quotes. The final committed package then passed the complete clean
+ambiguous quotes. That committed package then passed the complete clean
 installation, native command, custom/bypass and ZIP smoke in one run; see
-`final_smoke` in the same receipt. The exact final archive hash is recorded there.
+`final_smoke` in the same receipt. The archive hash for that build is recorded there. A later transport change
+extended the deadline to cover blocked stdin writes; the earlier install smoke
+is historical for that dependency. Calibration calls exercised the updated
+transport, but a future release still requires a fresh installation smoke.

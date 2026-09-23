@@ -60,7 +60,8 @@ unsuccessful reminder candidates and reviewer pilots remain failed and separate.
 
 Deterministic tests exercise input, output, identity and error handling. A clean
 local marketplace/ZIP smoke and native skill invocation ran on Claude Code
-2.1.280 under Linux/WSL. The initial narrow test permissions prevented the
+2.1.280 under Linux/WSL before the later stdin-deadline fix. A fresh final-build
+installation smoke is still required before release. The initial narrow test permissions prevented the
 helper from running; correcting those permissions allowed one review and the
 required presentation receipt. Product permissions were not changed.
 [Installation receipt](validation/technical-review-install-2026-09-23.json).
