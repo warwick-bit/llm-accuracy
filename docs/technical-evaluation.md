@@ -129,3 +129,47 @@ adds a separate, model-adjudicated view of intermediate and unlisted claims.
 Its authored cases, disagreements and excluded instrumentation attempt are
 recorded separately. This does not change the constrained-field or footer
 scorers into general factuality validators. No raw model answers are retained.
+
+## Polarity follow-up: wording withheld
+
+A later experiment tested more explicit unknown-versus-absent wording and
+courtesy replies that add no unverified status. The
+[typed result](validation/polarity-comparison-2026-09-23.json) records the
+failed promotion gate. The released plugin remains at 0.6.2 with identical
+package contents; this follow-up changes repository evaluation tooling only.
+
+Opus 5.5, medium effort, completed an author-exposed synthetic packet against
+0.6.2. Each scored pair required the expected model and isolated inventory,
+plus exact ordered reminder text observed in host hook events. Fable 5.1 judged
+each arm separately, twice with reversed order, after matching all 25 authored
+calibration labels in both passes. These are two passes of one fallible judge,
+not independent ground truth. No raw answers were retained.
+
+```text
+Stage       Cases  Turns per arm  Candidate supported twice  Extra pair attempts
+Initial     1      2              2                          1
+Ramp        3      3              3                          0
+Controls    4      6              6                          0
+Repeat      4      5              5                          0
+```
+
+All candidate turns also met the footer boundary and had no judge-detected
+unlisted assertion. The initial released incident answer had a judge
+disagreement, so its case was not counted as a clear advantage. The build-label
+case supplied the sole clear initial advantage; both versions passed it on
+repeat. The frozen gate required at least two advantages initially and on
+repeat. None replicated, so the wording was withheld without changing the gate.
+Passing the candidate controls does not establish a general accuracy benefit.
+
+The initial pair recovered from one released-arm timeout by discarding both
+answers and rerunning both arms in reversed order. All other pairs completed
+on their first attempt. This demonstrates bounded recovery in that run, not a
+fix for the underlying intermittent host stall or equal completion reliability.
+Earlier one-shot attempts remain inconclusive; no partial answer was scored.
+The exact-context observer and full-answer judge were local experimental tools;
+the public footer runner still scores footer structure only.
+
+The generic whole-pair recovery helper is repository-only tooling. Comparison
+with private upstream revision `6909f8efef44d8afc33b60fba0405d5b10336d33`
+found no corresponding paired footer runner to backport. No shared hook,
+evidence doctrine, private runtime or packaged plugin changes are promoted.

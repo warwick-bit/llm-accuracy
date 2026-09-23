@@ -1,0 +1,786 @@
+{
+  "schema_version": 1,
+  "scope": "author_exposed_synthetic_packet_not_population_accuracy",
+  "baseline_tag": "v0.6.2",
+  "baseline_commit": "66af41fb4dabd53edee3a54bba5ea755640a9e16",
+  "experimental_candidate_commit": "ddcbd632101162f76ac8c36a683ddef8bd86dcdf",
+  "candidate_plugin_tree_sha256": "6b057371f4a72dbb645489e70767a3f99be46faed2655d312cde12d33e78b4cd",
+  "case_packet_sha256": "8512afa7543f5411f2a4ef925975dd53a4aeaa4a0056b1e493eea3afcef0ceed",
+  "decision_script_sha256": "55b9c63d4001b0ac82e586117eeb84117cd20121fac8b7445b39d600609f0cbe",
+  "subject_model": "claude-opus-5-5",
+  "judge_model": "claude-fable-5-1",
+  "requested_effort": "medium",
+  "sampling": "provider_default",
+  "judge_protocol": "two passes of one model; arms judged separately; reversed order; exact quote positions checked in memory",
+  "calibration": {
+    "expected": 25,
+    "matched": 25,
+    "second_pass_matched": 25,
+    "unlisted_detected": true
+  },
+  "transport_budget": {
+    "attempts_per_case": 3,
+    "seconds_per_call": 180,
+    "retry_unit": "whole_pair",
+    "completed_answers_never_retried": true
+  },
+  "subject_delivery": "exact ordered context match, expected inventory and model required for both arms",
+  "promotion_threshold": "all candidate turns supported twice, no unlisted assertion, correct footer; at least two case advantages initially and on repeat",
+  "decision": {
+    "decision": "benefit_not_replicated_keep_released",
+    "initial_advantages": [
+      "version"
+    ],
+    "replicated_advantages": []
+  },
+  "stages": [
+    {
+      "stage": "first",
+      "scorable": true,
+      "transport": [
+        {
+          "case": "status",
+          "status": "complete",
+          "attempts": [
+            {
+              "released": {
+                "status": "timeout",
+                "valid": false,
+                "result_count": 0
+              },
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              }
+            },
+            {
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              },
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              }
+            }
+          ]
+        }
+      ],
+      "turns": [
+        {
+          "case": "status",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "status",
+          "arm": "candidate",
+          "turn": 1,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "status",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": false,
+          "passes": [
+            "irrelevant",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": false
+        },
+        {
+          "case": "status",
+          "arm": "released",
+          "turn": 1,
+          "footer_ok": false,
+          "passes": [
+            "unsupported",
+            "unsupported"
+          ],
+          "unlisted": [
+            true,
+            true
+          ],
+          "agreed": true
+        }
+      ]
+    },
+    {
+      "stage": "ramp",
+      "scorable": true,
+      "transport": [
+        {
+          "case": "negative",
+          "status": "complete",
+          "attempts": [
+            {
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        },
+        {
+          "case": "version",
+          "status": "complete",
+          "attempts": [
+            {
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        },
+        {
+          "case": "logs",
+          "status": "complete",
+          "attempts": [
+            {
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "turns": [
+        {
+          "case": "negative",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "negative",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "version",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "version",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "unsupported",
+            "unsupported"
+          ],
+          "unlisted": [
+            true,
+            true
+          ],
+          "agreed": true
+        },
+        {
+          "case": "logs",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "logs",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        }
+      ]
+    },
+    {
+      "stage": "controls",
+      "scorable": true,
+      "transport": [
+        {
+          "case": "closed",
+          "status": "complete",
+          "attempts": [
+            {
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        },
+        {
+          "case": "correction",
+          "status": "complete",
+          "attempts": [
+            {
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              },
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              }
+            }
+          ]
+        },
+        {
+          "case": "carryover",
+          "status": "complete",
+          "attempts": [
+            {
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              },
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              }
+            }
+          ]
+        },
+        {
+          "case": "creative",
+          "status": "complete",
+          "attempts": [
+            {
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "turns": [
+        {
+          "case": "closed",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "closed",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "correction",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "correction",
+          "arm": "candidate",
+          "turn": 1,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "correction",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "correction",
+          "arm": "released",
+          "turn": 1,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "carryover",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "carryover",
+          "arm": "released",
+          "turn": 1,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "carryover",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "carryover",
+          "arm": "candidate",
+          "turn": 1,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "creative",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "creative",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        }
+      ]
+    },
+    {
+      "stage": "repeat",
+      "scorable": true,
+      "transport": [
+        {
+          "case": "status",
+          "status": "complete",
+          "attempts": [
+            {
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              },
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 2
+              }
+            }
+          ]
+        },
+        {
+          "case": "negative",
+          "status": "complete",
+          "attempts": [
+            {
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        },
+        {
+          "case": "version",
+          "status": "complete",
+          "attempts": [
+            {
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        },
+        {
+          "case": "logs",
+          "status": "complete",
+          "attempts": [
+            {
+              "released": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              },
+              "candidate": {
+                "status": "ok",
+                "valid": true,
+                "result_count": 1
+              }
+            }
+          ]
+        }
+      ],
+      "turns": [
+        {
+          "case": "status",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "status",
+          "arm": "candidate",
+          "turn": 1,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "status",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "unsupported",
+            "unsupported"
+          ],
+          "unlisted": [
+            true,
+            true
+          ],
+          "agreed": true
+        },
+        {
+          "case": "status",
+          "arm": "released",
+          "turn": 1,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "negative",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "negative",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "version",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "version",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "logs",
+          "arm": "released",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        },
+        {
+          "case": "logs",
+          "arm": "candidate",
+          "turn": 0,
+          "footer_ok": true,
+          "passes": [
+            "supported",
+            "supported"
+          ],
+          "unlisted": [
+            false,
+            false
+          ],
+          "agreed": true
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Author-exposed synthetic packet; no human ground truth or general accuracy estimate.",
+    "Disagreements are unresolved, not confirmed failures.",
+    "Recovery results condition on completed pairs; unsuccessful calls are not scored.",
+    "Earlier one-shot attempts were inconclusive and remain preserved locally.",
+    "Experimental wording withheld; distributed plugin remains byte-identical to v0.6.2.",
+    "Affected remote configuration, native Windows model behavior and Cowork not evaluated."
+  ]
+}
