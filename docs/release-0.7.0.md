@@ -1,6 +1,8 @@
 # LLM Accuracy 0.7.0
 
-**Unreleased candidate:** [conversational validation is not established](technical-review-conversation-validation.md); keep the PR draft.
+**Unreleased candidate:** the [completed conversational challenge](technical-review-conversation-validation.md)
+did not demonstrate added detection benefit. Keep the PR draft; do not promote
+this candidate as a general accuracy fix.
 
 Adds `/llm-accuracy:technical-review model=<available Claude model>`: an explicit
 review of a complete technical draft against supplied, attributed evidence.
@@ -12,7 +14,10 @@ IDs. The primary assistant must recheck those findings before using them.
 Failed reviews are reported as unavailable. Empty findings mean no issue found
 within the packet, not verified accuracy or permission to deploy.
 
-## Upgrade and try it
+## Upgrade instructions for a future publication
+
+Version 0.7.0 is not published. These commands currently fetch the released
+version, not this candidate. Use them only if this candidate is later published.
 
 In Claude Code:
 
@@ -60,26 +65,30 @@ unsuccessful reminder candidates and reviewer pilots remain failed and separate.
 
 Deterministic tests exercise input, output, identity and error handling. A fresh
 local marketplace/ZIP smoke and native skill invocation passed on Claude Code
-2.1.280 under Linux/WSL at `3cb2a244aad75412b49bc5903f4b5301a5229c1c`, after the
-transport and error-classification fixes. Default/custom/bypass behavior and
+2.1.280 under Linux/WSL at `53bfdaab0bfcf06d4ed4323af9874d061fbb6d81`, after the
+transport, error-classification and Unicode framing fixes. Default/custom/bypass behavior and
 native evidence-receipt rendering passed. An additional unidentified host
 component in native/custom/bypass sessions limits isolation claims.
-[Current installation receipt](validation/technical-review-install-current-2026-09-23.json).
+[Final-source installation receipt](validation/technical-review-install-final-2026-09-23.json).
+The [prior source receipt](validation/technical-review-install-current-2026-09-23.json)
+remains unchanged.
 The [earlier receipt](validation/technical-review-install-2026-09-23.json) preserves
 initial narrow-permission failures; product permissions were not changed.
 
-The subsequent conversational run attempted four scenarios. Three were invalid
+The initial direct-inspection conversational run attempted four scenarios. Three were invalid
 because of host errors or timeouts; one single-turn repository inspection and
 review completed with no identified defect. No valid multi-turn reviewer result
 or added detection benefit was established. [Full result](technical-review-conversation-validation.md).
 Error diagnosis now excludes IDs, successful answers and other non-error content
 from authentication/rate-limit classification; these remain heuristic indicators.
-The authenticated installation smoke predates the explicit session-limit
-phrase addition and a Unicode stream-framing fix. Their deterministic tests pass;
-the next multi-turn evaluation
-hit an explicit account usage limit, so its remaining cases and another final-build
-authenticated smoke remain pending. The successful plain-text clarification
-diagnostic was unscored and used altered system context.
+An altered-context follow-up initially hit an account usage limit. After access
+reset, the final declared pass completed all three multi-turn conversations and
+reviews. Fable returned no findings: two final answers had no material issue
+identified, while the closure case retained a disputed nondeployment/status
+inference. No added detection benefit was demonstrated; the experiment is closed
+without further prompt/model/rubric retries. The plain-text clarification envelope
+and user-authorized concurrent review load limit generalization. Earlier failed
+attempts remain recorded. The final-source authenticated smoke also passed.
 
 Native Windows and Cowork execution of the new command remain unverified.
 The reviewer cannot authenticate sources, establish packet completeness or

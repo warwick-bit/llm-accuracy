@@ -1,6 +1,14 @@
-# Conversational validation: not established
+# Conversational challenge completed: no added benefit demonstrated
 
-**Keep the candidate draft.** The ten-case pilot used authored drafts and tidy
+**Conclusion: keep the candidate draft, not a general accuracy fix.** The final
+declared pass completed three multi-turn conversations and their reviews. Two
+final answers had no material issue identified; the third remains disputed.
+The product reviewer returned no findings in all three. The final-source
+installation smoke passed, but no added detection benefit was demonstrated.
+The experiment is closed without another prompt/model/rubric retry. See the final
+pass below; earlier failures remain part of the record.
+
+The ten-case pilot used authored drafts and tidy
 evidence packets. Native installation smokes used real Claude sessions but did
 not establish accuracy on vague, evolving conversations.
 
@@ -24,7 +32,8 @@ It did not pass. **Those three registrations ran no conversational subjects.**
   the same supplied omission finding as missed. The frozen gate failed.
 - One final registration changed only the assessor to Opus 5.5 medium. It matched
   the first five controls, then returned an unscorable result on the overhedging
-  control. The attempt stopped; no further model or rubric retry followed.
+  control. The attempt stopped; no further model or rubric retry followed within
+  that calibration sequence.
 
 [Typed calibration receipts](validation/technical-review-conversation-calibration-2026-09-23.json)
 retain the frozen dependency hashes, host metadata, validated labels and quote
@@ -95,8 +104,8 @@ conversation and provider retention still apply. Runtime isolation deliberately
 excluded the user's private harness. The headless failures do not establish the
 same behavior in an ordinary interactive session or on the user's other machine.
 
-**Keep draft/unreleased.** Reliable multi-turn completion and meaningful error
-detection remain unestablished. The fixed host classification passed its separate code tests and a
+At that checkpoint, reliable multi-turn completion and meaningful error
+detection remained unestablished. The fixed host classification passed its separate code tests and a
 [fresh installation check](validation/technical-review-install-current-2026-09-23.json);
 that does not turn this evaluation into an accuracy pass.
 
@@ -120,8 +129,8 @@ The host now also recognizes that explicit session-limit phrase as a limit
 indicator. The earlier authenticated installation smoke predates this final
 classification-only addition. Deterministic regression tests cover the addition;
 another authenticated final-build smoke and the unfinished multi-turn assessment
-must wait for account availability. Login refresh is not indicated by a usage
-limit. Release remains held; there is no conversational accuracy conclusion.
+were deferred until account availability returned. Login refresh is not indicated by a usage
+limit. At that checkpoint there was no completed multi-turn reviewer result.
 
 While waiting, an independent code review reproduced an inherited stream-framing
 bug: Python's `splitlines()` treated literal Unicode separators inside valid JSON
@@ -130,3 +139,58 @@ now splits only on LF; regression tests cover three Unicode separators, LF/CRLF
 streams and actual two-turn subprocess communication. The existing installation
 receipt predates this fix too. No reviewer instructions or conversational cases
 changed, and no earlier failed result was rescored.
+
+## Final declared pass and conclusion
+
+After the user reported that account access had reset, the three unchanged
+conversations ran once at source `53bfdaab0bfcf06d4ed4323af9874d061fbb6d81`.
+The user explicitly authorized execution alongside another Claude review batch;
+concurrent load limits latency and failure attribution. The author still used
+the declared plain-text clarification envelope. No product prompt, case, model,
+assessment criterion or earlier outcome was changed.
+
+Opus 5.5 medium completed all three turns in each conversation, with session
+continuity and the exact hook sequence verified. Each fresh Sonnet 5 medium
+assessor inspected the same four direct controls and then the complete
+conversation before product findings were exposed. Fable 5.1 returned an empty
+finding set for each final draft.
+
+```text
+Scenario             Parent inspection             Product review
+Vague closure        Disputed inference             No findings
+Scope correction     No material issue identified   No findings
+Conflicting rollout  No material issue identified   No findings
+```
+
+The scope-correction answer preserved the sandbox/live distinction and labelled
+possible causes as unconfirmed. The rollout handover preserved the reported
+Closed ticket while leaving endpoint recovery and service identity unverified.
+These are clean-answer observations, with no demonstrated detection headroom.
+
+The closure answer inferred nondeployment from an older live build and described
+the customer issue as remaining open. Build age alone does not entail absence
+of the tweak without timing information; “open” also has colloquial versus
+recorded-status ambiguity. The blind assessor accepted these clauses, even
+describing nondeployment as directly supported. The parent disagreed with that
+entailment judgment. Under the declared disagreement rule this case remains
+disputed/unscored, not a clean pass or a confirmed detection-rate denominator.
+Passing the four controls did not make the assessor a source of ground truth.
+
+[Typed final receipts](validation/technical-review-conversation-final-2026-09-23.json)
+preserve source hashes, runtime metadata, all outcomes and the disagreement
+without raw answers. Only final answers were assessed; no rewrite benefit,
+representative accuracy rate or human-adjudicated ground truth was measured.
+Successful completion under changed context does not prove a causal fix for
+earlier headless failures or coverage of ordinary interactive/private harnesses.
+
+The [final-source installation smoke](validation/technical-review-install-final-2026-09-23.json)
+passed marketplace installation, source matching, native invocation, default and
+custom triggers, bypass and ZIP loading. Its seeded status error was flagged.
+An additional unidentified host component in native/custom/bypass sessions limits
+isolation claims. This is functional evidence, separate from semantic reliability.
+
+**Decision:** the declared experiment is finished. Keep the reviewer optional and
+unreleased in the draft PR; this record does not justify promoting it as the
+general solution to overconfident technical answers. Existing automatic rules
+remain unchanged. Further promotion would need a separately agreed evidence
+contract, not repeated attempts to make this cohort pass.
