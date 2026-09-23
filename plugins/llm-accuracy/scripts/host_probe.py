@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from collections import Counter
 import json
 import os
 import queue
@@ -144,7 +145,70 @@ def _drain(stream, label: str, events: queue.Queue) -> None:
         stream.close()
 
 
-def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
+class ResponseLimitExceeded(OverflowError):
+    """The caller's per-answer text budget was exceeded."""
+
+
+class StreamProgress:
+    """Keep partial text in memory; expose only fixed counters on failure."""
+
+    def __init__(self, max_response_chars=None):
+        self.max_response_chars = max_response_chars
+        self.current_text_chars = 0
+        self.events = 0
+        self.sent_turns = 0
+        self.results = 0
+        self.text_updates = 0
+        self.text_parts = []
+
+    def observe(self, line: str) -> None:
+        try:
+            event = json.loads(line)
+        except (ValueError, RecursionError):
+            return
+        if not isinstance(event, dict):
+            return
+        self.events += 1
+        self.results += event.get("type") == "result"
+        if event.get("type") == "result":
+            answer = event.get("result")
+            if isinstance(answer, str):
+                self.check_limit(len(answer))
+            self.current_text_chars = 0
+        if event.get("type") != "stream_event":
+            return
+        inner = event.get("event")
+        if not isinstance(inner, dict) or inner.get("type") != "content_block_delta":
+            return
+        delta = inner.get("delta")
+        if not isinstance(delta, dict) or delta.get("type") != "text_delta":
+            return
+        text = delta.get("text")
+        if isinstance(text, str):
+            self.text_updates += 1
+            self.text_parts.append(text)
+            self.current_text_chars += len(text)
+            self.check_limit(self.current_text_chars)
+
+    def check_limit(self, characters: int) -> None:
+        if self.max_response_chars is not None and characters > self.max_response_chars:
+            raise ResponseLimitExceeded
+
+    def snapshot(self) -> dict:
+        text = "".join(self.text_parts)
+        lines = Counter(line.strip() for line in text.splitlines() if line.strip())
+        return {
+            "events_received": self.events,
+            "turns_sent": self.sent_turns,
+            "results_received": self.results,
+            "text_updates_received": self.text_updates,
+            "text_characters_received": len(text),
+            "non_whitespace_characters_received": sum(not c.isspace() for c in text),
+            "most_repeated_nonempty_line_count": max(lines.values(), default=0),
+        }
+
+
+def _exchange(process, stdin: str, timeout: int, progress=None) -> tuple[str, str]:
     """Send each turn only after the previous result; cap captured output."""
     events: queue.Queue = queue.Queue()
     for name in ("stdout", "stderr"):
@@ -155,6 +219,8 @@ def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
     pending = next(prompts, "")
     process.stdin.write(pending)
     process.stdin.flush()
+    if progress is not None:
+        progress.sent_turns += bool(pending)
     pending = next(prompts, None)
     if pending is None:
         process.stdin.close()
@@ -174,9 +240,13 @@ def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
         if name == "stdout":
             line += chunk
             if line.endswith("\n"):
+                if progress is not None:
+                    progress.observe(line)
                 if pending is not None and _is_result(line):
                     process.stdin.write(pending)
                     process.stdin.flush()
+                    if progress is not None:
+                        progress.sent_turns += 1
                     pending = next(prompts, None)
                     if pending is None:
                         process.stdin.close()
@@ -217,7 +287,12 @@ def _kill(process) -> None:
 
 
 def communicate(
-    command: list[str], cwd: Path, env: dict, stdin: str, timeout: int
+    command: list[str],
+    cwd: Path,
+    env: dict,
+    stdin: str,
+    timeout: int,
+    max_response_chars=None,
 ) -> dict:
     """Bound output/time, kill only owned processes, and retain answers in memory."""
     try:
@@ -235,18 +310,21 @@ def communicate(
         )
     except OSError:
         return {"status": "host_unavailable", "answers": []}
+    progress = StreamProgress(max_response_chars)
     try:
-        stdout, stderr = _exchange(process, stdin, timeout)
+        stdout, stderr = _exchange(process, stdin, timeout, progress)
     except (subprocess.TimeoutExpired, queue.Empty, OverflowError, OSError) as exc:
         _kill(process)
         status = (
-            "oversized_output"
+            "response_limit"
+            if isinstance(exc, ResponseLimitExceeded)
+            else "oversized_output"
             if isinstance(exc, OverflowError)
             else "host_error"
             if isinstance(exc, OSError)
             else "timeout"
         )
-        return {"status": status, "answers": []}
+        return {"status": status, "answers": [], "progress": progress.snapshot()}
     except BaseException:
         # Cancellation and unexpected failures must not leave a detached model
         # process running. Preserve the exception after stopping the owned tree.
@@ -279,12 +357,17 @@ def run_probe(
     model: str = "sonnet",
     timeout: int = 60,
     effort: str | None = None,
+    max_response_chars: int | None = None,
 ) -> dict:
     """Run an auth-only temporary profile with no tools, MCPs or saved session."""
     if not re.fullmatch(r"[A-Za-z0-9_.:\[\]-]{1,100}", model):
         return {"status": "invalid_model", "answers": []}
     if effort is not None and effort not in {"low", "medium", "high", "xhigh", "max"}:
         return {"status": "invalid_effort", "answers": []}
+    if max_response_chars is not None and (
+        type(max_response_chars) is not int or max_response_chars < 1
+    ):
+        return {"status": "invalid_response_limit", "answers": []}
     executable = shutil.which("claude")
     if not executable:
         return {"status": "host_unavailable", "answers": []}
@@ -314,6 +397,7 @@ def run_probe(
             "stream-json",
             "--verbose",
             "--include-hook-events",
+            "--include-partial-messages",
             "--setting-sources",
             "",
             "--strict-mcp-config",
@@ -338,4 +422,9 @@ def run_probe(
             )
             + "\n"
         )
-        return communicate(command, root, env, stdin, timeout)
+        limits = (
+            {}
+            if max_response_chars is None
+            else {"max_response_chars": max_response_chars}
+        )
+        return communicate(command, root, env, stdin, timeout, **limits)

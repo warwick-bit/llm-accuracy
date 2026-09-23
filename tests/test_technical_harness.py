@@ -250,7 +250,9 @@ def test_stream_turns_are_sequential_and_bounded(modules, tmp_path):
         "one\n",
         0.1,
     )
-    assert sleepy == {"status": "timeout", "answers": []}
+    assert sleepy["status"] == "timeout"
+    assert sleepy["answers"] == []
+    assert sleepy["progress"]["events_received"] == 0
     huge = modules[1].communicate(
         [sys.executable, "-c", "print('x'*4000001)"],
         tmp_path,
