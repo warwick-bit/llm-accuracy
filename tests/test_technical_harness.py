@@ -597,6 +597,57 @@ def test_early_auth_error_survives_failed_later_input(modules, tmp_path):
     assert result["status"] == "authentication"
 
 
+@pytest.mark.parametrize("auth_error", [False, True])
+def test_late_input_failure_is_consumed_after_output_eof(
+    modules, tmp_path, monkeypatch, auth_error
+):
+    import threading
+
+    probe = modules[1]
+    outputs_closed = threading.Event()
+    failure_observed = threading.Event()
+
+    class ScheduledQueue(probe.queue.Queue):
+        closed = 0
+
+        def put(self, item, *args, **kwargs):
+            if item[0] == "stdin_error":
+                failure_observed.set()
+                outputs_closed.wait(3)
+            return super().put(item, *args, **kwargs)
+
+        def get(self, *args, **kwargs):
+            item = super().get(*args, **kwargs)
+            if item[0] in {"stdout", "stderr"} and item[1] is None:
+                self.closed += 1
+                if self.closed == 2:
+                    outputs_closed.set()
+            return item
+
+    monkeypatch.setattr(probe.queue, "Queue", ScheduledQueue)
+    event = {"type": "result", "result": "first"}
+    if auth_error:
+        event.update(is_error=True, result="authentication expired")
+    program = (
+        "import sys,os,json\n"
+        "sys.stdin.readline()\n"
+        "os.close(0)\n"
+        f"print({json.dumps(event)!r},flush=True)\n"
+    )
+    try:
+        outcome = probe.communicate(
+            [sys.executable, "-c", program],
+            tmp_path,
+            dict(os.environ),
+            "first\n" + "x" * 131072 + "\n",
+            5,
+        )
+        assert failure_observed.wait(1)
+        assert outcome["status"] == ("authentication" if auth_error else "host_error")
+    finally:
+        outputs_closed.set()
+
+
 @pytest.mark.parametrize("noise", ["synthetic-429-marker", "authentication expired"])
 def test_error_category_ignores_nonerror_event_content(modules, noise):
     events = [

@@ -169,6 +169,7 @@ def _feed(stream, prompts, ready, stopped, events) -> None:
         for prompt in prompts:
             ready.acquire()
             if stopped.is_set():
+                events.put(("stdin_error", None))
                 break
             stream.write(prompt)
             stream.flush()
@@ -179,6 +180,7 @@ def _feed(stream, prompts, ready, stopped, events) -> None:
             stream.close()
         except (OSError, ValueError):
             pass
+        events.put(("stdin_done", None))
 
 
 def _exchange(process, stdin: str, timeout: int) -> tuple[str, str, bool]:
@@ -201,18 +203,24 @@ def _exchange(process, stdin: str, timeout: int) -> tuple[str, str, bool]:
     except RuntimeError:
         process._accuracy_feeder_owned = False
         raise
-    input_failed = False
+    input_failed, input_done = False, False
     outputs, closed, size, line = {"stdout": [], "stderr": []}, 0, 0, ""
     try:
-        while closed < 2:
+        while closed < 2 or not input_done:
             name, chunk = events.get(timeout=max(0, deadline - time.monotonic()))
             if name == "overflow":
                 raise OverflowError
             if name == "stdin_error":
                 input_failed = True
                 continue
+            if name == "stdin_done":
+                input_done = True
+                continue
             if chunk is None:
                 closed += 1
+                if closed == 2:
+                    stopped.set()
+                    ready.release()
                 continue
             size += len(chunk)
             if size > 4_000_000:
