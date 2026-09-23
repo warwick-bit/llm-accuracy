@@ -157,7 +157,8 @@ All candidate turns also met the footer boundary and had no judge-detected
 unlisted assertion. The initial released incident answer had a judge
 disagreement, so its case was not counted as a clear advantage. The build-label
 case supplied the sole clear initial advantage; both versions passed it on
-repeat. The frozen gate required at least two advantages initially and on
+repeat. The incident case showed an advantage only on repeat, so it could not
+count as replicated either. The frozen gate required at least two advantages initially and on
 repeat. None replicated, so the wording was withheld without changing the gate.
 Passing the candidate controls does not establish a general accuracy benefit.
 

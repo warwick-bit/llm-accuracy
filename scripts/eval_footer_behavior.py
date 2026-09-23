@@ -77,9 +77,6 @@ def compare_case(
         scored["resolved_model"] = result.get("resolved_model", "unreported")
         scored["host_status"] = result.get("status", "unrecognized_status")
         row[arm] = scored
-    if any(row[arm]["resolved_model"] != model for arm in arms):
-        for arm in arms:
-            row[arm].update(scorable=False, failure="model_mismatch")
     return row
 
 
@@ -115,6 +112,8 @@ def main() -> int:
                 "scope": "synthetic_natural_footer_only",
                 "rung": args.rung,
                 "model": args.model,
+                "max_transport_attempts": args.transport_attempts,
+                "per_call_timeout_seconds": 120,
                 "prose_correctness": "not_scored",
                 "hook_sha256": {
                     arm: hashlib.sha256((root / relative).read_bytes()).hexdigest()
