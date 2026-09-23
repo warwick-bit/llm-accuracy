@@ -35,7 +35,7 @@ reviewer's own previous answer.
 
 Requested review and extractor model: claude-sonnet-5, high effort. CLI binary,
 all prompts, source and plugin bytes are hashed. The new frozen host allowance
-is exactly agents-md and telemetry, plus llm-accuracy for plugin arms. This is
+is exactly telemetry, plus llm-accuracy for plugin arms. This is
 not a plugin-free default; it does not rehabilitate the rejected historical
 run. Exact tool/plugin/model inventories must match on every call. Real claim
 fidelity hook output must occur once per plugin review and never in default or
@@ -46,22 +46,23 @@ extractor calls. Any drift is infrastructure failure and stops the rung.
 A separate extractor receives only free-form review text, hidden claim topics
 and whether a numeric target exists. It sees no source, gold answer, arm label,
 prompt, scores or timing. It reports supported/refuted/unresolved/omitted/ambiguous,
-an explicitly stated number where applicable, and an exact supporting excerpt.
-Excerpts must occur in the review; raw text is validated in memory and discarded.
+a stated or explicitly endorsed number where applicable, and supporting numbered
+answer-line references. Line IDs must exist and identify nonblank answer lines;
+raw text is validated in memory and discarded.
 Numeric targets specify units. The extractor labels explicit fractions, loss
 magnitudes and counts of extra charges; the scorer converts only the compatible
 target (percentage, signed profit or total charges). It never accepts both signs
 indiscriminately. Calibration uses the same Decimal equality as scoring and
 includes each representation, multi-claim attribution and omitted/established
 topic controls to detect guessing from claim grammar.
-This checks attribution mechanically, not semantic entailment. Extraction remains
+This checks line existence mechanically, not attribution or semantic entailment. Extraction remains
 model-assisted, not independent human adjudication.
 
 Primary per-claim match: correct extracted status and, for a refuted numeric
 claim, the correct explicitly stated correction. A supported number need not be
 restated, but a stated wrong number fails. Record status, explicit-value coverage
 and value checks separately. An omission is a coverage miss, not a process error.
-Malformed extraction, invented excerpts and host failures are process errors;
+Malformed extraction, invalid line references and host failures are process errors;
 exclude the whole paired case from quality comparisons and report the failure.
 Claims within an artifact are correlated; also report whole-artifact matches.
 
@@ -75,7 +76,7 @@ Before review calls, require every authored extraction control to match,
 including wrong corrections, endorsement of wrong values, omission, negation,
 paraphrase, formula without computed value, contradiction, injected instructions,
 scoped approval, missing-data topics and categorical support. Local negative
-tests must reject wrong values/statuses, missing IDs, fabricated excerpts and
+tests must reject wrong values/statuses, missing IDs, invalid line references and
 runtime inventory drift. Calibration is bound to the complete source/config hash.
 
 ## Rungs and stopping rule
@@ -95,8 +96,9 @@ runtime inventory drift. Calibration is bound to the complete source/config hash
    run a paired placebo comparison on those cases. Otherwise stop the live
    comparison and report no demonstrated incremental advantage.
 
-Maximum initial size is six cases by three arms. Each review has one extractor
-call. Calibration and independent reviews are counted separately. Repeat/optional
+Maximum initial size is six cases by three arms. Each review has one extractor call, with at most one identical-prompt retry for
+malformed shape, claim coverage or line references. Valid wrong extractions and
+runtime failures are never retried within a call. Calibration and independent reviews are counted separately. Repeat/optional
 placebo calls are bounded by the rules above. A failed infrastructure call may
 be diagnosed and retried only as a new, documented configuration; never widen
 allowances silently or pool unlike runs. No merge, release or installed-runtime
@@ -118,3 +120,13 @@ multi-claim controls. These were resolved before comparison calls. Fable's
 claim that every unresolved item was a topic fragment was too broad (durability
 was a proposition); additional topic-negative controls address the real cue risk.
 Remaining limits include model-assisted extraction and unmeasured extra findings.
+
+## Preflight corrections
+
+Rejected and incomplete preflights remain separate from the final comparison.
+They exposed a host inventory assumption, ambiguous calibration controls, copied
+excerpt fragility and an assumed hook display name. The final protocol checks
+successful UserPromptSubmit event/outcome/exit and fidelity marker, without an
+invented name prefix. It uses line references instead of copied excerpts. These
+are measurement/runtime changes; candidate advice and case evidence are unchanged.
+Each source change requires a new calibration; unlike configurations are not pooled.

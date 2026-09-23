@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from decimal import Decimal, InvalidOperation
 
 
@@ -11,9 +10,9 @@ DISPOSITIONS = ["supported", "refuted", "unresolved", "omitted", "ambiguous"]
 REPRESENTATIONS = ["canonical", "fraction", "loss_magnitude", "additional_count"]
 ROW = {"type": "object", "properties": {
     "id": {"type": "string"}, "status": {"type": "string", "enum": DISPOSITIONS},
-    "value": {"type": ["string", "null"]}, "quote": {"type": "string"},
+    "value": {"type": ["string", "null"]}, "evidence_lines": {"type": "array", "items": {"type": "integer"}},
     "representation": {"type": "string", "enum": REPRESENTATIONS}},
-    "required": ["id", "status", "value", "quote", "representation"], "additionalProperties": False}
+    "required": ["id", "status", "value", "evidence_lines", "representation"], "additionalProperties": False}
 SCHEMA = {"type": "object", "properties": {"claims": {"type": "array", "items": ROW}},
           "required": ["claims"], "additionalProperties": False}
 RUBRIC = """Extract what a review actually concludes about each supplied claim.
@@ -40,9 +39,11 @@ the explicit count of extra/duplicate charges beyond the first, not total charge
 Do NOT change the extracted value: the scorer normalizes these representations.
 For null values use canonical. For a fraction written as 2/4 use value 0.5 and
 fraction; this notation conversion is allowed, but computing unstated outcomes
-from formulas is not. Quote a short EXACT
-substring of the review establishing the position and number. For omitted use an
-empty quote and null value. For ambiguous quote the conflict, leave value null.
+from formulas is not. Cite the integer IDs of review_lines establishing the
+position and number. Select actual lines, never reproduce or paraphrase quotations.
+For omitted use an empty evidence_lines array and null value. For ambiguous
+select lines demonstrating the conflict, leave value null. Line presence alone
+does not establish support: selected text must substantiate the extracted position.
 Return exactly one row per claim ID, no extras, matching the supplied schema.
 """
 
@@ -55,37 +56,31 @@ def extraction_payload(item, review):
     return {"claims": [{"id": g["id"], "claim": g["claim"], "numeric_target": g["value"] is not None,
                         "numeric_unit": unit(g)}
                        for g in item["gold"]],
-            "review": review}
-
-
-def quote_matches(quote, review):
-    # Accept whitespace and Markdown emphasis/code decoration only. Preserve
-    # words, numbers, signs and punctuation; invented paraphrases still fail.
-    def plain(text):
-        text = re.sub(r"(?<![\w*])(\*\*|\*)(\S(?:.*?\S)?)\1(?![\w*])", r"\2", text)
-        text = re.sub(r"`([^`]+)`", r"\1", text)
-        return re.sub(r"\s+", " ", text).strip()
-    normalized = plain(quote)
-    return bool(normalized) and (quote in review or normalized in plain(review))
+            "review_lines": [{"id": index, "text": line} for index, line in enumerate(review.splitlines(), 1)]}
 
 
 def validate_extraction(answer, item, review):
     if not isinstance(answer, dict) or set(answer) != {"claims"} or not isinstance(answer["claims"], list):
         raise ValueError("extract_shape")
     ids = []
+    lines = review.splitlines()
     for row in answer["claims"]:
         if not isinstance(row, dict) or set(row) != set(ROW["required"]):
             raise ValueError("extract_shape")
         ids.append(row["id"])
-        if row["status"] not in DISPOSITIONS or not isinstance(row["quote"], str):
+        if row["status"] not in DISPOSITIONS or not isinstance(row["evidence_lines"], list):
             raise ValueError("extract_shape")
+        selected = row["evidence_lines"]
+        if (any(type(i) is not int or not 1 <= i <= len(lines) or not lines[i-1].strip() for i in selected)
+                or len(selected) != len(set(selected))):
+            raise ValueError("extract_lines")
         if row["representation"] not in REPRESENTATIONS or (row["value"] is None and row["representation"] != "canonical"):
             raise ValueError("extract_representation")
         if row["status"] == "omitted":
-            if row["quote"] or row["value"] is not None:
+            if selected or row["value"] is not None:
                 raise ValueError("extract_omission")
-        elif not quote_matches(row["quote"], review):
-            raise ValueError("extract_quote")
+        elif not selected:
+            raise ValueError("extract_lines")
         if row["value"] is not None:
             try:
                 if (not isinstance(row["value"], str) or not Decimal(row["value"]).is_finite()
@@ -132,10 +127,10 @@ def score_extraction(answer, item):
         value_acceptable = value_ok or (not required_value and row["value"] is None)
         results.append({"id": gold["id"], "status_correct": row["status"] == gold["status"],
                         "value_correct": value_ok, "observed_status": row["status"],
-                        "value_stated": row["value"] is not None,
+                        "value_extracted": row["value"] is not None,
                         "required_correction": required_value, "value_acceptable": value_acceptable,
-                        "quote_verified": row["status"] == "omitted" or bool(row["quote"]),
-                        "quote_characters": len(row["quote"])})
+                        "evidence_lines_valid": row["status"] == "omitted" or bool(row["evidence_lines"]),
+                        "evidence_line_count": len(row["evidence_lines"])})
     return {"claims": results, "all_claims_match": all(r["status_correct"] and r["value_acceptable"] for r in results)}
 
 

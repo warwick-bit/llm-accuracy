@@ -151,13 +151,13 @@ def extract(item, review, args):
             try:
                 validate_extraction(answer, item, review)
             except (ValueError, TypeError) as exc:
-                known = {"extract_shape", "extract_representation", "extract_omission", "extract_quote", "extract_value", "extract_coverage"}
+                known = {"extract_shape", "extract_representation", "extract_omission", "extract_lines", "extract_value", "extract_coverage"}
                 record.update(status="process_failure", failure=str(exc) if str(exc) in known else "extraction_validation")
                 answer = None
         attempts.append(dict(record))
-        # Retry only invalid excerpts/shapes, with the identical prompt. Never
+        # Retry only invalid line references/shapes, with the identical prompt. Never
         # retry a valid but incorrect extraction or runtime/model/plugin drift.
-        if record.get("failure") not in {"extract_quote", "extract_shape", "extract_coverage"}:
+        if record.get("failure") not in {"extract_lines", "extract_shape", "extract_coverage"}:
             break
     record["attempts"] = attempts
     return answer, record
