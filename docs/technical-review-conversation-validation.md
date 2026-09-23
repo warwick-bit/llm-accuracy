@@ -10,9 +10,9 @@ actual local Read/Bash inspection of a fictional retry repository. Three have
 multiple user turns. These are designed examples, not demonstrated coverage of
 real user work. [Prepared fixtures](../tests/fixtures/technical-review-conversations.json).
 
-The plan required an assessor to distinguish appropriate, missed and spurious
+The initial plan required an assessor to distinguish appropriate, missed and spurious
 review findings on authored calibration controls before running subject sessions.
-It did not pass. **No conversational subject sessions were run or scored.**
+It did not pass. **Those three registrations ran no conversational subjects.**
 
 - Initial Sonnet calibration stopped at an unscorable clean control. A separate
   diagnostic returned an incomplete judgment anchored in the draft while the
@@ -39,3 +39,63 @@ to verify that each omission was actually identified. Independent human
 adjudication of bounded, authorized real examples would strengthen that evidence.
 Even a successful small synthetic challenge would not establish general accuracy
 or coverage of long context, compaction, tools and private runtime policies.
+
+## Subsequent direct inspection
+
+A separate method ran the four prepared scenarios in real Claude Code processes
+at source commit `6bfc6a3ce1c38824f817878b966be18176c799bf`. Opus 5.5 medium authored
+the answers; the public command's Fable reviewer received only complete questions,
+drafts and attributed evidence, never fixture gold. A fresh-context Codex reviewer
+first froze its claim inventory without seeing product findings, then reconciled
+the findings with the parent. Four direct inspection controls distinguished a
+supported answer, unsupported recovery, omitted production status and excessive
+hedging. This is model-assisted inspection, not human-adjudicated ground truth.
+
+```text
+Scenario             Subject outcome          Product review
+Vague closure        Opening-turn host error  Not invoked
+Scope correction     240-second timeout       Not invoked
+Conflicting rollout  240-second timeout       Not invoked
+Local repository     Completed                No findings
+```
+
+The first invalid run stopped the original acceptance path. A recorded amendment
+ran the remaining scenarios once for coverage only, retaining the failure and
+forbidding replication or a cohort-pass claim. **No valid multi-turn reviewer
+evaluation resulted.** The completed repository case was single-turn: actual
+Read/Bash results confirmed file inspection and test execution, exact hook context
+was observed, and the fixture remained unchanged. Claude distinguished a passing
+health test from untested retry behavior and unknown production recovery. The
+blind reviewer and parent identified no material defect; the product's empty
+finding set agreed. This supplies no evidence of added detection benefit.
+
+The invalid closure run's later answer treated an older build as proof of
+nondeployment. Direct inspection exposed an interpretation dispute: nondeployment
+is not entailed without change/build timing, although the conversational contrast
+can suggest it. This remains an unscored diagnostic, not an agreed defect count.
+
+The run also exposed a diagnostic weakness: the host classified errors using the
+entire transcript, so an unrelated ID containing `429` or a successful answer
+mentioning authentication could determine the reported cause. Synthetic regression
+tests reproduced this. The subsequent fix restricts classification to failed-result
+diagnostic fields and stderr, avoids matching arbitrary larger numbers, and does
+not treat a generic expired deadline as authentication. These are still heuristic
+indicators. The original run's rate-limit label does not establish its actual
+cause, and the fix does not resolve the Claude tool-call error or silent timeouts.
+
+The unused gold text for the local repository was also corrected from “retries
+twice” to at most two calls, or one retry. No subject or product reviewer saw this
+gold, and no failed attempt was rescored or replaced.
+
+[Typed direct-inspection receipts](validation/technical-review-conversation-direct-2026-09-23.json)
+preserve source hashes, runtime metadata and all four outcomes. The driver kept
+answers in memory and displayed synthetic material for direct inspection; it did
+not write raw answer files. Native session persistence was disabled; parent
+conversation and provider retention still apply. Runtime isolation deliberately
+excluded the user's private harness. The headless failures do not establish the
+same behavior in an ordinary interactive session or on the user's other machine.
+
+**Keep draft/unreleased.** Reliable multi-turn completion and meaningful error
+detection remain unestablished. The fixed host classification needs its separate
+code tests and final-build installation check; it does not turn this evaluation
+into an accuracy pass.

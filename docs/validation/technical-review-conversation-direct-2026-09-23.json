@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "scope": "synthetic_conversational_coverage_not_acceptance",
+  "source_commit": "6bfc6a3ce1c38824f817878b966be18176c799bf",
+  "method": "blind_model_assisted_inspection_then_parent_reconciliation",
+  "human_adjudicated": false,
+  "author_requested_model": "claude-opus-5-5",
+  "author_requested_effort": "medium",
+  "reviewer_requested_model": "fable",
+  "reviewer_requested_effort": "medium",
+  "subject_timeout_seconds": 240,
+  "review_timeout_seconds": 180,
+  "attempted_cases": 4,
+  "valid_subject_and_review_cases": 1,
+  "valid_multi_turn_cases": 0,
+  "replication_run": false,
+  "replication_reason": "pipeline_failures_and_no_detection_headroom",
+  "original_gate": "inconclusive",
+  "coverage_amendment": "After first invalid case, remaining cases run once for coverage only; no retry or acceptance claim.",
+  "native_persistence_disabled": true,
+  "driver_writes_raw_answers": false,
+  "parent_conversation_retention_still_applies": true,
+  "identity": {
+    "accuracy-conversation-direct-run.py": "0117d64ba45467de85b25e44839bec26db3b200c4f0ca7abc4bc7a4769e8fe32",
+    "tests/fixtures/technical-review-conversations.json": "5034d8fdd3870d6a544c3cdeac90a7ff9651cd605a217f56a2f4d0a5836870e1",
+    "accuracy-conversation-direct-plan.md": "69f2fd6bd242f27c9ce888825961e6953d70ca72b175f7a5de0992831ea9ec40",
+    "accuracy_attested_probe.py": "a92c7dc4203b721a36e07da489265d37e2a329c5dd2750c32e134ee3a79dc1d4",
+    "plugins/llm-accuracy/.claude-plugin/plugin.json": "e6e3833d18c6fdf33945a47ee68eb4069fa3a383cc69028a53e286b443b7e217",
+    "plugins/llm-accuracy/AGENTS.md": "bdbcea1c0eb186557e9c70da2f9e0bb0e7d58a130aab2d4205688951ee8adcc0",
+    "plugins/llm-accuracy/LICENSE.md": "a09ece9cf3b5433e0e1a97be90233e2ad4602420638c9d3be3ca81616d5d2af7",
+    "plugins/llm-accuracy/README.md": "ee685cf6e23f5675ff3b74024da10780e80240f5986e832b22b12d4273d07277",
+    "plugins/llm-accuracy/hooks/accuracy_config.py": "728c948e8b7376aa70d034357303b3eb58f563d9f801e2416a3741eb82b7be7b",
+    "plugins/llm-accuracy/hooks/analysis-contract-injector.py": "70fa478c1b94f3c3bc986a61e22bbabba082be976cb54ae7676d4a49631188b9",
+    "plugins/llm-accuracy/hooks/builtin_result_signals.py": "443369be8efca627f4a5373a80e7999e1ea9dab7ec87b82f2b4c75092490af01",
+    "plugins/llm-accuracy/hooks/claim-fidelity-trigger.py": "4bff718a7b5dceac59c0277c440ed28dfc385d81a0f7450f9c089655720c8a0a",
+    "plugins/llm-accuracy/hooks/fusion-evidence-trigger.py": "52df26894471ba6e3f3f1550524ee6492858edc762b721ba8c52f8e898df5a14",
+    "plugins/llm-accuracy/hooks/hooks.json": "c83f0d835cfd2e4a40e89ec08b51364d285983798a81743a169a026a239caf44",
+    "plugins/llm-accuracy/hooks/partial-result-sentinel.py": "4f0a628196b23b3d9db8bee77cf7f890c4846de82809320eeb6f827ece7607bc",
+    "plugins/llm-accuracy/hooks/post-compact-accuracy.py": "649ec8aa84f7b3eb20fb50d6171cadb73d826c2679efed0485e716b18750c3a9",
+    "plugins/llm-accuracy/references/evidence-discipline.md": "b00699e7da84a9504d753542e8a7f6addd6c72c1b89f8d140e743920ec28f493",
+    "plugins/llm-accuracy/references/evidence-receipt.schema.json": "8d4f52400f375aa3e83982b39f6f00738db03596990e2bef3f0c3ef066eb8cb9",
+    "plugins/llm-accuracy/scripts/accuracy_doctor.py": "d1e3bfd66332cf2bc6044e436badf0790a9729c11a1127775f4fdcea892d4acd",
+    "plugins/llm-accuracy/scripts/host_probe.py": "be3be1b4c363c11e8f6511bf13d8d508d42e4d3b1e03405a99d6c94626359266",
+    "plugins/llm-accuracy/scripts/technical_review.py": "e87aff7127718c32c24d78abb4f9abf44d32548ad6792da70d411a3c6b407906",
+    "plugins/llm-accuracy/scripts/validate_evidence_receipt.py": "94dcea7155de94ac019db0d505b1a5c2ec9b79accdfb0e7e0d598b2c4ee5bdac",
+    "plugins/llm-accuracy/skills/accuracy-doctor/SKILL.md": "4cec380db1a7126d07639bb6d11ba9117ba8181e3133060ced7a251133903927",
+    "plugins/llm-accuracy/skills/claim-fidelity/SKILL.md": "51d8ce67ad6c2156dc4ab848f6906b297043305390df3f8e87ef29e956195d8d",
+    "plugins/llm-accuracy/skills/self-audit/SKILL.md": "44ecd03f62757108df25f27f2339c16d49fd3dc61774b7c1022ac20980a4c5c3",
+    "plugins/llm-accuracy/skills/technical-review/SKILL.md": "cba1356dfe9fc952410d4888b3b4577df3f10f50d7d1a264d234109f0671cdfc",
+    "plugins/llm-accuracy/skills/verify-technical/SKILL.md": "06c5c1b7a8ed36cdfbe956abb6f07be7e36dcc402ee7d6e4d61d0a6b5d4f9f5b"
+  },
+  "rows": [
+    {
+      "case_index": 0,
+      "case_id": "vague_close",
+      "result": {
+        "subject": {
+          "status": "rate_limit",
+          "result_count": 3,
+          "fidelity_hook_responses": 3,
+          "hook_response_count": 9,
+          "builtin_signal_responses": 0,
+          "host_inventory": {
+            "status": "reported",
+            "tool_count": 0,
+            "mcp_count": 0,
+            "plugin_count": 2,
+            "accuracy_plugin_count": 1,
+            "telemetry_plugin_count": 1
+          },
+          "resolved_model": "claude-opus-5-5",
+          "context_attestation": {
+            "expected_context_count": 3,
+            "observed_context_count": 3,
+            "exact_context_sequence_match": true,
+            "malformed_context_count": 0,
+            "init_models": [
+              "claude-opus-5-5",
+              "claude-opus-5-5",
+              "claude-opus-5-5"
+            ],
+            "event_count": 38,
+            "elapsed_seconds": 21.14,
+            "last_event_seconds": 20.75,
+            "last_assistant_seconds": 20.74,
+            "silence_seconds": 0.39,
+            "observer_complete": true
+          },
+          "session_continuity_verified": true,
+          "fixture_unchanged": null
+        },
+        "status": "subject_unavailable",
+        "tool_result_count": 0
+      },
+      "behavioral_score": null,
+      "diagnostic_note": "Original rate_limit label is not reliable; generic tool-call parse error observed. Classifier contamination reproduced separately. Actual root cause unestablished."
+    },
+    {
+      "case_index": 1,
+      "case_id": "scope_correction",
+      "result": {
+        "subject": {
+          "status": "timeout",
+          "context_attestation": {
+            "expected_context_count": 3,
+            "observed_context_count": 1,
+            "exact_context_sequence_match": false,
+            "malformed_context_count": 0,
+            "init_models": [
+              "claude-opus-5-5"
+            ],
+            "event_count": 8,
+            "elapsed_seconds": 240.02,
+            "last_event_seconds": 2.41,
+            "last_assistant_seconds": 2.41,
+            "silence_seconds": 237.6,
+            "observer_complete": true
+          },
+          "session_continuity_verified": false,
+          "fixture_unchanged": null
+        },
+        "status": "subject_unavailable",
+        "tool_result_count": 0
+      },
+      "behavioral_score": null
+    },
+    {
+      "case_index": 2,
+      "case_id": "conflicting_rollout",
+      "result": {
+        "subject": {
+          "status": "timeout",
+          "context_attestation": {
+            "expected_context_count": 3,
+            "observed_context_count": 1,
+            "exact_context_sequence_match": false,
+            "malformed_context_count": 0,
+            "init_models": [
+              "claude-opus-5-5"
+            ],
+            "event_count": 8,
+            "elapsed_seconds": 240.02,
+            "last_event_seconds": 2.48,
+            "last_assistant_seconds": 2.48,
+            "silence_seconds": 237.55,
+            "observer_complete": true
+          },
+          "session_continuity_verified": false,
+          "fixture_unchanged": null
+        },
+        "status": "subject_unavailable",
+        "tool_result_count": 0
+      },
+      "behavioral_score": null
+    },
+    {
+      "case_index": 3,
+      "case_id": "local_tools",
+      "result": {
+        "packet_sha256": "2d327f489772b5bb0445351d006ba5efd694279b8145c1dfe7d211f37cac362b",
+        "subject": {
+          "status": "ok",
+          "result_count": 1,
+          "fidelity_hook_responses": 1,
+          "hook_response_count": 11,
+          "builtin_signal_responses": 0,
+          "host_inventory": {
+            "status": "reported",
+            "tool_count": 2,
+            "mcp_count": 0,
+            "plugin_count": 2,
+            "accuracy_plugin_count": 1,
+            "telemetry_plugin_count": 1
+          },
+          "resolved_model": "claude-opus-5-5",
+          "context_attestation": {
+            "expected_context_count": 1,
+            "observed_context_count": 1,
+            "exact_context_sequence_match": true,
+            "malformed_context_count": 0,
+            "init_models": [
+              "claude-opus-5-5"
+            ],
+            "event_count": 37,
+            "elapsed_seconds": 12.88,
+            "last_event_seconds": 12.35,
+            "last_assistant_seconds": 12.34,
+            "silence_seconds": 0.53,
+            "observer_complete": true
+          },
+          "session_continuity_verified": true,
+          "fixture_unchanged": true
+        },
+        "status": "completed",
+        "tool_result_count": 4,
+        "review": {
+          "status": "reviewed",
+          "findings": [],
+          "reviewer": {
+            "requested_model": "fable",
+            "resolved_model": "claude-fable-5-1",
+            "author_model": "claude-opus-5-5",
+            "author_identity_source": "caller_reported",
+            "model_comparison": "different_from_reported_author"
+          },
+          "presentation": {
+            "headline": "Reviewer found no material issue in the supplied packet.",
+            "checked": "A separate model context reviewed the supplied draft; quote locations and reference IDs passed structural checks.",
+            "gap": "Source truth, packet completeness and the reviewer's judgments are not independently verified.",
+            "next": "Use direct source or execution checks for consequential claims."
+          }
+        }
+      },
+      "behavioral_score": null,
+      "adjudication": {
+        "blind_independent_inventory": "no_material_issue_identified",
+        "product_findings": 0,
+        "parent_reconciliation": "agreement_on_this_case",
+        "detection_benefit": "not_observed_no_identified_defect"
+      }
+    }
+  ],
+  "interpretation_dispute": {
+    "case_index": 0,
+    "pipeline_valid": false,
+    "behavioral_score": null,
+    "adjudicator_initial": "nondeployment_reasonable_conversational_inference",
+    "counterexample_consistent_with_literal_evidence": true,
+    "adjudicator_final": "nondeployment_not_entailed_interpretation_inconclusive",
+    "parent": "unqualified_nondeployment_exceeds_strict_evidence",
+    "reconciled": "retain_semantic_disagreement_no_pass_fail",
+    "product_reviewer_ran": false
+  },
+  "controls": {
+    "method": "direct_model_assisted_inspection",
+    "independent_blind_inventory": [
+      "supported",
+      "unsupported",
+      "omission",
+      "overhedging"
+    ],
+    "parent_reconciliation": "matched_all_four_evidence_relations",
+    "automated_scorer": false,
+    "human_adjudicated": false
+  },
+  "release_decision": "keep_draft",
+  "general_accuracy_improvement": "not_established",
+  "later_source_change": "Host error-provenance fix and unused tool-case gold wording correction are not validated by rerunning these frozen subjects."
+}

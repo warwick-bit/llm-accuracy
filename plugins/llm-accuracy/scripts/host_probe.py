@@ -37,12 +37,26 @@ def error_category(text: str) -> str:
     lowered = text.lower()
     if any(
         word in lowered
-        for word in ("expired", "unauthorized", "authentication", "login")
+        for word in ("unauthorized", "authentication", "login", "oauth", "credential")
     ):
         return "authentication"
-    if any(word in lowered for word in ("rate limit", "rate_limit", "429")):
+    if any(word in lowered for word in ("rate limit", "rate_limit")) or re.search(
+        r"\b429\b", lowered
+    ):
         return "rate_limit"
     return "host_error"
+
+
+def failure_text(results: list[dict], stderr: str) -> str:
+    """Read error-bearing fields only; metadata and successful answers are not causes."""
+    parts = [stderr]
+    for result in results:
+        if isinstance(result.get("result"), str):
+            parts.append(result["result"])
+        errors = result.get("errors")
+        if isinstance(errors, list):
+            parts.extend(error for error in errors if isinstance(error, str))
+    return "\n".join(parts)
 
 
 def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
@@ -56,9 +70,10 @@ def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
         if isinstance(event, dict):
             events.append(event)
     results = [e for e in events if e.get("type") == "result"]
-    errors = exit_code != 0 or any(
-        e.get("is_error") or e.get("subtype", "success") != "success" for e in results
-    )
+    failed = [
+        e for e in results if e.get("is_error") or e.get("subtype", "success") != "success"
+    ]
+    errors = exit_code != 0 or bool(failed)
     hooks = [
         e
         for e in events
@@ -74,7 +89,7 @@ def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
     ]
     model = models[0] if models and all(m == models[0] for m in models) else None
     return {
-        "status": error_category(stdout + stderr)
+        "status": error_category(failure_text(failed, stderr))
         if errors
         else "ok"
         if results

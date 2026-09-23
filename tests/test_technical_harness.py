@@ -579,6 +579,47 @@ def test_early_auth_error_survives_failed_later_input(modules, tmp_path):
     assert result["status"] == "authentication"
 
 
+@pytest.mark.parametrize("noise", ["synthetic-429-marker", "authentication expired"])
+def test_error_category_ignores_nonerror_event_content(modules, noise):
+    events = [
+        {"type": "system", "subtype": "init", "session_id": noise},
+        {"type": "system", "subtype": "hook_response", "stdout": noise},
+        {"type": "result", "result": noise},
+        {
+            "type": "result",
+            "is_error": True,
+            "result": "The model's tool call could not be parsed.",
+            "session_id": noise,
+        },
+    ]
+    payload = "\n".join(json.dumps(event) for event in events)
+    assert modules[1].parse_events(payload, "", 0)["status"] == "host_error"
+
+
+@pytest.mark.parametrize(
+    "failure,expected",
+    [
+        ({"is_error": True, "result": "authentication expired"}, "authentication"),
+        ({"is_error": True, "errors": ["HTTP 429: rate limit"]}, "rate_limit"),
+        ({"subtype": "error_during_execution", "errors": ["login required"]}, "authentication"),
+        ({"is_error": True, "errors": [None, 429, {"id": "login"}]}, "host_error"),
+        ({"is_error": True, "result": 429, "errors": {"id": "login"}}, "host_error"),
+        ({"is_error": True, "result": "Tool execution deadline expired"}, "host_error"),
+        ({"is_error": True, "result": "OAuth token expired"}, "authentication"),
+        ({"is_error": True, "result": "Failure on request 14290"}, "host_error"),
+    ],
+)
+def test_error_category_uses_failed_result_fields(modules, failure, expected):
+    payload = json.dumps({"type": "result", **failure})
+    assert modules[1].parse_events(payload, "", 0)["status"] == expected
+
+
+@pytest.mark.parametrize("stderr,expected", [("", "host_error"), ("rate limit", "rate_limit")])
+def test_exit_error_does_not_classify_successful_answer(modules, stderr, expected):
+    payload = json.dumps({"type": "result", "result": "Check whether authentication expired."})
+    assert modules[1].parse_events(payload, stderr, 1)["status"] == expected
+
+
 def test_kill_leaves_stdin_to_its_feeder(modules, tmp_path, monkeypatch):
     probe = modules[1]
     process = probe.subprocess.Popen(
