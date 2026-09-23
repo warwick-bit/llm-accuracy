@@ -1,0 +1,58 @@
+{
+  "customers": [
+    {
+      "customer_id": 100,
+      "first_name": "Synthetic",
+      "last_name": "A"
+    },
+    {
+      "customer_id": 101,
+      "first_name": "Synthetic",
+      "last_name": "B"
+    },
+    {
+      "customer_id": 102,
+      "first_name": "Synthetic",
+      "last_name": "C"
+    }
+  ],
+  "orders": [
+    {
+      "order_id": 10,
+      "customer_id": 100,
+      "order_date": "2026-04-01"
+    },
+    {
+      "order_id": 11,
+      "customer_id": 100,
+      "order_date": "2026-04-02"
+    },
+    {
+      "order_id": 12,
+      "customer_id": 101,
+      "order_date": "2026-04-03"
+    }
+  ],
+  "payments": [
+    {
+      "payment_id": 1,
+      "order_id": 10,
+      "amount": 20
+    },
+    {
+      "payment_id": 2,
+      "order_id": 10,
+      "amount": 30
+    },
+    {
+      "payment_id": 3,
+      "order_id": 11,
+      "amount": 40
+    },
+    {
+      "payment_id": 4,
+      "order_id": 12,
+      "amount": 70
+    }
+  ]
+}

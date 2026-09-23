@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/dbt-labs/jaffle_shop_duckdb",
+  "revision": "36bde6cba69d962b83be1d52fc65a0dce1cb4ebb",
+  "path": "models/customers.sql",
+  "sha256": "455b90a31f418ae776213ad9932c7cb72d19a5269a8c722bd9f4e44957313ce8",
+  "license": "Apache-2.0",
+  "adaptation": "Upstream query unchanged. Rendering replaces only three dbt ref calls with local staging-table names. Mutant and fixtures are authored for this experiment, not upstream defects or source data."
+}
