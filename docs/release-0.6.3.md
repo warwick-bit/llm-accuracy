@@ -5,6 +5,7 @@ validation tooling.
 
 - Input delivery now shares the probe deadline, including when the child stops
   reading its first or a later input. Cleanup leaves stdin with its feeder.
+  Completion waits for the feeder so a late write failure cannot become success.
 - Failure classification uses failed-result diagnostics and stderr, preserving
   early authentication errors without treating unrelated IDs or successful
   answer text as authentication or rate-limit evidence. Categories remain
@@ -33,10 +34,11 @@ For ZIP installations, replace the installed archive with
 
 ## Scope and validation
 
-Regression coverage includes blocked first/later input, early errors, cleanup
+All 574 local tests pass, along with Ruff, manifest parsing, Python compilation
+and all three distribution profiles. Regression coverage includes blocked first/later input, early errors, cleanup
 ownership, misleading non-error text, explicit session limits and Unicode
 separators through real subprocess streams. See the release PR for current
-local, CI and clean-installation results.
+local and CI results. A [clean-profile marketplace and ZIP smoke](validation/claude-code-smoke-0.6.3.json) passed on Claude Code 2.1.280, Linux/WSL: installed files matched the committed source, and default/custom/bypass hook counts and acknowledgements matched expectations. Custom and bypass sessions reported an additional unidentified host component; this is functional installation evidence, not fully isolated causal evidence.
 
 Native Windows model execution, Cowork and the affected remote configuration
 require separate runtime validation. The plugin remains advisory.

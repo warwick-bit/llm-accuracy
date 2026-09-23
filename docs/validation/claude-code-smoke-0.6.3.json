@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "scope": "fresh_profile_local_marketplace_and_archive",
+  "source_commit": "f8cce5a992499e9d53e1c372a396b3b43c67f2cb",
+  "host_version": "2.1.280 (Claude Code)",
+  "checks": {
+    "marketplace_add": true,
+    "plugin_install": true,
+    "installed_enabled_version": true,
+    "installed_files_match_source": true,
+    "reviewer_excluded": true,
+    "new_skills_present": true,
+    "installed_default_session": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 2,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 1
+      },
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "installed_custom_phrase": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 3,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 1
+      },
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "installed_bypass": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 0,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 3,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 1
+      },
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "archive_session": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 3,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 2,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 1
+      },
+      "resolved_model": "claude-sonnet-5",
+      "acknowledgement_correct": true,
+      "passed": true
+    },
+    "isolated_cleanup": true
+  },
+  "archive_sha256": "eb36edbedb7bbb51540f15ba5f6fe480b1916c8b4e372c4f2505facf3ef1ede8",
+  "passed": true,
+  "limitations": [
+    "Linux/WSL installation smoke; not native Windows or Cowork model execution.",
+    "Custom-phrase and bypass sessions reported one additional unidentified host component beyond Accuracy and telemetry; no fully isolated causal claim.",
+    "Acknowledgements and hook delivery do not establish factual accuracy."
+  ]
+}
