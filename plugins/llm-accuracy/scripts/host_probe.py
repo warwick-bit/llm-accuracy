@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import io
 import json
 import os
 import queue
@@ -36,18 +37,35 @@ def error_category(text: str) -> str:
     lowered = text.lower()
     if any(
         word in lowered
-        for word in ("expired", "unauthorized", "authentication", "login")
+        for word in ("unauthorized", "authentication", "login", "oauth", "credential")
     ):
         return "authentication"
-    if any(word in lowered for word in ("rate limit", "rate_limit", "429")):
+    if any(
+        word in lowered for word in ("rate limit", "rate_limit", "hit your session limit")
+    ) or re.search(
+        r"\b429\b", lowered
+    ):
         return "rate_limit"
     return "host_error"
+
+
+def failure_text(results: list[dict], stderr: str) -> str:
+    """Read error-bearing fields only; metadata and successful answers are not causes."""
+    parts = [stderr]
+    for result in results:
+        if isinstance(result.get("result"), str):
+            parts.append(result["result"])
+        errors = result.get("errors")
+        if isinstance(errors, list):
+            parts.extend(error for error in errors if isinstance(error, str))
+    return "\n".join(parts)
 
 
 def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
     """Keep answers in memory; metadata contains only fixed labels/counts."""
     events = []
-    for line in stdout.splitlines():
+    # JSONL uses LF framing; Unicode separators inside JSON strings are data.
+    for line in stdout.split("\n"):
         try:
             event = json.loads(line)
         except (ValueError, RecursionError):
@@ -55,9 +73,10 @@ def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
         if isinstance(event, dict):
             events.append(event)
     results = [e for e in events if e.get("type") == "result"]
-    errors = exit_code != 0 or any(
-        e.get("is_error") or e.get("subtype", "success") != "success" for e in results
-    )
+    failed = [
+        e for e in results if e.get("is_error") or e.get("subtype", "success") != "success"
+    ]
+    errors = exit_code != 0 or bool(failed)
     hooks = [
         e
         for e in events
@@ -73,7 +92,7 @@ def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
     ]
     model = models[0] if models and all(m == models[0] for m in models) else None
     return {
-        "status": error_category(stdout + stderr)
+        "status": error_category(failure_text(failed, stderr))
         if errors
         else "ok"
         if results
@@ -144,45 +163,74 @@ def _drain(stream, label: str, events: queue.Queue) -> None:
         stream.close()
 
 
-def _exchange(process, stdin: str, timeout: int) -> tuple[str, str]:
-    """Send each turn only after the previous result; cap captured output."""
+def _feed(stream, prompts, ready, stopped, events) -> None:
+    """Write off the deadline thread; one prompt is released per result."""
+    try:
+        for prompt in prompts:
+            ready.acquire()
+            if stopped.is_set():
+                break
+            stream.write(prompt)
+            stream.flush()
+    except (OSError, ValueError):
+        events.put(("stdin_error", None))
+    finally:
+        try:
+            stream.close()
+        except (OSError, ValueError):
+            pass
+
+
+def _exchange(process, stdin: str, timeout: int) -> tuple[str, str, bool]:
+    """Bound both input delivery and output capture, including stalled readers."""
+    deadline = time.monotonic() + timeout
     events: queue.Queue = queue.Queue()
     for name in ("stdout", "stderr"):
         threading.Thread(
             target=_drain, args=(getattr(process, name), name, events), daemon=True
         ).start()
-    prompts = iter(stdin.splitlines(keepends=True))
-    pending = next(prompts, "")
-    process.stdin.write(pending)
-    process.stdin.flush()
-    pending = next(prompts, None)
-    if pending is None:
-        process.stdin.close()
+    ready, stopped = threading.Semaphore(1), threading.Event()
+    feeder = threading.Thread(
+        target=_feed,
+        args=(process.stdin, io.StringIO(stdin), ready, stopped, events),
+        daemon=True,
+    )
+    process._accuracy_feeder_owned = True
+    try:
+        feeder.start()
+    except RuntimeError:
+        process._accuracy_feeder_owned = False
+        raise
+    input_failed = False
     outputs, closed, size, line = {"stdout": [], "stderr": []}, 0, 0, ""
-    deadline = time.monotonic() + timeout
-    while closed < 2:
-        name, chunk = events.get(timeout=max(0, deadline - time.monotonic()))
-        if name == "overflow":
-            raise OverflowError
-        if chunk is None:
-            closed += 1
-            continue
-        size += len(chunk)
-        if size > 4_000_000:
-            raise OverflowError
-        outputs[name].append(chunk)
-        if name == "stdout":
-            line += chunk
-            if line.endswith("\n"):
-                if pending is not None and _is_result(line):
-                    process.stdin.write(pending)
-                    process.stdin.flush()
-                    pending = next(prompts, None)
-                    if pending is None:
-                        process.stdin.close()
-                line = ""
-    process.wait(timeout=max(0, deadline - time.monotonic()))
-    return "".join(outputs["stdout"]), "".join(outputs["stderr"])
+    try:
+        while closed < 2:
+            name, chunk = events.get(timeout=max(0, deadline - time.monotonic()))
+            if name == "overflow":
+                raise OverflowError
+            if name == "stdin_error":
+                input_failed = True
+                continue
+            if chunk is None:
+                closed += 1
+                continue
+            size += len(chunk)
+            if size > 4_000_000:
+                raise OverflowError
+            outputs[name].append(chunk)
+            if name == "stdout":
+                line += chunk
+                if line.endswith("\n"):
+                    if _is_result(line):
+                        ready.release()
+                    line = ""
+        process.wait(timeout=max(0, deadline - time.monotonic()))
+        return "".join(outputs["stdout"]), "".join(outputs["stderr"]), input_failed
+    finally:
+        # Unblock a feeder waiting for the next result on every exit path.
+        # communicate kills the owned child before closing a blocked writer.
+        stopped.set()
+        ready.release()
 
 
 def _is_result(line: str) -> bool:
@@ -212,8 +260,11 @@ def _kill(process) -> None:
     except ProcessLookupError:
         pass
     process.wait()
-    if not process.stdin.closed:
-        process.stdin.close()
+    if not getattr(process, "_accuracy_feeder_owned", False):
+        try:
+            process.stdin.close()
+        except (OSError, ValueError):
+            pass
 
 
 def communicate(
@@ -236,7 +287,7 @@ def communicate(
     except OSError:
         return {"status": "host_unavailable", "answers": []}
     try:
-        stdout, stderr = _exchange(process, stdin, timeout)
+        stdout, stderr, input_failed = _exchange(process, stdin, timeout)
     except (subprocess.TimeoutExpired, queue.Empty, OverflowError, OSError) as exc:
         _kill(process)
         status = (
@@ -252,7 +303,10 @@ def communicate(
         # process running. Preserve the exception after stopping the owned tree.
         _kill(process)
         raise
-    return parse_events(stdout, stderr, process.returncode)
+    result = parse_events(stdout, stderr, process.returncode)
+    if input_failed and result["status"] == "ok":
+        return {"status": "host_error", "answers": []}
+    return result
 
 
 def _terminate(signum, frame) -> None:
