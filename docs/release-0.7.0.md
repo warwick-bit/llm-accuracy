@@ -74,8 +74,9 @@ review completed with no identified defect. No valid multi-turn reviewer result
 or added detection benefit was established. [Full result](technical-review-conversation-validation.md).
 Error diagnosis now excludes IDs, successful answers and other non-error content
 from authentication/rate-limit classification; these remain heuristic indicators.
-The authenticated installation smoke predates a final explicit session-limit
-phrase addition. Its deterministic tests pass; the next multi-turn evaluation
+The authenticated installation smoke predates the explicit session-limit
+phrase addition and a Unicode stream-framing fix. Their deterministic tests pass;
+the next multi-turn evaluation
 hit an explicit account usage limit, so its remaining cases and another final-build
 authenticated smoke remain pending. The successful plain-text clarification
 diagnostic was unscored and used altered system context.

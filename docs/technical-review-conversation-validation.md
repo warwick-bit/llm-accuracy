@@ -122,3 +122,11 @@ classification-only addition. Deterministic regression tests cover the addition;
 another authenticated final-build smoke and the unfinished multi-turn assessment
 must wait for account availability. Login refresh is not indicated by a usage
 limit. Release remains held; there is no conversational accuracy conclusion.
+
+While waiting, an independent code review reproduced an inherited stream-framing
+bug: Python's `splitlines()` treated literal Unicode separators inside valid JSON
+strings as event boundaries. This could discard an answer or hook event. The host
+now splits only on LF; regression tests cover three Unicode separators, LF/CRLF
+streams and actual two-turn subprocess communication. The existing installation
+receipt predates this fix too. No reviewer instructions or conversational cases
+changed, and no earlier failed result was rescored.

@@ -64,7 +64,8 @@ def failure_text(results: list[dict], stderr: str) -> str:
 def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
     """Keep answers in memory; metadata contains only fixed labels/counts."""
     events = []
-    for line in stdout.splitlines():
+    # JSONL uses LF framing; Unicode separators inside JSON strings are data.
+    for line in stdout.split("\n"):
         try:
             event = json.loads(line)
         except (ValueError, RecursionError):

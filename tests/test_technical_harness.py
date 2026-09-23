@@ -550,16 +550,34 @@ def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, later_turn):
     assert time.monotonic() - started < 3
 
 
-def test_stream_input_uses_newline_framing_only(modules, tmp_path):
-    program = "import sys,json\nfor line in sys.stdin:\n print(json.dumps({'type':'result','result':line.rstrip('\\n')}),flush=True)"
+@pytest.mark.parametrize("separator", ["\u0085", "\u2028", "\u2029"])
+def test_stream_input_and_output_use_newline_framing_only(modules, tmp_path, separator):
+    program = "import sys,json\nfor line in sys.stdin:\n print(json.dumps({'type':'result','result':line.rstrip('\\n')},ensure_ascii=False),flush=True)"
     result = modules[1].communicate(
         [sys.executable, "-X", "utf8", "-c", program],
         tmp_path,
         dict(os.environ),
-        "a\u2028b\n",
+        f"a{separator}b\nsecond\n",
         3,
     )
-    assert result["answers"] == ["a\u2028b"]
+    assert result["status"] == "ok"
+    assert result["answers"] == [f"a{separator}b", "second"]
+
+
+@pytest.mark.parametrize("separator", ["\u0085", "\u2028", "\u2029"])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_event_framing_preserves_unicode_in_context_and_answer(modules, separator, newline):
+    events = [
+        {"type": "system", "subtype": "hook_response", "stdout": f"CLAIM FIDELITY CHECK{separator}context"},
+        {"type": "result", "result": f"first{separator}answer"},
+        {"type": "result", "result": "second answer"},
+    ]
+    payload = newline.join(json.dumps(event, ensure_ascii=False) for event in events)
+    parsed = modules[1].parse_events(payload, "", 0)
+    assert parsed["status"] == "ok"
+    assert parsed["answers"] == [f"first{separator}answer", "second answer"]
+    assert parsed["result_count"] == 2
+    assert parsed["fidelity_hook_responses"] == 1
 
 
 def test_early_auth_error_survives_failed_later_input(modules, tmp_path):
