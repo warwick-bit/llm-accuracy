@@ -90,3 +90,8 @@ the pull request.
 Session Ledger source must not include any captured ledger content. Use only
 synthetic compact summaries and synthetic session records in tests, and preserve
 its local-only, 30-day, same-session boundary.
+
+Data Execution is a separate opt-in local-source snapshot plugin. Its tests and
+examples must be freshly synthetic. Never commit snapshots, exports or private
+adapters. Preserve bounded exact calculations and explicit lifecycle failures;
+byte reductions must not be described as measured token or billing savings.

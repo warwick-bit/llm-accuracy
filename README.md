@@ -75,6 +75,11 @@ Checked / Gap / Next footer. These are advisory workflows, not accuracy guarante
   context must survive compaction within the same long session. It stores a
   bounded local record, so review its data boundary before installing it.
 
+- **Data Execution (experimental)** — explicitly save completed tool exports locally,
+  calculate exact grouped totals and retrieve selected detail. Configurable 30-day
+  retention; Linux/WSL pilot. [Workflow and storage boundary](plugins/data-execution/README.md).
+  Useful only when it avoids sending large raw results into context.
+
 ### Try LLM Accuracy in five minutes
 
 Before installing it, ask your current Claude:

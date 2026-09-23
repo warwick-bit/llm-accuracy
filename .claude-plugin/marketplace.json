@@ -23,6 +23,12 @@
       "description": "Optional local continuity ledger for one Claude Code session across compaction.",
       "category": "productivity",
       "source": "./plugins/session-ledger"
+    },
+    {
+      "name": "data-execution",
+      "description": "Opt-in local snapshots, exact grouped calculations and bounded detail retrieval for completed tool exports. Experimental POSIX pilot.",
+      "category": "productivity",
+      "source": "./plugins/data-execution"
     }
   ]
 }

@@ -45,7 +45,7 @@ def forbidden_path_prefixes(profile: str) -> tuple[str, ...]:
         return ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
     if profile == "session-ledger":
         return COMMON_FORBIDDEN_PATH_PREFIXES
-    if profile == "deterministic-data":
+    if profile in ("deterministic-data", "data-execution"):
         return ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
     raise ValueError(f"unknown distribution-boundary profile: {profile}")
 
@@ -111,7 +111,7 @@ def main() -> int:
     parser.add_argument("plugin", type=Path)
     parser.add_argument(
         "--profile",
-        choices=("accuracy-core", "session-ledger", "deterministic-data"),
+        choices=("accuracy-core", "session-ledger", "deterministic-data", "data-execution"),
         default="accuracy-core",
     )
     args = parser.parse_args()

@@ -15,3 +15,12 @@ Hooks operate in the participant's local runtime and are advisory and non-blocki
 The LLM Accuracy evidence-receipt validator and Deterministic Data catalogue
 validator run locally, make no network calls, retain no inputs and emit no
 receipt- or catalogue-supplied values.
+
+The separately installed experimental Data Execution plugin explicitly copies
+completed JSON/CSV tool exports into private local snapshots. These can contain
+sensitive source data; base64 is not encryption. Retention defaults to 30 days
+and is configurable per capture. Expired reads are refused; deletion occurs on
+capture or explicit purge, with no background cleanup or secure-erasure promise.
+It has no hooks, network, credentials or automatic tool interception. Users must
+keep storage outside public repos and review source adapters and permissions.
+The core accuracy plugin and Session Ledger boundaries remain unchanged.

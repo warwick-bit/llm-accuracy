@@ -25,7 +25,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     assert "codex" not in str(claude).lower()
 
 
-def test_claude_marketplace_publishes_the_three_isolated_plugins() -> None:
+def test_claude_marketplace_publishes_the_four_isolated_plugins() -> None:
     claude = load_json(".claude-plugin/marketplace.json")
 
     assert claude["name"] == "llm-accuracy"
@@ -33,6 +33,7 @@ def test_claude_marketplace_publishes_the_three_isolated_plugins() -> None:
         "llm-accuracy",
         "deterministic-data",
         "session-ledger",
+        "data-execution",
     ]
 
 

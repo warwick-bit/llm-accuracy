@@ -311,3 +311,13 @@ completeness, freshness, or domain truth.
 
 For feedback, submit only sanitized and authorized reproductions through the
 feedback issue form.
+
+## Data Execution — experimental Linux/WSL pilot
+
+Install separately with `claude plugin install data-execution@llm-accuracy`, then
+invoke `/data-execution:local-data`. Installation starts no captures or hooks.
+Read [the workflow and storage boundary](../plugins/data-execution/README.md)
+before capturing source data. Configure your own JSON/CSV adapter and read-only
+exporter. Native MCP interception, native Windows, Cowork and web/chat hosts are
+not supported by this pilot. Clean host installation validation is required
+before promotion; CLI tests alone do not establish host compatibility.

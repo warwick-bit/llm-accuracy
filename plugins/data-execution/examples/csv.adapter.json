@@ -1,0 +1,16 @@
+{
+  "format": "csv",
+  "records_path": [],
+  "id_field": "id",
+  "amount_field": "amount",
+  "group_field": "currency",
+  "unit": "minor currency units",
+  "scope": "fictional-account:test:period-A:all-transactions:amount-v1",
+  "complete": {
+    "asserted": false
+  },
+  "atomic_snapshot": false,
+  "caveats": [
+    "Example only: verify pagination, account, period and filters before use."
+  ]
+}

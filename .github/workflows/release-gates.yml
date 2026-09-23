@@ -49,6 +49,7 @@ jobs:
               Path("plugins/deterministic-data/references/evidence-receipt.schema.json"),
               Path("plugins/deterministic-data/catalogues/example.catalogue.json"),
               Path("plugins/session-ledger/.claude-plugin/plugin.json"),
+              Path("plugins/data-execution/.claude-plugin/plugin.json"),
               Path("plugins/session-ledger/hooks/hooks.json"),
           ]
           for path in paths:
@@ -61,6 +62,7 @@ jobs:
           python3 scripts/check_distribution_boundary.py plugins/llm-accuracy
           python3 scripts/check_distribution_boundary.py plugins/deterministic-data --profile deterministic-data
           python3 scripts/check_distribution_boundary.py plugins/session-ledger --profile session-ledger
+          python3 scripts/check_distribution_boundary.py plugins/data-execution --profile data-execution
 
   windows:
     name: Windows Git Bash (py${{ matrix.python-version }})

@@ -1,0 +1,32 @@
+{
+  "scope": "isolated configuration directory; local marketplace; no model invocation",
+  "steps": [
+    {
+      "action": "plugin validate",
+      "returncode": 0,
+      "stdout_bytes": 169,
+      "stderr_bytes": 0
+    },
+    {
+      "action": "plugin marketplace",
+      "returncode": 0,
+      "stdout_bytes": 98,
+      "stderr_bytes": 0
+    },
+    {
+      "action": "plugin install",
+      "returncode": 0,
+      "stdout_bytes": 232,
+      "stderr_bytes": 0
+    },
+    {
+      "action": "plugin list",
+      "returncode": 0,
+      "stdout_bytes": 323,
+      "stderr_bytes": 0
+    }
+  ],
+  "installation_record_present": true,
+  "live_user_configuration_changed": false,
+  "model_skill_execution_tested": false
+}

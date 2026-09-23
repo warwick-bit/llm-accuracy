@@ -1,0 +1,62 @@
+{
+  "population": "new synthetic JSON exports; no provider data",
+  "unit": "UTF-8 tool-result bytes including newline; not tokens",
+  "baseline": "one full raw response; followups reuse data already in context",
+  "candidate": "capture receipt + grouped sum receipt + selected full-row detail packets",
+  "control": "same queries against an existing snapshot; excludes capture receipt; not a native Claude spill benchmark",
+  "exclusions": [
+    "model input/output tokens",
+    "tool call arguments",
+    "installation/skill context",
+    "provider request costs",
+    "model reasoning accuracy",
+    "live source correctness"
+  ],
+  "cases": [
+    {
+      "rows": 1,
+      "detail_rows": 1,
+      "raw_output_bytes": 365,
+      "capture_output_bytes": 383,
+      "sum_output_bytes": 484,
+      "already_captured_control_output_bytes": 1247,
+      "detail_output_bytes": 763,
+      "total_compact_output_bytes": 1630,
+      "output_byte_reduction_percent": -346.6,
+      "exact_totals": true,
+      "exact_details": true,
+      "source_deleted_before_followup": true,
+      "snapshot_bytes_on_disk": 877
+    },
+    {
+      "rows": 1000,
+      "detail_rows": 1,
+      "raw_output_bytes": 336920,
+      "capture_output_bytes": 386,
+      "sum_output_bytes": 534,
+      "already_captured_control_output_bytes": 1300,
+      "detail_output_bytes": 766,
+      "total_compact_output_bytes": 1686,
+      "output_byte_reduction_percent": 99.5,
+      "exact_totals": true,
+      "exact_details": true,
+      "source_deleted_before_followup": true,
+      "snapshot_bytes_on_disk": 449617
+    },
+    {
+      "rows": 1000,
+      "detail_rows": 1000,
+      "raw_output_bytes": 336920,
+      "capture_output_bytes": 386,
+      "sum_output_bytes": 534,
+      "already_captured_control_output_bytes": 358974,
+      "detail_output_bytes": 358440,
+      "total_compact_output_bytes": 359360,
+      "output_byte_reduction_percent": -6.7,
+      "exact_totals": true,
+      "exact_details": true,
+      "source_deleted_before_followup": true,
+      "snapshot_bytes_on_disk": 449617
+    }
+  ]
+}
