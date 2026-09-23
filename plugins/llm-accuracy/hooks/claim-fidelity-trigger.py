@@ -42,23 +42,24 @@ TECHNICAL_FOOTER = (
     "Gap: remaining unknowns (or none)\n"
     "Next: smallest useful check or action (or none)\n"
     "Supplied evidence is not a check you performed. Keep headline, body and footer "
-    "consistent; a Gap cannot excuse a stronger claim above. Skip this footer for "
-    "routine replies and creative requests."
+    "consistent; a Gap cannot excuse a stronger claim above. Routine replies add "
+    "no status claims; skip this footer for routine replies and creative requests."
 )
 
 GENERAL_CONTRACT = (
-    "CLAIM FIDELITY CHECK: Before concluding, identify what the evidence establishes "
-    "and what is missing. For each material claim, including intermediate assertions, "
-    "check whether a plausible alternative could produce the same observation "
-    "without that claim being true. If evidence cannot distinguish it, qualify or "
-    "withhold the claim; conclude on the surviving evidence. State supported narrow "
-    "facts plainly, without speculative hedging. Separate observations, hypotheses "
-    "and unknowns. Check field, units, denominator, environment and version; "
-    "all/none claims need coverage beyond previews, samples and truncated output. "
-    "A tool call alone is not verification. Test competing causes before declaring "
-    "a root cause. Corrections must revisit dependent conclusions; repeated "
-    "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
-    "for diagnosis and fix checks. Advisory guidance, not independent verification."
+    "CLAIM FIDELITY CHECK: Inventory evidence and gaps. For each "
+    "claim, including intermediate assertions, could an alternative "
+    "fit the evidence while the claim is false? If so, qualify or withhold it. "
+    "Unchecked or missing evidence means unknown, not no. Claim absence only with "
+    "evidence capable of detecting the item within the checked scope. State supported "
+    "narrow positive and negative facts plainly. Separate facts, hypotheses and "
+    "recommendations; do not invent official status. Check field, units, denominator, "
+    "environment, version and coverage; samples cannot establish all/none. A tool call "
+    "alone is not verification. Test competing causes before declaring a root cause. "
+    "Corrections revisit dependent claims; short restatements retain qualifiers. "
+    "Repeated reversals require rechecking the framing. Use "
+    "llm-accuracy:verify-technical for diagnosis and fix checks. Advisory, not "
+    "independent verification."
 )
 
 CONTRACT = (
