@@ -289,6 +289,7 @@ def test_inventory_filters_other_plugins_and_paths(modules, monkeypatch):
             "installPath": "private-needle",
         },
         {"id": "private-needle@test", "version": "1.0.0", "enabled": True},
+        {"id": "session-ledger@llm-accuracy", "enabled": True},
     ]
     monkeypatch.setattr(doctor.shutil, "which", lambda _: "claude")
     monkeypatch.setattr(
@@ -299,6 +300,7 @@ def test_inventory_filters_other_plugins_and_paths(modules, monkeypatch):
     report = doctor.installation_inventory()
     assert report == {
         "status": "listed",
+        "plugin": "llm-accuracy",
         "installations": [{"version": "0.6.0", "enabled": False}],
     }
 

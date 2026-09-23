@@ -30,6 +30,14 @@ Do not promote lower-layer evidence into a higher-layer claim.
 When a claim needs a bridge, name the bridge or downgrade the claim. If it is
 missing, state what the evidence proves and what it does not prove.
 
+Do this before drafting the conclusion, including for intermediate assertions.
+Ask whether a plausible alternative could yield the same observation while
+the proposed claim is false. If current evidence cannot distinguish it, qualify
+or withhold the claim. Concentrate on alternatives that affect the answer;
+merely imaginable doubts do not justify hedging a directly supported fact.
+When removing a bridge, recheck the verdict and its remaining basis. A correct
+rejection may rest on insufficient evidence, not on an invented contrary fact.
+
 ## Claim fidelity
 
 Check the conclusion against the evidence across source, subject, population,
@@ -94,8 +102,9 @@ unavailable, say that explicitly and downgrade the conclusion.
 ## Confidence calibration
 
 The answer body and confidence must agree. Do not write a definitive answer and
-hide uncertainty in a footer. A single source usually caps confidence at
-medium; failed, empty, truncated, redacted, or permission-limited queries are
+hide uncertainty in a footer or omit it from a headline. Confidence follows the
+support for the exact claim, not simply the number of sources. State a directly
+verified narrow fact plainly. Failed, empty, truncated, redacted, or permission-limited queries are
 caveats, not confirmed facts.
 
 ## Partial results

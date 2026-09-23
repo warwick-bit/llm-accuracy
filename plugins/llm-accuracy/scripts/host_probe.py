@@ -66,14 +66,12 @@ def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
     context_count = sum(
         "CLAIM FIDELITY CHECK" in str(e.get("stdout", "")) for e in hooks
     )
-    model = next(
-        (
-            e.get("model")
-            for e in events
-            if e.get("type") == "system" and e.get("subtype") == "init"
-        ),
-        None,
-    )
+    models = [
+        e.get("model")
+        for e in events
+        if e.get("type") == "system" and e.get("subtype") == "init"
+    ]
+    model = models[0] if models and all(m == models[0] for m in models) else None
     return {
         "status": error_category(stdout + stderr)
         if errors
@@ -89,9 +87,46 @@ def parse_events(stdout: str, stderr: str, exit_code: int) -> dict:
         "builtin_signal_responses": sum(
             "PARTIAL RESULT SIGNAL" in str(e.get("stdout", "")) for e in hooks
         ),
+        "host_inventory": host_inventory(events),
         "resolved_model": model
         if isinstance(model, str) and re.fullmatch(r"claude-[a-z0-9.-]{1,80}", model)
         else "unreported",
+    }
+
+
+def host_inventory(events: list[dict]) -> dict:
+    """Attest reported inventory sizes without exposing host names or paths."""
+    initial = [
+        e for e in events if e.get("type") == "system" and e.get("subtype") == "init"
+    ]
+    if not initial:
+        return {"status": "unreported"}
+    event = initial[0]
+    if not all(
+        isinstance(e.get(k), list)
+        for e in initial
+        for k in ("tools", "mcp_servers", "plugins")
+    ):
+        return {"status": "unreported"}
+    if any(
+        e[k] != event[k]
+        for e in initial[1:]
+        for k in ("tools", "mcp_servers", "plugins")
+    ):
+        return {"status": "changed"}
+    return {
+        "status": "reported",
+        "tool_count": len(event["tools"]),
+        "mcp_count": len(event["mcp_servers"]),
+        "plugin_count": len(event["plugins"]),
+        "accuracy_plugin_count": sum(
+            isinstance(p, dict) and p.get("name") == "llm-accuracy"
+            for p in event["plugins"]
+        ),
+        "telemetry_plugin_count": sum(
+            isinstance(p, dict) and p.get("name") == "telemetry"
+            for p in event["plugins"]
+        ),
     }
 
 
@@ -238,11 +273,18 @@ def _termination_cleanup():
 
 
 def run_probe(
-    prompts: list[str], plugin: Path | None, *, model: str = "sonnet", timeout: int = 60
+    prompts: list[str],
+    plugin: Path | None,
+    *,
+    model: str = "sonnet",
+    timeout: int = 60,
+    effort: str | None = None,
 ) -> dict:
     """Run an auth-only temporary profile with no tools, MCPs or saved session."""
     if not re.fullmatch(r"[A-Za-z0-9_.:\[\]-]{1,100}", model):
         return {"status": "invalid_model", "answers": []}
+    if effort is not None and effort not in {"low", "medium", "high", "xhigh", "max"}:
+        return {"status": "invalid_effort", "answers": []}
     executable = shutil.which("claude")
     if not executable:
         return {"status": "host_unavailable", "answers": []}
@@ -287,6 +329,8 @@ def run_probe(
         ]
         if plugin is not None:
             command.extend(["--plugin-dir", str(plugin.resolve())])
+        if effort is not None:
+            command.extend(["--effort", effort])
         stdin = (
             "\n".join(
                 json.dumps({"type": "user", "message": {"role": "user", "content": p}})

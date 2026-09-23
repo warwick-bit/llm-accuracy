@@ -37,7 +37,20 @@ Do not require new tool calls to repeat still-valid, directly checked evidence.
 Keep failed, partial and unavailable checks visible. File excerpts and sampled
 rows establish only the portion observed, including when no warning is emitted.
 
-Lead with the supported conclusion and uncertainty. End substantive diagnoses
+Before drafting, check every material assertion, including intermediate bridges:
+could a plausible alternative explain the observation while that assertion is
+false? If the evidence cannot distinguish it, keep it as a hypothesis or leave
+it unresolved. Focus on alternatives that affect the requested conclusion;
+do not hedge a directly supported narrow fact because of merely imaginable doubts.
+
+For example, unspecified passing tests establish a test pass, not that the
+incident was exercised or fixed locally. An older build does not establish that
+a particular patch is absent; inspect its contents or deployment identity.
+If a bridge is removed, restate the verdict on surviving evidence or downgrade
+it too. A correct verdict does not excuse an unsupported reason.
+
+Lead with the supported conclusion and uncertainty. Preserve that same scope in
+short status labels, summaries and follow-ups. End substantive diagnoses
 or verification claims with:
 
 - **Checked:** actual checks, outcomes and scope; explicitly say none if none ran.
