@@ -553,7 +553,11 @@ def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, later_turn):
 def test_stream_input_uses_newline_framing_only(modules, tmp_path):
     program = "import sys,json\nfor line in sys.stdin:\n print(json.dumps({'type':'result','result':line.rstrip('\\n')}),flush=True)"
     result = modules[1].communicate(
-        [sys.executable, "-c", program], tmp_path, dict(os.environ), "a\u2028b\n", 3
+        [sys.executable, "-X", "utf8", "-c", program],
+        tmp_path,
+        dict(os.environ),
+        "a\u2028b\n",
+        3,
     )
     assert result["answers"] == ["a\u2028b"]
 
