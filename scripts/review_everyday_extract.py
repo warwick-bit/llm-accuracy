@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal, InvalidOperation
 
 
@@ -54,6 +55,14 @@ def extraction_payload(item, review):
             "review": review}
 
 
+def quote_matches(quote, review):
+    # Accept whitespace and Markdown emphasis/code decoration only. Preserve
+    # words, numbers, signs and punctuation; invented paraphrases still fail.
+    def plain(text):
+        return re.sub(r"\s+", " ", text.replace("*", "").replace("`", "")).strip()
+    return bool(quote.strip()) and (quote in review or plain(quote) in plain(review))
+
+
 def validate_extraction(answer, item, review):
     if not isinstance(answer, dict) or set(answer) != {"claims"} or not isinstance(answer["claims"], list):
         raise ValueError("extract_shape")
@@ -69,7 +78,7 @@ def validate_extraction(answer, item, review):
         if row["status"] == "omitted":
             if row["quote"] or row["value"] is not None:
                 raise ValueError("extract_omission")
-        elif not row["quote"].strip() or row["quote"] not in review:
+        elif not quote_matches(row["quote"], review):
             raise ValueError("extract_quote")
         if row["value"] is not None:
             try:

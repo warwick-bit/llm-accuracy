@@ -133,8 +133,9 @@ def extract(item, review, args):
     if record["status"] == "completed":
         try:
             validate_extraction(answer, item, review)
-        except (ValueError, TypeError):
-            record.update(status="process_failure", failure="extraction_validation")
+        except (ValueError, TypeError) as exc:
+            known = {"extract_shape", "extract_representation", "extract_omission", "extract_quote", "extract_value", "extract_coverage"}
+            record.update(status="process_failure", failure=str(exc) if str(exc) in known else "extraction_validation")
             answer = None
     return answer, record
 

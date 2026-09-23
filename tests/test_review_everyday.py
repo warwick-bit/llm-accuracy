@@ -144,3 +144,9 @@ def test_receipt_never_retains_raw_quote_or_value():
     assert "quote" not in scored["claims"][0]
     assert "value" not in scored["claims"][0]
     assert "Actually" not in json.dumps(scored)
+
+
+def test_quote_matching_accepts_formatting_not_changed_claim():
+    assert extraction.quote_matches("A loss of 3000", "A **loss** of\n`3000`")
+    assert not extraction.quote_matches("A profit of 3000", "A **loss** of 3000")
+    assert not extraction.quote_matches("Profit 3000", "Profit -3000")
