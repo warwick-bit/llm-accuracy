@@ -31,19 +31,31 @@ and fixed byte limits can omit earlier context or truncate a long message.
 
 The default boundary is one session. `/session-ledger:begin-plan` optionally
 starts a clean plan section for unrelated work within that same session;
-starting a plan boundary permanently discards the ledger record captured so far
-in the session, and it does not store a plan name. `/session-ledger:clear`
+starting a plan boundary discards the ledger record captured so far and records
+a timestamp cutoff for subsequent transcript capture, without a plan name. `/session-ledger:clear`
 deletes all local ledger state.
 
 Shell directory changes do not reset or disable the ledger. The first captured
 workspace hash is reused for the same session and plan, including after `cd`,
 compaction, and resume. Existing unexpired records remain readable without a
 migration. An explicit plan marker takes precedence over a prior record, so a
-partially failed reset cannot restore the previous plan. New session IDs never
-inherit this record. `/session-ledger:begin-plan` remains the deliberate way to
+partially failed reset cannot directly restore the stale stored record. New
+session IDs never inherit this record. `/session-ledger:begin-plan` remains the deliberate way to
 discard earlier work within a session. This is a same-session boundary, not
 workspace isolation: starting in one project and navigating to another retains
 both projects' conversation in that session.
+
+After an explicit reset, transcript rows at or before the cutoff are excluded.
+Undated rows are skipped with a fixed warning because their plan cannot be
+established. Legacy plan markers without a cutoff skip transcript history until
+a new plan is started; current hook-provided text remains eligible. Scope expiry
+refreshes preserve the original cutoff. The cutoff adds one local timestamp to
+the plan marker, not a transcript copy.
+
+A ledger reset does **not** clear Claude's conversation or establish a privacy
+boundary. Later model replies, current hook text, or host compact summaries can
+restate old material and will still be captured as untrusted reference. Use a
+new Claude session when conversation isolation is required.
 
 Host summary copies marked `isCompactSummary: true` are excluded from new
 transcript capture. Records marked `isMeta: true` are excluded only when their

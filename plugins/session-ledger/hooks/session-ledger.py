@@ -91,6 +91,8 @@ SECRET_PATTERNS = tuple(
 
 
 NOTICE_TEXT = {
+    "plan_history": "Transcript history skipped: this plan has no valid capture cutoff. Current hook text can still be captured; begin a new plan to restore transcript capture.",
+    "plan_timestamp": "Transcript entries without timestamps were skipped to preserve the explicit plan cutoff.",
     "restore_unavailable": "Restore skipped: no valid record for this session and plan; capture may resume on a later turn.",
     "lock_timeout": "Capture skipped: ledger lock timed out.",
     "lock_unavailable": "Capture skipped: ledger locking is unavailable.",
@@ -530,7 +532,9 @@ def is_host_message(entry: dict[str, Any], text: str) -> bool:
     return False
 
 
-def transcript_entries(transcript: str) -> list[dict[str, str]]:
+def transcript_entries(
+    transcript: str, *, after: datetime | None = None
+) -> list[dict[str, str]]:
     """Decode all user/assistant text entries from a Claude JSONL transcript."""
     entries: list[dict[str, str]] = []
     for line in transcript.splitlines():
@@ -541,8 +545,32 @@ def transcript_entries(transcript: str) -> list[dict[str, str]]:
             entry = json.loads(stripped)
         except json.JSONDecodeError:
             continue
+        if after is not None:
+            if not isinstance(entry, dict):
+                continue
+            created = parse_timestamp(entry.get("timestamp"))
+            if created is None:
+                if message_text_entries(entry, line):
+                    note_notice("plan_timestamp")
+                continue
+            if created <= after:
+                continue
         entries.extend(message_text_entries(entry, line))
     return entries
+
+
+def plan_transcript_entries(
+    transcript: str, root: Path, session_id: str, plan_id: str, now: datetime
+) -> list[dict[str, str]]:
+    """Do not reimport pre-reset history into an explicit plan."""
+    if plan_id == DEFAULT_PLAN_ID:
+        return transcript_entries(transcript)
+    scope = read_json(scope_path(root, session_id))
+    cutoff = parse_timestamp(scope.get("started_at")) if scope else None
+    if not scope or not is_current(scope, now) or scope.get("plan_id") != plan_id or cutoff is None:
+        note_notice("plan_history")
+        return []
+    return transcript_entries(transcript, after=cutoff)
 
 
 def hook_payload_entries(
@@ -812,6 +840,7 @@ def refresh_plan_scope(
         scope_path(data_root, session_id),
         {
             "expires_at": timestamp(expires_at(now)),
+            "started_at": scope.get("started_at"),
             "plan_id": plan_id,
             "schema_version": SCHEMA_VERSION,
             "workspace_hash": workspace_hash,
@@ -953,9 +982,9 @@ def update_current_ledger(
             workspace_hash=workspace_hash, plan_id=plan_id, now=current_time
         )
     transcript = read_transcript_tail(payload.get("transcript_path"))
-    discovered = transcript_entries(transcript) + hook_payload_entries(
-        payload, transcript
-    )
+    discovered = plan_transcript_entries(
+        transcript, root, session_id, plan_id, current_time
+    ) + hook_payload_entries(payload, transcript)
     current_entries = valid_entries(existing)
     entries = merged_entries(current_entries, discovered)
     changed = entries != current_entries
@@ -1146,6 +1175,7 @@ def begin_plan(
     }
     try:
         with session_lock(root, session_id):
+            scope["started_at"] = timestamp(now or utc_now())
             # Scope first: a failure part-way may leave the old record behind,
             # but must never discard it without the new boundary in place.
             write_json_atomic(scope_path(root, session_id), scope)

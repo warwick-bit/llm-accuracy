@@ -1434,3 +1434,81 @@ def test_partial_reset_writers_discard_old_history(tmp_path: Path) -> None:
         assert record["plan_id"] == scope["plan_id"]
         assert record["workspace_hash"] == scope["workspace_hash"]
         assert "Synthetic verified source" not in json.dumps(record)
+
+
+def test_plan_reset_does_not_reimport_earlier_transcript_rows(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    transcript = tmp_path / "synthetic-plan.jsonl"
+    old = {"timestamp": ledger.timestamp(NOW), "message": {
+        "role": "user", "content": "SYNTHETIC_OLD_PLAN"}}
+    new = {"timestamp": ledger.timestamp(NOW + timedelta(seconds=2)), "message": {
+        "role": "user", "content": "SYNTHETIC_NEW_PLAN"}}
+    transcript.write_text(json.dumps(old) + "\n")
+    payload = transcript_payload(transcript)
+    assert ledger.update_ledger(payload, data_root=tmp_path, now=NOW)
+    assert ledger.begin_plan("session-one", data_root=tmp_path, cwd="/work/project",
+                             now=NOW + timedelta(seconds=1))
+    transcript.write_text("\n".join(json.dumps(row) for row in (old, new)))
+    assert ledger.update_ledger({**payload, "cwd": "/other"}, data_root=tmp_path,
+                                 now=NOW + timedelta(seconds=3))
+    context = ledger.session_start_context(
+        session_start_payload(source="resume", cwd="/other"), data_root=tmp_path,
+        now=NOW + timedelta(seconds=4),
+    )
+    assert "SYNTHETIC_NEW_PLAN" in context
+    assert "SYNTHETIC_OLD_PLAN" not in context
+
+
+def test_plan_cutoff_survives_summary_refresh(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    assert ledger.begin_plan("session-one", data_root=tmp_path, cwd="/work/project", now=NOW)
+    assert ledger.write_compact_summary(compact_payload(), data_root=tmp_path,
+                                        now=NOW + timedelta(days=10))
+    scope = ledger.read_json(ledger.scope_path(tmp_path, "session-one"))
+    assert scope["started_at"] == ledger.timestamp(NOW)
+    rows = [
+        {"timestamp": ledger.timestamp(NOW - timedelta(seconds=1)),
+         "message": {"role": "user", "content": "OLD"}},
+        {"timestamp": ledger.timestamp(NOW + timedelta(seconds=1)),
+         "message": {"role": "user", "content": "NEW"}},
+    ]
+    captured = ledger.plan_transcript_entries("\n".join(map(json.dumps, rows)), tmp_path,
+                                              "session-one", scope["plan_id"],
+                                              NOW + timedelta(days=10))
+    assert [entry["text"] for entry in captured] == ["NEW"]
+
+
+def test_legacy_plan_cutoff_skips_history_but_preserves_live_hook_text(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    assert ledger.begin_plan("session-one", data_root=tmp_path, cwd="/work/project", now=NOW)
+    scope = ledger.read_json(ledger.scope_path(tmp_path, "session-one"))
+    del scope["started_at"]
+    ledger.write_json_atomic(ledger.scope_path(tmp_path, "session-one"), scope)
+    transcript = tmp_path / "legacy.jsonl"
+    write_transcript(transcript, "SYNTHETIC_LEGACY_HISTORY")
+    token = ledger.HOOK_NOTICES.set(set())
+    try:
+        assert ledger.update_ledger({**transcript_payload(transcript), "prompt": "LIVE"},
+                                     data_root=tmp_path, now=NOW + timedelta(seconds=1))
+        assert "plan_history" in ledger.HOOK_NOTICES.get()
+    finally:
+        ledger.HOOK_NOTICES.reset(token)
+    record = ledger.read_json(ledger.record_path(tmp_path, "session-one"))
+    assert [entry["text"] for entry in record["entries"]] == ["LIVE"]
+
+
+def test_explicit_plan_skips_undated_rows_but_default_session_keeps_them() -> None:
+    ledger = load_ledger()
+    rows = [{"message": {"role": "user", "content": "UNDATED"}},
+            {"timestamp": "invalid", "message": {"role": "user", "content": "INVALID"}},
+            {"timestamp": ledger.timestamp(NOW), "message": {"role": "user", "content": "AT_CUTOFF"}},
+            {"timestamp": ledger.timestamp(NOW + timedelta(seconds=1)),
+             "message": {"role": "user", "content": "AFTER"}}]
+    transcript = "\n".join(map(json.dumps, rows))
+    assert len(ledger.transcript_entries(transcript)) == 4
+    token = ledger.HOOK_NOTICES.set(set())
+    try:
+        assert [entry["text"] for entry in ledger.transcript_entries(transcript, after=NOW)] == ["AFTER"]
+        assert "plan_timestamp" in ledger.HOOK_NOTICES.get()
+    finally:
+        ledger.HOOK_NOTICES.reset(token)
