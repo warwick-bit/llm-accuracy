@@ -589,3 +589,30 @@ def test_repeated_current_prompt_stays_after_intervening_answer(
     assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
     assert [entry["text"] for entry in json.loads(path.read_bytes())["entries"]] == [
         "Synthetic A", "Synthetic B", "Synthetic A"]
+
+
+@pytest.mark.parametrize("ending", ["\n", "\r\n"])
+def test_appending_row_preserves_prior_fingerprint(tmp_path, monkeypatch, capsys, ending):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-line-ending", "cwd": str(tmp_path)}
+    transcript = tmp_path / "synthetic.jsonl"
+    rows = [json.dumps({"uuid": str(i), "message": {
+        "role": "assistant", "content": text}}) for i, text in enumerate(["A", "B", "C"])]
+    transcript.write_bytes(ending.join(rows[:2]).encode())
+    payload["transcript_path"] = str(transcript)
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    transcript.write_bytes(ending.join(rows).encode())
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    record = ledger.read_json(ledger.record_path(tmp_path, payload["session_id"]))
+    assert [entry["text"] for entry in record["entries"]] == ["A", "B", "C"]
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+
+
+def test_duplicate_raw_row_does_not_overwrite_intervening_message():
+    ledger = load_ledger()
+    row_a = json.dumps({"uuid": "same-row", "message": {"role": "assistant", "content": "A"}})
+    row_b = json.dumps({"uuid": "other-row", "message": {"role": "assistant", "content": "B"}})
+    transcript = "\n".join([row_a, row_b, row_a])
+    hooks = ledger.hook_payload_entries({"last_assistant_message": "A"}, transcript)
+    entries = ledger.reconciled_transcript_entries([], ledger.transcript_entries(transcript), hooks)
+    assert [entry["text"] for entry in entries] == ["A", "B"]

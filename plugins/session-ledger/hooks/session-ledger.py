@@ -524,7 +524,7 @@ def message_text_entries(entry: object, raw_line: str) -> list[dict[str, str]]:
     if not text or (role == "user" and is_host_message(entry, text)):
         return []
     return [
-        {"role": role, "text": redact_secrets(text), "fingerprint": digest(raw_line)}
+        {"role": role, "text": redact_secrets(text), "fingerprint": digest(raw_line.removesuffix("\r"))}
     ]
 
 
@@ -752,13 +752,13 @@ def reconciled_transcript_entries(
     """
     positions = {entry["fingerprint"]: index for index, entry in enumerate(existing)}
     matched: set[int] = set()
-    seen: set[str] = set()
+    seen: dict[str, int] = {}
     ordered: list[dict[str, str]] = []
     for entry in discovered:
         fingerprint = entry["fingerprint"]
         if fingerprint in seen:
             continue
-        seen.add(fingerprint)
+        seen[fingerprint] = len(ordered)
         index = positions.get(fingerprint)
         if index is None and is_hook_entry(entry) and existing:
             if matches_stored_text(existing[-1], entry):
@@ -776,8 +776,9 @@ def reconciled_transcript_entries(
         # Current delivery can repeat only the newest transcript message. Older
         # identical text may be a genuine repeat after an intervening message.
         if ordered and discovered and matches_hook_text(discovered[-1], hook):
-            if ordered[-1]["fingerprint"] not in positions:
-                ordered[-1] = hook
+            latest_index = seen[discovered[-1]["fingerprint"]]
+            if ordered[latest_index]["fingerprint"] not in positions:
+                ordered[latest_index] = hook
         else:
             pending.append(hook)
     if not matched:
