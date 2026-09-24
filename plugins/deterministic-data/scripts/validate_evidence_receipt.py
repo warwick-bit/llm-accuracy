@@ -37,7 +37,8 @@ def _status_block(value: Any, allowed: set[str]) -> bool:
     return (
         isinstance(value, dict)
         and set(value) == {"status", "basis"}
-        and value.get("status") in allowed
+        and isinstance(value.get("status"), str)
+        and value["status"] in allowed
         and _text(value.get("basis"), limit=500)
     )
 
@@ -75,14 +76,14 @@ def validate_receipt(payload: Any, *, expected_epoch: str | None = None) -> list
                 continue
             if not _text(source.get("source_id"), limit=128):
                 errors.append("source_id_invalid")
-            if source.get("status") not in {"success", "failed", "unavailable"}:
+            if source.get("status") not in ("success", "failed", "unavailable"):
                 errors.append("source_status_invalid")
             if source.get("status") == "success":
                 successful += 1
             observed = source.get("observed_at")
             if observed is not None and not _text(observed, limit=128):
                 errors.append("source_observed_at_invalid")
-            if source.get("scope_match") not in {"match", "mismatch", "unknown"}:
+            if source.get("scope_match") not in ("match", "mismatch", "unknown"):
                 errors.append("source_scope_match_invalid")
             source_mismatch = source_mismatch or source.get("scope_match") == "mismatch"
             source_unknown = source_unknown or source.get("scope_match") == "unknown"
@@ -107,7 +108,7 @@ def validate_receipt(payload: Any, *, expected_epoch: str | None = None) -> list
         errors.append("caveats_invalid")
 
     status = payload.get("claim_status")
-    if status not in {"supported", "qualified", "withheld", "unchecked"}:
+    if status not in ("supported", "qualified", "withheld", "unchecked"):
         errors.append("claim_status_invalid")
     elif status == "supported":
         if successful == 0:
@@ -154,7 +155,7 @@ def main() -> int:
             raw = stream.read().decode("utf-8") if stream is not None else sys.stdin.read()
         payload = json.loads(raw)
         errors = validate_receipt(payload, expected_epoch=args.expected_epoch)
-    except (OSError, UnicodeError, json.JSONDecodeError):
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError):
         errors = ["receipt_unreadable"]
     print(json.dumps(result(errors), sort_keys=True, separators=(",", ":")))
     return 0 if not errors else 1

@@ -90,7 +90,7 @@ def validate_catalogue(payload: Any) -> list[str]:
         ):
             errors.append("caveats_invalid")
         status = definition.get("status")
-        if status not in {"approved", "candidate", "gap"}:
+        if status not in ("approved", "candidate", "gap"):
             errors.append("status_invalid")
         binding = definition.get("source_binding")
         binding_valid = (
@@ -101,7 +101,7 @@ def validate_catalogue(payload: Any) -> list[str]:
         )
         if status == "approved" and not binding_valid:
             errors.append("approved_without_source_binding")
-        if status in {"candidate", "gap"} and binding is not None:
+        if status in ("candidate", "gap") and binding is not None:
             errors.append("nonapproved_with_source_binding")
     return sorted(set(errors))
 
@@ -113,7 +113,7 @@ def main() -> int:
     try:
         payload = json.loads(args.catalogue.read_text(encoding="utf-8"))
         errors = validate_catalogue(payload)
-    except (OSError, UnicodeError, json.JSONDecodeError):
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError):
         errors = ["catalogue_unreadable"]
     result = {
         "authority": "structural_only",
