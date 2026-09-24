@@ -1,0 +1,70 @@
+{
+  "scope": "synthetic_read_observation_delivery_only",
+  "passed": true,
+  "models_matched": true,
+  "accuracy_effect": "not_measured",
+  "variance": "not_measured_one_attempt_per_arm",
+  "requested_model": "sonnet",
+  "effort": "medium",
+  "host_version": "2.1.280",
+  "platform": "Linux",
+  "arms": {
+    "silent_control": {
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "activation_observed": true,
+        "observation_valid": true,
+        "source_marker_returned": true,
+        "observation_marker_as_expected": true
+      },
+      "host_status": "ok",
+      "resolved_model": "claude-sonnet-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 1,
+        "mcp_count": 0,
+        "plugin_count": 2,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 1
+      },
+      "elapsed_seconds": 4.8,
+      "profile_jsonl_files": 0,
+      "temporary_directory_removed": true
+    },
+    "observation_context": {
+      "passed": true,
+      "checks": {
+        "completed": true,
+        "activation_observed": true,
+        "observation_valid": true,
+        "source_marker_returned": true,
+        "observation_marker_as_expected": true
+      },
+      "host_status": "ok",
+      "resolved_model": "claude-sonnet-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 1,
+        "mcp_count": 0,
+        "plugin_count": 2,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 1
+      },
+      "elapsed_seconds": 7.5,
+      "profile_jsonl_files": 0,
+      "temporary_directory_removed": true
+    }
+  },
+  "source_hashes": {
+    "capture_observation.py": "57da488c2ea4c17bed69d51bf83ab153843e85b4e27721f7ae0ae2b51c472536",
+    "evidence_capture_smoke.py": "f9556c0b343fe105b95e76f10ad0e3625efd677c3fb2f389188336dd4abd71f6"
+  },
+  "limitations": [
+    "Marker reporting explicitly requested; normal-task uptake not measured.",
+    "One attempt per arm; no accuracy or latency effect estimate.",
+    "Host inventory included an additional telemetry plugin; fully neutral runtime not established.",
+    "No native Windows host run.",
+    "No live behavioral baseline cohort or independently held-out cases."
+  ]
+}
