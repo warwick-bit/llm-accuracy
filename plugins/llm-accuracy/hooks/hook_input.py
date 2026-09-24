@@ -7,7 +7,11 @@ from typing import TextIO
 
 
 def read_hook_input(stream: TextIO, limit: int = -1) -> str:
-    """Preserve character limits and leave the caller-owned binary stream open."""
+    """Read once with a character cap; close no caller-owned stream.
+
+    This consumes the hook input. Decoder read-ahead is not preserved for a
+    second reader; every CLI calls this once, then exits.
+    """
     buffer = getattr(stream, "buffer", None)
     if buffer is None:
         return stream.read(limit)

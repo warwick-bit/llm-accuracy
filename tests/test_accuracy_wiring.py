@@ -523,3 +523,17 @@ def test_utf8_reader_rejects_invalid_bytes_without_closing_stdin():
         read_hook_input(stream)
     assert not binary.closed
     stream.close()
+
+
+@pytest.mark.parametrize("name", [
+    "analysis-contract-injector.py", "fusion-evidence-trigger.py",
+    "claim-fidelity-trigger.py", "partial-result-sentinel.py", "post-compact-accuracy.py",
+])
+def test_accuracy_hooks_fail_open_on_invalid_utf8_bytes(name):
+    import sys
+
+    hook = ROOT / "plugins/llm-accuracy/hooks" / name
+    result = subprocess.run([sys.executable, str(hook)], input=b'{"prompt":"\xff"}',
+                            capture_output=True, timeout=30)
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == b""
