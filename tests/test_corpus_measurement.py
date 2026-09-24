@@ -663,3 +663,13 @@ def test_load_hook_rejects_a_path_that_is_not_a_module(tmp_path: Path) -> None:
 
     with pytest.raises(CorpusError):
         load_hook(not_a_module)
+
+
+@pytest.mark.parametrize("separator", ["\u0085", "\u2028", "\u2029"])
+def test_jsonl_unicode_separators_do_not_split_records(tmp_path, separator):
+    from scripts.measure_tool_result_corpus import _records
+
+    record = {"type": "user", "message": {"content": f"synthetic{separator}text"}}
+    path = tmp_path / "synthetic.jsonl"
+    path.write_bytes((json.dumps(record, ensure_ascii=False) + "\r\n").encode("utf-8"))
+    assert _records(path) == [record]

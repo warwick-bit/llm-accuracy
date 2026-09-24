@@ -147,7 +147,11 @@ def main() -> int:
     parser.add_argument("--expected-epoch")
     args = parser.parse_args()
     try:
-        raw = args.receipt.read_text(encoding="utf-8") if args.receipt else sys.stdin.read()
+        if args.receipt:
+            raw = args.receipt.read_text(encoding="utf-8")
+        else:
+            stream = getattr(sys.stdin, "buffer", None)
+            raw = stream.read().decode("utf-8") if stream is not None else sys.stdin.read()
         payload = json.loads(raw)
         errors = validate_receipt(payload, expected_epoch=args.expected_epoch)
     except (OSError, UnicodeError, json.JSONDecodeError):

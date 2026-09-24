@@ -537,7 +537,7 @@ def transcript_entries(
 ) -> list[dict[str, str]]:
     """Decode all user/assistant text entries from a Claude JSONL transcript."""
     entries: list[dict[str, str]] = []
-    for line in transcript.splitlines():
+    for line in transcript.split("\n"):
         stripped = line.strip()
         if not stripped:
             continue

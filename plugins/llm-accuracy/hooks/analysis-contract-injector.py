@@ -8,6 +8,8 @@ import os
 import re
 import sys
 
+from hook_input import read_hook_input
+
 from accuracy_config import custom_trigger_matches
 
 
@@ -156,7 +158,7 @@ def main() -> int:
     if os.environ.get(BYPASS_ENV):
         return 0
     try:
-        payload = json.loads(sys.stdin.read() or "{}")
+        payload = json.loads(read_hook_input(sys.stdin) or "{}")
         if not isinstance(payload, dict):
             return 0
         prompt = payload.get("prompt", "")

@@ -243,7 +243,7 @@ def _records(path: Path) -> list[dict]:
     nested array, which would otherwise escape and end the run.
     """
     try:
-        lines = path.read_text(errors="replace").splitlines()
+        lines = path.read_text(encoding="utf-8", errors="replace").split("\n")
     except OSError:
         return []
     records: list[dict] = []

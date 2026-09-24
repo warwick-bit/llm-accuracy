@@ -10,6 +10,8 @@ from __future__ import annotations
 import json
 import sys
 
+from hook_input import read_hook_input
+
 
 CONTEXT = (
     "Post-compaction accuracy nudge: re-read exact values before asserting counts, IDs, dates, "
@@ -21,7 +23,7 @@ CONTEXT = (
 
 def main() -> int:
     try:
-        payload = json.loads(sys.stdin.read() or "{}")
+        payload = json.loads(read_hook_input(sys.stdin) or "{}")
         source = payload.get("source") if isinstance(payload, dict) else None
         if source is not None and source != "compact":
             return 0

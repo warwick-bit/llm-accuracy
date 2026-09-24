@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -231,3 +234,21 @@ def test_general_mode_custom_phrase_adds_detailed_guidance(tmp_path):
     assert "competing causes" in context
     assert "equal membership" in context
     assert len(context) <= 2000
+
+
+@pytest.mark.parametrize("script,family", [
+    ("analysis-contract-injector.py", "analysis"),
+    ("fusion-evidence-trigger.py", "fusion_evidence"),
+    ("claim-fidelity-trigger.py", "claim_fidelity"),
+])
+def test_unicode_custom_trigger_uses_utf8_bytes(tmp_path, script, family):
+    path = config_file(tmp_path, {"extra_triggers": {family: ["résumé"]}})
+    hook = Path(__file__).resolve().parents[1] / "plugins/llm-accuracy/hooks" / script
+    env = {**os.environ, "LLM_ACCURACY_CONFIG": str(path),
+           "CC_CLAIM_FIDELITY_MODE": "targeted", "PYTHONUTF8": "0",
+           "PYTHONIOENCODING": "cp1252:surrogateescape"}
+    result = subprocess.run([sys.executable, str(hook)],
+                            input=json.dumps({"prompt": "résumé"}, ensure_ascii=False).encode("utf-8"),
+                            capture_output=True, env=env, timeout=30)
+    assert result.returncode == 0 and result.stderr == b""
+    assert json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]

@@ -1512,3 +1512,12 @@ def test_explicit_plan_skips_undated_rows_but_default_session_keeps_them() -> No
         assert "plan_timestamp" in ledger.HOOK_NOTICES.get()
     finally:
         ledger.HOOK_NOTICES.reset(token)
+
+
+def test_jsonl_unicode_separators_remain_inside_transcript_messages():
+    ledger = load_ledger()
+    for separator in ("\u0085", "\u2028", "\u2029"):
+        text = f"Synthetic first{separator}second"
+        line = json.dumps({"message": {"role": "user", "content": text}}, ensure_ascii=False)
+        entries = ledger.transcript_entries(line + "\r\n")
+        assert [entry["text"] for entry in entries] == [text]
