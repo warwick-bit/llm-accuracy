@@ -381,3 +381,53 @@ def test_windows_lock_retries_contention_then_releases_same_byte(tmp_path, monke
     with ledger.session_lock(tmp_path, "synthetic-session"):
         pass
     assert calls == [(1, 1, 0), (1, 1, 0), (2, 1, 0)]
+
+
+@pytest.mark.parametrize(
+    "raw", [b"\xff", b"[" * 10_000 + b"0" + b"]" * 10_000],
+    ids=["invalid-utf8", "deep-json"],
+)
+def test_corrupt_session_does_not_prevent_other_session_start(tmp_path, raw):
+    ledger = load_ledger()
+    first = {"session_id": "synthetic-corrupt", "cwd": str(tmp_path)}
+    second = {"session_id": "synthetic-independent", "cwd": str(tmp_path)}
+    assert ledger.initialize_session(first, data_root=tmp_path)
+    ledger.record_path(tmp_path, first["session_id"]).write_bytes(raw)
+    assert ledger.initialize_session(second, data_root=tmp_path)
+    assert ledger.record_path(tmp_path, second["session_id"]).is_file()
+    assert not ledger.record_path(tmp_path, first["session_id"]).exists()
+
+
+def test_pruning_skips_active_writer_then_rechecks_refreshed_expiry(tmp_path):
+    ledger = load_ledger()
+    now = datetime.now(timezone.utc)
+    payload = {"session_id": "synthetic-prune-race", "cwd": str(tmp_path)}
+    assert ledger.initialize_session(payload, data_root=tmp_path, now=now-timedelta(days=31))
+    worker = r'''
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("ledger", sys.argv[1])
+ledger = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ledger)
+root = Path(sys.argv[2])
+payload = {"session_id": "synthetic-prune-race", "cwd": str(root), "prompt": "fresh synthetic"}
+with ledger.session_lock(root, payload["session_id"]):
+    print("locked", flush=True)
+    sys.stdin.readline()
+    assert ledger.update_current_ledger(payload, root, ledger.utc_now())
+'''
+    process = subprocess.Popen(
+        [sys.executable, "-c", worker, str(HOOK), str(tmp_path)],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+    )
+    try:
+        assert process.stdout.readline().strip() == "locked"
+        ledger.prune_expired(tmp_path, now)
+        assert ledger.record_path(tmp_path, payload["session_id"]).exists()
+    finally:
+        stdout, stderr = process.communicate("continue\n", timeout=10)
+    assert process.returncode == 0, stderr
+    ledger.prune_expired(tmp_path, now)
+    record = ledger.read_json(ledger.record_path(tmp_path, payload["session_id"]))
+    assert record is not None
+    assert record["entries"][0]["text"] == "fresh synthetic"
