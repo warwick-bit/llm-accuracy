@@ -233,19 +233,25 @@ class Store:
             raise ValueError("transcript_unavailable")
         source = sha(str(transcript.absolute()).encode())
         cursor = self.db.execute("SELECT * FROM cursors WHERE source=?", (source,)).fetchone()
+        if cursor and (type(cursor["offset"]) is not int or cursor["offset"] < 0
+                       or not isinstance(cursor["anchor"], str) or not re.fullmatch(r"[0-9a-f]{64}", cursor["anchor"])
+                       or not isinstance(cursor["identity"], str) or not re.fullmatch(r"[0-9]+:[0-9]+:[0-9]+:-?[0-9]+", cursor["identity"])):
+            raise ValueError("invalid_cursor")
         with transcript.open("rb") as stream:
             stat = os.fstat(stream.fileno())
             identity = f"{stat.st_dev}:{stat.st_ino}:{stat.st_size}:{stat.st_mtime_ns}"
             offset = cursor["offset"] if cursor else 0
+            stream.seek(0)
+            prefix = stream.read(min(offset, 4096))
             anchor_start = max(0, offset - 4096)
             stream.seek(anchor_start)
-            anchor = sha(stream.read(offset - anchor_start))
+            anchor = sha(prefix + stream.read(offset - anchor_start))
             previous = cursor["identity"].split(":") if cursor else []
             changed_file = bool(previous and (previous[:2] != identity.split(":")[:2]
                                 or (int(previous[2]) == stat.st_size and previous[3] != str(stat.st_mtime_ns))))
             reset = bool(cursor and (changed_file or stat.st_size < offset or cursor["anchor"] != anchor))
             identity_bytes = 0
-            if not cursor or reset:
+            if not cursor or reset or stat.st_ino == 0:
                 stream.seek(0)
                 identity_bytes = self._verify_source(stream)
             if reset:
@@ -254,15 +260,17 @@ class Store:
             with self.db:
                 result = self._read_batch(stream, source, offset, cutoff=cutoff)
                 offset = result["offset"]
+                stream.seek(0)
+                prefix = stream.read(min(offset, 4096))
                 stream.seek(max(0, offset - 4096))
-                anchor = sha(stream.read(min(offset, 4096)))
+                anchor = sha(prefix + stream.read(min(offset, 4096)))
                 self.db.execute("INSERT OR REPLACE INTO cursors VALUES (?, ?, ?, ?)",
                                 (source, offset, anchor, identity))
                 if result["rows"]:
                     self.db.execute("UPDATE meta SET value=? WHERE key='expires'",
                                     (str(time.time() + RETENTION_SECONDS),))
                 self.db.execute("INSERT OR REPLACE INTO meta VALUES ('last_sync', ?)", (encoded(result),))
-            return {**result, "cursor_reset": reset, "identity_bytes_read": identity_bytes, "anchor_bytes_read": min(cursor["offset"], 4096) if cursor else 0}
+            return {**result, "cursor_reset": reset, "identity_bytes_read": identity_bytes, "anchor_bytes_read": 2 * min(cursor["offset"], 4096) if cursor else 0}
 
     def search(self, query: str, *, limit: int = 10) -> dict[str, Any]:
         if not isinstance(query, str) or not query.strip() or len(query) > 256:

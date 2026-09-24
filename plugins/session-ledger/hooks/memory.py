@@ -189,7 +189,7 @@ def main(arguments: list[str] | None = None) -> int:
         # Expose only fixed codes, never payload text, paths or SQL exception strings.
         known = {"memory_not_enabled", "memory_scope_or_expiry", "invalid_session", "unsafe_memory_path",
                  "transcript_unavailable", "transcript_identity_unavailable", "transcript_session_mismatch",
-                 "invalid_tool_identity", "invalid_plan_cutoff", "invalid_search", "evidence_not_found", "evidence_hash_mismatch",
+                 "invalid_tool_identity", "invalid_cursor", "invalid_plan_cutoff", "invalid_search", "evidence_not_found", "evidence_hash_mismatch",
                  "invalid_pointer", "pointer_not_found", "invalid_page", "invalid_state",
                  "state_revision_conflict", "state_evidence_not_found", "state_input_too_large"}
         code = str(exc) if type(exc) is ValueError and str(exc) in known else "memory_operation_failed"

@@ -169,8 +169,10 @@ installation smoke of the experiment.
 
 The manual importer requires an explicit matching host session identity within
 the first 256 KiB/1,024 records, before any tool blocks. A validated cursor reuses that proof until the source
-is reset; ordinary incremental sync checks only the cursor anchor and identity
-metadata, avoiding repeated header scans. It rejects unknown or
+is reset; ordinary incremental sync checks the prefix/cursor anchors and identity
+metadata, avoiding repeated header scans. Filesystems reporting inode zero also
+revalidate the explicit session header on every sync, because device/inode cannot
+distinguish replacement there. It rejects unknown or
 mismatched identity rather than guessing. It detects replacement, shrinkage,
 changed cursor anchors and same-size rewrites. An arbitrary in-place edit far
 before the cursor combined with an append can evade these incremental checks;

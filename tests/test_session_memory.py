@@ -65,7 +65,7 @@ def test_pairing_unicode_exact_recovery_without_source(store, tmp_path):
     second = store.sync(path)
     assert second['bytes_read'] == 0
     assert second['identity_bytes_read'] == 0
-    assert second['anchor_bytes_read'] <= 4096
+    assert second['anchor_bytes_read'] <= 8192
     assert store.status()['events'] == 2
     path.unlink()
     hits = store.search('receipts')['matches']
@@ -419,5 +419,30 @@ def test_cli_corrupt_cursor_returns_structured_failure(tmp_path):
         connection.execute("UPDATE cursors SET offset=-1, identity='broken'")
     response = cli(tmp_path, 'sync', str(path))
     assert response.returncode == 1
-    assert json.loads(response.stdout)['error'] == 'memory_operation_failed'
+    assert json.loads(response.stdout)['error'] == 'invalid_cursor'
     assert not response.stderr
+
+
+
+def test_inode_zero_rotation_revalidates_session_identity(store, tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    real_fstat = os.fstat
+
+    def unidentified_file(descriptor):
+        stat = real_fstat(descriptor)
+        return SimpleNamespace(st_dev=stat.st_dev, st_ino=0, st_size=stat.st_size, st_mtime_ns=stat.st_mtime_ns)
+
+    monkeypatch.setattr(os, 'fstat', unidentified_file)
+    header = {'type': 'session_meta', 'payload': {'id': 'synthetic-session'}}
+    # Put identity beyond the prefix anchor to exercise inode-zero revalidation.
+    padding = {'type': 'metadata', 'padding': 'p' * 5000}
+    tail = {'type': 'metadata', 'padding': 't' * 5000}
+    path = write_log(tmp_path / 'log', padding, header, tail)
+    store.sync(path)
+    header['payload']['id'] = 'different-session'
+    foreign = {'type': 'response_item', 'payload': {'type': 'function_call',
+               'call_id': 'foreign', 'name': 'query', 'arguments': '{}'}}
+    write_log(path, padding, header, tail, foreign)
+    with pytest.raises(ValueError, match='session_mismatch'):
+        store.sync(path)
+    assert store.status()['events'] == 0
