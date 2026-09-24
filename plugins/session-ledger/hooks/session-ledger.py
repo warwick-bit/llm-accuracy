@@ -1204,8 +1204,12 @@ def clear_all(data_root: Path | None = None) -> bool:
 def hook_payload() -> dict[str, Any] | None:
     """Read one hook JSON object without surfacing malformed session data."""
     try:
-        payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, OSError):
+        # Claude sends UTF-8 bytes; Windows piped stdin may use a legacy codec.
+        # Text-only streams are supported for embedded callers and unit tests.
+        stream = getattr(sys.stdin, "buffer", None)
+        raw = stream.read().decode("utf-8") if stream is not None else sys.stdin.read()
+        payload = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError, OSError):
         return None
     return payload if isinstance(payload, dict) else None
 
