@@ -671,7 +671,7 @@ def matches_stored_text(
     return stored_text == hook_text
 
 
-def merged_entries(
+def deduplicated_entries(
     existing: list[dict[str, str]], discovered: list[dict[str, str]]
 ) -> list[dict[str, str]]:
     """Append unseen text while avoiding duplicate renderings of one message.
@@ -713,11 +713,89 @@ def merged_entries(
                 continue
         additions.append(entry)
         fingerprints.add(fingerprint)
-    candidates = existing + additions
+    return existing + additions
+
+
+def merged_entries(
+    existing: list[dict[str, str]], discovered: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """Deduplicate message copies before applying rolling retention."""
+    candidates = deduplicated_entries(existing, discovered)
     retained = bounded_entries(candidates)
     if retained != candidates:
         note_notice("retention")
     return retained
+
+
+
+def merge_transcript_entries(
+    discovered: list[dict[str, str]], record: dict[str, Any], hooks: list[dict[str, str]]
+) -> list[dict[str, str]]:
+    """Reconcile observed chronology before applying retention and diagnostics."""
+    existing = valid_entries(record)
+    candidates = reconciled_transcript_entries(existing, discovered, hooks)
+    retained = bounded_entries(candidates)
+    if retained != candidates and retained != existing:
+        note_notice("retention")
+    return retained
+
+
+def reconciled_transcript_entries(
+    existing: list[dict[str, str]], discovered: list[dict[str, str]],
+    hooks: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Keep first/legacy backfill in transcript order without losing unseen state.
+
+    Provisional hook copies retain their fingerprints. Unmatched stored entries
+    stay before their next shared anchor, preserving interleaved corrections.
+    Without overlap, append the transcript as after compaction. Bound last.
+    """
+    positions = {entry["fingerprint"]: index for index, entry in enumerate(existing)}
+    matched: set[int] = set()
+    seen: set[str] = set()
+    ordered: list[dict[str, str]] = []
+    for entry in discovered:
+        fingerprint = entry["fingerprint"]
+        if fingerprint in seen:
+            continue
+        seen.add(fingerprint)
+        index = positions.get(fingerprint)
+        if index is None and is_hook_entry(entry) and existing:
+            if matches_stored_text(existing[-1], entry):
+                index = len(existing) - 1
+        if index is None and not is_hook_entry(entry):
+            index = next((i for i, hook in enumerate(existing)
+                          if i not in matched and is_hook_entry(hook)
+                          and matches_hook_text(entry, hook)), None)
+        if index is not None:
+            matched.add(index)
+            entry = existing[index]
+        ordered.append(entry)
+    pending = []
+    for hook in hooks:
+        # Current delivery can repeat only the newest transcript message. Older
+        # identical text may be a genuine repeat after an intervening message.
+        if ordered and discovered and matches_hook_text(discovered[-1], hook):
+            if ordered[-1]["fingerprint"] not in positions:
+                ordered[-1] = hook
+        else:
+            pending.append(hook)
+    if not matched:
+        return deduplicated_entries(existing + ordered, pending)
+    gaps: dict[str | None, list[dict[str, str]]] = {}
+    anchor = None
+    for index in range(len(existing) - 1, -1, -1):
+        entry = existing[index]
+        if index in matched:
+            anchor = entry["fingerprint"]
+        else:
+            gaps.setdefault(anchor, []).append(entry)
+    combined: list[dict[str, str]] = []
+    for entry in ordered:
+        combined.extend(reversed(gaps.pop(entry["fingerprint"], [])))
+        combined.append(entry)
+    combined.extend(reversed(gaps.get(None, [])))
+    return deduplicated_entries(combined, pending)
 
 
 def remove_file(path: Path) -> None:
@@ -1001,19 +1079,21 @@ def update_current_ledger(
             workspace_hash=workspace_hash, plan_id=plan_id, now=current_time
         )
     transcript = read_transcript_tail(payload.get("transcript_path"))
-    discovered = plan_transcript_entries(
+    transcript_rows = plan_transcript_entries(
         transcript, root, session_id, plan_id, current_time
-    ) + hook_payload_entries(payload, transcript)
-    current_entries = valid_entries(existing)
-    entries = merged_entries(current_entries, discovered)
-    changed = entries != current_entries
+    )
+    entries = merge_transcript_entries(
+        transcript_rows, existing, hook_payload_entries(payload, transcript)
+    )
+    changes: dict[str, Any] = {"entries": entries}
+    changed = entries != valid_entries(existing)
     if changed:
         existing = record_for(
             workspace_hash=workspace_hash,
             plan_id=plan_id,
             now=current_time,
             previous=existing,
-            changes={"entries": entries},
+            changes=changes,
         )
     if record_path(root, session_id).exists() and not changed:
         return True

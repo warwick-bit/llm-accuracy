@@ -431,3 +431,161 @@ with ledger.session_lock(root, payload["session_id"]):
     record = ledger.read_json(ledger.record_path(tmp_path, payload["session_id"]))
     assert record is not None
     assert record["entries"][0]["text"] == "fresh synthetic"
+
+
+@pytest.mark.parametrize("mode", ["transcript", "hook-first", "scrambled"])
+def test_full_history_replay_is_stable_and_new_turns_still_append(
+    tmp_path, monkeypatch, capsys, mode
+):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-replay", "cwd": str(tmp_path)}
+    texts = [f"Synthetic message {index}: " + str(index) * 12000 for index in range(8)]
+    transcript = tmp_path / "synthetic.jsonl"
+    lines = [json.dumps({"uuid": f"synthetic-{index}", "message": {
+        "role": "assistant", "content": text}}) for index, text in enumerate(texts)]
+    if mode == "hook-first":
+        for text in texts:
+            invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                        {**payload, "last_assistant_message": text})
+    transcript.write_text("\n".join(lines), encoding="utf-8")
+    payload["transcript_path"] = str(transcript)
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    path = ledger.record_path(tmp_path, "synthetic-replay")
+    if mode == "scrambled":
+        record = json.loads(path.read_bytes())
+        record["entries"] = record["entries"][2:] + record["entries"][:2]
+        path.write_text(json.dumps(record), encoding="utf-8")
+        # Repair changes stored chronology and may report trimming once.
+        invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    expected = texts[-5:]
+    for _ in range(3):
+        assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+        record = json.loads(path.read_bytes())
+        assert [entry["text"] for entry in record["entries"]] == expected
+    before = path.read_bytes()
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+    assert path.read_bytes() == before
+    new_text = "Synthetic newest message: " + "n" * 12000
+    lines.append(json.dumps({"uuid": "synthetic-new", "message": {
+        "role": "assistant", "content": new_text}}))
+    transcript.write_text("\n".join(lines), encoding="utf-8")
+    result = invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    assert ledger.NOTICE_TEXT["retention"] in result["systemMessage"]
+    record = json.loads(path.read_bytes())
+    assert [entry["text"] for entry in record["entries"]] == [*texts[-4:], new_text]
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+
+
+@pytest.mark.parametrize("message_size", [20, 13000])
+def test_first_transcript_capture_does_not_discard_unseen_earlier_text(
+    tmp_path, monkeypatch, capsys, message_size
+):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-backfill", "cwd": str(tmp_path)}
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                {**payload, "last_assistant_message": "Synthetic latest"})
+    transcript = tmp_path / "synthetic.jsonl"
+    texts = [f"Synthetic earlier {i}: " + str(i) * message_size for i in range(6)]
+    texts.append("Synthetic latest")
+    transcript.write_text("\n".join(json.dumps({"message": {
+        "role": "assistant", "content": text}}) for text in texts), encoding="utf-8")
+    payload["transcript_path"] = str(transcript)
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    path = ledger.record_path(tmp_path, "synthetic-backfill")
+    record = json.loads(path.read_bytes())
+    expected = ledger.bounded_entries(ledger.transcript_entries(transcript.read_text(encoding="utf-8")))
+    assert [entry["text"] for entry in record["entries"]] == [entry["text"] for entry in expected]
+    assert len(record["entries"]) > 1
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+    assert json.loads(path.read_bytes())["entries"] == record["entries"]
+
+
+def test_history_survives_summary_missing_tail_and_replacement(
+    tmp_path, monkeypatch, capsys
+):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-cursor", "cwd": str(tmp_path)}
+    transcript = tmp_path / "synthetic.jsonl"
+    transcript.write_text(json.dumps({"message": {
+        "role": "assistant", "content": "Synthetic old"}}), encoding="utf-8")
+    payload["transcript_path"] = str(transcript)
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    path = ledger.record_path(tmp_path, "synthetic-cursor")
+    original = json.loads(path.read_bytes())["entries"][0]
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                {**payload, "compact_summary": "Synthetic summary"}, "post-compact")
+    transcript.unlink()
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                {**payload, "prompt": "Synthetic between"})
+    assert json.loads(path.read_bytes())["entries"][0] == original
+    transcript.write_text(json.dumps({"message": {
+        "role": "assistant", "content": "Synthetic after compaction"}}), encoding="utf-8")
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    record = json.loads(path.read_bytes())
+    assert [entry["text"] for entry in record["entries"]] == [
+        "Synthetic old", "Synthetic between", "Synthetic after compaction"]
+
+
+def test_failed_write_preserves_history_for_retry(tmp_path, monkeypatch, capsys):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-retry", "cwd": str(tmp_path)}
+    transcript = tmp_path / "synthetic.jsonl"
+    transcript.write_text(json.dumps({"message": {
+        "role": "assistant", "content": "Synthetic first"}}), encoding="utf-8")
+    payload["transcript_path"] = str(transcript)
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    path = ledger.record_path(tmp_path, "synthetic-retry")
+    before = path.read_bytes()
+    with transcript.open("a", encoding="utf-8") as stream:
+        stream.write("\n" + json.dumps({"message": {
+            "role": "assistant", "content": "Synthetic retry"}}))
+    with monkeypatch.context() as patch:
+        def fail_write(*args):
+            raise OSError("Synthetic failure")
+        patch.setattr(ledger, "write_json_atomic", fail_write)
+        result = invoke_hook(ledger, patch, capsys, tmp_path, payload)
+        assert ledger.NOTICE_TEXT["storage"] in result["systemMessage"]
+    assert path.read_bytes() == before
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+    assert json.loads(path.read_bytes())["entries"][-1]["text"] == "Synthetic retry"
+
+
+def test_first_transcript_preserves_interleaved_hook_correction(tmp_path, monkeypatch, capsys):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-interleaved", "cwd": str(tmp_path)}
+    texts = ["Synthetic A", "Synthetic correction E", "Synthetic B"]
+    for text in texts:
+        invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                    {**payload, "last_assistant_message": text})
+    transcript = tmp_path / "synthetic.jsonl"
+    transcript.write_text("\n".join(json.dumps({"message": {
+        "role": "assistant", "content": text}}) for text in [texts[0], texts[2]]), encoding="utf-8")
+    payload["transcript_path"] = str(transcript)
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+    record = json.loads(ledger.record_path(tmp_path, "synthetic-interleaved").read_bytes())
+    assert [entry["text"] for entry in record["entries"]] == texts
+
+
+@pytest.mark.parametrize("latest_in_transcript", [True, False])
+def test_repeated_current_prompt_stays_after_intervening_answer(
+    tmp_path, monkeypatch, capsys, latest_in_transcript
+):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-repeat-order", "cwd": str(tmp_path)}
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, {**payload, "prompt": "Synthetic A"})
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                {**payload, "last_assistant_message": "Synthetic B"})
+    rows = [("user", "Synthetic A"), ("assistant", "Synthetic B")]
+    if latest_in_transcript:
+        rows.append(("user", "Synthetic A"))
+    transcript = tmp_path / "synthetic.jsonl"
+    transcript.write_text("\n".join(json.dumps({"uuid": str(index), "message": {
+        "role": role, "content": text}}) for index, (role, text) in enumerate(rows)), encoding="utf-8")
+    payload.update(transcript_path=str(transcript), prompt="Synthetic A")
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+    path = ledger.record_path(tmp_path, "synthetic-repeat-order")
+    assert [entry["text"] for entry in json.loads(path.read_bytes())["entries"]] == [
+        "Synthetic A", "Synthetic B", "Synthetic A"]
+    assert invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload) == {}
+    assert [entry["text"] for entry in json.loads(path.read_bytes())["entries"]] == [
+        "Synthetic A", "Synthetic B", "Synthetic A"]
