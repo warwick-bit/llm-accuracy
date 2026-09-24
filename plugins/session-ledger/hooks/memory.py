@@ -120,6 +120,7 @@ def parser() -> argparse.ArgumentParser:
     search = sub.add_parser("search")
     search.add_argument("query")
     search.add_argument("--limit", type=int, default=10)
+    search.add_argument("--offset", type=int, default=0)
     fetch = sub.add_parser("fetch")
     fetch.add_argument("id")
     fetch.add_argument("--start", type=int, default=0)
@@ -136,7 +137,7 @@ def dispatch(store: Any, args: argparse.Namespace, ledger: Any, root: Path) -> d
     if args.action == "sync":
         return store.sync(args.transcript, cutoff=plan_cutoff(ledger, root, args.session_id))
     if args.action == "search":
-        return store.search(args.query, limit=args.limit)
+        return store.search(args.query, limit=args.limit, offset=args.offset)
     if args.action == "fetch":
         return store.fetch(args.id, start=args.start, pointer=args.pointer)
     if args.action == "state":

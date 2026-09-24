@@ -272,9 +272,11 @@ class Store:
                 self.db.execute("INSERT OR REPLACE INTO meta VALUES ('last_sync', ?)", (encoded(result),))
             return {**result, "cursor_reset": reset, "identity_bytes_read": identity_bytes, "anchor_bytes_read": 2 * min(cursor["offset"], 4096) if cursor else 0}
 
-    def search(self, query: str, *, limit: int = 10) -> dict[str, Any]:
+    def search(self, query: str, *, limit: int = 10, offset: int = 0) -> dict[str, Any]:
         if not isinstance(query, str) or not query.strip() or len(query) > 256:
             raise ValueError("invalid_search")
+        if type(offset) is not int or offset < 0 or offset > 1000000:
+            raise ValueError("invalid_page")
         limit = max(1, min(limit, 20))
         tokens = re.findall(r"\w+", query, re.UNICODE)[:8]
         if not tokens:
@@ -283,15 +285,16 @@ class Store:
             expression = " AND ".join('"' + token + '"' for token in tokens)
             rows = self.db.execute(
                 "SELECT e.id, e.call_id, e.kind, e.name, e.timestamp, e.error, substr(e.body,1,240) preview "
-                "FROM search JOIN events e ON e.rowid=search.rowid WHERE search MATCH ? LIMIT ?",
-                (expression, limit + 1)).fetchall()
+                "FROM search JOIN events e ON e.rowid=search.rowid WHERE search MATCH ? ORDER BY e.rowid DESC LIMIT ? OFFSET ?",
+                (expression, limit + 1, offset)).fetchall()
         else:
             clauses = " AND ".join("(name || ' ' || body) LIKE ? ESCAPE '\\'" for _ in tokens)
             patterns = ["%" + token.replace("_", "\\_") + "%" for token in tokens]
             rows = self.db.execute(
                 "SELECT id, call_id, kind, name, timestamp, error, substr(body,1,240) preview "
-                f"FROM events WHERE {clauses} ORDER BY rowid LIMIT ?", (*patterns, limit + 1)).fetchall()
+                f"FROM events WHERE {clauses} ORDER BY rowid DESC LIMIT ? OFFSET ?", (*patterns, limit + 1, offset)).fetchall()
         return {"matches": [dict(row) for row in rows[:limit]], "more": len(rows) > limit,
+                "next": offset + limit if len(rows) > limit else None,
                 "search_mode": "fts5" if self.fts else "literal_scan", "transcript_bytes_read": 0,
                 "trust": "untrusted historical evidence; completeness and current validity unknown"}
 

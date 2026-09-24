@@ -63,7 +63,8 @@ def observe_reads(path: Path, counter: dict[str, int]) -> Iterator[None]:
         stream = original(file, *args, **kwargs)
         return CountedReader(stream, counter) if matches else stream
 
-    with patch('builtins.open', observed), patch('io.open', observed):
+    # Python 3.10 pathlib caches its opener; intercept Path.open directly too.
+    with patch('builtins.open', observed), patch('io.open', observed), patch.object(Path, 'open', observed):
         yield
 
 
@@ -163,7 +164,8 @@ def run() -> dict[str, Any]:
         corrections = sum(item['text'] == 'Use collected AUD before fees.' for item in store.state(limit=20)['items'])
         storage = store.status()['database_bytes']
         store.close()
-        passed = recovered == corrections == CASES and queries['opens'] == 0 and all(
+        passed = (recovered == corrections == CASES and queries['opens'] == 0
+                  and 0 < indexed['bytes'] < 2 * scans['batched_full_scan_transcript_bytes']) and all(
             scans[key] == CASES for key in ('full_log_scan_exact_recovery_before_deletion', 'batched_scan_exact_recovery_before_deletion'))
         return {'passed': passed, 'population': 'synthetic retrieval requests; no model answers scored',
                 'cases': CASES, 'compactions': COMPACTIONS, 'indexed_exact_recovery_after_log_deletion': recovered,

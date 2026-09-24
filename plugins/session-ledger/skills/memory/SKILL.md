@@ -15,7 +15,9 @@ if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_P
 Use the same quoted command prefix for these actions:
 
 - `search "literal keywords"`: small evidence previews and stable IDs. Search
-  the metric, filename, tool name, correction term, or source identifier.
+  the metric, filename, tool name, correction term, or source identifier. Results
+  are newest first; follow `--offset NEXT` for more pages. Search pages are a
+  live view, so avoid concurrent sync while paging or deduplicate IDs.
 - `fetch ID`: first page, paired call/result links, timestamp, hash, error and
   completeness boundaries. Fetch the linked call to check original filters.
   Follow `--start NEXT` until `next` is null; `--pointer /input/currency` selects

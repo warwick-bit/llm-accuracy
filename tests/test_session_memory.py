@@ -446,3 +446,33 @@ def test_inode_zero_rotation_revalidates_session_identity(store, tmp_path, monke
     with pytest.raises(ValueError, match='session_mismatch'):
         store.sync(path)
     assert store.status()['events'] == 0
+
+
+
+@pytest.mark.parametrize('fts', [True, False])
+def test_search_pages_recover_results_beyond_first_twenty(store, tmp_path, fts):
+    store.sync(write_log(tmp_path / 'log', *(result(f'call-{index}', text=f'commonword {index}') for index in range(25))))
+    store.fts = fts and store.fts
+    identities = []
+    offset = 0
+    while offset is not None:
+        page = store.search('commonword', offset=offset, limit=10)
+        identities.extend(item['id'] for item in page['matches'])
+        offset = page['next']
+    assert len(set(identities)) == len(identities) == 25
+    assert json.loads(store.fetch(identities[0])['text'])['content'] == 'commonword 24'
+
+
+
+def test_replay_instrumentation_has_positive_file_read_control(tmp_path):
+    spec = importlib.util.spec_from_file_location('replay', ROOT / 'scripts/session_memory_replay.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    path = tmp_path / 'synthetic-log'
+    path.write_bytes(b'fixture-data')
+    counter = {'bytes': 0, 'opens': 0}
+    with module.observe_reads(path, counter):
+        assert path.read_bytes() == b'fixture-data'
+        with open(path, 'rb') as stream:
+            assert stream.read() == b'fixture-data'
+    assert counter == {'bytes': 24, 'opens': 2}
