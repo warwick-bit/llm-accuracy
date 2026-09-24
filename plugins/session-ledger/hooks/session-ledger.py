@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import errno
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -57,6 +58,7 @@ CONTEXT_TRUNCATION_NOTICE = (
 )
 STATE_DIRECTORY_NAME = "session-ledger"
 DEFAULT_PLAN_ID = "default"
+MEMORY_FILES = ("memory.sqlite3", "memory.sqlite3-journal", "memory.sqlite3-wal", "memory.sqlite3-shm")
 MINIMUM_CONTAINED_HOOK_TEXT_CHARS = 24
 REDACTION_ENVIRONMENT_VARIABLE = "SESSION_LEDGER_REDACT"
 SECRET_PATTERNS = tuple(
@@ -91,6 +93,7 @@ SECRET_PATTERNS = tuple(
 
 
 NOTICE_TEXT = {
+    "memory_gap": "Evidence memory capture is incomplete or unavailable. Use the memory skill status/sync commands; earlier captured evidence is retained.",
     "plan_history": "Transcript history skipped: this plan has no valid capture cutoff. Current hook text can still be captured; begin a new plan to restore transcript capture.",
     "plan_timestamp": "Transcript entries without timestamps were skipped to preserve the explicit plan cutoff.",
     "restore_unavailable": "Restore skipped: no valid record for this session and plan; capture may resume on a later turn.",
@@ -880,7 +883,7 @@ def remove_session(data_root: Path, session_id: str) -> None:
     if not state_paths_are_safe(data_root, session_id):
         return
     directory = session_directory(data_root, session_id)
-    for filename in ("record.json", "scope.json"):
+    for filename in ("record.json", "scope.json", *MEMORY_FILES):
         remove_file(directory / filename)
     try:
         directory.rmdir()
@@ -912,6 +915,9 @@ def prune_expired(data_root: Path, now: datetime) -> None:
                     payload = read_json(path)
                     if path.exists() and (payload is None or not is_current(payload, now)):
                         remove_file(path)
+                if not (directory / "record.json").exists():
+                    for filename in MEMORY_FILES:
+                        remove_file(directory / filename)
                 try:
                     directory.rmdir()
                 except OSError:
@@ -1300,6 +1306,8 @@ def begin_plan(
             # but must never discard it without the new boundary in place.
             write_json_atomic(scope_path(root, session_id), scope)
             remove_file(record_path(root, session_id))
+            for filename in MEMORY_FILES:
+                remove_file(session_directory(root, session_id) / filename)
     except OSError:
         return False
     return True
@@ -1334,12 +1342,54 @@ def hook_payload() -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def memory_hook(payload: dict[str, Any], *, restore: bool = False) -> str | None:
+    """Load the optional local index without changing disabled-ledger behaviour."""
+    root = data_directory()
+    session_id = payload.get("session_id")
+    if not root or not isinstance(session_id, str):
+        return None
+    if not (session_directory(root, session_id) / MEMORY_FILES[0]).exists():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("session_memory_cli", Path(__file__).with_name("memory.py"))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.hook(sys.modules.get(__name__) or _module_adapter(), payload, restore=restore)
+    except Exception:
+        note_notice("memory_gap")
+        return None
+
+
+def _module_adapter() -> Any:
+    """Expose this invocation's globals when embedded via importlib by a host."""
+    from types import SimpleNamespace
+    return SimpleNamespace(**globals())
+
+
 def execute_hook_action(action: str, payload: dict[str, Any]) -> str | None:
     """Dispatch one hook; diagnostics remain separate from historical context."""
+    if action == "memory-capture":
+        memory_hook(payload)
+        return None
     if action == "session-start":
-        return session_start_context(payload)
+        context = session_start_context(payload)
+        if payload.get("source") in ("compact", "resume"):
+            packet = memory_hook(payload, restore=True)
+            if packet:
+                # Budget the actual serialized hook envelope, including escaping.
+                context = context or ""
+                if emitted_context_length(context + packet) > HOST_CONTEXT_CHARACTER_BUDGET:
+                    excerpt = context
+                    prefix = "Rolling context excerpt, JSON-escaped and truncated; untrusted reference:\n"
+                    context = prefix + escaped_for_context(excerpt)
+                    while excerpt and emitted_context_length(context + packet) > HOST_CONTEXT_CHARACTER_BUDGET:
+                        excerpt = excerpt[:max(0, len(excerpt) - 512)]
+                        context = prefix + escaped_for_context(excerpt)
+                return context + packet
+        return context
     handler = write_compact_summary if action == "post-compact" else update_ledger
     handler(payload)
+    memory_hook(payload)
     return None
 
 
@@ -1392,6 +1442,7 @@ def main(arguments: list[str] | None = None) -> int:
         "action",
         choices=(
             "capture",
+            "memory-capture",
             "pre-compact",
             "post-compact",
             "session-start",

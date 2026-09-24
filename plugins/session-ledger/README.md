@@ -153,8 +153,9 @@ they appear in ordinary conversation text. Install only if this is acceptable.
 The plugin stores a bounded rolling user/assistant session record, bounded
 compact summary, hashed session/workspace identifiers, schema version, and
 expiry metadata. It does not retain raw JSONL transcript structure, the hook's
-separate workspace-path or plan-name fields, tool input/output, provider data,
-telemetry, or any server-side copy. The record is deliberately full-fidelity
+separate workspace-path or plan-name fields, telemetry, or any server-side copy.
+Tool input/output is not retained unless experimental memory is explicitly
+enabled (see below). That mode can retain sensitive provider data locally. The record is deliberately full-fidelity
 within its fixed rolling byte limit; by default it does not redact ordinary
 conversation text.
 
@@ -189,3 +190,72 @@ simply produce no carryover and never block Claude Code.
 
 This plugin improves continuity and evidence hygiene; it does not guarantee
 factual correctness, completeness, freshness, or domain truth.
+
+
+## Experimental evidence memory (explicit enable)
+
+This experiment separates bounded injected conversation from durable decisions
+and searchable logged tool evidence. It is off by default. Enabling it is a
+separate choice from installing Session Ledger; default-on capture is not yet
+recommended by a live-host/model usefulness study.
+
+The `memory` skill provides commands and model guidance. For a disposable test:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_DATA}" --session-id "${CLAUDE_SESSION_ID}" enable
+```
+
+Use `python` if `python3` is unavailable. The CLI also accepts explicit paths and
+session IDs for manual Codex transcript ingestion. This does not install Codex
+hooks. `status`, `sync /exact/transcript.jsonl`, `search "keywords"`, `fetch ID`,
+`state`, `remember` and `disable` are subcommands; see the memory skill for paging
+and revision syntax. Claude's PostToolUse, PostToolUseFailure, Stop and compaction
+hooks sync incrementally while enabled. A call result not yet flushed to the
+transcript is captured on a later hook; there is no guarantee after abrupt exit.
+
+Storage: one SQLite database per hashed session directory, bound to the current
+plan. It stores exact JSON **values logged by the host** for tool calls/results,
+including arguments, rendered result blocks and Claude's richer `toolUseResult`
+when present. It is not a complete raw transcript or a complete provider archive.
+It preserves evidence after the original log is deleted. IDs link calls/results;
+hashes check local body integrity. FTS5 provides literal keyword search; Python
+builds without FTS5 fall back to a bounded-output local database scan. Search and
+fetch never read original logs. Neither mode guarantees semantic recall.
+
+Decisions and corrections are explicitly written, with revision checks and
+optional evidence IDs. Corrections supersede the same key; audit history remains.
+They do not expire merely because the rolling conversation reaches 64 KiB.
+After compaction, a bounded subset of current state and retrieval directions is
+injected within the existing host output budget. The model must use the skill to
+retrieve additional state/evidence; storage alone does not guarantee it will.
+
+Limits: database pages are capped at 128 MiB per session (temporary SQLite journal
+space is additional); a source line is capped at 8 MiB; each sync processes up to
+one 8 MiB batch plus at most one line, with a one-second cooperative loop budget.
+A single line/SQLite transaction can take longer; the host's existing five-second
+hook timeout remains the outer limit. Search returns at most 20 previews; fetch
+returns 2,048 characters per page. Large results are paged, not silently truncated.
+A full database stops new writes and rolls back the cursor without evicting old
+evidence. Malformed/oversized lines similarly stop at a retryable cursor. Repeated
+warnings mean capture still cannot progress; use explicit sync/status to diagnose.
+
+Clear, disable and begin-plan delete evidence and state; begin-plan also disables
+capture until re-enabled. Explicit plan cutoffs exclude old or untimestamped log
+rows. Successful capture or an explicit remember/enable action refreshes the shared
+30-day inactivity expiry, including the rolling conversation record. Passive
+search/fetch/status and a sync with no new rows do not refresh it. Expiry is
+checked on access/pruning, not by a background
+scheduler. Data can remain on an unused disk until the next cleanup. The rolling
+record's expiry can also prune the corresponding memory database. File permissions
+are restricted on POSIX; Windows protection depends on the containing directory's
+ACLs. SQLite journals may temporarily contain the same sensitive values.
+
+**Redaction:** `SESSION_LEDGER_REDACT` applies to the rolling record, not this
+opt-in exact-evidence archive or durable state. Enabling memory may retain secrets
+and provider payloads from tool output. Do not enable it where that is unacceptable.
+No network, telemetry or cross-session retrieval is added. Never commit captured
+memory, transcripts or real query results as fixtures.
+
+Synthetic replay tests establish storage/retrieval properties and measured local
+I/O, not a general improvement in model answer accuracy. A clean installation and
+live host smoke remain required before release.

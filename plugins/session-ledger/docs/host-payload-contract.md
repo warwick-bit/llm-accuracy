@@ -155,3 +155,24 @@ marketplace, skills invoked non-interactively via
   a fresh empty record for that session, which is expected.
 - Command stdout is embedded in the expanded command content ahead of the
   SKILL.md body text, so the model can compare it to the required phrases.
+
+
+## Experimental evidence-memory hooks
+
+The evidence-memory experiment adds PostToolUse and PostToolUseFailure as
+advisory catch-up opportunities. The [official hook reference](https://code.claude.com/docs/en/hooks#posttoolusefailure)
+documents both events and the shared session/transcript identity fields. The
+hook does not assume its tool result has already been flushed: it indexes complete
+JSONL rows only, and retries on later tool/Stop/compaction hooks. New wiring has
+synthetic shell/subprocess coverage; this is not a replacement for a clean live
+installation smoke of the experiment.
+
+The manual importer requires an explicit matching host session identity within
+the first 256 KiB/1,024 records, before any tool blocks. A validated cursor reuses that proof until the source
+is reset; ordinary incremental sync checks only the cursor anchor and identity
+metadata, avoiding repeated header scans. It rejects unknown or
+mismatched identity rather than guessing. It detects replacement, shrinkage,
+changed cursor anchors and same-size rewrites. An arbitrary in-place edit far
+before the cursor combined with an append can evade these incremental checks;
+this is an append-log importer, not a full-file tamper detector. Existing captured
+bodies remain hash-checkable, but those hashes are not provider authentication.

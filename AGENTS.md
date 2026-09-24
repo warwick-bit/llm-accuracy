@@ -21,8 +21,10 @@ Keep each plugin generic and safe to share publicly.
 - Do not add credentials, telemetry, raw prompts, provider payloads, customer
   data, or persisted session-ledger contents to repository source, fixtures,
   issues, or pull requests. The Session Ledger plugin may persist only its
-  bounded compact summary and rolling session record in its own
-  local `${CLAUDE_PLUGIN_DATA}` directory.
+  bounded compact summary and rolling session record, plus explicitly enabled
+  experimental tool evidence and durable state, in its own local
+  `${CLAUDE_PLUGIN_DATA}` directory. Preserve the local-only, same-session,
+  same-plan, 30-day boundary and keep captured data out of source.
 - Keep the public-facing claim bounded: the plugin improves evidence hygiene;
   it does not guarantee factual correctness.
 

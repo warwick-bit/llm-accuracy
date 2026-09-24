@@ -89,6 +89,7 @@ jobs:
           tests/test_accuracy_wiring.py
           tests/test_custom_triggers.py
           tests/test_technical_harness.py
+          tests/test_session_memory.py
           tests/test_session_ledger_wiring.py
           tests/test_session_ledger_locking.py
           tests/test_session_ledger_host_smoke.py
