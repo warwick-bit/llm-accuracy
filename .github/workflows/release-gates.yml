@@ -96,6 +96,11 @@ jobs:
           tests/test_evidence_receipts.py
           tests/test_deterministic_data.py
 
+      - name: Verify atomic archive replacement
+        run: >-
+          python -m pytest -q tests/test_release_archive.py
+          -k "failed_archive_build or successful_archive"
+
   release-gates:
     name: release-gates
     runs-on: ubuntu-latest

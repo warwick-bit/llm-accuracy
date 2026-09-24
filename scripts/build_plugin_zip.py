@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -110,10 +111,18 @@ def archive_members(plugin: Path = PLUGIN) -> list[Path]:
 
 def build_archive(output: Path, plugin: Path = PLUGIN) -> Path:
     """Write an uploadable archive whose root is the plugin root."""
+    members = archive_members(plugin)
     output.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for path in archive_members(plugin):
-            archive.write(path, path.relative_to(plugin).as_posix())
+    with tempfile.NamedTemporaryFile(prefix=".plugin-archive-", suffix=".zip",
+                                     dir=output.parent, delete=False) as temporary:
+        temporary_path = Path(temporary.name)
+    try:
+        with zipfile.ZipFile(temporary_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for path in members:
+                archive.write(path, path.relative_to(plugin).as_posix())
+        temporary_path.replace(output)
+    finally:
+        temporary_path.unlink(missing_ok=True)
     return output
 
 
