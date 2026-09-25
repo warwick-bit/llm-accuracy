@@ -258,6 +258,12 @@ A full database stops new writes and rolls back the cursor without evicting old
 evidence. Malformed/oversized lines similarly stop at a retryable cursor. Repeated
 warnings mean capture still cannot progress; use explicit sync/status to diagnose.
 
+`lookup.status=found` means one paired historical log entry was retrieved. It
+does not prove that a tool call or provider request succeeded. `host_error_signal`
+distinguishes a reported error, a reported no-error flag and an absent flag;
+Codex transcript outputs often omit that signal. Treat `error_flag_absent` as
+unknown execution status and inspect the result before using it in an answer.
+
 Clear, disable and begin-plan delete evidence and state; begin-plan also disables
 capture until re-enabled. Explicit plan cutoffs exclude old or untimestamped log
 rows. Successful capture or an explicit remember/enable action refreshes the shared

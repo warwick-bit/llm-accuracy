@@ -20,7 +20,12 @@ Use the same quoted command prefix for these actions:
   separate actions below. `state --revision N` retrieves a paged state's full
   text. `found` with `current_state: null` means no exact-key correction was
   recorded; it does not prove none was ever discussed. Never treat a preview as
-  the full result.
+  the full result. `found` means a paired log entry was retrieved, not that the
+  tool or provider succeeded. Check `host_error_signal`: `error_reported`
+  means a host-reported failure, `error_flag_false` means the host did not flag
+  an error, and `error_flag_absent` means execution status was not reported.
+  Codex logs commonly omit the error flag; inspect the result and recheck
+  before relying on it.
 - `search "literal keywords"`: small evidence previews and stable IDs. Search
   the metric, filename, tool name, correction term, or source identifier. Results
   are newest first; follow `--offset NEXT` for more pages. Search pages are a

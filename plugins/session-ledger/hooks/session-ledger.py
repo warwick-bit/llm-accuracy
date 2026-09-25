@@ -1385,6 +1385,9 @@ def execute_hook_action(action: str, payload: dict[str, Any]) -> str | None:
                     while excerpt and emitted_context_length(context + packet) > HOST_CONTEXT_CHARACTER_BUDGET:
                         excerpt = excerpt[:max(0, len(excerpt) - 512)]
                         context = prefix + escaped_for_context(excerpt)
+                if emitted_context_length(context + packet) > HOST_CONTEXT_CHARACTER_BUDGET:
+                    # Never let a future packet change spill context into a host truncation file.
+                    return packet if emitted_context_length(packet) <= HOST_CONTEXT_CHARACTER_BUDGET else None
                 return context + packet
         return context
     handler = write_compact_summary if action == "post-compact" else update_ledger

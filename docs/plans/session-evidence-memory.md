@@ -8,8 +8,9 @@ reliable retrieval. Owning surface: the separately installed Session Ledger.
 
 Acceptance: explicit current decisions and exact logged tool call/result pairs
 remain retrievable after repeated compactions and original-log deletion; search
-and fetch do not reread transcripts. Calls with missing or failed results cannot
-be represented as successful evidence. All automatic work remains advisory.
+and fetch do not reread transcripts. Missing pairs and host-reported failures
+remain explicit. A host that omits an execution-error flag cannot establish
+whether a logged result came from a successful call. All automatic work remains advisory.
 
 Constraints: local only, current session and plan only, 30-day expiry, no external
 services or dependencies, no captured data in source/tests. Capture is experimental
@@ -59,7 +60,7 @@ of this feature. Treatment: enabled memory. Include ordinary/repeated queries,
 correction, error, missing result, source deletion, Unicode and truncation.
 
 Gates: every expected call/result and current correction recovered exactly;
-no failed/missing result marked successful; zero original-transcript bytes read
+no host-reported failed/missing result marked successful; zero original-transcript bytes read
 by search/fetch after indexing; bounded output and storage; old ledger still
 behaves identically when disabled. Report initial index I/O and retained bytes
 separately. Tests are deterministic, so sampling variance is not estimated.
@@ -181,3 +182,18 @@ marketplace add, install and enable all exited 0, all 11 plugin files matched,
 and the disposable profile was removed. The cause of the UNC-path failure was
 not diagnosed. This adds package compatibility evidence, not an authenticated
 installed-host hook test.
+
+A full-branch review found a restore-size boundary: delimiter-heavy state text
+could expand after JSON escaping and exceed the 9,500-character host response
+limit even after rolling context was removed. The packet now drops older state
+excerpts until its final escaped response fits; the host boundary also drops
+any future packet that still cannot fit. A synthetic four-correction case
+reproduced 11,913 characters before this fix.
+
+Codex's sampled `function_call_output` and `custom_tool_call_output` rows did
+not expose a structured execution-error field. Retrieval now reports whether
+the host's `is_error` flag was true, false or absent. `lookup.status=found` means
+a unique paired log entry was retrieved; it does not assert successful tool or
+provider execution. The memory skill requires inspecting and rechecking such
+evidence. Read/write CLI actions now apply the same session-path symlink check
+as disable.

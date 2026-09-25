@@ -358,6 +358,12 @@ class Store:
             selected = encoded(value)
         if start < 0 or start > len(selected):
             raise ValueError("invalid_page")
+        logged = json.loads(body)
+        error_flag = logged.get("is_error") if row["kind"] == "result" and isinstance(logged, dict) else None
+        host_error = bool(row["error"]) or error_flag is True
+        host_error_signal = ("not_applicable" if row["kind"] != "result" else
+                             "error_reported" if host_error else
+                             "error_flag_false" if error_flag is False else "error_flag_absent")
         links = self.db.execute("SELECT id, kind, error FROM events WHERE call_id=? ORDER BY rowid LIMIT 21",
                                 (row["call_id"],)).fetchall()
         calls = sum(link["kind"] == "call" for link in links)
@@ -366,7 +372,8 @@ class Store:
             "paired" if calls == results == 1 else "missing_call" if not calls else "missing_result")
         return {"id": identity, "call_id": row["call_id"], "kind": row["kind"],
                 "timestamp": row["timestamp"], "sha256": sha(body.encode()), "pairing": pairing,
-                "links": [dict(link) for link in links[:20]], "host_error": bool(row["error"]),
+                "links": [dict(link) for link in links[:20]], "host_error": host_error,
+                "host_error_signal": host_error_signal,
                 "completeness": "unknown; only logged data preserved", "freshness": "historical; reverify for current claims",
                 "pointer": pointer, "start": start, "text": selected[start:start + PAGE_CHARACTERS],
                 "next": start + PAGE_CHARACTERS if start + PAGE_CHARACTERS < len(selected) else None,
@@ -388,7 +395,8 @@ class Store:
         calls = [item for item in result["links"] if item["kind"] == "call"]
         if result["pairing"] != "paired" or result["host_error"] or len(calls) != 1:
             return {"status": "unverified", "pairing": result["pairing"],
-                    "host_error": result["host_error"], "result_id": result["id"],
+                    "host_error": result["host_error"], "host_error_signal": result["host_error_signal"],
+                    "result_id": result["id"],
                     "transcript_bytes_read": 0}
         call = self.fetch(calls[0]["id"])
         if result["next"] is not None or call["next"] is not None:
@@ -408,6 +416,7 @@ class Store:
         return {"status": "found", "result_id": result["id"], "call_id": call["id"],
                 "historical_result": json.loads(result["text"]),
                 "logged_call": json.loads(call["text"]), "current_state": state,
+                "host_error_signal": result["host_error_signal"],
                 "freshness": result["freshness"], "completeness": result["completeness"],
                 "transcript_bytes_read": 0}
 

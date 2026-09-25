@@ -67,7 +67,7 @@
   "windows": {
     "host": "native Windows Claude Code 2.1.281 with Git Bash and a disposable enabled plugin copy",
     "python": "3.13.1",
-    "focused_native_tests": {"passed": 51, "skipped": 2},
+    "focused_native_tests": {"passed": 54, "skipped": 3},
     "persisted_disposable_session": {
       "session_start_events": 1,
       "user_prompt_events": 1,
@@ -101,6 +101,14 @@
     "source_files_checked": 11,
     "temporary_profile_cleanup_confirmed": true,
     "limit": "The UNC-path add failure was not diagnosed. This validates native package installation from a local Windows path, not authenticated installed-host hook delivery."
+  },
+  "full_branch_review_followup": {
+    "restore_budget_characters": 9500,
+    "delimiter_heavy_restore_before_fix": 11913,
+    "delimiter_heavy_restore_after_fix": 8586,
+    "memory_cue_preserved_after_fix": true,
+    "codex_execution_boundary": "Sampled Codex output payloads had no structured execution-error field. The API now exposes error_flag_absent where the host did not report one; found means paired evidence retrieved, not successful tool execution.",
+    "session_path_boundary": "CLI read/write actions check the session directory for symlinks before reading session identity."
   },
   "product_decision": "Capture remains explicitly opt-in. The local outcome counter stores labels and counts only; it does not store query text or leave the session database."
 }

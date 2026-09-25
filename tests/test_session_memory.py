@@ -92,6 +92,10 @@ def test_codex_linked_outputs(store, tmp_path, call_type, result_type):
     assert packet['pairing'] == 'paired'
     assert json.loads(packet['text']) == rows[-1]['payload']
     assert packet['completeness'].startswith('unknown')
+    assert packet['host_error_signal'] == 'error_flag_absent'
+    lookup = store.lookup('has_more')
+    assert lookup['status'] == 'found'
+    assert lookup['host_error_signal'] == 'error_flag_absent'
 
 
 def test_partial_line_does_not_advance_cursor(store, tmp_path):
@@ -169,6 +173,7 @@ def test_one_call_lookup_returns_linked_result_call_and_latest_correction(store,
     assert packet['historical_result']['content'] == 'metric007 collected 123 AUD'
     assert packet['logged_call']['input']['currency'] == 'AUD'
     assert packet['current_state']['text'] == 'Use collected.'
+    assert packet['host_error_signal'] == 'error_flag_false'
     assert packet['transcript_bytes_read'] == 0
 
 
@@ -178,7 +183,9 @@ def test_one_call_lookup_refuses_ambiguous_failed_and_paged_results(store, tmp_p
                          call('failed'), result('failed', text='failedword', error=True),
                          call('large'), result('large', text='largeword ' * 300)))
     assert store.lookup('ambiguousword')['status'] == 'ambiguous'
-    assert store.lookup('failedword')['status'] == 'unverified'
+    failed = store.lookup('failedword')
+    assert failed['status'] == 'unverified'
+    assert failed['host_error_signal'] == 'error_reported'
     assert store.lookup('largeword')['status'] == 'paged'
     assert store.lookup('missingword')['status'] == 'not_found'
 
@@ -404,6 +411,21 @@ def test_symlink_database_rejected(tmp_path, engine):
     assert target.read_text() == 'protected'
 
 
+def test_cli_rejects_symlinked_session_directory(tmp_path):
+    assert cli(tmp_path, 'enable').returncode == 0
+    ledger = load('session-ledger')
+    directory = ledger.session_directory(tmp_path / 'data', 'synthetic-session')
+    target = tmp_path / 'moved-session'
+    directory.rename(target)
+    try:
+        directory.symlink_to(target, target_is_directory=True)
+    except OSError:
+        pytest.skip('symlink privilege unavailable')
+    response = cli(tmp_path, 'status')
+    assert response.returncode == 1
+    assert json.loads(response.stdout)['error'] == 'unsafe_memory_path'
+
+
 def test_private_file_permissions(store):
     if os.name != 'posix':
         pytest.skip('POSIX mode bits')
@@ -463,6 +485,37 @@ def test_restore_escapes_delimiters_and_includes_large_latest_state(tmp_path, mo
     assert 'long correction' in context
     assert context.count('</session-evidence-memory>') == 1
     assert ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+
+
+def test_restore_packet_stays_bounded_after_delimiter_escaping(tmp_path, monkeypatch):
+    assert cli(tmp_path, 'enable').returncode == 0
+    for index in range(4):
+        value = {'key': f'key{index}', 'kind': 'correction', 'text': '<' * 512}
+        assert cli(tmp_path, 'remember', data=json.dumps(value).encode()).returncode == 0
+    ledger = load('session-ledger')
+    monkeypatch.setenv('CLAUDE_PLUGIN_DATA', str(tmp_path / 'data'))
+    payload = {'session_id': 'synthetic-session', 'cwd': str(tmp_path), 'source': 'compact'}
+    context = ledger.execute_hook_action('session-start', payload)
+    assert 'session-evidence-memory' in context
+    assert 'key3' in context
+    assert ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
+
+
+def test_restore_drops_future_packet_that_cannot_fit(tmp_path, monkeypatch):
+    ledger = load('session-ledger')
+    monkeypatch.setattr(ledger, 'session_start_context', lambda _payload: '')
+    monkeypatch.setattr(ledger, 'memory_hook', lambda _payload, restore=False: 'x' * 20000)
+    assert ledger.execute_hook_action('session-start', {'source': 'compact'}) is None
+
+
+def test_memory_hook_declines_packet_when_budget_is_too_small(tmp_path, monkeypatch):
+    assert cli(tmp_path, 'enable').returncode == 0
+    ledger = load('session-ledger')
+    bridge = load('memory')
+    monkeypatch.setenv('CLAUDE_PLUGIN_DATA', str(tmp_path / 'data'))
+    monkeypatch.setattr(ledger, 'HOST_CONTEXT_CHARACTER_BUDGET', 100)
+    payload = {'session_id': 'synthetic-session', 'cwd': str(tmp_path)}
+    assert bridge.hook(ledger, payload, restore=True) is None
 
 
 def test_busy_hook_skips_without_writing(tmp_path, monkeypatch):
