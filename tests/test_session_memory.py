@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+import errno
 import json
 import os
 import sqlite3
@@ -9,6 +10,7 @@ import subprocess
 import sys
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -631,6 +633,19 @@ def test_synthetic_long_session_replay():
     assert report['indexed_lookup_transcript_opens'] == 0
     assert report['index_ingestion_transcript_bytes'] < 2 * report['batched_full_scan_transcript_bytes']
     assert report['batched_scan_exact_recovery_before_deletion'] == report['cases']
+
+
+def test_windows_busy_lock_is_normalized_for_advisory_hook(tmp_path, monkeypatch):
+    ledger = load('memory_runtime')
+
+    def busy(*_args):
+        raise OSError(errno.EACCES, "synthetic contention")
+
+    monkeypatch.setattr(ledger, 'fcntl', None)
+    monkeypatch.setattr(ledger, 'msvcrt', SimpleNamespace(locking=busy, LK_NBLCK=1, LK_UNLCK=2))
+    with pytest.raises(BlockingIOError):
+        with ledger.session_hash_lock(tmp_path / 'data', ledger.digest('synthetic-session'), wait=False):
+            pytest.fail('lock unexpectedly acquired')
 
 
 
