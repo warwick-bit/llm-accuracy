@@ -14,13 +14,14 @@ from typing import Any, Iterator
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-HOOKS = ROOT / 'plugins/session-ledger/hooks'
+HOOKS = ROOT / 'plugins/evidence-memory/hooks'
+LEDGER_HOOKS = ROOT / 'plugins/session-ledger/hooks'
 CASES = 12
 COMPACTIONS = 3
 
 
 def load(name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(name, HOOKS / (name + '.py'))
+    spec = importlib.util.spec_from_file_location(name, (LEDGER_HOOKS if name == 'session-ledger' else HOOKS) / (name + '.py'))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

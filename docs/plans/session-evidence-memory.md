@@ -4,7 +4,8 @@
 
 Problem: a bounded rolling conversation loses early corrections and exact tool
 results during long work. Increasing the injected context does not provide
-reliable retrieval. Owning surface: the separately installed Session Ledger.
+reliable retrieval. Owning surface: the separately installed Evidence Memory
+plugin; Session Ledger remains an independent rolling-continuity plugin.
 
 Acceptance: explicit current decisions and exact logged tool call/result pairs
 remain retrievable after repeated compactions and original-log deletion; search
@@ -13,13 +14,15 @@ remain explicit. A host that omits an execution-error flag cannot establish
 whether a logged result came from a successful call. All automatic work remains advisory.
 
 Constraints: local only, current session and plan only, 30-day expiry, no external
-services or dependencies, no captured data in source/tests. Capture is experimental
+services or plugin dependencies, no captured data in source/tests. Capture is experimental
 and explicitly enabled per session pending usefulness tests. This deliberately
-extends the old persistence boundary to logged tool data. It is not a release or
-an installation change. Codex support is explicit CLI ingestion, not host hooks.
+adds a separate, more sensitive persistence boundary for logged tool data. It is
+not a release or live installation. Codex support is explicit CLI ingestion,
+not host hooks.
 
-Consumers: Claude hooks and memory skill, portable CLI, existing clear/begin-plan
-and expiry, distribution archives, Python 3.9–3.13 and Windows Git Bash.
+Consumers: the Evidence Memory Claude hooks and skill, portable CLI, its own
+clear/begin-plan and expiry, distribution archives, Python 3.9–3.13 and Windows
+Git Bash. Session Ledger's clear and begin-plan do not alter Evidence Memory.
 
 ## Alternatives and hypotheses
 
@@ -197,3 +200,20 @@ a unique paired log entry was retrieved; it does not assert successful tool or
 provider execution. The memory skill requires inspecting and rechecking such
 evidence. Read/write CLI actions now apply the same session-path symlink check
 as disable.
+
+## Packaging revision after user review
+
+The initial experiment lived inside Session Ledger. The user chose a fully
+independent Evidence Memory install because exact tool-output persistence has a
+different privacy boundary. The current branch therefore moves the store,
+skill and hooks into `plugins/evidence-memory`, gives it its own session and plan
+metadata under its own plugin-data directory, and removes memory capture from
+Session Ledger. Earlier model and host receipts above tested the bundled
+prototype; they remain evidence about the retrieval engine and cue, not proof
+that the new install works. The standalone package has passed an isolated Linux
+marketplace install and a native Windows authenticated installed-host smoke
+using synthetic data. The standalone receipt at
+`docs/validation/evidence-memory-standalone-2026-09-25.json` records those checks and a
+temporary upgrade probe. These do not establish actual host compaction
+behaviour, macOS compatibility, real long-session accuracy gains, or token
+savings.

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from scripts.check_distribution_boundary import boundary_violations
 
 
@@ -21,6 +23,10 @@ def test_session_ledger_plugin_satisfies_its_local_only_boundary() -> None:
         )
         == []
     )
+
+
+def test_evidence_memory_plugin_satisfies_its_local_only_boundary() -> None:
+    assert boundary_violations(ROOT / "plugins" / "evidence-memory", profile="evidence-memory") == []
 
 
 def test_deterministic_data_plugin_satisfies_public_boundary() -> None:
@@ -85,7 +91,12 @@ def test_non_text_artifact_is_rejected_cleanly(tmp_path: Path) -> None:
 def test_symlink_is_rejected_before_its_target_is_read(tmp_path: Path) -> None:
     outside = tmp_path.parent / "outside-boundary-artifact.md"
     outside.write_text("private source", encoding="utf-8")
-    (tmp_path / "linked.md").symlink_to(outside)
+    try:
+        (tmp_path / "linked.md").symlink_to(outside)
+    except OSError as error:
+        if getattr(error, "winerror", None) == 1314:
+            pytest.skip("Windows symlink privilege is unavailable")
+        raise
 
     assert boundary_violations(tmp_path) == ["symlink artifact: linked.md"]
 

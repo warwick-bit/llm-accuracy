@@ -54,28 +54,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" memory-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" memory-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
-            "timeout": 5
-          }
-        ]
-      }
     ]
   }
 }

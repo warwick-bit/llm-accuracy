@@ -74,6 +74,10 @@ Checked / Gap / Next footer. These are advisory workflows, not accuracy guarante
 - **Session Ledger** — add this only in Claude Code when accuracy-critical
   context must survive compaction within the same long session. It stores a
   bounded local record, so review its data boundary before installing it.
+- **Evidence Memory** — independent experimental Claude Code plugin for exact
+  earlier tool results and revisioned corrections in the current session. It
+  stores potentially sensitive tool data locally only after a separate
+  per-session enable step; Session Ledger is not required.
 
 ### Try LLM Accuracy in five minutes
 
@@ -421,6 +425,8 @@ progresses, flushes it before compaction, and restores it when the same compacte
 session continues. There is no everyday command to run. `/session-ledger:begin-plan`
 is optional when you deliberately start unrelated work within the same long
 session, and `/session-ledger:clear` removes the plugin's local ledger state.
+Evidence Memory can be installed separately; `/evidence-memory:memory` explains
+its explicit capture, lookup, correction and deletion commands.
 
 ## Why freshness matters
 

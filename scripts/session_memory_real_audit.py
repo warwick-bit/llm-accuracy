@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-ENGINE_PATH = Path(__file__).resolve().parents[1] / "plugins/session-ledger/hooks/session_memory.py"
+ENGINE_PATH = Path(__file__).resolve().parents[1] / "plugins/evidence-memory/hooks/session_memory.py"
 TOKEN = re.compile(r"(?<![A-Za-z0-9])[A-Za-z0-9][A-Za-z0-9_.:/-]{9,}(?![A-Za-z0-9])")
 
 

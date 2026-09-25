@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import errno
 import hashlib
-import importlib.util
 import json
 import os
 import re
@@ -93,7 +92,6 @@ SECRET_PATTERNS = tuple(
 
 
 NOTICE_TEXT = {
-    "memory_gap": "Evidence memory capture is incomplete or unavailable. Use the memory skill status/sync commands; earlier captured evidence is retained.",
     "plan_history": "Transcript history skipped: this plan has no valid capture cutoff. Current hook text can still be captured; begin a new plan to restore transcript capture.",
     "plan_timestamp": "Transcript entries without timestamps were skipped to preserve the explicit plan cutoff.",
     "restore_unavailable": "Restore skipped: no valid record for this session and plan; capture may resume on a later turn.",
@@ -1342,57 +1340,12 @@ def hook_payload() -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
-def memory_hook(payload: dict[str, Any], *, restore: bool = False) -> str | None:
-    """Load the optional local index without changing disabled-ledger behaviour."""
-    root = data_directory()
-    session_id = payload.get("session_id")
-    if not root or not isinstance(session_id, str):
-        return None
-    if not (session_directory(root, session_id) / MEMORY_FILES[0]).exists():
-        return None
-    try:
-        spec = importlib.util.spec_from_file_location("session_memory_cli", Path(__file__).with_name("memory.py"))
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module.hook(sys.modules.get(__name__) or _module_adapter(), payload, restore=restore)
-    except Exception:
-        note_notice("memory_gap")
-        return None
-
-
-def _module_adapter() -> Any:
-    """Expose this invocation's globals when embedded via importlib by a host."""
-    from types import SimpleNamespace
-    return SimpleNamespace(**globals())
-
-
 def execute_hook_action(action: str, payload: dict[str, Any]) -> str | None:
     """Dispatch one hook; diagnostics remain separate from historical context."""
-    if action == "memory-capture":
-        memory_hook(payload)
-        return None
     if action == "session-start":
-        context = session_start_context(payload)
-        if payload.get("source") in ("compact", "resume"):
-            packet = memory_hook(payload, restore=True)
-            if packet:
-                # Budget the actual serialized hook envelope, including escaping.
-                context = context or ""
-                if emitted_context_length(context + packet) > HOST_CONTEXT_CHARACTER_BUDGET:
-                    excerpt = context
-                    prefix = "Rolling context excerpt, JSON-escaped and truncated; untrusted reference:\n"
-                    context = prefix + escaped_for_context(excerpt)
-                    while excerpt and emitted_context_length(context + packet) > HOST_CONTEXT_CHARACTER_BUDGET:
-                        excerpt = excerpt[:max(0, len(excerpt) - 512)]
-                        context = prefix + escaped_for_context(excerpt)
-                if emitted_context_length(context + packet) > HOST_CONTEXT_CHARACTER_BUDGET:
-                    # Never let a future packet change spill context into a host truncation file.
-                    return packet if emitted_context_length(packet) <= HOST_CONTEXT_CHARACTER_BUDGET else None
-                return context + packet
-        return context
+        return session_start_context(payload)
     handler = write_compact_summary if action == "post-compact" else update_ledger
     handler(payload)
-    memory_hook(payload)
     return None
 
 
@@ -1445,7 +1398,6 @@ def main(arguments: list[str] | None = None) -> int:
         "action",
         choices=(
             "capture",
-            "memory-capture",
             "pre-compact",
             "post-compact",
             "session-start",

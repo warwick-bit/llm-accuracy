@@ -1,0 +1,13 @@
+{
+  "name": "evidence-memory",
+  "displayName": "Evidence Memory",
+  "description": "Experimental current-session search and correction memory; exact tool results stay local and may contain sensitive data.",
+  "version": "0.1.0",
+  "defaultEnabled": false,
+  "author": {
+    "name": "Warwick"
+  },
+  "homepage": "https://github.com/warwick-bit/llm-accuracy",
+  "repository": "https://github.com/warwick-bit/llm-accuracy",
+  "license": "MIT"
+}

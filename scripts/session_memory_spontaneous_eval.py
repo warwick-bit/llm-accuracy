@@ -20,8 +20,8 @@ from unittest.mock import patch
 from session_memory_model_eval import AGENT_SYSTEM, MODEL, make_fixture, score
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL = ROOT / "plugins/session-ledger/skills/memory/SKILL.md"
-CLI = ROOT / "plugins/session-ledger/hooks/memory.py"
+SKILL = ROOT / "plugins/evidence-memory/skills/memory/SKILL.md"
+CLI = ROOT / "plugins/evidence-memory/hooks/memory.py"
 SYSTEM = AGENT_SYSTEM.replace("Use only the supplied read-only Bash access.",
                               "Use available read-only tools when needed.")
 ANSWER_SCHEMA = {
@@ -55,15 +55,15 @@ def write_plugin(path: Path, data: Path) -> None:
 def restored_memory_packet(root: Path) -> str:
     """Use the production hook's bounded post-compaction cue, not a test prompt."""
     def load(name: str) -> Any:
-        path = ROOT / "plugins/session-ledger/hooks" / (name + ".py")
+        path = ROOT / "plugins/evidence-memory/hooks" / (name + ".py")
         spec = importlib.util.spec_from_file_location(name.replace("-", "_"), path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
-    ledger = load("session-ledger")
+    runtime = load("memory_runtime")
     bridge = load("memory")
     with patch.dict(os.environ, {"CLAUDE_PLUGIN_DATA": str(root)}):
-        packet = bridge.hook(ledger, {"session_id": "synthetic-model-eval", "cwd": str(root)},
+        packet = bridge.hook(runtime, {"session_id": "synthetic-model-eval", "cwd": str(root)},
                              restore=True)
     if not packet:
         raise AssertionError("memory restore packet unavailable")

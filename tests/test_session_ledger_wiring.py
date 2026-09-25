@@ -29,8 +29,6 @@ HOOK_CONFIG = PLUGIN_ROOT / "hooks" / "hooks.json"
 EVENT_ACTIONS = {
     "UserPromptSubmit": "capture",
     "Stop": "capture",
-    "PostToolUse": "memory-capture",
-    "PostToolUseFailure": "memory-capture",
     "PreCompact": "pre-compact",
     "PostCompact": "post-compact",
     "SessionStart": "session-start",

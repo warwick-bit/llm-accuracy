@@ -68,5 +68,6 @@ limits and troubleshooting.
 
 Capture is experimental and off by default. If the user asks to enable it,
 `enable` starts local tool-result persistence for this session and plan. `disable`
-deletes that session's evidence and durable state. Both succeed only with exit
-code 0 and the corresponding JSON response. Begin-plan and clear also remove it.
+deletes that session's evidence and durable state. `begin-plan` deletes them,
+sets a fresh cutoff, and requires another `enable`; `clear` deletes the current
+session's record and cutoff. Confirm success from exit code 0 and the JSON response.

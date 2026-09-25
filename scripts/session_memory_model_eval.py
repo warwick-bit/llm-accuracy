@@ -32,7 +32,7 @@ SYSTEM = (
     'Never add an explanation outside the JSON object. No tools.'
 )
 AGENT_SYSTEM = SYSTEM.removesuffix(" No tools.") + " Use only the supplied read-only Bash access."
-MEMORY_CLI = Path(__file__).resolve().parents[1] / "plugins/session-ledger/hooks/memory.py"
+MEMORY_CLI = Path(__file__).resolve().parents[1] / "plugins/evidence-memory/hooks/memory.py"
 
 
 def value_for(index: int) -> int:
@@ -45,7 +45,7 @@ def tool_row(block: dict[str, Any], role: str = "assistant") -> dict[str, Any]:
 
 
 def make_fixture(root: Path) -> tuple[str, Any, dict[str, dict[str, Any]]]:
-    ledger, engine = load("session-ledger"), load("session_memory")
+    ledger, engine, runtime = load("session-ledger"), load("session_memory"), load("memory_runtime")
     transcript = root / "session.jsonl"
     session_id = "synthetic-model-eval"
     payload = {"session_id": session_id, "cwd": str(root), "transcript_path": str(transcript)}
@@ -76,11 +76,13 @@ def make_fixture(root: Path) -> tuple[str, Any, dict[str, dict[str, Any]]]:
             oracle[metric] = {"value": None, "currency": None, "basis": None,
                               "status": "unavailable"}
     ledger.update_ledger(payload, data_root=root)
-    identity = ledger.session_identity(payload, root, ledger.utc_now())
+    if not runtime.initialize_session(payload, data_root=root):
+        raise AssertionError("memory session initialization failed")
+    identity = runtime.session_identity(payload, root, runtime.utc_now())
     if not identity:
         raise AssertionError("fixture session scope missing")
-    memory_path = ledger.session_directory(root, session_id) / "memory.sqlite3"
-    ledger.secure_parent(memory_path)
+    memory_path = runtime.session_directory(root, session_id) / "memory.sqlite3"
+    runtime.secure_parent(memory_path)
     store = engine.Store(memory_path, session_id, identity[2], create=True)
     for metric in CASES:
         hits = [item for item in store.search(metric)["matches"] if item["kind"] == "result"]

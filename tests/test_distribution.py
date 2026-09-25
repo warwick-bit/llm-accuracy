@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "llm-accuracy"
 LEDGER = ROOT / "plugins" / "session-ledger"
+EVIDENCE = ROOT / "plugins" / "evidence-memory"
 DETERMINISTIC = ROOT / "plugins" / "deterministic-data"
 
 
@@ -25,7 +26,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     assert "codex" not in str(claude).lower()
 
 
-def test_claude_marketplace_publishes_the_three_isolated_plugins() -> None:
+def test_claude_marketplace_publishes_four_isolated_plugins() -> None:
     claude = load_json(".claude-plugin/marketplace.json")
 
     assert claude["name"] == "llm-accuracy"
@@ -33,6 +34,7 @@ def test_claude_marketplace_publishes_the_three_isolated_plugins() -> None:
         "llm-accuracy",
         "deterministic-data",
         "session-ledger",
+        "evidence-memory",
     ]
 
 
@@ -56,6 +58,17 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
     assert "rolling record and compact summary can contain sensitive local content" in (
         (LEDGER / "README.md").read_text(encoding="utf-8")
     )
+    assert not (LEDGER / "hooks" / "memory.py").exists()
+    assert "PostToolUse" not in load_json("plugins/session-ledger/hooks/hooks.json")["hooks"]
+
+
+def test_evidence_memory_is_independent_and_explicit() -> None:
+    manifest = load_json("plugins/evidence-memory/.claude-plugin/plugin.json")
+    assert manifest["name"] == "evidence-memory"
+    assert manifest["defaultEnabled"] is False
+    assert "dependencies" not in manifest
+    assert (EVIDENCE / "hooks" / "memory.py").exists()
+    assert not (EVIDENCE / ".codex-plugin").exists()
 
 
 def test_distribution_contains_no_codex_runtime_package() -> None:
