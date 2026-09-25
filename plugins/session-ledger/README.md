@@ -153,8 +153,9 @@ they appear in ordinary conversation text. Install only if this is acceptable.
 The plugin stores a bounded rolling user/assistant session record, bounded
 compact summary, hashed session/workspace identifiers, schema version, and
 expiry metadata. It does not retain raw JSONL transcript structure, the hook's
-separate workspace-path or plan-name fields, tool input/output, provider data,
-telemetry, or any server-side copy. The record is deliberately full-fidelity
+separate workspace-path or plan-name fields, telemetry, or any server-side copy.
+Tool input/output is not retained unless experimental memory is explicitly
+enabled (see below). That mode can retain sensitive provider data locally. The record is deliberately full-fidelity
 within its fixed rolling byte limit; by default it does not redact ordinary
 conversation text.
 
@@ -189,3 +190,11 @@ simply produce no carryover and never block Claude Code.
 
 This plugin improves continuity and evidence hygiene; it does not guarantee
 factual correctness, completeness, freshness, or domain truth.
+
+
+## Evidence Memory is a separate plugin
+
+For optional exact tool-result retrieval and durable corrections, install the
+independent `evidence-memory` plugin from this marketplace. It has its own
+local storage, hooks and explicit per-session enable step. Session Ledger does
+not capture exact tool results. See `../evidence-memory/README.md`.

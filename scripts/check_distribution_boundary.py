@@ -45,6 +45,8 @@ def forbidden_path_prefixes(profile: str) -> tuple[str, ...]:
         return ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
     if profile == "session-ledger":
         return COMMON_FORBIDDEN_PATH_PREFIXES
+    if profile == "evidence-memory":
+        return COMMON_FORBIDDEN_PATH_PREFIXES
     if profile == "deterministic-data":
         return ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES
     raise ValueError(f"unknown distribution-boundary profile: {profile}")
@@ -58,23 +60,24 @@ def artifact_violations(
     allow_subprocess: bool = False,
 ) -> list[str]:
     """Return boundary violations for one plugin artifact."""
+    display_path = relative.as_posix()
     if path.is_symlink():
-        return [f"symlink artifact: {relative}"]
+        return [f"symlink artifact: {display_path}"]
     if (
         any(part.lower().startswith(forbidden_prefixes) for part in relative.parts)
         or path.name.lower() in FORBIDDEN_FILE_NAMES
     ):
-        return [f"excluded artifact: {relative}"]
+        return [f"excluded artifact: {display_path}"]
     if path.is_dir():
         return []
     if path.suffix.lower() not in ALLOWED_SUFFIXES:
-        return [f"unexpected non-text artifact: {relative}"]
+        return [f"unexpected non-text artifact: {display_path}"]
     try:
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
-        return [f"unreadable text artifact: {relative}"]
+        return [f"unreadable text artifact: {display_path}"]
     violations = [
-        f"internal reference: {relative}"
+        f"internal reference: {display_path}"
         for term in FORBIDDEN_TEXT
         if term in text.lower()
     ]
@@ -82,7 +85,7 @@ def artifact_violations(
         FORBIDDEN_PYTHON_IMPORT.search(text)
         or (SUBPROCESS_IMPORT.search(text) and not allow_subprocess)
     ):
-        violations.append(f"network-capable import: {relative}")
+        violations.append(f"network-capable import: {display_path}")
     return violations
 
 
@@ -111,7 +114,7 @@ def main() -> int:
     parser.add_argument("plugin", type=Path)
     parser.add_argument(
         "--profile",
-        choices=("accuracy-core", "session-ledger", "deterministic-data"),
+        choices=("accuracy-core", "session-ledger", "evidence-memory", "deterministic-data"),
         default="accuracy-core",
     )
     args = parser.parse_args()

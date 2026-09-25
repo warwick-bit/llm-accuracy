@@ -252,7 +252,13 @@ def _is_result(line: str) -> bool:
 def _kill(process) -> None:
     try:
         if os.name == "posix":
-            os.killpg(process.pid, signal.SIGKILL)
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except PermissionError:
+                # Some macOS hosts deny a group signal during process exit.
+                # Kill the owned child as a fallback; descendant cleanup is
+                # best-effort when the OS denies the group signal.
+                process.kill()
         else:
             # Terminate only this probe's Windows process tree, including the
             # Node child used by some Claude launchers.

@@ -23,6 +23,12 @@
       "description": "Optional local continuity ledger for one Claude Code session across compaction.",
       "category": "productivity",
       "source": "./plugins/session-ledger"
+    },
+    {
+      "name": "evidence-memory",
+      "description": "Experimental, separately enabled current-session search and correction memory; stores exact, potentially sensitive tool results locally.",
+      "category": "productivity",
+      "source": "./plugins/evidence-memory"
     }
   ]
 }

@@ -10,7 +10,7 @@
 ## Privacy and distribution boundary
 
 - [ ] No credentials, customer data, raw prompts, provider payloads, or private logs are included.
-- [ ] The change does not add telemetry, server-side storage, prompt/tool-output persistence, or alter Session Ledger's reviewed local-only, same-session boundary.
+- [ ] The change adds no telemetry or server-side storage, preserves Session Ledger's local-only, same-session boundary, and explicitly documents any changes to opt-in local persistence.
 - [ ] Any new accuracy claim is bounded and backed by current evidence.
 
 ## Follow-up

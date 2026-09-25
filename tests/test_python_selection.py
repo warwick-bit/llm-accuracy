@@ -34,7 +34,7 @@ def write_launcher(path: Path, probe: Path | None = None) -> None:
 
 def entrypoints():
     cases = []
-    for plugin in ("llm-accuracy", "session-ledger"):
+    for plugin in ("llm-accuracy", "session-ledger", "evidence-memory"):
         root = ROOT / "plugins" / plugin
         hooks = json.loads((root / "hooks/hooks.json").read_text())["hooks"]
         for event, matchers in hooks.items():
@@ -97,7 +97,7 @@ def test_interpreter_selection_preserves_io_arguments_and_exit_status(
     assert observed["interpreter"] == available[0]
     assert observed["stdin"] == "synthetic input"
     args = [(hooks / target).as_posix()]
-    if plugin == "session-ledger":
+    if plugin in ("session-ledger", "evidence-memory"):
         tail = command.split(f'/hooks/{target}" ', 1)[1]
         for key, value in env.items():
             tail = tail.replace("${" + key + "}", value)

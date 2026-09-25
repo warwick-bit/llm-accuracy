@@ -8,8 +8,8 @@ Keep each plugin generic and safe to share publicly.
 - Check `git status --short` and `git log --oneline -5`.
 - Keep work on a dedicated branch and open a draft PR before merge.
 - Treat each directory under `plugins/` as independently packaged Claude Code
-  source. `llm-accuracy` is stateless; `session-ledger` is a separate,
-  explicitly installed local-persistence plugin.
+  source. `llm-accuracy` is stateless; `session-ledger` and `evidence-memory`
+  are separately installed local-persistence plugins.
 - Do not copy material from a company, customer, provider, private prompt, or
   local-runtime configuration into this repository without a documented review.
 
@@ -20,9 +20,12 @@ Keep each plugin generic and safe to share publicly.
   advisory and non-blocking.
 - Do not add credentials, telemetry, raw prompts, provider payloads, customer
   data, or persisted session-ledger contents to repository source, fixtures,
-  issues, or pull requests. The Session Ledger plugin may persist only its
-  bounded compact summary and rolling session record in its own
-  local `${CLAUDE_PLUGIN_DATA}` directory.
+  issues, or pull requests. Session Ledger may persist only its bounded compact
+  summary and rolling session record. Evidence Memory may persist exact tool
+  results and durable state only after a separate per-session enable action.
+  Each plugin uses its own `${CLAUDE_PLUGIN_DATA}` directory; preserve the
+  local-only, same-session, same-plan, 30-day boundary and keep captured data
+  out of source.
 - Keep the public-facing claim bounded: the plugin improves evidence hygiene;
   it does not guarantee factual correctness.
 

@@ -713,3 +713,25 @@ def test_kill_leaves_stdin_to_its_feeder(modules, tmp_path, monkeypatch):
             process.kill()
             process.wait()
         actual_stdin.close()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX process groups only")
+def test_kill_falls_back_to_owned_child_when_group_signal_is_denied(modules, monkeypatch):
+    probe = modules[1]
+    process = probe.subprocess.Popen(
+        [sys.executable, "-c", "import time;time.sleep(5)"],
+        stdin=probe.subprocess.PIPE,
+        start_new_session=True,
+    )
+
+    def deny_group_signal(*_):
+        raise PermissionError
+
+    monkeypatch.setattr(probe.os, "killpg", deny_group_signal)
+    try:
+        probe._kill(process)
+        assert process.poll() is not None
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()

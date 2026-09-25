@@ -1,0 +1,30 @@
+{
+  "date": "2026-09-25",
+  "kind": "standalone plugin validation; synthetic and aggregate only",
+  "scope": "Evidence Memory 0.1.0 as a separately installed Claude Code plugin",
+  "source_gates": {
+    "linux_pytest_passed": 868,
+    "linux_pytest_failed": 0,
+    "native_windows_python_3_13_focused_passed": 79,
+    "native_windows_python_3_13_focused_skipped": 140,
+    "native_windows_python_3_13_focused_failed": 0,
+    "ruff": "passed",
+    "claude_marketplace_strict_validation": "passed",
+    "claude_evidence_memory_manifest_validation": "passed",
+    "distribution_boundary": "passed"
+  },
+  "installation": {
+    "linux_isolated_marketplace_add_and_install": "passed",
+    "session_ledger_not_required": true,
+    "plugin_default_enabled": false,
+    "native_windows_authenticated_installed_host_smoke": "passed with one disposable synthetic tool call/result and subsequent cleanup",
+    "temporary_plugin_upgrade": "passed; explicit correction survived a local 0.1.0 to 0.1.1 upgrade probe",
+    "limits": "The temporary 0.1.1 version was a probe, not a source release. Actual host compaction and macOS host behaviour were not tested. Synthetic capture does not prove long-session answer accuracy or token savings."
+  },
+  "review": {
+    "read_only_claude_diff_review": "one eval-script finding checked and disproved by a direct synthetic fixture run; no plugin-runtime blocker reported",
+    "independent_codex_review": "found a real expired-plan cutoff bug and a silent capture-warning gap; both fixed with regressions; security disclosure updated. Follow-up read-only reviews reported no blocker in the expiry/deletion patch",
+    "fixture_check": "make_fixture completed and indexed 98 synthetic events across seven cases"
+  },
+  "privacy": "No real tool output, prompt, transcript, provider payload or credential is included in this receipt."
+}
