@@ -212,6 +212,54 @@ def test_cli_one_call_lookup(tmp_path):
     assert json.loads(response.stdout)['status'] == 'found'
 
 
+def test_cli_retrieval_counts_store_only_outcomes(tmp_path):
+    assert cli(tmp_path, 'enable').returncode == 0
+    path = write_log(tmp_path / 'log', call(), result(text='metric007 collected AUD'))
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'lookup', 'metric007').stdout)['status'] == 'found'
+    assert json.loads(cli(tmp_path, 'lookup', 'absent').stdout)['status'] == 'not_found'
+    hit = json.loads(cli(tmp_path, 'search', 'metric007').stdout)['matches'][0]
+    assert json.loads(cli(tmp_path, 'search', 'absent').stdout)['matches'] == []
+    assert json.loads(cli(tmp_path, 'fetch', hit['id']).stdout)['id'] == hit['id']
+    assert cli(tmp_path, 'fetch', 'absent').returncode == 1
+    counts = json.loads(cli(tmp_path, 'status').stdout)['retrieval_counts']
+    assert counts == {'lookup_found': 1, 'lookup_not_found': 1,
+                      'search_hit': 1, 'search_miss': 1, 'fetch_hit': 1}
+    database = next((tmp_path / 'data').rglob('memory.sqlite3'))
+    connection = sqlite3.connect(database)
+    try:
+        stored = [item[0] for item in connection.execute('SELECT outcome FROM retrieval_counts')]
+    finally:
+        connection.close()
+    assert set(stored) == set(counts)
+
+
+def test_retrieval_counter_failure_does_not_block_lookup(store, tmp_path):
+    store.sync(write_log(tmp_path / 'log', call(), result(text='metric007 collected AUD')))
+    store.db.execute("CREATE TRIGGER fail_count BEFORE INSERT ON retrieval_counts "
+                     "BEGIN SELECT RAISE(ABORT, 'database or disk is full'); END")
+    store.count_retrieval('lookup_found')
+    assert store.lookup('metric007')['status'] == 'found'
+    assert store.status()['retrieval_counts'] == {}
+
+
+def test_unrecognized_retrieval_outcome_does_not_block_lookup(store, tmp_path, monkeypatch):
+    bridge = load('memory')
+    monkeypatch.setattr(store, 'lookup', lambda _key: {'status': 'future_status'})
+    args = bridge.parser().parse_args(['lookup', 'metric007'])
+    assert bridge.dispatch(store, args, None, tmp_path) == {'status': 'future_status'}
+    assert store.status()['retrieval_counts'] == {}
+
+
+def test_legacy_index_without_counter_table_remains_readable(store, tmp_path):
+    store.sync(write_log(tmp_path / 'log', call(), result(text='metric007 collected AUD')))
+    store.db.execute('DROP TABLE retrieval_counts')
+    store.counts_available = False
+    store.count_retrieval('lookup_found')
+    assert store.lookup('metric007')['status'] == 'found'
+    assert store.status()['retrieval_counts'] == {}
+
+
 def test_large_result_pages_reassemble_exact_logged_json(store, tmp_path):
     text = 'synthetic unicode ❯ → ● ' * 4000
     store.sync(write_log(tmp_path / 'log', call(), result(text=text)))
@@ -324,6 +372,7 @@ def test_hook_opt_in_capture_restore_and_plan_reset(tmp_path, monkeypatch):
     context = ledger.execute_hook_action('session-start', {**payload, 'source': 'compact'})
     assert 'collected AUD' in context
     assert 'session-ledger:memory' in context
+    assert 'Before answering a question about an earlier tool result' in context
     assert ledger.emitted_context_length(context) <= ledger.HOST_CONTEXT_CHARACTER_BUDGET
     assert ledger.begin_plan('synthetic-session', data_root=root)
     assert not list(root.rglob('memory.sqlite3'))

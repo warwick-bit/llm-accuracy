@@ -142,10 +142,37 @@ class Store:
         if (meta.get("session") != sha(session_id.encode()) or meta.get("plan") != plan_id
                 or meta.get("schema") != "1" or float(meta.get("expires", "0")) <= time.time()):
             raise ValueError("memory_scope_or_expiry")
+        # An enabled experimental index may predate local retrieval counters.
+        try:
+            with self.db:
+                self.db.execute("CREATE TABLE IF NOT EXISTS retrieval_counts("
+                                "outcome TEXT PRIMARY KEY, count INTEGER NOT NULL)")
+        except sqlite3.Error:
+            # A full legacy index must remain readable even if counters cannot be added.
+            pass
+        self.counts_available = bool(self.db.execute(
+            "SELECT 1 FROM sqlite_master WHERE name='retrieval_counts'").fetchone())
         self.fts = bool(self.db.execute("SELECT 1 FROM sqlite_master WHERE name='search'").fetchone())
 
     def close(self) -> None:
         self.db.close()
+
+    def count_retrieval(self, outcome: str) -> None:
+        """Count a completed CLI retrieval without storing keys or result content."""
+        if outcome not in ("lookup_found", "lookup_ambiguous", "lookup_unverified",
+                           "lookup_paged", "lookup_not_found", "search_hit", "search_miss",
+                           "fetch_hit"):
+            # An unfamiliar future status must not replace a successful retrieval with an error.
+            return
+        if not self.counts_available:
+            return
+        try:
+            with self.db:
+                self.db.execute("INSERT INTO retrieval_counts(outcome,count) VALUES (?,1) "
+                                "ON CONFLICT(outcome) DO UPDATE SET count=count+1", (outcome,))
+        except sqlite3.Error:
+            # Measurement cannot block access to already captured evidence.
+            pass
 
     def _insert_event(self, event: dict[str, Any], row: dict[str, Any], source: str, offset: int) -> None:
         if len(event["call_id"]) > 512 or len(event["name"]) > 256:
@@ -420,6 +447,8 @@ class Store:
     def status(self) -> dict[str, Any]:
         return {"events": self.db.execute("SELECT count(*) FROM events").fetchone()[0],
                 "state_revisions": self.db.execute("SELECT count(*) FROM states").fetchone()[0],
+                "retrieval_counts": (dict(self.db.execute("SELECT outcome,count FROM retrieval_counts"))
+                                     if self.counts_available else {}),
                 "last_sync": json.loads(dict(self.db.execute("SELECT key,value FROM meta")).get("last_sync", "null")),
                 "database_bytes": self.path.stat().st_size, "quota_bytes": MAX_DATABASE_BYTES,
                 "search_mode": "fts5" if self.fts else "literal_scan", "scope": "current session and plan",

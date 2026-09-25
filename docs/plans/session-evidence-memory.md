@@ -118,3 +118,42 @@ spontaneous skill selection. Negative-control pilots produced some non-JSON
 answers even with complete model turns. No real-session frequency, live
 answer-accuracy uplift, or general token saving is established. Capture
 therefore remains opt-in while a real-session study is designed.
+
+## Follow-up measurement boundary
+
+CLI retrieval outcomes are counted locally by status without storing queries or
+content. This measures attempts and coverage only, not whether a retrieved
+answer was used correctly. Counts belong to the same session/plan database and
+are deleted with it. Counting failures cannot block evidence retrieval.
+
+The follow-up aggregate receipt is
+`docs/validation/session-memory-followup-2026-09-25.json`. A raw-free local
+audit scanned Codex and Claude JSONL files for a distinctive token in an early
+logged tool result that reappeared in assistant prose after a third compaction,
+but was absent from the third compacted payload and surrounding user prose.
+There were candidates in 3/17 long Codex sessions and 1/2 long Claude sessions.
+The smallest eligible candidate from each host was indexed from a disposable
+source copy, then fetched exactly after that copy was deleted. This is a strict
+lexical opportunity proxy: paraphrases are missed, and overlap does not prove
+that the answer needed memory. The public audit script emits only aggregates.
+
+The optional `scripts/session_memory_spontaneous_eval.py` loads a disposable
+skill with this branch's CLI and synthetic index. With no retrieval cue, three
+positive questions produced no lookup and no exact answer. Naming the skill in
+the prompt yielded 2/3. The original post-compaction packet yielded 2/3; a
+clearer instruction to check earlier tool results yielded 3/3 on those same
+cases and 2/2 additional cases. One missing-result case returned unavailable;
+three completed failed-result runs did invoke lookup but returned non-JSON
+answers, so they remain unscorable on the exact-answer rubric. One visible
+context control answered correctly without retrieval. The model test is small,
+synthetic, and partly tuned on the evaluated cases; it does not show production
+accuracy lift or token savings. Capture stays opt-in.
+
+A native Windows Claude Code 2.1.281 smoke used a disposable enabled plugin
+copy and a persisted synthetic session. SessionStart, UserPromptSubmit,
+PostToolUse and Stop fired; the index held the call/result pair, and both the
+session transcript and plugin state were deleted afterward. A
+`--no-session-persistence` control supplied a transcript path without a file,
+so automatic indexing had no source. The normal authenticated profile supplied
+auth while settings and plugin source were isolated. A clean authenticated
+installation smoke and macOS remain outside this evidence.

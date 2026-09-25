@@ -1,0 +1,75 @@
+{
+  "date": "2026-09-25",
+  "kind": "exploratory follow-up; raw-free aggregates",
+  "real_session_audit": {
+    "snapshot": "local logs present on 25 Sep 2026; no fixed lookback window",
+    "candidate_definition": "A token of at least 10 characters containing a digit appeared in a tool result before the first compaction and in assistant prose after the third; it was absent from earlier/later user prose and the third compacted payload.",
+    "codex": {
+      "files_scanned": 130,
+      "long_sessions": 17,
+      "candidate_sessions": 3,
+      "candidate_tokens": 4,
+      "one_disposable_replay": {
+        "source_mib": 13.4,
+        "sync_batches": 2,
+        "indexed_events": 756,
+        "exact_result_after_source_copy_deleted": true,
+        "lookup_transcript_bytes": 0
+      }
+    },
+    "claude": {
+      "files_scanned": 817,
+      "long_sessions": 2,
+      "candidate_sessions": 1,
+      "candidate_tokens": 1,
+      "one_disposable_replay": {
+        "source_mib": 24.8,
+        "sync_batches": 4,
+        "indexed_events": 2504,
+        "exact_result_after_source_copy_deleted": true,
+        "lookup_transcript_bytes": 0
+      }
+    },
+    "limits": "Lexical overlap is a candidate, not proven dependence or improved answer accuracy. Semantic paraphrases are missed. Only the smallest eligible candidate per host was replayed. No raw log data was committed."
+  },
+  "model_choice": {
+    "population": "Synthetic long-session fixture after three compactions; Claude Sonnet low effort; one run per case unless stated",
+    "token_definition": "CLI input, cache-creation, cache-read and output tokens; includes fixed host context; not a billing estimate",
+    "isolation": "Disposable local skill with branch CLI and synthetic index; original transcript deleted; no explicit lookup command in the question",
+    "uncued": {"positive_cases": 3, "retrieval_used": 0, "exact_answers": 0, "scorable": 3, "mean_counted_tokens": 11283.0},
+    "skill_named_in_question": {"positive_cases": 3, "retrieval_used": 2, "exact_answers": 2, "scorable": 3},
+    "original_restore_packet": {"positive_cases": 3, "retrieval_used": 2, "exact_answers": 2, "scorable": 3},
+    "revised_restore_packet": {
+      "positive_cases": 5,
+      "tuning_cases": 3,
+      "held_out_cases": 2,
+      "retrieval_used": 5,
+      "exact_answers": 5,
+      "scorable": 5,
+      "mean_counted_tokens": 39817.8,
+      "mean_model_turns": 4.0
+    },
+    "missing_result": {"runs": 1, "lookup_not_found": 1, "exact_unavailable_answers": 1},
+    "failed_result": {"runs": 3, "lookup_unverified": 3, "completed": 3, "parseable_json": 0, "exact_score": "unscorable; do not count as wrong-value answers"},
+    "visible_context_control": {"runs": 1, "retrieval_used": 0, "exact_answers": 1},
+    "limits": "Small synthetic sample and same-model tuning; not a live-session accuracy or general token-saving claim. The failed-result format problem remains."
+  },
+  "windows": {
+    "host": "native Windows Claude Code 2.1.281 with Git Bash and a disposable enabled plugin copy",
+    "python": "3.13.1",
+    "focused_native_tests": {"passed": 51, "skipped": 2},
+    "persisted_disposable_session": {
+      "session_start_events": 1,
+      "user_prompt_events": 1,
+      "post_tool_events": 1,
+      "stop_events": 1,
+      "indexed_call_result_events": 2,
+      "synthetic_result_indexed": true,
+      "session_state_deleted": true,
+      "transcript_deleted": true
+    },
+    "nonpersistent_control": "Claude supplied a transcript path but no file under --no-session-persistence; the index remained empty.",
+    "limits": "Used the normal authenticated Windows profile with isolated settings and temporary plugin source; a clean authenticated installation smoke and macOS remain unverified."
+  },
+  "product_decision": "Capture remains explicitly opt-in. The local outcome counter stores labels and counts only; it does not store query text or leave the session database."
+}

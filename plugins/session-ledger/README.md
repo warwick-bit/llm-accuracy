@@ -196,14 +196,17 @@ factual correctness, completeness, freshness, or domain truth.
 
 This experiment separates bounded injected conversation from durable decisions
 and searchable logged tool evidence. It is off by default. Enabling it is a
-separate choice from installing Session Ledger; default-on capture is not yet
-recommended by a live-host/model usefulness study.
+separate choice from installing Session Ledger; the current small follow-up
+does not justify default-on capture.
 
 An exploratory synthetic model comparison found better recovery than the
 rolling record after simulated compactions, but no model-token saving versus
-an efficient search of a surviving log. The model was told how to retrieve;
-autonomous use and value in real long sessions remain unmeasured. See
-`docs/plans/session-evidence-memory.md` for the exact population and limits.
+an efficient search of a surviving log. A follow-up with the post-compaction
+memory packet recovered five synthetic earlier results in five tool-using runs;
+without a cue, three runs never invoked retrieval. A strict lexical audit found
+possible earlier-evidence reuse in local long sessions, but did not establish
+that memory improved real answers. See `docs/plans/session-evidence-memory.md`
+and its validation receipts for the exact populations and limits.
 
 The `memory` skill provides commands and model guidance. For a disposable test:
 
@@ -215,9 +218,16 @@ Use `python` if `python3` is unavailable. The CLI also accepts explicit paths an
 session IDs for manual Codex transcript ingestion. This does not install Codex
 hooks. `status`, `sync /exact/transcript.jsonl`, `lookup KEY`, `search "keywords"`,
 `fetch ID`, `state`, `remember` and `disable` are subcommands; see the memory skill for paging
-and revision syntax. Claude's PostToolUse, PostToolUseFailure, Stop and compaction
+and revision syntax. `status` also shows local counts of completed CLI lookup
+outcomes, search hits/misses and successful fetches. It stores no query keys,
+searched text, result content or timestamps in those counters; failed counting
+never blocks retrieval. The counts reset with disable, clear or begin-plan.
+Claude's PostToolUse, PostToolUseFailure, Stop and compaction
 hooks sync incrementally while enabled. A call result not yet flushed to the
 transcript is captured on a later hook; there is no guarantee after abrupt exit.
+Claude runs with `--no-session-persistence` may supply a transcript path without
+creating the file; a native Windows control did so, leaving the index empty.
+Use a persisted session when testing automatic tool capture.
 
 Storage: one SQLite database per hashed session directory, bound to the current
 plan. It stores exact JSON **values logged by the host** for tool calls/results,
@@ -262,7 +272,7 @@ ACLs. SQLite journals may temporarily contain the same sensitive values.
 **Redaction:** `SESSION_LEDGER_REDACT` applies to the rolling record, not this
 opt-in exact-evidence archive or durable state. Enabling memory may retain secrets
 and provider payloads from tool output. Do not enable it where that is unacceptable.
-No network, telemetry or cross-session retrieval is added. Never commit captured
+No network, external telemetry or cross-session retrieval is added. Never commit captured
 memory, transcripts or real query results as fixtures.
 
 Synthetic replay tests establish storage/retrieval properties and measured local
