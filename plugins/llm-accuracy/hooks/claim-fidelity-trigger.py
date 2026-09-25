@@ -13,6 +13,8 @@ import os
 import re
 import sys
 
+from hook_input import read_hook_input
+
 from accuracy_config import custom_trigger_matches
 
 
@@ -104,7 +106,7 @@ def main() -> int:
     if os.environ.get("CC_SKIP_CLAIM_FIDELITY") == "1":
         return 0
     try:
-        raw = sys.stdin.read(MAX_INPUT_CHARS + 1)
+        raw = read_hook_input(sys.stdin, MAX_INPUT_CHARS + 1)
         if len(raw) > MAX_INPUT_CHARS:
             return 0
         payload = json.loads(raw)

@@ -14,6 +14,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -408,3 +409,59 @@ def test_navigation_and_compaction_use_same_session_record(tmp_path: Path) -> No
     response = json.loads(result.stdout)
     assert "hookSpecificOutput" not in response
     assert "Restore skipped" in response["systemMessage"]
+
+
+@pytest.mark.parametrize("stdio", ["cp1252:surrogateescape", "utf-8"])
+@pytest.mark.parametrize("sample", ["Synthetic ASCII", "Synthetic café — →", "Synthetic ❯ ●", "Synthetic café — → 日本語 😀"])
+@pytest.mark.parametrize("event,field", [
+    ("UserPromptSubmit", "prompt"),
+    ("Stop", "last_assistant_message"),
+    ("PostCompact", "compact_summary"),
+])
+def test_utf8_payload_round_trips_independently_of_stdio_encoding(
+    tmp_path: Path, stdio: str, sample: str, event: str, field: str
+) -> None:
+    # Send real UTF-8 bytes, not json.dumps' default ASCII escapes. Force the
+    # Windows piped-stdin codec on every platform, including Linux CI.
+    environment = clean_environment()
+    environment.update(PYTHONUTF8="0", PYTHONIOENCODING=stdio)
+    payload = {"session_id": "synthetic-encoding", "cwd": str(tmp_path), field: sample}
+    command = [sys.executable, str(PLUGIN_ROOT / "hooks" / "session-ledger.py")]
+    result = subprocess.run(
+        [*command, EVENT_ACTIONS[event], "--plugin-data", str(tmp_path)],
+        input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        capture_output=True, env=environment, timeout=30,
+    )
+    assert result.returncode == 0
+    assert result.stderr == b""
+    assert result.stdout == b""
+    path = record_file(tmp_path)
+    assert path is not None
+    record = json.loads(path.read_text(encoding="utf-8"))
+    stored = record["compact_summary"] if field == "compact_summary" else record["entries"][0]["text"]
+    assert stored == sample
+    restored = subprocess.run(
+        [*command, "session-start", "--plugin-data", str(tmp_path)],
+        input=json.dumps({**payload, "source": "resume"}).encode("utf-8"),
+        capture_output=True, env=environment, timeout=30,
+    )
+    assert restored.returncode == 0 and restored.stderr == b""
+    context = json.loads(restored.stdout)["hookSpecificOutput"]["additionalContext"]
+    marker = "COMPACT SUMMARY" if field == "compact_summary" else "SESSION RECORD"
+    encoded = context.split(f"BEGIN JSON-ESCAPED {marker}\n", 1)[1].split(
+        f"\nEND JSON-ESCAPED {marker}", 1
+    )[0]
+    restored_value = json.loads(encoded)
+    assert (restored_value if field == "compact_summary" else restored_value[0]["text"]) == sample
+
+
+@pytest.mark.parametrize("raw", [b"{\xff}", b'{"prompt":"\xff"}', b"{not json", b"[]"])
+def test_invalid_byte_payload_fails_open(tmp_path: Path, raw: bytes) -> None:
+    result = subprocess.run(
+        [sys.executable, str(PLUGIN_ROOT / "hooks" / "session-ledger.py"),
+         "capture", "--plugin-data", str(tmp_path)],
+        input=raw, capture_output=True, timeout=30,
+    )
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == b""
+    assert record_file(tmp_path) is None

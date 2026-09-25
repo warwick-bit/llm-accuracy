@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+
+import pytest
 import subprocess
 import sys
 from pathlib import Path
@@ -82,3 +85,16 @@ def test_receipt_validator_rejects_stdin_from_another_prompt_epoch() -> None:
     assert output["status"] == "fail"
     assert output["errors"] == ["prompt_epoch_mismatch"]
     assert output["authority"] == "structural_only"
+
+
+@pytest.mark.parametrize("plugin", ["llm-accuracy", "deterministic-data"])
+def test_unicode_epoch_from_utf8_stdin_matches_expected_epoch(plugin):
+    script = ROOT / "plugins" / plugin / "scripts/validate_evidence_receipt.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--expected-epoch", "époch"],
+        input=json.dumps({**RECEIPT, "prompt_epoch": "époch"}, ensure_ascii=False).encode("utf-8"),
+        capture_output=True, timeout=30,
+        env={**os.environ, "PYTHONUTF8": "0", "PYTHONIOENCODING": "cp1252:surrogateescape"},
+    )
+    assert result.returncode == 0 and result.stderr == b""
+    assert json.loads(result.stdout)["status"] == "pass"

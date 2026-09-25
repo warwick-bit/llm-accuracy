@@ -131,6 +131,8 @@ import json
 import os
 import sys
 
+from hook_input import read_hook_input
+
 
 # Signal codes shared with the evidence vocabulary in the reference doc.
 PAGINATION_INCOMPLETE = "pagination_incomplete"
@@ -593,7 +595,7 @@ def main() -> int:
     if os.environ.get(BYPASS_ENV):
         return 0
     try:
-        raw = sys.stdin.read(MAX_INPUT_CHARS + 1)
+        raw = read_hook_input(sys.stdin, MAX_INPUT_CHARS + 1)
         if len(raw) > MAX_INPUT_CHARS:
             return 0
         payload = json.loads(raw or "{}")

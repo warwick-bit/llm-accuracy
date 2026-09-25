@@ -484,3 +484,56 @@ def test_partial_result_sentinel_fails_safe_on_malformed_stdin() -> None:
     assert result.returncode == 0
     assert result.stdout == ""
     assert result.stderr == ""
+
+
+def test_unicode_stdout_does_not_hide_persisted_output_gap():
+    import sys
+
+    hook = ROOT / "plugins/llm-accuracy/hooks/partial-result-sentinel.py"
+    payload = {"tool_name": "Bash", "tool_response": {
+        "stdout": "é", "stderr": "", "persistedOutputPath": "/synthetic/result",
+        "persistedOutputSize": 4}}
+    result = subprocess.run(
+        [sys.executable, str(hook)], input=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        capture_output=True, timeout=30,
+        env={**os.environ, "PYTHONUTF8": "0", "PYTHONIOENCODING": "cp1252:surrogateescape"},
+    )
+    assert result.returncode == 0 and result.stderr == b""
+    assert json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+
+
+def test_utf8_reader_preserves_character_budget_and_stream_ownership():
+    import io
+    from hook_input import read_hook_input
+
+    binary = io.BytesIO("é".encode("utf-8") * 12)
+    stream = io.TextIOWrapper(binary, encoding="cp1252")
+    assert read_hook_input(stream, 5) == "é" * 5
+    assert not binary.closed
+    stream.close()
+
+
+def test_utf8_reader_rejects_invalid_bytes_without_closing_stdin():
+    import io
+    from hook_input import read_hook_input
+
+    binary = io.BytesIO(b"\xff")
+    stream = io.TextIOWrapper(binary, encoding="cp1252")
+    with pytest.raises(UnicodeDecodeError):
+        read_hook_input(stream)
+    assert not binary.closed
+    stream.close()
+
+
+@pytest.mark.parametrize("name", [
+    "analysis-contract-injector.py", "fusion-evidence-trigger.py",
+    "claim-fidelity-trigger.py", "partial-result-sentinel.py", "post-compact-accuracy.py",
+])
+def test_accuracy_hooks_fail_open_on_invalid_utf8_bytes(name):
+    import sys
+
+    hook = ROOT / "plugins/llm-accuracy/hooks" / name
+    result = subprocess.run([sys.executable, str(hook)], input=b'{"prompt":"\xff"}',
+                            capture_output=True, timeout=30)
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == b""
