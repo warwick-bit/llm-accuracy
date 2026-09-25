@@ -3,7 +3,7 @@
   "kind": "standalone plugin validation; synthetic and aggregate only",
   "scope": "Evidence Memory 0.1.0 as a separately installed Claude Code plugin",
   "source_gates": {
-    "linux_pytest_passed": 865,
+    "linux_pytest_passed": 867,
     "linux_pytest_failed": 0,
     "native_windows_python_3_13_focused_passed": 79,
     "native_windows_python_3_13_focused_skipped": 140,
