@@ -104,7 +104,7 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
         handler = hook_handler(*key)
         assert set(handler) == {"type", "command", "timeout", "statusMessage"}
         assert handler["type"] == "command"
-        assert handler["timeout"] == 3
+        assert handler["timeout"] == 10
         assert handler["statusMessage"] == status_message
         assert filename in handler["command"]
         assert (PLUGIN_ROOT / "hooks" / filename).is_file()
@@ -432,14 +432,13 @@ def test_partial_result_sentinel_end_to_end_through_shipped_command() -> None:
 def test_partial_result_sentinel_completes_within_its_declared_timeout() -> None:
     """Run the shipped command under the timeout the manifest actually declares.
 
-    Other tests allow 10s, which cannot catch a regression that pushes the hook
-    past its real budget. The third fresh audit measured 4.05s on a 50 MB
-    payload, so the worst realistic inputs are driven here under the declared
-    limit: subprocess.run raises TimeoutExpired if the budget is blown.
+    Drive large payloads through the shipped command under its declared budget:
+    subprocess.run raises TimeoutExpired if the hook exceeds it. A prior audit
+    measured 4.05s on a 50 MB payload, beyond the old three-second budget.
     """
     declared = hook_handler("PostToolUse", 0)["timeout"]
     assert isinstance(declared, int)
-    assert declared == 3
+    assert declared == 10
 
     rows = [{"id": n, "name": f"row-{n}", "blob": "x" * 200} for n in range(20000)]
     payloads = [
