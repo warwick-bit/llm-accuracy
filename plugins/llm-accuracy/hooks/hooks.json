@@ -6,7 +6,7 @@
           {
             "type": "command",
             "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/analysis-contract-injector.py\"",
-            "timeout": 3,
+            "timeout": 10,
             "statusMessage": "Checking llm-accuracy analysis contract"
           }
         ]
@@ -16,7 +16,7 @@
           {
             "type": "command",
             "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/fusion-evidence-trigger.py\"",
-            "timeout": 3,
+            "timeout": 10,
             "statusMessage": "Checking llm-accuracy fusion evidence"
           }
         ]
@@ -26,7 +26,7 @@
           {
             "type": "command",
             "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/claim-fidelity-trigger.py\"",
-            "timeout": 3,
+            "timeout": 10,
             "statusMessage": "Checking llm-accuracy claim fidelity"
           }
         ]
@@ -39,7 +39,7 @@
           {
             "type": "command",
             "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/partial-result-sentinel.py\"",
-            "timeout": 3,
+            "timeout": 10,
             "statusMessage": "Checking llm-accuracy partial result signal"
           }
         ]
@@ -52,7 +52,7 @@
           {
             "type": "command",
             "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; test ! -f \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact-accuracy.py\"",
-            "timeout": 3,
+            "timeout": 10,
             "statusMessage": "Checking llm-accuracy post-compaction accuracy"
           }
         ]
