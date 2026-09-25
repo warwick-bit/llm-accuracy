@@ -185,7 +185,8 @@ def refresh_plan_scope(root: Path, session_id: str, workspace: str, plan: str, n
     write_json_atomic(scope_path(root, session_id), scope)
 
 
-def write_fresh_plan_scope(root: Path, session_id: str, workspace: str, now: datetime) -> None:
+def write_fresh_plan_scope(root: Path, session_id: str, workspace: str, now: datetime,
+                           *, capture_paused: bool = False) -> None:
     """Commit a new cutoff before any old database can be reopened."""
     write_json_atomic(scope_path(root, session_id), {
         "schema_version": SCHEMA_VERSION,
@@ -194,6 +195,7 @@ def write_fresh_plan_scope(root: Path, session_id: str, workspace: str, now: dat
         "plan_id": uuid.uuid4().hex,
         "started_at": timestamp(now),
         "expires_at": timestamp(expires_at(now)),
+        "capture_paused": capture_paused,
     })
 
 
