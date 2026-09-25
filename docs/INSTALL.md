@@ -7,8 +7,10 @@ products. Use the path below that matches where you work.
 
 Platform capability and runtime evidence are separate.
 
-**LLM Accuracy 0.6.1:** see the [patch release notes](release-0.6.1.md) for
-current validation and upgrade tests. The records below describe earlier builds.
+**Current plugin notes:** [LLM Accuracy 0.6.4](release-0.6.4.md),
+[Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
+[Evidence Memory 0.1.0](release-evidence-memory-0.1.0.md). The records below
+describe historical builds.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
 
@@ -135,7 +137,7 @@ Code on the web.
 Session Ledger requires Python 3.9 or later (CI-tested 3.9-3.13) on the machine
 running Claude Code. Check it with `python3 --version`, or `python --version`
 when `python3` is unavailable (for example, a Windows python.org installation).
-Both plugins select `python3` when present and otherwise use `python`; the
+The Claude Code hooks select `python3` when present and otherwise use `python`; the
 selected command must run Python 3.9 or later. Windows hooks still require a
 POSIX-compatible shell such as Git Bash. No `python3.exe` copy or alias is needed.
 
@@ -184,6 +186,32 @@ start unrelated work within a long session, run `/session-ledger:begin-plan`.
 It starts a clean ledger section for the current session without storing a plan
 name or carrying data to another session.
 
+## Evidence Memory — optional Claude Code plugin
+
+Evidence Memory is independent of Session Ledger. It can search exact logged
+tool calls and results from the current session and plan after compaction. It is
+experimental because a small synthetic test supports retrieval, but no live
+long-session accuracy or token-saving improvement has been measured. Exact
+results may contain credentials or other sensitive data, so capture is off by
+default and requires a separate action in each session.
+
+After adding the marketplace, install and enable the plugin:
+
+```bash
+claude plugin install evidence-memory@llm-accuracy --scope user
+claude plugin enable evidence-memory@llm-accuracy --scope user
+```
+
+Restart Claude Code, run `/evidence-memory:memory`, and use its `enable`
+command to start capture for this session. The skill also provides search,
+lookup, correction, `disable`, `begin-plan`, and `clear`. Those deletion
+commands remove this plugin's evidence and state without changing Session
+Ledger. A local cutoff prevents a later enable from reindexing earlier rows.
+Evidence expires after 30 days of inactivity. The 128 MiB per-session database
+limit stops new writes at a retryable cursor; it does not evict older evidence.
+See the [Evidence Memory guide](../plugins/evidence-memory/README.md) for the
+storage boundary and limitations.
+
 ### Update or remove
 
 To update to the latest released versions:
@@ -193,6 +221,7 @@ claude plugin marketplace update llm-accuracy
 claude plugin update llm-accuracy@llm-accuracy --scope user
 claude plugin update deterministic-data@llm-accuracy --scope user
 claude plugin update session-ledger@llm-accuracy --scope user
+claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
 Run the optional plugin updates only for plugins you installed. Then run
@@ -203,11 +232,13 @@ this one. To opt in, run `/plugin`, open **Marketplaces**, select
 `llm-accuracy`, and choose **Enable auto-update**. Claude Code then refreshes
 the marketplace and updates installed plugins in the background after a
 session starts, and prompts you to run `/reload-plugins` when versions
-changed. To remove the
-plugins and local Session Ledger data:
+changed. To remove the plugins, clear any Evidence Memory data you want removed
+immediately with `/evidence-memory:memory clear`, then uninstall the plugins you
+installed:
 
 ```bash
 claude plugin uninstall session-ledger@llm-accuracy --scope user
+claude plugin uninstall evidence-memory@llm-accuracy --scope user
 claude plugin uninstall deterministic-data@llm-accuracy --scope user
 claude plugin uninstall llm-accuracy@llm-accuracy --scope user
 claude plugin marketplace remove llm-accuracy

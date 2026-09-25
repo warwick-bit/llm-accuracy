@@ -38,7 +38,7 @@ claude plugin marketplace update llm-accuracy
 claude plugin update session-ledger@llm-accuracy
 ```
 
-Confirm version 0.2.6 or later and the enabled state in `/plugin`, then restart
+Confirm version 0.2.7 or later and the enabled state in `/plugin`, then restart
 Claude Code. This production plugin is separate from any temporary QA plugin;
 close the QA launcher and use your normal Claude Code launch for everyday work.
 
