@@ -82,3 +82,39 @@ after deletion. The gate rejects transcript-open attempts after source deletion
 and initial capture exceeding twice the single-scan bytes in this fixture.
 Some small early conversation messages fit in the rolling ledger's leftover
 budget; the replay reports that instead of assuming all old messages disappear.
+
+## Exploratory model-in-loop result (25 Sep 2026)
+
+The reproducible optional harness is `scripts/session_memory_model_eval.py`;
+aggregate numeric receipts are in
+`docs/validation/session-memory-model-pilot-2026-09-25.json`. The fixture has
+three simulated compactions, 48 successful synthetic tool results, an explicit
+correction, one failed result and one missing result. A deliberately wrong value
+fails the scorer. The model is Claude Sonnet at low effort. Counted tokens are
+CLI input (including cache creation/read) plus output; they include fixed host
+context and are not a billing or end-user cost estimate.
+
+The five-case packet comparison recovered exact answers in 5/5 with indexed
+evidence and 5/5 with a batched log scan, versus 0/5 with the rolling ledger
+alone or an equally sized irrelevant packet. Indexed lookup read no transcript
+bytes; the repeated scan read 5,055,600 bytes across the five questions.
+Mean model tokens were 4,230 for memory and 4,229 for the scan: indexing did
+not reduce model tokens when both supplied the same useful evidence.
+
+In the final-head seven-case tool-using run, both isolated arms recovered all
+five answerable results. The index arm scored 6/7 overall: it returned a
+non-JSON answer for the failed-result case. The surviving-log arm scored 7/7.
+Mean counted tokens were 18,300.0 for one-call memory lookup and 17,806.1
+for log search, a 493.9-token or 2.8% overhead for memory. Each used two
+model turns. An earlier isolated run scored 7/7 for both arms; the negative
+case's output-format variance prevents a stable reliability claim. The first
+source-loss pilot was
+invalid because both arms shared the database; it was discarded. In the
+isolated final-head one-case source-loss rerun, memory recovered the answer and
+the arm with neither transcript nor index did not produce a valid exact answer.
+
+The tool-using prompt named the retrieval command, so this does not measure
+spontaneous skill selection. Negative-control pilots produced some non-JSON
+answers even with complete model turns. No real-session frequency, live
+answer-accuracy uplift, or general token saving is established. Capture
+therefore remains opt-in while a real-session study is designed.

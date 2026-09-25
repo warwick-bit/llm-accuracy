@@ -14,6 +14,13 @@ if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_P
 
 Use the same quoted command prefix for these actions:
 
+- `lookup KEY`: first try this for an exact metric, artifact or decision key. It
+  returns one linked call/result plus the latest correction in one bounded
+  response. If it reports ambiguous, unverified, paged or not found, use the
+  separate actions below. `state --revision N` retrieves a paged state's full
+  text. `found` with `current_state: null` means no exact-key correction was
+  recorded; it does not prove none was ever discussed. Never treat a preview as
+  the full result.
 - `search "literal keywords"`: small evidence previews and stable IDs. Search
   the metric, filename, tool name, correction term, or source identifier. Results
   are newest first; follow `--offset NEXT` for more pages. Search pages are a

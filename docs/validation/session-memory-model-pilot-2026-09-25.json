@@ -1,0 +1,122 @@
+{
+  "date": "2026-09-25",
+  "kind": "exploratory model-in-loop pilot",
+  "token_definition": "CLI usage input_tokens + cache_creation_input_tokens + cache_read_input_tokens + output_tokens; includes fixed system context and cached inputs",
+  "model": "Claude Sonnet via local CLI",
+  "effort": "low",
+  "simulated_compactions": 3,
+  "packet_assisted": {
+    "population": "five synthetic old-evidence questions; no tool choice",
+    "arms": {
+      "ledger": {
+        "runs": 5,
+        "completed": 5,
+        "exact_answers": 0,
+        "mean_counted_tokens": 4113.8,
+        "mean_model_turns": 1,
+        "transcript_bytes_read": 0
+      },
+      "placebo": {
+        "runs": 5,
+        "completed": 5,
+        "exact_answers": 0,
+        "mean_counted_tokens": 4222,
+        "mean_model_turns": 1,
+        "transcript_bytes_read": 0
+      },
+      "memory": {
+        "runs": 5,
+        "completed": 5,
+        "exact_answers": 5,
+        "mean_counted_tokens": 4230,
+        "mean_model_turns": 1,
+        "transcript_bytes_read": 0
+      },
+      "scan": {
+        "runs": 5,
+        "completed": 5,
+        "exact_answers": 5,
+        "mean_counted_tokens": 4229,
+        "mean_model_turns": 1,
+        "transcript_bytes_read": 5055600
+      }
+    }
+  },
+  "agentic_source_available": {
+    "population": "five recoverable synthetic results, one failed result and one missing result; one completed final-head run per case and arm; isolated source directories",
+    "arms": {
+      "scan": {
+        "runs": 7,
+        "completed": 7,
+        "exact_answers": 7,
+        "mean_counted_tokens": 17806.1,
+        "mean_model_turns": 2,
+        "recoverable_exact_answers": 5,
+        "failure_boundary_answers": 2,
+        "format_failures": 0
+      },
+      "memory": {
+        "runs": 7,
+        "completed": 7,
+        "exact_answers": 6,
+        "mean_counted_tokens": 18300,
+        "mean_model_turns": 2,
+        "recoverable_exact_answers": 5,
+        "failure_boundary_answers": 1,
+        "format_failures": 1
+      }
+    }
+  },
+  "agentic_source_deleted": {
+    "population": "one recoverable synthetic result after both arms lose the transcript; scan arm has no index; final-head run",
+    "arms": {
+      "scan": {
+        "runs": 1,
+        "completed": 1,
+        "exact_answers": 0,
+        "mean_counted_tokens": 59622,
+        "mean_model_turns": 5
+      },
+      "memory": {
+        "runs": 1,
+        "completed": 1,
+        "exact_answers": 1,
+        "mean_counted_tokens": 18384,
+        "mean_model_turns": 2
+      }
+    }
+  },
+  "variance_receipt": {
+    "prior_isolated_run": {
+      "scan": {
+        "runs": 7,
+        "completed": 7,
+        "exact_answers": 7,
+        "mean_counted_tokens": 17804,
+        "mean_model_turns": 2,
+        "recoverable_exact_answers": 5,
+        "failure_boundary_answers": 2,
+        "format_failures": 0
+      },
+      "memory": {
+        "runs": 7,
+        "completed": 7,
+        "exact_answers": 7,
+        "mean_counted_tokens": 18298.3,
+        "mean_model_turns": 2,
+        "recoverable_exact_answers": 5,
+        "failure_boundary_answers": 2,
+        "format_failures": 0
+      }
+    },
+    "note": "The earlier isolated run scored 7/7 for both arms; the final-head memory arm missed the failed-result case by violating the JSON answer contract. No stability or confidence interval is claimed."
+  },
+  "limits": [
+    "No real long-session sample or frequency estimate.",
+    "The prompt names the available retrieval command; spontaneous skill choice is untested.",
+    "The packet comparison selects evidence deterministically; it measures answer synthesis.",
+    "The agentic comparison tests one model and prompt, one final-head run per case; no confidence interval.",
+    "No general token reduction versus efficient log search observed.",
+    "No default-on capture or live installation is justified by this pilot."
+  ]
+}

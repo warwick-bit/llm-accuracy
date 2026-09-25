@@ -199,6 +199,12 @@ and searchable logged tool evidence. It is off by default. Enabling it is a
 separate choice from installing Session Ledger; default-on capture is not yet
 recommended by a live-host/model usefulness study.
 
+An exploratory synthetic model comparison found better recovery than the
+rolling record after simulated compactions, but no model-token saving versus
+an efficient search of a surviving log. The model was told how to retrieve;
+autonomous use and value in real long sessions remain unmeasured. See
+`docs/plans/session-evidence-memory.md` for the exact population and limits.
+
 The `memory` skill provides commands and model guidance. For a disposable test:
 
 ```bash
@@ -207,8 +213,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_D
 
 Use `python` if `python3` is unavailable. The CLI also accepts explicit paths and
 session IDs for manual Codex transcript ingestion. This does not install Codex
-hooks. `status`, `sync /exact/transcript.jsonl`, `search "keywords"`, `fetch ID`,
-`state`, `remember` and `disable` are subcommands; see the memory skill for paging
+hooks. `status`, `sync /exact/transcript.jsonl`, `lookup KEY`, `search "keywords"`,
+`fetch ID`, `state`, `remember` and `disable` are subcommands; see the memory skill for paging
 and revision syntax. Claude's PostToolUse, PostToolUseFailure, Stop and compaction
 hooks sync incrementally while enabled. A call result not yet flushed to the
 transcript is captured on a later hook; there is no guarantee after abrupt exit.
@@ -218,7 +224,10 @@ plan. It stores exact JSON **values logged by the host** for tool calls/results,
 including arguments, rendered result blocks and Claude's richer `toolUseResult`
 when present. It is not a complete raw transcript or a complete provider archive.
 It preserves evidence after the original log is deleted. IDs link calls/results;
-hashes check local body integrity. FTS5 provides literal keyword search; Python
+hashes check local body integrity. `lookup KEY` returns one unambiguous linked
+call/result and the latest correction for that exact key in one bounded response.
+It reports failed, missing, ambiguous and paged evidence instead of silently
+treating it as a complete answer. FTS5 provides literal keyword search; Python
 builds without FTS5 fall back to a bounded-output local database scan. Search and
 fetch never read original logs. Neither mode guarantees semantic recall.
 

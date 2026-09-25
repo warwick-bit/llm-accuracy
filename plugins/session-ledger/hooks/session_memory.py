@@ -272,8 +272,11 @@ class Store:
                 self.db.execute("INSERT OR REPLACE INTO meta VALUES ('last_sync', ?)", (encoded(result),))
             return {**result, "cursor_reset": reset, "identity_bytes_read": identity_bytes, "anchor_bytes_read": 2 * min(cursor["offset"], 4096) if cursor else 0}
 
-    def search(self, query: str, *, limit: int = 10, offset: int = 0) -> dict[str, Any]:
+    def search(self, query: str, *, limit: int = 10, offset: int = 0,
+               kind: str | None = None) -> dict[str, Any]:
         if not isinstance(query, str) or not query.strip() or len(query) > 256:
+            raise ValueError("invalid_search")
+        if kind not in (None, "call", "result"):
             raise ValueError("invalid_search")
         if type(offset) is not int or offset < 0 or offset > 1000000:
             raise ValueError("invalid_page")
@@ -283,16 +286,21 @@ class Store:
             raise ValueError("invalid_search")
         if self.fts:
             expression = " AND ".join('"' + token + '"' for token in tokens)
+            kind_clause = " AND e.kind=?" if kind else ""
+            values = (expression, kind, limit + 1, offset) if kind else (expression, limit + 1, offset)
             rows = self.db.execute(
                 "SELECT e.id, e.call_id, e.kind, e.name, e.timestamp, e.error, substr(e.body,1,240) preview "
-                "FROM search JOIN events e ON e.rowid=search.rowid WHERE search MATCH ? ORDER BY e.rowid DESC LIMIT ? OFFSET ?",
-                (expression, limit + 1, offset)).fetchall()
+                "FROM search JOIN events e ON e.rowid=search.rowid WHERE search MATCH ?"
+                f"{kind_clause} ORDER BY e.rowid DESC LIMIT ? OFFSET ?", values).fetchall()
         else:
             clauses = " AND ".join("(name || ' ' || body) LIKE ? ESCAPE '\\'" for _ in tokens)
             patterns = ["%" + token.replace("_", "\\_") + "%" for token in tokens]
+            kind_clause = "kind=? AND " if kind else ""
+            values = (kind, *patterns, limit + 1, offset) if kind else (*patterns, limit + 1, offset)
             rows = self.db.execute(
                 "SELECT id, call_id, kind, name, timestamp, error, substr(body,1,240) preview "
-                f"FROM events WHERE {clauses} ORDER BY rowid DESC LIMIT ? OFFSET ?", (*patterns, limit + 1, offset)).fetchall()
+                f"FROM events WHERE {kind_clause}{clauses} ORDER BY rowid DESC LIMIT ? OFFSET ?",
+                values).fetchall()
         return {"matches": [dict(row) for row in rows[:limit]], "more": len(rows) > limit,
                 "next": offset + limit if len(rows) > limit else None,
                 "search_mode": "fts5" if self.fts else "literal_scan", "transcript_bytes_read": 0,
@@ -336,6 +344,45 @@ class Store:
                 "pointer": pointer, "start": start, "text": selected[start:start + PAGE_CHARACTERS],
                 "next": start + PAGE_CHARACTERS if start + PAGE_CHARACTERS < len(selected) else None,
                 "total_characters": len(selected), "transcript_bytes_read": 0}
+
+    def lookup(self, key: str) -> dict[str, Any]:
+        """Resolve one exact evidence key and its current correction in one call.
+
+        Ambiguous, failed, missing, and paged evidence remain explicit; callers
+        use search/fetch/state for those cases instead of guessing.
+        """
+        page = self.search(key, limit=2, kind="result")
+        results = page["matches"]
+        if page["more"] or len(results) != 1:
+            return {"status": "ambiguous" if page["more"] or results else "not_found",
+                    "matches": page["matches"], "more": page["more"],
+                    "trust": page["trust"], "transcript_bytes_read": 0}
+        result = self.fetch(results[0]["id"])
+        calls = [item for item in result["links"] if item["kind"] == "call"]
+        if result["pairing"] != "paired" or result["host_error"] or len(calls) != 1:
+            return {"status": "unverified", "pairing": result["pairing"],
+                    "host_error": result["host_error"], "result_id": result["id"],
+                    "transcript_bytes_read": 0}
+        call = self.fetch(calls[0]["id"])
+        if result["next"] is not None or call["next"] is not None:
+            return {"status": "paged", "result_id": result["id"],
+                    "call_id": call["id"], "result_next": result["next"],
+                    "call_next": call["next"], "transcript_bytes_read": 0}
+        row = self.db.execute(
+            "SELECT revision,kind,text,evidence FROM states WHERE key=? ORDER BY revision DESC LIMIT 1",
+            (key.strip(),)).fetchone()
+        if row is not None and len(row["text"]) > 512:
+            return {"status": "paged", "result_id": result["id"],
+                    "call_id": call["id"], "state_revision": row["revision"],
+                    "transcript_bytes_read": 0}
+        state = None if row is None else {"revision": row["revision"], "kind": row["kind"],
+                                          "text": row["text"],
+                                          "evidence": json.loads(row["evidence"])}
+        return {"status": "found", "result_id": result["id"], "call_id": call["id"],
+                "historical_result": json.loads(result["text"]),
+                "logged_call": json.loads(call["text"]), "current_state": state,
+                "freshness": result["freshness"], "completeness": result["completeness"],
+                "transcript_bytes_read": 0}
 
     def remember(self, key: str, kind: str, text: str, evidence: list[str], expected: int = 0) -> int:
         if (kind not in KINDS or not isinstance(key, str) or not 0 < len(key) <= 128

@@ -159,6 +159,59 @@ def test_state_revision_preserves_correction_and_evidence(store, tmp_path):
         store.remember('unfounded', 'decision', 'Source missing.', ['missing'])
 
 
+def test_one_call_lookup_returns_linked_result_call_and_latest_correction(store, tmp_path):
+    store.sync(write_log(tmp_path / 'log', call(), result(text='metric007 collected 123 AUD')))
+    evidence = store.search('metric007')['matches'][0]['id']
+    first = store.remember('metric007', 'definition', 'Use gross.', [evidence])
+    store.remember('metric007', 'correction', 'Use collected.', [evidence], first)
+    packet = store.lookup('metric007')
+    assert packet['status'] == 'found'
+    assert packet['historical_result']['content'] == 'metric007 collected 123 AUD'
+    assert packet['logged_call']['input']['currency'] == 'AUD'
+    assert packet['current_state']['text'] == 'Use collected.'
+    assert packet['transcript_bytes_read'] == 0
+
+
+def test_one_call_lookup_refuses_ambiguous_failed_and_paged_results(store, tmp_path):
+    store.sync(write_log(tmp_path / 'log', call('a'), result('a', text='ambiguousword'),
+                         call('b'), result('b', text='ambiguousword'),
+                         call('failed'), result('failed', text='failedword', error=True),
+                         call('large'), result('large', text='largeword ' * 300)))
+    assert store.lookup('ambiguousword')['status'] == 'ambiguous'
+    assert store.lookup('failedword')['status'] == 'unverified'
+    assert store.lookup('largeword')['status'] == 'paged'
+    assert store.lookup('missingword')['status'] == 'not_found'
+
+
+def test_one_call_lookup_flags_long_current_correction(store, tmp_path):
+    store.sync(write_log(tmp_path / 'log', call(), result(text='metric007 collected AUD')))
+    revision = store.remember('metric007', 'correction', 'x' * 513, [])
+    packet = store.lookup('metric007')
+    assert packet['status'] == 'paged'
+    assert packet['state_revision'] == revision
+
+
+@pytest.mark.parametrize('fts', [True, False])
+def test_one_call_lookup_ignores_many_matching_calls(store, tmp_path, fts):
+    calls = [call(f'call-{index}') for index in range(25)]
+    for row in calls:
+        row['message']['content'][0]['input']['metric'] = 'metric007'
+    store.sync(write_log(tmp_path / 'log', *calls, result('call-0', text='metric007 123 AUD')))
+    store.fts = fts and store.fts
+    assert store.search('metric007')['more'] is True
+    assert store.lookup('metric007')['status'] == 'found'
+    assert store.lookup('missingresult')['status'] == 'not_found'
+
+
+def test_cli_one_call_lookup(tmp_path):
+    assert cli(tmp_path, 'enable').returncode == 0
+    path = write_log(tmp_path / 'log', call(), result(text='metric007 collected AUD'))
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    response = cli(tmp_path, 'lookup', 'metric007')
+    assert response.returncode == 0
+    assert json.loads(response.stdout)['status'] == 'found'
+
+
 def test_large_result_pages_reassemble_exact_logged_json(store, tmp_path):
     text = 'synthetic unicode ❯ → ● ' * 4000
     store.sync(write_log(tmp_path / 'log', call(), result(text=text)))
@@ -476,3 +529,24 @@ def test_replay_instrumentation_has_positive_file_read_control(tmp_path):
         with open(path, 'rb') as stream:
             assert stream.read() == b'fixture-data'
     assert counter == {'bytes': 24, 'opens': 2}
+
+
+def test_model_eval_fixture_has_exact_scan_control_and_failing_scorer(tmp_path):
+    sys.path.insert(0, str(ROOT / 'scripts'))
+    try:
+        import session_memory_model_eval as evaluator
+    finally:
+        sys.path.pop(0)
+    context, indexed, oracle = evaluator.make_fixture(tmp_path)
+    try:
+        question = 'What is metric003?'
+        memory_packet = evaluator.evidence_packet(indexed, question)
+        scan_packet, bytes_read = evaluator.scan_packet(tmp_path / 'session.jsonl', question)
+        assert memory_packet == scan_packet
+        assert bytes_read > 0
+        assert str(oracle['metric003']['value']) not in context
+        wrong = dict(oracle['metric003'], value=0)
+        assert not evaluator.score(wrong, oracle['metric003'])['correct']
+        assert evaluator.score(oracle['metric003'], oracle['metric003'])['correct']
+    finally:
+        indexed.close()
