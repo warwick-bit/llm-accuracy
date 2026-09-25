@@ -7,6 +7,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -417,6 +418,79 @@ def test_expired_memory_is_denied_and_next_hook_prunes_it(tmp_path, monkeypatch)
     assert not list(root.rglob('memory.sqlite3'))
     assert cli(tmp_path, 'enable').returncode == 0
     assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 0
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 0
+
+
+def test_expired_plan_cutoff_does_not_reingest_old_plan(tmp_path):
+    runtime = load('memory_runtime')
+    root = tmp_path / 'data'
+    assert cli(tmp_path, 'begin-plan').returncode == 0
+    scope_path = runtime.scope_path(root, 'synthetic-session')
+    stale = json.loads(scope_path.read_text())
+    stale['expires_at'] = '2000-01-01T00:00:00Z'
+    scope_path.write_text(json.dumps(stale))
+    assert cli(tmp_path, 'enable').returncode == 0
+    current = json.loads(scope_path.read_text())
+    assert current['plan_id'] != stale['plan_id']
+    path = write_log(tmp_path / 'log', call(), result())
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 0
+    future = runtime.timestamp(runtime.utc_now() + timedelta(days=1))
+    with path.open('ab') as stream:
+        for row in (call('new', timestamp=future), result('new', timestamp=future)):
+            stream.write(json.dumps(row).encode() + b'\n')
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 2
+
+
+def test_expired_scope_blocks_hook_and_reenable_from_old_plan(tmp_path, monkeypatch):
+    runtime = load('memory_runtime')
+    root = tmp_path / 'data'
+    assert cli(tmp_path, 'begin-plan').returncode == 0
+    assert cli(tmp_path, 'enable').returncode == 0
+    scope_path = runtime.scope_path(root, 'synthetic-session')
+    stale = json.loads(scope_path.read_text())
+    stale['expires_at'] = '2000-01-01T00:00:00Z'
+    scope_path.write_text(json.dumps(stale))
+    path = write_log(tmp_path / 'log', call(), result())
+    monkeypatch.setenv('CLAUDE_PLUGIN_DATA', str(root))
+    payload = {'session_id': 'synthetic-session', 'cwd': str(tmp_path),
+               'transcript_path': str(path)}
+    assert load('memory').hook(runtime, payload) is None
+    assert not list(root.rglob('memory.sqlite3'))
+    assert cli(tmp_path, 'enable').returncode == 0
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 0
+
+
+@pytest.mark.parametrize('action', ['disable', 'clear', 'begin-plan'])
+def test_deletion_cannot_reingest_surviving_transcript(tmp_path, action):
+    path = write_log(tmp_path / 'log', call(), result())
+    assert cli(tmp_path, 'enable').returncode == 0
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 2
+    assert cli(tmp_path, action).returncode == 0
+    assert cli(tmp_path, 'status').returncode == 1
+    assert cli(tmp_path, 'enable').returncode == 0
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 0
+
+
+def test_capture_gap_emits_fixed_warning_without_transcript_content(tmp_path):
+    assert cli(tmp_path, 'enable').returncode == 0
+    path = write_log(tmp_path / 'log', call())
+    with path.open('ab') as stream:
+        stream.write(b'PRIVATE_SYNTHETIC_INVALID_ROW\n')
+    payload = {'session_id': 'synthetic-session', 'cwd': str(tmp_path),
+               'transcript_path': str(path)}
+    response = subprocess.run([sys.executable, str(HOOKS / 'memory.py'), 'hook-capture',
+                               '--plugin-data', str(tmp_path / 'data')],
+                              input=json.dumps(payload).encode(), capture_output=True, timeout=10)
+    assert response.returncode == 0
+    output = json.loads(response.stdout)
+    assert output['systemMessage'].startswith('Evidence Memory: capture stopped')
+    assert b'PRIVATE_SYNTHETIC_INVALID_ROW' not in response.stdout
 
 
 def test_symlink_database_rejected(tmp_path, engine):

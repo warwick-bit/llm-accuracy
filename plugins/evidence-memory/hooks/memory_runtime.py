@@ -10,6 +10,7 @@ import re
 import stat
 import tempfile
 import time
+import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -164,6 +165,11 @@ def load_current_record(payload: dict[str, Any], *, data_root: Path, now: dateti
     if not identity:
         return None
     session_id, workspace, plan = identity
+    scope_file = scope_path(data_root, session_id)
+    if scope_file.exists():
+        scope = read_json(scope_file)
+        if not scope or not is_current(scope, now) or scope.get("session_hash") != digest(session_id):
+            return None
     record = read_json(record_path(data_root, session_id))
     if (record and is_current(record, now) and record.get("session_hash") == digest(session_id)
             and record.get("workspace_hash") == workspace and record.get("plan_id") == plan):
@@ -177,6 +183,18 @@ def refresh_plan_scope(root: Path, session_id: str, workspace: str, plan: str, n
         return
     scope["expires_at"] = timestamp(expires_at(now))
     write_json_atomic(scope_path(root, session_id), scope)
+
+
+def write_fresh_plan_scope(root: Path, session_id: str, workspace: str, now: datetime) -> None:
+    """Commit a new cutoff before any old database can be reopened."""
+    write_json_atomic(scope_path(root, session_id), {
+        "schema_version": SCHEMA_VERSION,
+        "session_hash": digest(session_id),
+        "workspace_hash": workspace,
+        "plan_id": uuid.uuid4().hex,
+        "started_at": timestamp(now),
+        "expires_at": timestamp(expires_at(now)),
+    })
 
 
 def initialize_session(payload: dict[str, Any], *, data_root: Path | None = None) -> bool:
@@ -194,6 +212,21 @@ def initialize_session(payload: dict[str, Any], *, data_root: Path | None = None
     directory = session_directory(root, session_id)
     if not state_paths_are_safe(root, session_id):
         return False
+    prior_record = read_json(record_path(root, session_id))
+    prior_scope = read_json(scope_path(root, session_id))
+    current_scope = (prior_scope is not None and is_current(prior_scope, now)
+                     and prior_scope.get("session_hash") == digest(session_id))
+    scope_replaced = record_path(root, session_id).exists() and (
+        prior_record is None or not is_current(prior_record, now))
+    if not current_scope and (record_path(root, session_id).exists()
+                              or scope_path(root, session_id).exists()):
+        scope_replaced = True
+    # A valid begin-plan cutoff survives its disabled interval. Expired or
+    # corrupt prior metadata starts a fresh cutoff before any database reset.
+    if scope_replaced and not (current_scope and prior_record is not None
+                               and prior_record.get("plan_id") != prior_scope.get("plan_id")):
+        write_fresh_plan_scope(root, session_id, workspace, now)
+        plan = read_json(scope_path(root, session_id))["plan_id"]
     for name in MEMORY_FILES:
         remove_file(directory / name)
     write_json_atomic(record_path(root, session_id), record_for(
@@ -249,10 +282,6 @@ def session_hash_lock(root: Path, session_hash: str, *, wait: bool = True) -> It
                 msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
     finally:
         os.close(descriptor)
-
-
-def note_notice(_code: str) -> None:
-    """Hooks report fixed errors in their own response; never echo payloads."""
 
 
 def escaped_for_context(value: object) -> str:

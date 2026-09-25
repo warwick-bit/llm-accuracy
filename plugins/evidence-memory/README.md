@@ -5,12 +5,16 @@ current-session tool-result retrieval and revisioned corrections. It can run
 without Session Ledger. It is disabled by default and requires a separate
 per-session `enable` action before capture. The stored results may contain
 sensitive data.
+The first enable can index earlier rows from the current session if its host
+transcript still exists. After disable, clear or begin-plan, the retained cutoff
+prevents those earlier rows from being indexed on a later enable.
 
 Install it with `/plugin install evidence-memory@llm-accuracy`, then enable the
 plugin in `/plugin` and restart Claude Code. To begin capture in a session, run
 `/evidence-memory:memory` and use its `enable` command. `disable` deletes that
-session's evidence and state. `begin-plan` deletes them and establishes a fresh
-plan cutoff; `clear` deletes the entire current-session memory record.
+session's evidence and state. `begin-plan` and `clear` also delete them. Each
+deletion retains only a fresh local cutoff marker so later enablement cannot
+reindex evidence from before the deletion.
 
 ## Experimental evidence memory (explicit enable)
 
@@ -83,8 +87,10 @@ distinguishes a reported error, a reported no-error flag and an absent flag;
 Codex transcript outputs often omit that signal. Treat `error_flag_absent` as
 unknown execution status and inspect the result before using it in an answer.
 
-Clear, disable and begin-plan delete this plugin's evidence and state; begin-plan
-also disables capture until re-enabled. They do not clear Session Ledger data.
+Clear, disable and begin-plan delete this plugin's evidence and state and stop
+capture until re-enabled. They retain a minimal cutoff marker (session/workspace
+hashes, a plan ID and timestamp) to prevent reingestion from a surviving host
+transcript. They do not clear Session Ledger data.
 Explicit plan cutoffs exclude old or untimestamped log rows. Successful capture
 or an explicit remember/enable action refreshes this plugin's 30-day inactivity
 expiry. Passive search/fetch/status and a sync with no new rows do not refresh it.

@@ -217,3 +217,14 @@ using synthetic data. The standalone receipt at
 temporary upgrade probe. These do not establish actual host compaction
 behaviour, macOS compatibility, real long-session accuracy gains, or token
 savings.
+
+An independent read-only audit found that re-enabling after the old plan scope
+expired could index rows from that earlier plan. Expired or corrupt metadata
+now causes a fresh cutoff to be committed before the database is recreated;
+the hook also preserves that cutoff when pruning an expired record. A blocked
+transcript row now emits a fixed, payload-free warning instead of failing
+silently. Regressions cover both paths, including native Windows execution.
+Deletion actions also commit a minimal fresh cutoff before removing evidence;
+otherwise a later enable could reconstruct cleared rows from the surviving
+host transcript. The retained marker contains hashes and timestamps, not tool
+content.

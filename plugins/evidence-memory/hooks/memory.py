@@ -90,9 +90,15 @@ def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str 
             record = ledger.read_json(ledger.record_path(root, session_id))
             scope = ledger.read_json(ledger.scope_path(root, session_id))
             expired = record is not None and not ledger.is_current(record, now)
+            stale_scope = ledger.scope_path(root, session_id).exists() and (
+                scope is None or not ledger.is_current(scope, now))
             old_plan = (record is not None and scope is not None and ledger.is_current(scope, now)
                         and record.get("plan_id") != scope.get("plan_id"))
-            if expired or old_plan:
+            if expired or stale_scope or old_plan:
+                if not old_plan and (expired or stale_scope):
+                    identity = ledger.session_identity(payload, root, now)
+                    if identity:
+                        ledger.write_fresh_plan_scope(root, session_id, identity[1], now)
                 for name in MEMORY_FILES:
                     ledger.remove_file(ledger.session_directory(root, session_id) / name)
                 ledger.remove_file(ledger.record_path(root, session_id))
@@ -106,7 +112,7 @@ def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str 
                     if result["rows"]:
                         refresh_record(ledger, root, payload)
                     if result["status"] not in ("caught_up", "pending_partial_line", "more_pending"):
-                        ledger.note_notice("memory_gap")
+                        return "Evidence Memory: capture stopped at a retryable transcript row; use memory status/sync to diagnose."
                 return None
             status = store.status()
             # Small packet, latest revisions first. Full state remains paged via CLI.
@@ -149,7 +155,7 @@ def parser() -> argparse.ArgumentParser:
     sub = result.add_subparsers(dest="action", required=True)
     sub.add_parser("enable")
     sub.add_parser("disable", help="Delete captured tool evidence and durable state for this session")
-    sub.add_parser("clear", help="Delete this session's evidence, state and plan boundary")
+    sub.add_parser("clear", help="Delete evidence and state; retain a cutoff that prevents reingestion")
     sub.add_parser("begin-plan", help="Delete evidence and state, then set a fresh plan cutoff")
     sub.add_parser("status")
     sync = sub.add_parser("sync")
@@ -220,29 +226,17 @@ def main(arguments: list[str] | None = None) -> int:
             if args.action in ("disable", "clear", "begin-plan"):
                 if not ledger.state_paths_are_safe(root, args.session_id):
                     raise ValueError("unsafe_memory_path")
-                if args.action == "begin-plan":
-                    import uuid
-                    now = ledger.utc_now()
-                    identity = ledger.session_identity(payload, root, now)
-                    if not identity:
-                        raise ValueError("invalid_session")
-                    _, workspace, _ = identity
-                    # Commit the new boundary before deleting the old index.
-                    # An interrupted deletion can then never expose old rows.
-                    ledger.write_json_atomic(ledger.scope_path(root, args.session_id), {
-                        "schema_version": ledger.SCHEMA_VERSION,
-                        "session_hash": ledger.digest(args.session_id),
-                        "workspace_hash": workspace,
-                        "plan_id": uuid.uuid4().hex,
-                        "started_at": ledger.timestamp(now),
-                        "expires_at": ledger.timestamp(ledger.expires_at(now)),
-                    })
+                now = ledger.utc_now()
+                identity = ledger.session_identity(payload, root, now)
+                if not identity:
+                    raise ValueError("invalid_session")
+                _, workspace, _ = identity
+                # Commit the new boundary before deleting the old index.
+                # Even a later enable cannot reingest the cleared transcript.
+                ledger.write_fresh_plan_scope(root, args.session_id, workspace, now)
                 for name in MEMORY_FILES:
                     ledger.remove_file(ledger.session_directory(root, args.session_id) / name)
-                if args.action in ("clear", "begin-plan"):
-                    ledger.remove_file(ledger.record_path(root, args.session_id))
-                if args.action == "clear":
-                    ledger.remove_file(ledger.scope_path(root, args.session_id))
+                ledger.remove_file(ledger.record_path(root, args.session_id))
                 result = {"enabled": False, "deleted": True,
                           "plan_started": args.action == "begin-plan"}
             else:
@@ -287,8 +281,11 @@ def hook_main(arguments: list[str]) -> int:
         runtime = sibling("memory_runtime")
         packet = hook(runtime, payload, restore=arguments[0] == "hook-restore")
         if packet:
-            print(json.dumps({"hookSpecificOutput": {"additionalContext": packet,
-                                                     "hookEventName": "SessionStart"}}))
+            if arguments[0] == "hook-restore":
+                print(json.dumps({"hookSpecificOutput": {"additionalContext": packet,
+                                                         "hookEventName": "SessionStart"}}))
+            else:
+                print(json.dumps({"systemMessage": packet}))
     except Exception:
         print(json.dumps({"systemMessage": "Evidence Memory: capture or restore unavailable; use memory status/sync to diagnose."}))
     return 0

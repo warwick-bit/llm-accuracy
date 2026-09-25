@@ -67,7 +67,10 @@ capture merely because data is absent. Consult the plugin README for storage
 limits and troubleshooting.
 
 Capture is experimental and off by default. If the user asks to enable it,
-`enable` starts local tool-result persistence for this session and plan. `disable`
-deletes that session's evidence and durable state. `begin-plan` deletes them,
-sets a fresh cutoff, and requires another `enable`; `clear` deletes the current
-session's record and cutoff. Confirm success from exit code 0 and the JSON response.
+`enable` starts local tool-result persistence for this session and plan; its
+first sync can include earlier rows still present in the current transcript.
+`disable`
+deletes that session's evidence and durable state. `begin-plan` and `clear`
+also delete them. All three stop capture and retain only a fresh cutoff marker
+so re-enabling cannot import earlier transcript rows. Confirm success from exit
+code 0 and the JSON response.
