@@ -523,9 +523,13 @@ def message_text_entries(entry: object, raw_line: str) -> list[dict[str, str]]:
         return []
     if not text or (role == "user" and is_host_message(entry, text)):
         return []
-    return [
-        {"role": role, "text": redact_secrets(text), "fingerprint": digest(raw_line.removesuffix("\r"))}
-    ]
+    result = {"role": role, "text": redact_secrets(text),
+              "fingerprint": digest(raw_line.removesuffix("\r"))}
+    if raw_line.endswith("\r"):
+        # Interim LF-framing builds hashed the CR too. Match that stored value
+        # during replay without persisting a second fingerprint field.
+        result["legacy_fingerprint"] = digest(raw_line)
+    return [result]
 
 
 def is_host_message(entry: dict[str, Any], text: str) -> bool:
@@ -747,7 +751,8 @@ def reconciled_transcript_entries(
     """Keep first/legacy backfill in transcript order without losing unseen state.
 
     Provisional hook copies retain their fingerprints. Unmatched stored entries
-    stay before their next shared anchor, preserving interleaved corrections.
+    stay before their next shared anchor, or after the last shared anchor,
+    preserving interleaved corrections.
     Without overlap, append the transcript as after compaction. Bound last.
     """
     positions = {entry["fingerprint"]: index for index, entry in enumerate(existing)}
@@ -760,6 +765,12 @@ def reconciled_transcript_entries(
             continue
         seen[fingerprint] = len(ordered)
         index = positions.get(fingerprint)
+        legacy = entry.get("legacy_fingerprint")
+        if index is None and legacy is not None:
+            candidate = positions.get(legacy)
+            if (candidate is not None and existing[candidate]["role"] == entry["role"]
+                    and existing[candidate]["text"] == entry["text"]):
+                index = candidate
         if index is None and is_hook_entry(entry) and existing:
             if matches_stored_text(existing[-1], entry):
                 index = len(existing) - 1
@@ -770,6 +781,8 @@ def reconciled_transcript_entries(
         if index is not None:
             matched.add(index)
             entry = existing[index]
+        else:
+            entry = {key: entry[key] for key in ("role", "text", "fingerprint")}
         ordered.append(entry)
     pending = []
     for hook in hooks:
@@ -791,11 +804,18 @@ def reconciled_transcript_entries(
             anchor = entry["fingerprint"]
         else:
             gaps.setdefault(anchor, []).append(entry)
+    trailing = list(reversed(gaps.pop(None, [])))
+    last_shared = existing[max(matched)]["fingerprint"]
     combined: list[dict[str, str]] = []
     for entry in ordered:
         combined.extend(reversed(gaps.pop(entry["fingerprint"], [])))
         combined.append(entry)
-    combined.extend(reversed(gaps.get(None, [])))
+        if entry["fingerprint"] == last_shared:
+            # Older hook-only entries follow their last shared transcript row,
+            # before transcript rows first observed on this turn.
+            combined.extend(trailing)
+            trailing = []
+    combined.extend(trailing)
     return deduplicated_entries(combined, pending)
 
 

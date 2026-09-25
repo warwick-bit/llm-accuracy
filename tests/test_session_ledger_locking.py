@@ -566,6 +566,38 @@ def test_first_transcript_preserves_interleaved_hook_correction(tmp_path, monkey
     assert [entry["text"] for entry in record["entries"]] == texts
 
 
+def test_later_transcript_row_stays_after_trailing_hook_correction(tmp_path, monkeypatch, capsys):
+    ledger = load_ledger()
+    payload = {"session_id": "synthetic-trailing-correction", "cwd": str(tmp_path)}
+    for text in ("Synthetic A", "Synthetic correction E"):
+        invoke_hook(ledger, monkeypatch, capsys, tmp_path,
+                    {**payload, "last_assistant_message": text})
+    transcript = tmp_path / "synthetic.jsonl"
+    first = json.dumps({"uuid": "a", "message": {"role": "assistant", "content": "Synthetic A"}})
+    second = json.dumps({"uuid": "b", "message": {"role": "assistant", "content": "Synthetic B"}})
+    transcript.write_text(first, encoding="utf-8")
+    payload["transcript_path"] = str(transcript)
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    transcript.write_text(first + "\n" + second, encoding="utf-8")
+    invoke_hook(ledger, monkeypatch, capsys, tmp_path, payload)
+    path = ledger.record_path(tmp_path, payload["session_id"])
+    assert [entry["text"] for entry in json.loads(path.read_bytes())["entries"]] == [
+        "Synthetic A", "Synthetic correction E", "Synthetic B"]
+
+
+def test_interim_crlf_fingerprint_replays_without_duplicate():
+    ledger = load_ledger()
+    first = json.dumps({"uuid": "a", "message": {"role": "assistant", "content": "Synthetic A"}})
+    second = json.dumps({"uuid": "b", "message": {"role": "assistant", "content": "Synthetic B"}})
+    stored = [{"role": "assistant", "text": "Synthetic A", "fingerprint": ledger.digest(first + "\r")}]
+    discovered = ledger.transcript_entries(first + "\r\n" + second + "\r\n")
+    merged = ledger.reconciled_transcript_entries(stored, discovered, [])
+    assert [entry["text"] for entry in merged] == ["Synthetic A", "Synthetic B"]
+    assert merged[0]["fingerprint"] == stored[0]["fingerprint"]
+    assert all(set(entry) == {"role", "text", "fingerprint"} for entry in merged)
+    assert ledger.reconciled_transcript_entries(merged, discovered, []) == merged
+
+
 @pytest.mark.parametrize("latest_in_transcript", [True, False])
 def test_repeated_current_prompt_stays_after_intervening_answer(
     tmp_path, monkeypatch, capsys, latest_in_transcript
