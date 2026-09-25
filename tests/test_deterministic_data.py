@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN = ROOT / "plugins" / "deterministic-data"
@@ -129,3 +131,39 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     assert "could not be launched" in normalized_skill
     output = skill.split("## Output", 1)[1]
     assert output.index("Evidence receipt") < output.index("Canonical value")
+
+
+@pytest.mark.parametrize("invalid", [[], {}, None, True, 1, 1.5, "invalid"])
+def test_invalid_status_types_return_structured_errors(invalid, tmp_path):
+    catalogue = example()
+    catalogue["definitions"][0]["status"] = invalid
+    assert "status_invalid" in load_validator().validate_catalogue(catalogue)
+    path = tmp_path / "catalogue.json"
+    path.write_text(json.dumps(catalogue), encoding="utf-8")
+    process = subprocess.run(
+        [sys.executable, str(VALIDATOR), str(path)],
+        text=True, capture_output=True, check=False,
+    )
+    assert process.returncode == 1
+    assert process.stderr == ""
+    output = json.loads(process.stdout)
+    assert output["status"] == "fail"
+    assert output["authority"] == "structural_only"
+    assert "status_invalid" in output["errors"]
+
+
+def test_deep_catalogue_json_returns_structured_unreadable(tmp_path):
+    path = tmp_path / "catalogue.json"
+    path.write_text(
+        "[" * 10_000 + '"SYNTHETIC-NO-ECHO"' + "]" * 10_000, encoding="utf-8"
+    )
+    process = subprocess.run(
+        [sys.executable, str(VALIDATOR), str(path)],
+        text=True, capture_output=True, check=False,
+    )
+    assert process.returncode == 1
+    assert process.stderr == ""
+    output = json.loads(process.stdout)
+    assert output["status"] == "fail"
+    assert output["errors"] == ["catalogue_unreadable"]
+    assert "SYNTHETIC-NO-ECHO" not in process.stdout

@@ -137,3 +137,57 @@ def test_cli_reports_structure_only_without_echoing_input(tmp_path: Path) -> Non
     assert output["authority"] == "structural_only"
     assert "were not verified" in output["statement"]
     assert secret not in result.stdout
+
+
+@pytest.mark.parametrize("plugin", [CORE, DATA], ids=["accuracy", "data"])
+@pytest.mark.parametrize("invalid", [[], {}, None, True, 1, 1.5, "invalid"])
+@pytest.mark.parametrize(
+    ("path", "error"),
+    [
+        (("claim_status",), "claim_status_invalid"),
+        (("source_refs", 0, "status"), "source_status_invalid"),
+        (("source_refs", 0, "scope_match"), "source_scope_match_invalid"),
+        (("freshness", "status"), "freshness_invalid"),
+        (("completeness", "status"), "completeness_invalid"),
+        (("conflict", "status"), "conflict_invalid"),
+    ],
+)
+def test_invalid_enum_types_return_structured_errors(plugin, invalid, path, error):
+    receipt = valid_receipt()
+    target = receipt
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = invalid
+    script = plugin / "scripts" / "validate_evidence_receipt.py"
+    assert error in load_validator(script).validate_receipt(receipt)
+    process = subprocess.run(
+        [sys.executable, str(script)], input=json.dumps(receipt),
+        text=True, capture_output=True, check=False,
+    )
+    assert process.returncode == 1
+    assert process.stderr == ""
+    output = json.loads(process.stdout)
+    assert output["status"] == "fail"
+    assert output["authority"] == "structural_only"
+    assert error in output["errors"]
+
+
+@pytest.mark.parametrize("plugin", [CORE, DATA], ids=["accuracy", "data"])
+@pytest.mark.parametrize("via_file", [False, True], ids=["stdin", "file"])
+def test_deep_json_returns_structured_unreadable(plugin, via_file, tmp_path):
+    raw = "[" * 10_000 + '"SYNTHETIC-NO-ECHO"' + "]" * 10_000
+    command = [sys.executable, str(plugin / "scripts" / "validate_evidence_receipt.py")]
+    if via_file:
+        path = tmp_path / "receipt.json"
+        path.write_text(raw, encoding="utf-8")
+        command.append(str(path))
+    process = subprocess.run(
+        command, input=None if via_file else raw,
+        text=True, capture_output=True, check=False,
+    )
+    assert process.returncode == 1
+    assert process.stderr == ""
+    output = json.loads(process.stdout)
+    assert output["status"] == "fail"
+    assert output["errors"] == ["receipt_unreadable"]
+    assert "SYNTHETIC-NO-ECHO" not in process.stdout
