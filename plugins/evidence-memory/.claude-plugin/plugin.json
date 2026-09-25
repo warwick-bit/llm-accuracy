@@ -2,7 +2,7 @@
   "name": "evidence-memory",
   "displayName": "Evidence Memory",
   "description": "Experimental current-session search and correction memory; exact tool results stay local and may contain sensitive data.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "defaultEnabled": false,
   "author": {
     "name": "Warwick"

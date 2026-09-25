@@ -92,5 +92,6 @@ synthetic compact summaries and synthetic session records in tests, and preserve
 its local-only, 30-day, same-session boundary.
 
 Evidence Memory is independently packaged. Its source and fixtures must not
-contain captured tool results or real corrections; keep capture explicitly
-enabled per session and test deletion and expiry with synthetic data.
+contain captured tool results or real corrections; enabling the plugin in Claude
+settings starts future sessions automatically. Test the fresh cutoff, session
+stop/deletion, and expiry with synthetic data.

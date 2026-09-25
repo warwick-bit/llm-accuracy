@@ -1,6 +1,6 @@
 ---
 name: memory
-description: Recall earlier tool results, decisions, corrections, metric scope or source artifacts in the current long session, especially after compaction; record explicit durable state when experimental session memory is enabled.
+description: Recall earlier tool results, decisions, corrections, metric scope or source artifacts in the current long session, especially after compaction; record explicit durable state when Evidence Memory is enabled in Claude settings.
 ---
 
 Use the local memory CLI below. It never searches another session or contacts a
@@ -66,11 +66,13 @@ oversized lines stop at a retryable cursor. Do not scan other sessions or enable
 capture merely because data is absent. Consult the plugin README for storage
 limits and troubleshooting.
 
-Capture is experimental and off by default. If the user asks to enable it,
-`enable` starts local tool-result persistence for this session and plan; its
-first sync can include earlier rows still present in the current transcript.
+Capture starts automatically at a fresh cutoff when the enabled plugin sees a
+new session start or prompt. If the user asks to resume a stopped session,
+`enable` starts local tool-result persistence again for that session and plan.
+An explicit first enable can include earlier rows still present in the current
+transcript if capture had never started; automatic starts never backfill.
 `disable`
 deletes that session's evidence and durable state. `begin-plan` and `clear`
-also delete them. All three stop capture and retain only a fresh cutoff marker
-so re-enabling cannot import earlier transcript rows. Confirm success from exit
-code 0 and the JSON response.
+also delete them. All three stop capture for that session and retain a cutoff
+marker so automatic hooks cannot restart it and explicit resume cannot import
+earlier transcript rows. Confirm success from exit code 0 and the JSON response.

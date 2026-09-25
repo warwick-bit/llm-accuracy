@@ -22,7 +22,10 @@ Keep each plugin generic and safe to share publicly.
   data, or persisted session-ledger contents to repository source, fixtures,
   issues, or pull requests. Session Ledger may persist only its bounded compact
   summary and rolling session record. Evidence Memory may persist exact tool
-  results and durable state only after a separate per-session enable action.
+  results and durable state only after the plugin is explicitly enabled in Claude
+  settings. An enabled plugin starts capture for each session at a fresh cutoff;
+  session-level disable, clear, and plan boundaries must stop automatic capture
+  for that session until an explicit resume.
   Each plugin uses its own `${CLAUDE_PLUGIN_DATA}` directory; preserve the
   local-only, same-session, same-plan, 30-day boundary and keep captured data
   out of source.

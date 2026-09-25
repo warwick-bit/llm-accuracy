@@ -9,7 +9,7 @@ Platform capability and runtime evidence are separate.
 
 **Current plugin notes:** [LLM Accuracy 0.6.4](release-0.6.4.md),
 [Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
-[Evidence Memory 0.1.0](release-evidence-memory-0.1.0.md). The records below
+[Evidence Memory 0.2.0](release-evidence-memory-0.2.0.md). The records below
 describe historical builds.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
@@ -192,8 +192,9 @@ Evidence Memory is independent of Session Ledger. It can search exact logged
 tool calls and results from the current session and plan after compaction. It is
 experimental because a small synthetic test supports retrieval, but no live
 long-session accuracy or token-saving improvement has been measured. Exact
-results may contain credentials or other sensitive data, so capture is off by
-default and requires a separate action in each session.
+results may contain credentials or other sensitive data, so the plugin is off
+by default. Enabling it in Claude settings starts capture automatically in each
+session; disable the plugin to stop it in future sessions.
 
 After adding the marketplace, install and enable the plugin:
 
@@ -202,11 +203,12 @@ claude plugin install evidence-memory@llm-accuracy --scope user
 claude plugin enable evidence-memory@llm-accuracy --scope user
 ```
 
-Restart Claude Code, run `/evidence-memory:memory`, and use its `enable`
-command to start capture for this session. The skill also provides search,
-lookup, correction, `disable`, `begin-plan`, and `clear`. Those deletion
-commands remove this plugin's evidence and state without changing Session
-Ledger. A local cutoff prevents a later enable from reindexing earlier rows.
+Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
+start or prompt, with a fresh cutoff that excludes earlier transcript rows.
+The `/evidence-memory:memory` skill provides search, lookup, correction,
+`disable`, `begin-plan`, and `clear`. Those deletion commands stop capture for
+that session and remove its evidence and state without changing Session Ledger;
+`enable` resumes that session. A local cutoff prevents reindexing earlier rows.
 Evidence expires after 30 days of inactivity. The 128 MiB per-session database
 limit stops new writes at a retryable cursor; it does not evict older evidence.
 See the [Evidence Memory guide](../plugins/evidence-memory/README.md) for the

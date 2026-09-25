@@ -2,25 +2,27 @@
 
 Evidence Memory is an independent Claude Code plugin for exact, local,
 current-session tool-result retrieval and revisioned corrections. It can run
-without Session Ledger. It is disabled by default and requires a separate
-per-session `enable` action before capture. The stored results may contain
-sensitive data.
-The first enable can index earlier rows from the current session if its host
-transcript still exists. After disable, clear or begin-plan, the retained cutoff
-prevents those earlier rows from being indexed on a later enable.
+without Session Ledger. The plugin is disabled by default. Once you enable it
+in Claude settings, capture starts automatically in each session at a fresh
+cutoff; earlier transcript rows are not imported. Stored results may contain
+sensitive data. Disable the plugin in Claude settings to stop future sessions.
+After session-level disable, clear or begin-plan, the retained cutoff prevents
+earlier rows from being indexed on an explicit resume.
 
 Install it with `/plugin install evidence-memory@llm-accuracy`, then enable the
-plugin in `/plugin` and restart Claude Code. To begin capture in a session, run
-`/evidence-memory:memory` and use its `enable` command. `disable` deletes that
-session's evidence and state. `begin-plan` and `clear` also delete them. Each
-deletion retains only a fresh local cutoff marker so later enablement cannot
-reindex evidence from before the deletion.
+plugin in `/plugin` and restart Claude Code or run `/reload-plugins`. Capture
+begins at the next session start or prompt. `/evidence-memory:memory disable`
+stops capture and deletes that session's evidence and state. `begin-plan` and
+`clear` do the same. Each deletion retains a fresh local cutoff marker so
+capture stays stopped in that session until `/evidence-memory:memory enable`
+explicitly resumes it.
 
-## Experimental evidence memory (explicit enable)
+## Experimental evidence memory (plugin opt-in)
 
 This experiment stores durable decisions and searchable logged tool evidence.
 It is off by default, and installing or enabling Session Ledger does not enable
-it. The current small follow-up does not justify default-on capture.
+it. Enabling this plugin is a one-time choice to capture exact tool evidence in
+every new session; no extra per-session command is needed.
 
 An exploratory synthetic model comparison found better recovery than the
 rolling record after simulated compactions, but no model-token saving versus
@@ -31,7 +33,8 @@ possible earlier-evidence reuse in local long sessions, but did not establish
 that memory improved real answers. See `docs/plans/session-evidence-memory.md`
 and its validation receipts for the exact populations and limits.
 
-The `memory` skill provides commands and model guidance. For a disposable test:
+The `memory` skill provides commands and model guidance. To resume a session
+after its evidence was cleared, run:
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_DATA}" --session-id "${CLAUDE_SESSION_ID}" enable
@@ -45,8 +48,8 @@ and revision syntax. `status` also shows local counts of completed CLI lookup
 outcomes, search hits/misses and successful fetches. It stores no query keys,
 searched text, result content or timestamps in those counters; failed counting
 never blocks retrieval. The counts reset with disable, clear or begin-plan.
-Claude's PostToolUse, PostToolUseFailure, Stop and compaction
-hooks sync incrementally while enabled. A call result not yet flushed to the
+Claude's prompt, PostToolUse, PostToolUseFailure, Stop and compaction hooks sync
+incrementally while capture is active. A call result not yet flushed to the
 transcript is captured on a later hook; there is no guarantee after abrupt exit.
 Claude runs with `--no-session-persistence` may supply a transcript path without
 creating the file; a native Windows control did so, leaving the index empty.
@@ -90,10 +93,10 @@ Codex transcript outputs often omit that signal. Treat `error_flag_absent` as
 unknown execution status and inspect the result before using it in an answer.
 
 Clear, disable and begin-plan delete this plugin's evidence and state and stop
-capture until re-enabled. They retain a minimal cutoff marker (session/workspace
+capture for that session until explicitly resumed. They retain a minimal cutoff marker (session/workspace
 hashes, a plan ID and timestamp) to prevent reingestion from a surviving host
 transcript. They do not clear Session Ledger data.
-Explicit plan cutoffs exclude old or untimestamped log rows. Successful capture
+Automatic session starts and explicit plan cutoffs exclude old or untimestamped log rows. Successful capture
 or an explicit remember/enable action refreshes this plugin's 30-day inactivity
 expiry. Passive search/fetch/status and a sync with no new rows do not refresh it.
 Expired data cannot be retrieved and is replaced on the next enable; there is no

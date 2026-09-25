@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Explicit session memory CLI and advisory hook bridge."""
+"""Session memory CLI and advisory hook bridge."""
 from __future__ import annotations
 
 import argparse
@@ -72,8 +72,33 @@ def refresh_record(ledger: Any, root: Path, payload: dict[str, Any]) -> None:
     ledger.refresh_plan_scope(root, session_id, workspace, plan, now)
 
 
+def auto_start(ledger: Any, engine: Any, root: Path, payload: dict[str, Any]) -> bool:
+    """Start at a fresh cutoff unless this session was explicitly stopped."""
+    session_id = payload["session_id"]
+    scope_path = ledger.scope_path(root, session_id)
+    if scope_path.exists():
+        scope = ledger.read_json(scope_path)
+        # Legacy stop markers lack this field. Treat them, and corrupt markers,
+        # as stopped rather than silently restarting capture on upgrade.
+        if (not scope or scope.get("session_hash") != ledger.digest(session_id)
+                or scope.get("capture_paused") is not False):
+            return False
+    elif ledger.record_path(root, session_id).exists():
+        return False
+    now = ledger.utc_now()
+    identity = ledger.session_identity(payload, root, now)
+    if not identity:
+        return False
+    ledger.write_fresh_plan_scope(root, session_id, identity[1], now)
+    if not ledger.initialize_session(payload, data_root=root):
+        return False
+    store = open_store(ledger, engine, root, payload, create=True)
+    store.close()
+    return True
+
+
 def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str | None:
-    """Do nothing unless enabled. Busy/error paths never block the host turn."""
+    """Capture enabled sessions; start new ones without blocking the host."""
     root = ledger.data_directory()
     session_id = payload.get("session_id")
     if not root or not isinstance(session_id, str) or not session_id:
@@ -81,10 +106,13 @@ def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str 
     if not ledger.state_paths_are_safe(root, session_id):
         return None
     path = ledger.session_directory(root, session_id) / MEMORY_FILES[0]
-    if not path.exists():
+    may_start = restore or payload.get("hook_event_name") == "UserPromptSubmit"
+    if not path.exists() and not may_start:
         return None
     engine = sibling("session_memory")
     with ledger.session_hash_lock(root, ledger.digest(session_id), wait=False):
+        if not path.exists() and not auto_start(ledger, engine, root, payload):
+            return None
         now = ledger.utc_now()
         if ledger.load_current_record(payload, data_root=root, now=now) is None:
             record = ledger.read_json(ledger.record_path(root, session_id))
@@ -233,7 +261,8 @@ def main(arguments: list[str] | None = None) -> int:
                 _, workspace, _ = identity
                 # Commit the new boundary before deleting the old index.
                 # Even a later enable cannot reingest the cleared transcript.
-                ledger.write_fresh_plan_scope(root, args.session_id, workspace, now)
+                ledger.write_fresh_plan_scope(root, args.session_id, workspace, now,
+                                              capture_paused=True)
                 for name in MEMORY_FILES:
                     ledger.remove_file(ledger.session_directory(root, args.session_id) / name)
                 ledger.remove_file(ledger.record_path(root, args.session_id))

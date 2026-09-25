@@ -26,7 +26,7 @@
     },
     {
       "name": "evidence-memory",
-      "description": "Experimental, separately enabled current-session search and correction memory; stores exact, potentially sensitive tool results locally.",
+      "description": "Experimental current-session search and correction memory; enabling the plugin starts automatic local capture of exact, potentially sensitive tool results.",
       "category": "productivity",
       "source": "./plugins/evidence-memory"
     }
