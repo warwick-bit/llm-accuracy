@@ -140,3 +140,42 @@ def test_release_archive_rejects_uncommitted_tracked_changes(tmp_path: Path) -> 
 
     with pytest.raises(ValueError, match="plugin source has uncommitted changes"):
         builder.build_archive(tmp_path / "llm-accuracy.zip", plugin=plugin)
+
+
+@pytest.mark.parametrize("failure", ["validation", "write", "replace"])
+def test_failed_archive_build_preserves_prior_output_and_cleans_temp(
+    tmp_path, monkeypatch, failure
+):
+    builder = load_builder()
+    plugin = tracked_test_plugin(tmp_path)
+    output = tmp_path / "previous.zip"
+    builder.build_archive(output, plugin=plugin)
+    previous = output.read_bytes()
+    if failure == "validation":
+        (plugin / "README.md").write_text("synthetic dirty change", encoding="utf-8")
+        error = ValueError
+    elif failure == "write":
+        def fail_write(*args, **kwargs):
+            raise OSError("Synthetic write failure")
+        monkeypatch.setattr(builder.zipfile.ZipFile, "write", fail_write)
+        error = OSError
+    else:
+        def fail_replace(*args, **kwargs):
+            raise OSError("Synthetic replacement failure")
+        monkeypatch.setattr(Path, "replace", fail_replace)
+        error = OSError
+    with pytest.raises(error):
+        builder.build_archive(output, plugin=plugin)
+    assert output.read_bytes() == previous
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["previous.zip", "source"]
+
+
+def test_successful_archive_replaces_previous_output(tmp_path):
+    builder = load_builder()
+    plugin = tracked_test_plugin(tmp_path)
+    output = tmp_path / "previous.zip"
+    output.write_bytes(b"synthetic previous artifact")
+    assert builder.build_archive(output, plugin=plugin) == output
+    with zipfile.ZipFile(output) as archive:
+        assert archive.read("README.md") == b"tracked source"
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["previous.zip", "source"]
