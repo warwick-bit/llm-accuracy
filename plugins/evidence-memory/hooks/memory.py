@@ -174,8 +174,6 @@ def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str 
                                 and transcript_waiting(transcript_path):
                             return note_transcript_wait(store)
                         raise
-                    with store.db:
-                        store.db.execute("DELETE FROM meta WHERE key='transcript_waits'")
                     if result["rows"]:
                         refresh_record(ledger, root, payload)
                     if result["status"] not in ("caught_up", "pending_partial_line", "more_pending"):
