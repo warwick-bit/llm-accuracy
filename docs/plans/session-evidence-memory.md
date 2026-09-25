@@ -157,3 +157,27 @@ session transcript and plugin state were deleted afterward. A
 so automatic indexing had no source. The normal authenticated profile supplied
 auth while settings and plugin source were isolated. A clean authenticated
 installation smoke and macOS remain outside this evidence.
+
+An eval-only JSON Schema probe separated failed-result content from formatting.
+With the same restored memory cue, three failed-result runs invoked lookup,
+received `unverified`, and returned the exact unavailable object under the
+schema. The evaluator required Claude's structured-output field, so it could
+not silently score free-form text. One supported, one missing, and one uncued
+case were single-run smoke controls; the uncued case did not retrieve the old
+value. These are not rate estimates. Ordinary production answers are not
+schema-constrained, so free-form JSON failures remain possible.
+
+A fresh temporary Claude profile added this branch as a local marketplace,
+installed and enabled Session Ledger, and matched all 11 installed source files
+to the branch. That validates package installation. A model call from an
+isolated profile returned `api_error` even without the plugin on Linux and
+Windows; its precise environment cause was not determined. No credentials
+were copied into that profile, so authenticated installed-host hook delivery
+remains untested.
+
+On native Windows, a direct marketplace add from the WSL UNC worktree exited
+with code 1. Staging the committed source as a local Windows archive succeeded:
+marketplace add, install and enable all exited 0, all 11 plugin files matched,
+and the disposable profile was removed. The cause of the UNC-path failure was
+not diagnosed. This adds package compatibility evidence, not an authenticated
+installed-host hook test.

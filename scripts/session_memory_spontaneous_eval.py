@@ -24,6 +24,17 @@ SKILL = ROOT / "plugins/session-ledger/skills/memory/SKILL.md"
 CLI = ROOT / "plugins/session-ledger/hooks/memory.py"
 SYSTEM = AGENT_SYSTEM.replace("Use only the supplied read-only Bash access.",
                               "Use available read-only tools when needed.")
+ANSWER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "value": {"type": ["integer", "null"]},
+        "currency": {"type": ["string", "null"]},
+        "basis": {"type": ["string", "null"]},
+        "status": {"type": "string", "enum": ["found", "unavailable"]},
+    },
+    "required": ["value", "currency", "basis", "status"],
+    "additionalProperties": False,
+}
 
 
 def write_plugin(path: Path, data: Path) -> None:
@@ -59,7 +70,7 @@ def restored_memory_packet(root: Path) -> str:
     return packet
 
 
-def one(mode: str, metric: str) -> dict[str, Any]:
+def one(mode: str, metric: str, *, structured_output: bool = False) -> dict[str, Any]:
     with (tempfile.TemporaryDirectory(prefix="session-memory-choice-data-", ignore_cleanup_errors=True) as data,
           tempfile.TemporaryDirectory(prefix="session-memory-choice-plugin-", ignore_cleanup_errors=True) as plugin_root):
         root = Path(data)
@@ -85,7 +96,10 @@ def one(mode: str, metric: str) -> dict[str, Any]:
                    "--tools", "Bash,Skill", "--allowedTools", "Bash,Skill",
                    "--plugin-dir", str(plugin), "--model", MODEL, "--effort", "low",
                    "--max-turns", "8", "--max-budget-usd", "0.30",
-                   "--output-format", "json", "--system-prompt", system, prompt]
+                   "--output-format", "json"]
+        if structured_output:
+            command.extend(("--json-schema", json.dumps(ANSWER_SCHEMA)))
+        command.extend(("--system-prompt", system, prompt))
         raw = ""
         try:
             run = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=180)
@@ -98,7 +112,8 @@ def one(mode: str, metric: str) -> dict[str, Any]:
             connection.close()
         receipt: dict[str, Any] = {"mode": mode, "case": metric, "execution": "exited",
                                    "exit_code": run.returncode, "retrieval_counts": counts,
-                                   "skill_retrieval_used": bool(counts), "scorable": False}
+                                   "skill_retrieval_used": bool(counts), "scorable": False,
+                                   "structured_output_requested": structured_output}
         if run.returncode:
             return receipt
         try:
@@ -111,15 +126,21 @@ def one(mode: str, metric: str) -> dict[str, Any]:
                                              "cache_read_input_tokens", "output_tokens"))
             if envelope.get("terminal_reason") != "completed" or envelope.get("is_error"):
                 return receipt
-            raw = envelope["result"].strip()
+            raw = str(envelope.get("result") or "").strip()
             if mode == "current_control":
                 receipt["scorable"] = True
                 receipt["exact_answer"] = raw == "2"
                 return receipt
-            if raw.startswith("```"):
-                import re
-                raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw)
-            answer = json.loads(raw)
+            if structured_output:
+                answer = envelope.get("structured_output")
+                receipt["structured_output_present"] = isinstance(answer, dict)
+                if not isinstance(answer, dict):
+                    return receipt
+            else:
+                if raw.startswith("```"):
+                    import re
+                    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw)
+                answer = json.loads(raw)
             receipt["scorable"] = True
             receipt["exact_answer"] = score(answer, oracle[metric])["correct"]
         except (KeyError, TypeError, ValueError):
@@ -138,11 +159,15 @@ def main() -> int:
     parser.add_argument("--mode", choices=("uncued", "skill_cue", "restore_packet",
                                            "current_control"), required=True)
     parser.add_argument("--metric", default="metric003")
+    parser.add_argument("--structured-output", action="store_true",
+                        help="Request schema-constrained JSON to separate content from formatting")
     args = parser.parse_args()
     if args.metric not in ("metric003", "metric009", "metric017", "metric031",
                            "metric045", "metric048", "metric999"):
         parser.error("metric must be one of the seven synthetic cases")
-    print(json.dumps(one(args.mode, args.metric), sort_keys=True))
+    if args.structured_output and args.mode == "current_control":
+        parser.error("structured output requires a metric-answer case")
+    print(json.dumps(one(args.mode, args.metric, structured_output=args.structured_output), sort_keys=True))
     return 0
 
 

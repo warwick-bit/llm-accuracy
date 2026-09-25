@@ -51,8 +51,18 @@
     },
     "missing_result": {"runs": 1, "lookup_not_found": 1, "exact_unavailable_answers": 1},
     "failed_result": {"runs": 3, "lookup_unverified": 3, "completed": 3, "parseable_json": 0, "exact_score": "unscorable; do not count as wrong-value answers"},
+    "structured_output_probe": {
+      "method": "Eval-only Claude CLI JSON Schema constraint; evaluator requires the structured_output field and never falls back to free-form text in this mode; production skill unchanged",
+      "structured_field_present": 6,
+      "total_runs": 6,
+      "failed_result": {"runs": 3, "lookup_unverified": 3, "scorable": 3, "exact_unavailable_answers": 3},
+      "positive_result": {"runs": 1, "lookup_found": 1, "exact_answers": 1},
+      "missing_result": {"runs": 1, "lookup_not_found": 1, "exact_unavailable_answers": 1},
+      "uncued_answerable_case": {"runs": 1, "retrieval_used": 0, "exact_answers": 0},
+      "limits": "Positive, missing and uncued controls each ran once and are smoke checks, not rate estimates. This small synthetic probe does not establish live answer accuracy or make the production plugin enforce JSON."
+    },
     "visible_context_control": {"runs": 1, "retrieval_used": 0, "exact_answers": 1},
-    "limits": "Small synthetic sample and same-model tuning; not a live-session accuracy or general token-saving claim. The failed-result format problem remains."
+    "limits": "Small synthetic sample and same-model tuning; not a live-session accuracy or general token-saving claim. Free-form failed-result answers can still violate a requested JSON format."
   },
   "windows": {
     "host": "native Windows Claude Code 2.1.281 with Git Bash and a disposable enabled plugin copy",
@@ -70,6 +80,27 @@
     },
     "nonpersistent_control": "Claude supplied a transcript path but no file under --no-session-persistence; the index remained empty.",
     "limits": "Used the normal authenticated Windows profile with isolated settings and temporary plugin source; a clean authenticated installation smoke and macOS remain unverified."
+  },
+  "clean_marketplace_install": {
+    "platform": "Linux/WSL Claude Code in an empty temporary config directory",
+    "local_marketplace_added": true,
+    "session_ledger_installed": true,
+    "session_ledger_enabled": true,
+    "installed_source_files_matched": 11,
+    "source_files_checked": 11,
+    "authenticated_host_execution": false,
+    "limit": "An isolated clean profile returned api_error for a model call even without the plugin, on both Linux and Windows; the precise environment cause was not determined. No credential files were copied. This validates package installation only; authenticated installed-host hook delivery remains unverified."
+  },
+  "native_windows_clean_marketplace_install": {
+    "platform": "native Windows Claude Code 2.1.281 with a temporary config and a local archive of the current committed source",
+    "direct_wsl_unc_marketplace_add_exit": 1,
+    "local_archive_marketplace_add_exit": 0,
+    "plugin_install_exit": 0,
+    "plugin_enable_exit": 0,
+    "installed_source_files_matched": 11,
+    "source_files_checked": 11,
+    "temporary_profile_cleanup_confirmed": true,
+    "limit": "The UNC-path add failure was not diagnosed. This validates native package installation from a local Windows path, not authenticated installed-host hook delivery."
   },
   "product_decision": "Capture remains explicitly opt-in. The local outcome counter stores labels and counts only; it does not store query text or leave the session database."
 }
