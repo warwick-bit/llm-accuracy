@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -151,3 +152,116 @@ def test_malformed_hook_input_fails_open(tmp_path: Path) -> None:
                             capture_output=True, text=True, env=environment, timeout=10)
     assert result.returncode == 0
     assert result.stdout == ""
+
+
+@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
+@pytest.mark.parametrize("initial", ["missing", "empty"])
+def test_prompt_before_transcript_is_quiet_and_later_capture_catches_up(
+        tmp_path: Path, initial: str) -> None:
+    data = tmp_path / "data"
+    transcript = tmp_path / "synthetic.jsonl"
+    if initial == "empty":
+        transcript.touch()
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
+               "transcript_path": str(transcript), "hook_event_name": "UserPromptSubmit"}
+
+    first = invoke("UserPromptSubmit", payload, data)
+    assert first.returncode == 0
+    assert first.stdout == ""
+    assert json.loads(cli(data, "status").stdout)["events"] == 0
+
+    second = invoke("UserPromptSubmit", payload, data)
+    assert second.returncode == 0
+    assert second.stdout == ""
+    third = invoke("UserPromptSubmit", payload, data)
+    assert third.returncode == 0
+    assert "transcript still unavailable after three hooks" in json.loads(third.stdout)["systemMessage"]
+    fourth = invoke("UserPromptSubmit", payload, data)
+    assert fourth.returncode == 0
+    assert fourth.stdout == ""
+
+    stamp = datetime.now(timezone.utc).isoformat()
+    rows = [
+        {"sessionId": "synthetic-session", "timestamp": stamp,
+         "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "fresh",
+                     "name": "synthetic_query", "input": {"key": "fresh"}}]}},
+        {"sessionId": "synthetic-session", "timestamp": stamp,
+         "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "fresh",
+                     "content": "fresh result"}]}},
+    ]
+    transcript.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    later = invoke("PostToolUse", payload, data)
+    assert later.returncode == 0
+    assert later.stdout == ""
+    assert json.loads(cli(data, "status").stdout)["events"] == 2
+    transcript.unlink()
+    assert invoke("PostToolUse", payload, data).stdout == ""
+
+
+@pytest.mark.skipif(os.name != "posix" or not HOOK_SHELL, reason="POSIX lock probe unavailable")
+def test_busy_session_lock_reports_safe_code_and_later_capture_catches_up(tmp_path: Path) -> None:
+    import fcntl
+
+    data = tmp_path / "data"
+    transcript = tmp_path / "synthetic.jsonl"
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
+               "transcript_path": str(transcript), "hook_event_name": "UserPromptSubmit"}
+    assert invoke("UserPromptSubmit", payload, data).stdout == ""
+
+    stamp = datetime.now(timezone.utc).isoformat()
+    transcript.write_text(json.dumps({"sessionId": "synthetic-session", "timestamp": stamp,
+                                      "message": {"role": "assistant", "content": [
+                                          {"type": "tool_use", "id": "fresh", "name": "synthetic_query",
+                                           "input": {"key": "fresh"}}]}}) + "\n")
+    lock = data / "evidence-memory" / "locks" / hashlib.sha256(b"synthetic-session").hexdigest()
+    with lock.open("a+b") as stream:
+        fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        blocked = invoke("PostToolUse", payload, data)
+        assert blocked.returncode == 0
+        assert "BlockingIOError" in json.loads(blocked.stdout)["systemMessage"]
+        fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+
+    later = invoke("PostToolUse", payload, data)
+    assert later.returncode == 0
+    assert later.stdout == ""
+    assert json.loads(cli(data, "status").stdout)["events"] == 1
+
+
+@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
+def test_persistent_scope_error_reports_safe_code(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    transcript = tmp_path / "wrong-session.jsonl"
+    transcript.write_text(json.dumps({"sessionId": "other-session", "timestamp": "2026-09-25T00:00:00Z",
+                                      "message": {"role": "user", "content": "synthetic"}}) + "\n")
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
+               "transcript_path": str(transcript), "hook_event_name": "UserPromptSubmit"}
+    result = invoke("UserPromptSubmit", payload, data)
+    assert result.returncode == 0
+    message = json.loads(result.stdout)["systemMessage"]
+    assert "transcript_session_mismatch" in message
+    assert str(transcript) not in message
+    assert "other-session" not in message
+
+
+@pytest.mark.skipif(not HOOK_SHELL or os.name != "posix", reason="symlink probe unavailable")
+def test_symlinked_transcript_is_not_treated_as_host_delay(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    transcript = tmp_path / "synthetic.jsonl"
+    transcript.symlink_to(tmp_path / "missing-target.jsonl")
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
+               "transcript_path": str(transcript), "hook_event_name": "UserPromptSubmit"}
+    result = invoke("UserPromptSubmit", payload, data)
+    assert result.returncode == 0
+    assert "transcript_unavailable" in json.loads(result.stdout)["systemMessage"]
+
+
+@pytest.mark.skipif(not HOOK_SHELL or not hasattr(os, "mkfifo"), reason="FIFO probe unavailable")
+def test_special_file_is_not_treated_as_host_delay(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    transcript = tmp_path / "synthetic.pipe"
+    os.mkfifo(transcript)
+    payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
+               "transcript_path": str(transcript), "hook_event_name": "UserPromptSubmit"}
+    result = invoke("UserPromptSubmit", payload, data)
+    assert result.returncode == 0
+    assert "transcript_unavailable" in json.loads(result.stdout)["systemMessage"]

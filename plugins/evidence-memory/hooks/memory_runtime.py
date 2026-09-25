@@ -269,7 +269,9 @@ def session_hash_lock(root: Path, session_hash: str, *, wait: bool = True) -> It
                     msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
                     break
                 except OSError as error:
-                    if not wait or error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK) or time.monotonic() >= deadline:
+                    if not wait and error.errno in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                        raise BlockingIOError(errno.EAGAIN, "memory_session_lock_busy") from None
+                    if error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK) or time.monotonic() >= deadline:
                         raise
                     time.sleep(0.025)
         else:

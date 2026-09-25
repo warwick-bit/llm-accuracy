@@ -309,6 +309,7 @@ class Store:
                     self.db.execute("UPDATE meta SET value=? WHERE key='expires'",
                                     (str(time.time() + RETENTION_SECONDS),))
                 self.db.execute("INSERT OR REPLACE INTO meta VALUES ('last_sync', ?)", (encoded(result),))
+                self.db.execute("DELETE FROM meta WHERE key='transcript_waits'")
             return {**result, "cursor_reset": reset, "identity_bytes_read": identity_bytes, "anchor_bytes_read": 2 * min(cursor["offset"], 4096) if cursor else 0}
 
     def search(self, query: str, *, limit: int = 10, offset: int = 0,

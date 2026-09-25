@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 import sqlite3
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,31 @@ def plan_cutoff(ledger: Any, root: Path, session_id: str) -> str:
     if ledger.parse_timestamp(cutoff) is None:
         raise ValueError("invalid_plan_cutoff")
     return cutoff
+
+
+def transcript_waiting(path: Path) -> bool:
+    """Only a missing or empty regular transcript is a normal host delay."""
+    if path.is_symlink():
+        return False
+    try:
+        source = path.stat()
+        return stat.S_ISREG(source.st_mode) and source.st_size == 0
+    except FileNotFoundError:
+        return True
+
+
+def note_transcript_wait(store: Any) -> str | None:
+    """Warn once if the transcript is still absent after three hook attempts."""
+    row = store.db.execute("SELECT value FROM meta WHERE key='transcript_waits'").fetchone()
+    previous = int(row[0]) if row and str(row[0]).isdigit() else 0
+    attempts = min(previous + 1, 3)
+    with store.db:
+        store.db.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('transcript_waits', ?)",
+                         (str(attempts),))
+    if previous < 3 and attempts == 3:
+        return ("Evidence Memory: transcript still unavailable after three hooks; "
+                "capture will retry. Check session persistence and memory status/sync.")
+    return None
 
 
 def refresh_record(ledger: Any, root: Path, payload: dict[str, Any]) -> None:
@@ -136,7 +162,18 @@ def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str 
             if not restore:
                 transcript = payload.get("transcript_path")
                 if isinstance(transcript, str):
-                    result = store.sync(Path(transcript), cutoff=plan_cutoff(ledger, root, session_id))
+                    transcript_path = Path(transcript)
+                    # A prompt can arrive before the host creates or flushes
+                    # its transcript. A later hook will retry the same source.
+                    if transcript_waiting(transcript_path):
+                        return note_transcript_wait(store)
+                    try:
+                        result = store.sync(transcript_path, cutoff=plan_cutoff(ledger, root, session_id))
+                    except ValueError as exc:
+                        if str(exc) in ("transcript_unavailable", "transcript_identity_unavailable") \
+                                and transcript_waiting(transcript_path):
+                            return note_transcript_wait(store)
+                        raise
                     if result["rows"]:
                         refresh_record(ledger, root, payload)
                     if result["status"] not in ("caught_up", "pending_partial_line", "more_pending"):
@@ -315,8 +352,14 @@ def hook_main(arguments: list[str]) -> int:
                                                          "hookEventName": "SessionStart"}}))
             else:
                 print(json.dumps({"systemMessage": packet}))
-    except Exception:
-        print(json.dumps({"systemMessage": "Evidence Memory: capture or restore unavailable; use memory status/sync to diagnose."}))
+    except Exception as exc:
+        # Only fixed codes or exception class names are safe to expose here.
+        known = {"transcript_unavailable", "transcript_identity_unavailable",
+                 "transcript_session_mismatch", "invalid_cursor", "invalid_plan_cutoff",
+                 "memory_scope_or_expiry", "unsafe_memory_path"}
+        code = str(exc) if type(exc) is ValueError and str(exc) in known else type(exc).__name__
+        print(json.dumps({"systemMessage": f"Evidence Memory: capture or restore unavailable ({code}); "
+                                           "use memory status/sync to diagnose."}))
     return 0
 
 

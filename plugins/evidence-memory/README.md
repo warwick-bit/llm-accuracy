@@ -77,7 +77,7 @@ retrieve additional state/evidence; storage alone does not guarantee it will.
 Limits: database pages are capped at 128 MiB per session (temporary SQLite journal
 space is additional); a source line is capped at 8 MiB; each sync processes up to
 one 8 MiB batch plus at most one line, with a one-second cooperative loop budget.
-A single line/SQLite transaction can take longer; the host's existing five-second
+A single line/SQLite transaction can take longer; the host's configured ten-second
 hook timeout remains the outer limit. Search returns at most 20 previews; fetch
 returns 2,048 characters per page. Large results are paged, not silently truncated.
 A full database stops new writes and rolls back the cursor without evicting old
@@ -85,6 +85,10 @@ evidence. Malformed, oversized or invalid-tool-identity lines similarly stop at 
 retryable cursor. A row with another explicit session ID rejects the transcript
 as a scope mismatch. Repeated warnings mean capture still cannot progress; use
 explicit sync/status to diagnose.
+An uncreated or empty transcript is retried quietly twice; a third missed hook
+reports a notice once, and later hooks keep retrying. A busy session lock reports
+a safe error class and can catch up on a later hook. Other hook failures report
+a fixed error code or exception class, without transcript text or paths.
 
 `lookup.status=found` means one paired historical log entry was retrieved. It
 does not prove that a tool call or provider request succeeded. `host_error_signal`
