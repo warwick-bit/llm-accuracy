@@ -78,8 +78,10 @@ A single line/SQLite transaction can take longer; the host's existing five-secon
 hook timeout remains the outer limit. Search returns at most 20 previews; fetch
 returns 2,048 characters per page. Large results are paged, not silently truncated.
 A full database stops new writes and rolls back the cursor without evicting old
-evidence. Malformed/oversized lines similarly stop at a retryable cursor. Repeated
-warnings mean capture still cannot progress; use explicit sync/status to diagnose.
+evidence. Malformed, oversized or invalid-tool-identity lines similarly stop at a
+retryable cursor. A row with another explicit session ID rejects the transcript
+as a scope mismatch. Repeated warnings mean capture still cannot progress; use
+explicit sync/status to diagnose.
 
 `lookup.status=found` means one paired historical log entry was retrieved. It
 does not prove that a tool call or provider request succeeded. `host_error_signal`

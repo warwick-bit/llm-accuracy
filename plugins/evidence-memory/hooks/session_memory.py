@@ -223,7 +223,19 @@ class Store:
             if not after_cutoff(stamp, cutoff):
                 rejected += 1
             else:
-                for event in tool_events(row):
+                try:
+                    events = tool_events(row)
+                except ValueError as exc:
+                    if str(exc) != "invalid_tool_identity":
+                        raise
+                    # Keep the cursor at this row so a repaired transcript can
+                    # be retried without losing earlier committed evidence.
+                    status = "invalid_tool_identity"
+                    break
+                if any(len(event["call_id"]) > 512 or len(event["name"]) > 256 for event in events):
+                    status = "invalid_tool_identity"
+                    break
+                for event in events:
                     self._insert_event(event, row, source, start)
             offset = stream.tell()
             rows += 1

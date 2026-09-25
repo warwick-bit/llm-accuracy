@@ -57,7 +57,6 @@ CONTEXT_TRUNCATION_NOTICE = (
 )
 STATE_DIRECTORY_NAME = "session-ledger"
 DEFAULT_PLAN_ID = "default"
-MEMORY_FILES = ("memory.sqlite3", "memory.sqlite3-journal", "memory.sqlite3-wal", "memory.sqlite3-shm")
 MINIMUM_CONTAINED_HOOK_TEXT_CHARS = 24
 REDACTION_ENVIRONMENT_VARIABLE = "SESSION_LEDGER_REDACT"
 SECRET_PATTERNS = tuple(
@@ -881,7 +880,7 @@ def remove_session(data_root: Path, session_id: str) -> None:
     if not state_paths_are_safe(data_root, session_id):
         return
     directory = session_directory(data_root, session_id)
-    for filename in ("record.json", "scope.json", *MEMORY_FILES):
+    for filename in ("record.json", "scope.json"):
         remove_file(directory / filename)
     try:
         directory.rmdir()
@@ -913,9 +912,6 @@ def prune_expired(data_root: Path, now: datetime) -> None:
                     payload = read_json(path)
                     if path.exists() and (payload is None or not is_current(payload, now)):
                         remove_file(path)
-                if not (directory / "record.json").exists():
-                    for filename in MEMORY_FILES:
-                        remove_file(directory / filename)
                 try:
                     directory.rmdir()
                 except OSError:
@@ -1304,8 +1300,6 @@ def begin_plan(
             # but must never discard it without the new boundary in place.
             write_json_atomic(scope_path(root, session_id), scope)
             remove_file(record_path(root, session_id))
-            for filename in MEMORY_FILES:
-                remove_file(session_directory(root, session_id) / filename)
     except OSError:
         return False
     return True

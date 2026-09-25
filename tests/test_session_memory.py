@@ -647,8 +647,30 @@ def test_multiblock_rich_result_is_not_misattributed(store, tmp_path):
 def test_malformed_tool_identity_does_not_advance_cursor(store, tmp_path):
     malformed = call()
     malformed['message']['content'][0].pop('id')
-    with pytest.raises(ValueError, match='invalid_tool_identity'):
-        store.sync(write_log(tmp_path / 'log', malformed))
+    path = write_log(tmp_path / 'log', malformed)
+    assert store.sync(path)['status'] == 'invalid_tool_identity'
+    assert store.sync(path)['offset'] == 0
+    assert store.status()['events'] == 0
+
+
+def test_malformed_tool_identity_preserves_prior_rows_at_retryable_cursor(store, tmp_path):
+    malformed = result()
+    malformed['message']['content'][0].pop('tool_use_id')
+    path = write_log(tmp_path / 'log', call(), malformed)
+    first = store.sync(path)
+    assert first['status'] == 'invalid_tool_identity'
+    assert first['offset'] == len(json.dumps(call(), ensure_ascii=False).encode('utf-8')) + 1
+    assert store.status()['events'] == 1
+    assert store.sync(path)['status'] == 'invalid_tool_identity'
+    assert store.status()['events'] == 1
+
+
+def test_oversized_identity_rejects_entire_multiblock_row(store, tmp_path):
+    oversized = call()
+    oversized['message']['content'].append(call('x' * 513)['message']['content'][0])
+    path = write_log(tmp_path / 'log', oversized)
+    assert store.sync(path)['status'] == 'invalid_tool_identity'
+    assert store.sync(path)['offset'] == 0
     assert store.status()['events'] == 0
 
 
