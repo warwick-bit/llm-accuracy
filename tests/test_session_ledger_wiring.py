@@ -455,7 +455,10 @@ def test_utf8_payload_round_trips_independently_of_stdio_encoding(
     assert (restored_value if field == "compact_summary" else restored_value[0]["text"]) == sample
 
 
-@pytest.mark.parametrize("raw", [b"{\xff}", b'{"prompt":"\xff"}', b"{not json", b"[]"])
+@pytest.mark.parametrize("raw", [
+    b"{\xff}", b'{"prompt":"\xff"}', b"{not json", b"[]",
+    b"[" * 10000 + b"0" + b"]" * 10000,
+])
 def test_invalid_byte_payload_fails_open(tmp_path: Path, raw: bytes) -> None:
     result = subprocess.run(
         [sys.executable, str(PLUGIN_ROOT / "hooks" / "session-ledger.py"),

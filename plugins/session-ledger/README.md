@@ -107,8 +107,20 @@ Successful captures stay quiet. Hooks emit a short `systemMessage` when capture
 is skipped for missing identity/data directory or locking
 failure; when a storage/internal error prevents confirming an update; or when
 rolling entries, a compact summary, or restored context are shortened. A rolling
-limit warning can mean omission as well as shortening. A restore warning does
-not mean the stored record was changed.
+limit warning can mean omission as well as shortening. The rolling entries have
+an aggregate 64 KiB budget (JSON-escaped bytes) and a 16 KiB per-entry cap;
+compact summaries have a separate 32 KiB budget. Long sessions therefore retain
+only a bounded portion of earlier conversation. A restore warning does not mean
+the stored record was changed.
+
+Transcript history is reconciled in its observed order before applying the
+budget, so previously evicted messages are not appended as though they were
+newest. Hook-only entries missing from the transcript stay between their shared
+anchors, preserving interleaved corrections. First-capture backfill is bounded
+after reconciliation; it is not skipped merely because the latest hook was
+already saved. A replaced transcript with no overlap is appended as new input.
+Actual new trimming still warns; unchanged replay stays quiet. No additional
+state files, cursor fields, or migration are required.
 
 Warnings contain fixed text only, never transcript content, file paths, or
 exception details. They are deduplicated within each invocation, not across
