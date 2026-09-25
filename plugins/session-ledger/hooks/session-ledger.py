@@ -292,7 +292,18 @@ def unlock_descriptor(descriptor: int) -> None:
 @contextmanager
 def session_lock(data_root: Path, session_id: str) -> Iterator[None]:
     """Serialize local updates; callers fail open if the lock is unavailable."""
-    path = lock_path(data_root, session_id)
+    with session_hash_lock(data_root, digest(session_id)):
+        yield
+
+
+@contextmanager
+def session_hash_lock(
+    data_root: Path, session_hash: str, *, wait: bool = True
+) -> Iterator[None]:
+    """Lock a known session hash without hashing its on-disk name a second time."""
+    if not re.fullmatch(r"[0-9a-f]{64}", session_hash):
+        raise OSError("Session Ledger session hash is invalid")
+    path = state_directory(data_root) / "locks" / session_hash
     secure_directory(data_root)
     secure_directory(state_directory(data_root))
     secure_directory(path.parent)
@@ -306,9 +317,9 @@ def session_lock(data_root: Path, session_id: str) -> Iterator[None]:
         if os.name == "posix":
             os.fchmod(descriptor, 0o600)
         try:
-            lock_descriptor(descriptor)
+            lock_descriptor(descriptor, wait=wait)
         except OSError:
-            if "lock_timeout" not in (HOOK_NOTICES.get() or set()):
+            if wait and "lock_timeout" not in (HOOK_NOTICES.get() or set()):
                 note_notice("lock_unavailable")
             raise
         try:
@@ -325,7 +336,7 @@ def read_json(path: Path) -> dict[str, Any] | None:
         if path.is_symlink() or not path.is_file():
             return None
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError):
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -791,13 +802,21 @@ def prune_expired(data_root: Path, now: datetime) -> None:
     for directory in directories:
         if directory.is_symlink() or not directory.is_dir():
             continue
-        for filename in ("record.json", "scope.json"):
-            path = directory / filename
-            payload = read_json(path)
-            if path.exists() and (payload is None or not is_current(payload, now)):
-                remove_file(path)
         try:
-            directory.rmdir()
+            # Capture and pruning share the same lock inode. A busy session is
+            # retried on a later sweep, never deleted using a stale expiry read.
+            with session_hash_lock(data_root, directory.name, wait=False):
+                if directory.is_symlink():
+                    continue
+                for filename in ("record.json", "scope.json"):
+                    path = directory / filename
+                    payload = read_json(path)
+                    if path.exists() and (payload is None or not is_current(payload, now)):
+                        remove_file(path)
+                try:
+                    directory.rmdir()
+                except OSError:
+                    pass
         except OSError:
             continue
     prune_orphan_locks(data_root, sessions)
