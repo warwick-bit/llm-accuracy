@@ -69,13 +69,13 @@ def test_plugin_autostarts_without_backfill_and_stop_stays_off(tmp_path: Path, a
     assert not list(data.rglob("memory.sqlite3"))
 
     stopped_scope = json.loads(next(data.rglob("scope.json")).read_text())
-    assert datetime.fromisoformat(stamp) < datetime.fromisoformat(stopped_scope["started_at"])
+    stopped_at = datetime.fromisoformat(stopped_scope["started_at"].replace("Z", "+00:00"))
+    assert datetime.fromisoformat(stamp) < stopped_at
     assert cli(data, "enable").returncode == 0
     assert invoke("PostToolUse", payload, data).returncode == 0
     assert json.loads(cli(data, "status").stdout)["events"] == 0
 
-    resumed_stamp = (datetime.fromisoformat(stopped_scope["started_at"])
-                     + timedelta(seconds=1)).isoformat()
+    resumed_stamp = (stopped_at + timedelta(seconds=1)).isoformat()
     resumed = [
         {"sessionId": "synthetic-session", "timestamp": resumed_stamp,
          "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "resumed",
