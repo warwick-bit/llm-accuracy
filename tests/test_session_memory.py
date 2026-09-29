@@ -919,6 +919,17 @@ def test_recent_external_results_skip_ambiguous_pairs(store, tmp_path, engine):
     assert [json.loads(store.fetch(item['id'])['text'])['content'] for item in listed] == ['okword']
 
 
+def test_recent_external_results_scan_past_filtered_candidates(store, tmp_path, engine):
+    # More filtered candidates than one scan batch must not hide an older eligible result.
+    rows = [tool_call('old', 'mcp__synthetic__query_dataset'), result('old', text='oldword')]
+    for index in range(60):
+        rows += [tool_call(f'local{index}', 'Bash', {'command': f'grep mcp__synthetic__query_dataset n{index}'}),
+                 result(f'local{index}', text=f'localword{index}')]
+    store.sync(write_log(tmp_path / 'log', *rows), scope=engine.CaptureScope('all'))
+    listed = store.recent_external(engine.CaptureScope('all'))
+    assert [json.loads(store.fetch(item['id'])['text'])['content'] for item in listed] == ['oldword']
+
+
 def test_fetch_and_remember_accept_a_unique_id_prefix(store, tmp_path):
     store.sync(write_log(tmp_path / 'log', call(), result()))
     full = store.search('receipts')['matches'][0]['id']
@@ -1050,7 +1061,8 @@ def read_only_filesystem(monkeypatch):
 
     monkeypatch.setattr(os, 'open', guarded_open)
     for name in ('chmod', 'fchmod', 'mkdir', 'unlink', 'replace', 'rename'):
-        monkeypatch.setattr(os, name, refuse)
+        if hasattr(os, name):  # Windows Python before 3.13 has no fchmod.
+            monkeypatch.setattr(os, name, refuse)
 
 
 def test_read_actions_work_read_only_in_a_sandbox_without_recording_retrievals(tmp_path, monkeypatch, capsys):
@@ -1085,12 +1097,22 @@ def test_read_only_fallback_respects_the_session_lock_and_other_errors(tmp_path,
         with monkeypatch.context() as sandbox:
             read_only_filesystem(sandbox)
             # A writer holds the lock, so the shared read lock is refused rather than skipped.
-            assert bridge.main([*base, 'status']) == 1
+            # Hosts without fcntl read unlocked by design; SQLite still gives a consistent snapshot.
+            if runtime.fcntl is not None:
+                assert bridge.main([*base, 'status']) == 1
+            else:
+                assert bridge.main([*base, 'status']) == 0
+                assert json.loads(capsys.readouterr().out)['read_only'] is True
             capsys.readouterr()
     with monkeypatch.context() as full_disk:
-        def no_space(*args, **kwargs):
-            raise OSError(errno.ENOSPC, 'No space left on device')
-        full_disk.setattr(os, 'chmod', no_space)
+        real_open = os.open
+
+        def no_space(path, flags, *args, **kwargs):
+            # Patch os.open, not os.chmod: before 3.11, pathlib calls a copy of os.chmod bound at import.
+            if flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT):
+                raise OSError(errno.ENOSPC, 'No space left on device')
+            return real_open(path, flags, *args, **kwargs)
+        full_disk.setattr(os, 'open', no_space)
         # Only permission and read-only refusals fall back; other failures still surface.
         assert bridge.main([*base, 'status']) == 1
         assert json.loads(capsys.readouterr().out)['error'] == 'memory_operation_failed'
