@@ -1,0 +1,56 @@
+{
+  "date": "2026-09-30",
+  "kind": "Evidence Memory 0.3.0 design replay and restore-packet comparison; raw-free aggregates",
+  "offline_replay": {
+    "population": "Maintainer's local Claude Code and Codex transcripts from September 2026. Only tool-name classes, counts and byte totals were computed; no tool input, output or name is recorded here.",
+    "prior_behaviour": "Twelve real 0.2 indexes captured every tool call and recorded no organic retrieval.",
+    "external_scope_share": {
+      "claude_calls": 0.066,
+      "codex_calls": 0.040,
+      "claude_result_bytes": 0.192,
+      "codex_result_bytes": 0.114
+    },
+    "network_shell_heuristic": {
+      "claude_calls_with_heuristic": 0.080,
+      "codex_calls_with_heuristic": 0.059,
+      "decision": "Not in the default scope: about 1-2 points more calls for 2-5 points more coverage of post-compaction restatements, while storing free-form command text and output."
+    },
+    "restricted_names": {
+      "distinct_mcp_tool_names": 109,
+      "matched_by_default_words": 5,
+      "false_positives_on_review": 0,
+      "added_secret_words_matched": 0,
+      "claude_calls_withheld": 26,
+      "codex_calls_withheld": 0,
+      "input_text_matching": {
+        "codex_external_cells_matched_only_in_input": 67,
+        "codex_external_cells": 1348,
+        "claude_external_calls_matched_only_in_input": 1,
+        "claude_external_calls": 758,
+        "decision": "Rejected: most input-only matches were the word tax in accounting queries, so input matching would withhold ordinary results."
+      }
+    },
+    "recent_results_list": {
+      "codex_identical_post_compaction_reruns": 38,
+      "codex_listed_in_last_10_at_compaction": 24,
+      "claude_identical_post_compaction_reruns": 5,
+      "claude_listed_in_last_10_at_compaction": 3
+    },
+    "automatic_number_linking": {
+      "decision": "Not built. Under external scope only 14.3% (Claude) and 11.6% (Codex) of numbers in session notes matched exactly one captured result."
+    }
+  },
+  "restore_packet_comparison": {
+    "population": "Repository synthetic long-session fixture after three compactions with the source transcript deleted; Claude Sonnet, low effort; one run per case and arm; positive cases metric003, metric009 and metric045; failed-result case metric048.",
+    "isolation": "claude --print with a relocated CLAUDE_CONFIG_DIR holding only credentials, empty setting sources, strict empty MCP configuration, schema-constrained answer, and an empty working directory so the index could not be found by listing. Model replies were scored in memory and not saved.",
+    "arms": {
+      "old_packet_with_skill": {"positive_runs": 3, "exact_answers": 3, "retrieval_used": 3, "mean_turns": 5.0, "mean_counted_tokens": 31705.3},
+      "new_packet_with_skill": {"positive_runs": 3, "exact_answers": 3, "retrieval_used": 3, "mean_turns": 3.67, "mean_counted_tokens": 27629.7},
+      "new_packet_without_skill": {"positive_runs": 3, "exact_answers": 3, "retrieval_used": 3, "mean_turns": 3.67, "mean_counted_tokens": 19632.7},
+      "old_packet_without_skill": {"positive_runs": 3, "exact_answers": 0, "retrieval_used": 0, "mean_turns": 5.33, "mean_counted_tokens": 30221.7}
+    },
+    "failed_result_case": "Every arm answered unavailable. This case cannot distinguish retrieval from absence, because unavailable is also the answer without evidence.",
+    "first_rung_control_repair": "A first run used the index directory as the working directory; the no-skill control then read the database directly and answered correctly without retrieval. It was discarded and rerun with an empty working directory.",
+    "limits": "Screen-grade: three positive cases per arm. The question names the metric, so this measures retrieval when a need is explicit, not whether a model notices an unprompted need after compaction. Counted model usage sums CLI input, cache-creation, cache-read and output counts, including fixed host context, and is not a billing estimate. Live long-session benefit remains unmeasured."
+  }
+}

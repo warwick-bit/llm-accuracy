@@ -9,7 +9,7 @@ Platform capability and runtime evidence are separate.
 
 **Current plugin notes:** [LLM Accuracy 0.6.4](release-0.6.4.md),
 [Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
-[Evidence Memory 0.2.0](release-evidence-memory-0.2.0.md). The records below
+[Evidence Memory 0.3.0](release-evidence-memory-0.3.0.md). The records below
 describe historical builds.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
@@ -189,7 +189,9 @@ name or carrying data to another session.
 ## Evidence Memory — optional Claude Code plugin
 
 Evidence Memory is independent of Session Ledger. It can search exact logged
-tool calls and results from the current session and plan after compaction. It is
+external tool calls and results (MCP and web tools by default; tools named for
+HR, payroll, bank, tax, identity or secret data are withheld) from the current
+session and plan after compaction. It is
 experimental because a small synthetic test supports retrieval, but no live
 long-session accuracy or token-saving improvement has been measured. Exact
 results may contain credentials or other sensitive data, so the plugin is off

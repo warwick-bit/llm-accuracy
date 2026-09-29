@@ -175,3 +175,5 @@ I/O, not a general improvement in model answer accuracy. A clean native Windows
 installed-host smoke passed with synthetic data; live long-session benefit and
 macOS host behaviour remain unmeasured. See the
 [standalone validation receipt](../../docs/validation/evidence-memory-standalone-2026-09-25.json).
+The 0.3.0 scope choices and restore-packet comparison are in the
+[0.3.0 receipt](../../docs/validation/evidence-memory-0.3.0-2026-09-30.json).
