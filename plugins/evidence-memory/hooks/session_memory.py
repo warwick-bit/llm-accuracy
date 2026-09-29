@@ -145,16 +145,24 @@ class CaptureScope:
 class Store:
     """One session/plan database. SQLite commits evidence and offsets together."""
 
-    def __init__(self, path: Path, session_id: str, plan_id: str, *, create: bool = False):
+    def __init__(self, path: Path, session_id: str, plan_id: str, *, create: bool = False, read_only: bool = False):
         if path.is_symlink() or (not create and not path.is_file()):
             raise ValueError("memory_not_enabled")
+        if create and read_only:
+            raise ValueError("invalid_store_mode")
         if create and not path.exists():
             descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             os.close(descriptor)
-        self.db = sqlite3.connect(str(path), timeout=0.15)
+        # Read-only opens serve read actions in a host sandbox that refuses every write.
+        self.read_only = read_only
+        if read_only:
+            self.db = sqlite3.connect(path.absolute().as_uri() + "?mode=ro", uri=True, timeout=0.15)
+        else:
+            self.db = sqlite3.connect(str(path), timeout=0.15)
         self.db.row_factory = sqlite3.Row
         try:
-            self.db.execute("PRAGMA journal_mode=DELETE")
+            if not read_only:
+                self.db.execute("PRAGMA journal_mode=DELETE")
             self.db.execute("PRAGMA secure_delete=ON")
             page_size = self.db.execute("PRAGMA page_size").fetchone()[0]
             self.db.execute(f"PRAGMA max_page_count={MAX_DATABASE_BYTES // page_size}")
@@ -198,14 +206,15 @@ class Store:
             raise ValueError("memory_scope_or_expiry")
         # An enabled experimental index may predate local retrieval counters.
         try:
-            with self.db:
-                self.db.execute("CREATE TABLE IF NOT EXISTS retrieval_counts("
-                                "outcome TEXT PRIMARY KEY, count INTEGER NOT NULL)")
+            if not self.read_only:
+                with self.db:
+                    self.db.execute("CREATE TABLE IF NOT EXISTS retrieval_counts("
+                                    "outcome TEXT PRIMARY KEY, count INTEGER NOT NULL)")
         except sqlite3.Error:
             # A full legacy index must remain readable even if counters cannot be added.
             pass
         # Indexes created before capture scoping keep their unscoped rows until cleared.
-        if "capture_policy" not in meta:
+        if "capture_policy" not in meta and not self.read_only:
             try:
                 unscoped = self.db.execute("SELECT 1 FROM events LIMIT 1").fetchone() is not None
                 with self.db:
@@ -227,7 +236,7 @@ class Store:
                            "fetch_hit"):
             # An unfamiliar future status must not replace a successful retrieval with an error.
             return
-        if not self.counts_available:
+        if self.read_only or not self.counts_available:
             return
         try:
             with self.db:
@@ -638,4 +647,5 @@ class Store:
                 "capture_counts": self._capture_counts(),
                 "database_bytes": self.path.stat().st_size, "quota_bytes": MAX_DATABASE_BYTES,
                 "search_mode": "fts5" if self.fts else "literal_scan", "scope": "current session and plan",
+                "read_only": self.read_only,
                 "expires_at_unix": float(self.db.execute("SELECT value FROM meta WHERE key='expires'").fetchone()[0])}

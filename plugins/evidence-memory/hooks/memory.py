@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib.util
 import json
 import os
@@ -12,9 +13,10 @@ import sqlite3
 import stat
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 MEMORY_FILES = ("memory.sqlite3", "memory.sqlite3-journal", "memory.sqlite3-wal", "memory.sqlite3-shm")
+READ_ACTIONS = ("search", "lookup", "fetch", "state", "status")
 CONFIG_BYTES = 16 * 1024
 
 
@@ -25,7 +27,8 @@ def sibling(name: str) -> Any:
     return module
 
 
-def open_store(ledger: Any, engine: Any, root: Path, payload: dict[str, Any], *, create: bool = False) -> Any:
+def open_store(ledger: Any, engine: Any, root: Path, payload: dict[str, Any], *, create: bool = False,
+               read_only: bool = False) -> Any:
     requested_session = payload.get("session_id")
     if not isinstance(requested_session, str) or not requested_session:
         raise ValueError("invalid_session")
@@ -47,9 +50,27 @@ def open_store(ledger: Any, engine: Any, root: Path, payload: dict[str, Any], *,
         raise ValueError("memory_not_enabled")
     if create:
         ledger.secure_parent(path)
-    if path.exists() and os.name == "posix":
+    if path.exists() and os.name == "posix" and not read_only:
         path.chmod(0o600)
-    return engine.Store(path, session_id, plan_id, create=create)
+    return engine.Store(path, session_id, plan_id, create=create, read_only=read_only)
+
+
+@contextlib.contextmanager
+def session_lock(ledger: Any, root: Path, session_id: str, action: str) -> Iterator[bool]:
+    """Hold the session lock; yield True when a read action must proceed read-only."""
+    session_hash = ledger.digest(session_id)
+    with contextlib.ExitStack() as held:
+        read_only = False
+        try:
+            held.enter_context(ledger.session_hash_lock(root, session_hash, wait=False))
+        except OSError as exc:
+            if action not in READ_ACTIONS or not ledger.is_read_only_error(exc):
+                raise
+            # A read-only sandbox, such as Codex's, cannot create the lock or record retrieval counts.
+            read_only = True
+        if read_only:
+            held.enter_context(ledger.shared_session_lock(root, session_hash, wait=False))
+        yield read_only
 
 
 def capture_config(engine: Any, root: Path) -> tuple[Any, dict[str, Any]]:
@@ -330,7 +351,7 @@ def main(arguments: list[str] | None = None) -> int:
     root = Path(args.plugin_data)
     payload = {"session_id": args.session_id, "cwd": os.getcwd()}
     try:
-        with ledger.session_hash_lock(root, ledger.digest(args.session_id), wait=False):
+        with session_lock(ledger, root, args.session_id, args.action) as read_only:
             if args.action == "enable" and not ledger.initialize_session(payload, data_root=root):
                 raise ValueError("session_initialization_failed")
             if args.action in ("disable", "clear", "begin-plan"):
@@ -351,7 +372,8 @@ def main(arguments: list[str] | None = None) -> int:
                 result = {"enabled": False, "deleted": True,
                           "plan_started": args.action == "begin-plan"}
             else:
-                store = open_store(ledger, engine, root, payload, create=args.action == "enable")
+                store = open_store(ledger, engine, root, payload, create=args.action == "enable",
+                                   read_only=read_only)
                 try:
                     result = dispatch(store, args, ledger, root, capture_config(engine, root))
                     if args.action in ("enable", "remember") or (args.action == "sync" and result["rows"]):

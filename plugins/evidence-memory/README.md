@@ -100,6 +100,12 @@ and revision syntax. `status` also shows local counts of completed CLI lookup
 outcomes, search hits/misses and successful fetches. It stores no query keys,
 searched text, result content or timestamps in those counters; failed counting
 never blocks retrieval. The counts reset with disable, clear or begin-plan.
+When a sandbox makes the plugin data directory read-only, `status`, `lookup`,
+`search`, `fetch` and `state` still work: they open the index read-only, share
+the session lock if it exists, and record no retrieval counts (`status` reports
+`read_only: true`). `sync`, `remember`, `enable` and `disable` still need a
+writable data directory; only permission and read-only filesystem refusals fall
+back.
 Claude's prompt, PostToolUse, PostToolUseFailure, Stop and compaction hooks sync
 incrementally while capture is active. A call result not yet flushed to the
 transcript is captured on a later hook; there is no guarantee after abrupt exit.

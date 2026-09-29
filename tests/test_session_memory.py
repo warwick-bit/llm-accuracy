@@ -1036,6 +1036,66 @@ def test_capture_config_falls_back_to_the_default(tmp_path, engine):
     assert scope.classify({'name': 'mcp__synthetic__query_dataset', 'body': {'type': 'tool_use'}})[0] == 'withhold'
 
 
+def read_only_filesystem(monkeypatch):
+    """Refuse every write the way a read-only host sandbox does (EROFS)."""
+    real_open = os.open
+
+    def refuse(*args, **kwargs):
+        raise OSError(errno.EROFS, 'Read-only file system')
+
+    def guarded_open(path, flags, *args, **kwargs):
+        if flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC):
+            refuse()
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(os, 'open', guarded_open)
+    for name in ('chmod', 'fchmod', 'mkdir', 'unlink', 'replace', 'rename'):
+        monkeypatch.setattr(os, name, refuse)
+
+
+def test_read_actions_work_read_only_in_a_sandbox_without_recording_retrievals(tmp_path, monkeypatch, capsys):
+    runtime, bridge, payload = enabled_hook(
+        tmp_path, monkeypatch, tool_call('q1', 'mcp__synthetic__query_dataset'), result('q1', text='resultword 42'))
+    status = json.loads(cli(tmp_path, 'status').stdout)
+    assert status['read_only'] is False and status['events'] == 2
+    base = ['--plugin-data', str(tmp_path / 'data'), '--session-id', 'synthetic-session']
+    with monkeypatch.context() as sandbox:
+        read_only_filesystem(sandbox)
+        assert bridge.main([*base, 'search', 'resultword']) == 0
+        found = json.loads(capsys.readouterr().out)['matches'][0]['id']
+        assert bridge.main([*base, 'fetch', found[:12]]) == 0
+        assert json.loads(json.loads(capsys.readouterr().out)['text'])['content'] == 'resultword 42'
+        assert bridge.main([*base, 'status']) == 0
+        assert json.loads(capsys.readouterr().out)['read_only'] is True
+        # Writes still need a writable data directory.
+        value = {'key': 'metric', 'kind': 'correction', 'text': 'x'}
+        monkeypatch.setattr(sys, 'stdin', SimpleNamespace(buffer=SimpleNamespace(read=lambda size: json.dumps(value).encode())))
+        assert bridge.main([*base, 'remember']) == 1
+        assert json.loads(capsys.readouterr().out)['error'] == 'memory_operation_failed'
+    after = json.loads(cli(tmp_path, 'status').stdout)
+    assert after['retrieval_counts'] == status['retrieval_counts'] and after['state_revisions'] == 0
+
+
+def test_read_only_fallback_respects_the_session_lock_and_other_errors(tmp_path, monkeypatch, capsys):
+    runtime, bridge, payload = enabled_hook(
+        tmp_path, monkeypatch, tool_call('q1', 'mcp__synthetic__query_dataset'), result('q1', text='resultword'))
+    base = ['--plugin-data', str(tmp_path / 'data'), '--session-id', 'synthetic-session']
+    root = tmp_path / 'data'
+    with runtime.session_hash_lock(root, runtime.digest('synthetic-session')):
+        with monkeypatch.context() as sandbox:
+            read_only_filesystem(sandbox)
+            # A writer holds the lock, so the shared read lock is refused rather than skipped.
+            assert bridge.main([*base, 'status']) == 1
+            capsys.readouterr()
+    with monkeypatch.context() as full_disk:
+        def no_space(*args, **kwargs):
+            raise OSError(errno.ENOSPC, 'No space left on device')
+        full_disk.setattr(os, 'chmod', no_space)
+        # Only permission and read-only refusals fall back; other failures still surface.
+        assert bridge.main([*base, 'status']) == 1
+        assert json.loads(capsys.readouterr().out)['error'] == 'memory_operation_failed'
+
+
 def test_hook_uses_configured_capture_mode_but_lists_only_external_results(tmp_path, monkeypatch):
     (tmp_path / 'data').mkdir()
     (tmp_path / 'data' / 'config.json').write_text('{"capture": "all"}')
