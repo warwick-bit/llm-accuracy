@@ -31,5 +31,11 @@
     "after_fallback": "Model ran 2 successful fetch commands (result, then linked call), answered the exact synthetic value and cited the evidence ID (11.8k tokens).",
     "caveat": "The before run's synthetic lookups received a wrong argument name, so only its failure path, not its answer, is comparable; token counts are single runs."
   },
+  "skill_command_before_compaction": {
+    "session_id_in_shell": "CODEX_THREAD_ID and CODEX_SESSION_ID were both visible to a model-run shell command and equal to the rollout session ID.",
+    "run": "In a fresh session with no compaction, the model ran the skill's Codex block verbatim inside the default read-only sandbox.",
+    "result": "exit 0; enabled true; read_only true; capture_policy scoped.",
+    "harness_note": "Hook trust was bypassed with --dangerously-bypass-hook-trust in the isolated home; without trust, plugin hooks did not start capture and the command reported memory_scope_or_expiry."
+  },
   "not_checked": ["interactive Codex TUI hook trust flow", "remember/sync inside the sandbox (expected to need a writable data directory)", "macOS and Windows Codex hosts", "live long-session benefit"]
 }

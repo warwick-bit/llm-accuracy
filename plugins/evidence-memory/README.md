@@ -89,11 +89,11 @@ it**: capture starts at a fresh cutoff in each new session. Remove it with
 - **Error signal:** cell outputs carry no error flag
   (`host_error_signal: error_flag_absent`); inspect the result before using it.
 - **Skill paths:** Codex does not fill in the skill's `${CLAUDE_…}`
-  placeholders. After the first compaction the restore packet's
-  `command_prefix` is the resolved command. Before that, run `memory.py` from
-  `$CODEX_HOME/plugins/cache/llm-accuracy/evidence-memory/<version>/hooks/`
-  with `--plugin-data` set to that data folder and the session ID from the
-  rollout file name.
+  placeholders, so the skill also ships a Codex command. It finds the newest
+  cached `memory.py` under `$CODEX_HOME` (default `~/.codex`) and passes that
+  data folder and `$CODEX_THREAD_ID`, the session ID Codex 0.158 exports to
+  shell commands. After the first compaction the restore packet's
+  `command_prefix` gives the same command already resolved.
 - **Sandbox:** read actions work in Codex's read-only sandbox. `remember`,
   `sync`, `enable` and `disable` need a writable plugin data directory, which
   the default Codex sandboxes do not grant.

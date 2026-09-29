@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 import hashlib
 import os
+import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -15,6 +17,27 @@ from conftest import HOOK_SHELL
 
 ROOT = Path(__file__).resolve().parents[1] / "plugins" / "evidence-memory"
 HOOKS = json.loads((ROOT / "hooks" / "hooks.json").read_text())["hooks"]
+
+
+@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
+def test_codex_skill_command_works_before_the_first_compaction(tmp_path: Path) -> None:
+    # Codex leaves the skill's ${CLAUDE_...} placeholders unfilled, so the skill ships a Codex command.
+    skill = (ROOT / "skills" / "memory" / "SKILL.md").read_text(encoding="utf-8")
+    blocks = [block for block in re.findall(r"```bash\n(.*?)```", skill, re.S) if "CODEX_THREAD_ID" in block]
+    assert len(blocks) == 1 and "${CLAUDE_" not in blocks[0]
+    home = tmp_path / "codex home"
+    shutil.copytree(ROOT / "hooks", home / "plugins" / "cache" / "llm-accuracy" / "evidence-memory" / "0.3.0" / "hooks")
+    data = home / "plugins" / "data" / "evidence-memory-llm-accuracy"
+    session = "0199aaaa-bbbb-7ccc-8ddd-eeeeffff0000"
+    enabled = subprocess.run([sys.executable, str(ROOT / "hooks" / "memory.py"), "--plugin-data", str(data),
+                              "--session-id", session, "enable"], capture_output=True, text=True, timeout=10)
+    assert enabled.returncode == 0
+    # Codex exports the rollout's session ID to model shell commands as CODEX_THREAD_ID.
+    environment = dict(os.environ, CODEX_HOME=home.as_posix(), CODEX_THREAD_ID=session)
+    shown = subprocess.run([HOOK_SHELL, "-c", blocks[0]], capture_output=True, text=True,
+                           env=environment, timeout=10)
+    assert shown.returncode == 0, shown.stderr
+    assert json.loads(shown.stdout)["events"] == 0
 
 
 def test_enabled_plugin_hooks_allow_cold_start_time() -> None:

@@ -35,7 +35,8 @@ no retrieval counts.
 **Codex (experimental).** Evidence Memory also installs as a Codex plugin with
 the same hook commands (`codex plugin add evidence-memory@llm-accuracy`). In
 Codex, installing enables capture, the stored unit is a whole code-mode cell's
-printed output, and the skill's placeholders are not filled in; see the
+printed output, and the skill uses a Codex-specific command because Codex
+does not fill in its placeholders; see the
 [plugin guide](../plugins/evidence-memory/README.md#codex-experimental).
 
 To update, run `claude plugin marketplace update llm-accuracy` and
