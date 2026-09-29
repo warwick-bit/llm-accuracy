@@ -214,7 +214,9 @@ that session and remove its evidence and state without changing Session Ledger;
 Evidence expires after 30 days of inactivity. The 128 MiB per-session database
 limit stops new writes at a retryable cursor; it does not evict older evidence.
 See the [Evidence Memory guide](../plugins/evidence-memory/README.md) for the
-storage boundary and limitations.
+storage boundary and limitations. Codex users can install the same plugin
+experimentally; see the guide's Codex section. In Codex, installing it enables
+capture.
 
 ### Update or remove
 

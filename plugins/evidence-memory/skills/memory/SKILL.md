@@ -20,6 +20,9 @@ if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_P
 "$MEMORY_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_DATA}" --session-id "${CLAUDE_SESSION_ID}" status
 ```
 
+If the placeholders above are not filled in (as in Codex), use the
+`command_prefix` from the post-compaction memory packet instead.
+
 Use the same quoted command prefix for these actions:
 
 - `lookup KEY`: first try this for an exact metric, artifact or decision key. It

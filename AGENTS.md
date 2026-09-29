@@ -1,6 +1,8 @@
 # LLM Accuracy Repository Guidance
 
-This public repository distributes standalone Claude Code plugins.
+This public repository distributes standalone Claude Code plugins. Evidence
+Memory also ships an experimental Codex package that reuses its Claude hook
+commands; the other plugins stay Claude-only.
 Keep each plugin generic and safe to share publicly.
 
 ## Before changing files
@@ -15,7 +17,8 @@ Keep each plugin generic and safe to share publicly.
 
 ## Packaging and privacy
 
-- Keep `.claude-plugin/plugin.json` versioned with each release.
+- Keep `.claude-plugin/plugin.json` versioned with each release, and keep
+  `plugins/evidence-memory/.codex-plugin/plugin.json` at the same version.
 - Keep hook commands relative to `${CLAUDE_PLUGIN_ROOT}`; hooks must remain
   advisory and non-blocking.
 - Do not add credentials, telemetry, raw prompts, provider payloads, customer

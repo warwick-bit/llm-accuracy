@@ -1,0 +1,20 @@
+{
+  "name": "llm-accuracy",
+  "interface": {
+    "displayName": "LLM Accuracy"
+  },
+  "plugins": [
+    {
+      "name": "evidence-memory",
+      "source": {
+        "source": "local",
+        "path": "./plugins/evidence-memory"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
