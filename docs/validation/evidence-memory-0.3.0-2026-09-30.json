@@ -20,6 +20,8 @@
       "matched_by_default_words": 5,
       "false_positives_on_review": 0,
       "added_secret_words_matched": 0,
+      "review_recheck_distinct_mcp_tool_names": 113,
+      "review_recheck_added_by_hr_word_and_acronym_split": 0,
       "claude_calls_withheld": 26,
       "codex_calls_withheld": 0,
       "input_text_matching": {

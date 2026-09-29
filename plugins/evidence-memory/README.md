@@ -34,10 +34,12 @@ cell. This is a signal from the logged code, not proof of which inner tools ran.
 Calls to MCP tools whose names contain a restricted word are **withheld**: neither
 the call nor its result is stored, in any capture mode. The default words cover
 HR, payroll, bank, tax, identity and secret tools (`bank`, `credential(s)`,
-`employee(s)`, `leave`, `passport`, `password(s)`, `payroll`, `payslip(s)`,
+`employee(s)`, `hr`, `leave`, `passport`, `password(s)`, `payroll`, `payslip(s)`,
 `pension`, `salary`/`salaries`, `secret(s)`, `ssn`, `superannuation`, `tax`,
-`timesheet(s)`). A Codex cell that mentions any restricted MCP name is withheld
-whole. Withholding is best effort and name-based: a tool with an innocuous name,
+`timesheet(s)`), matched as whole words after splitting the name on
+punctuation and case changes (`getSSNProfile` contains `ssn`). A Codex cell
+that mentions any restricted MCP name is withheld whole. Withholding is best
+effort and name-based: a tool with an innocuous name,
 such as a general SQL tool, can still return sensitive rows.
 
 An optional `${CLAUDE_PLUGIN_DATA}/config.json` changes the preference:
@@ -51,8 +53,11 @@ storing every tool call except withheld ones. `extra_restricted_tokens` adds
 alphanumeric words to the withheld list; the defaults cannot be removed. An
 invalid, oversized or symlinked file is ignored and `status.capture.config`
 reports `invalid_using_default`. The file is a local preference, not a security
-boundary. `status` also reports `capture_counts` (calls out of scope, calls
-withheld, results without a stored call) and `capture_policy`.
+boundary. A change applies to rows read afterwards, including results of calls
+stored earlier; rows already stored stay until `disable`. `status` also reports
+`capture_counts` (calls out of scope, calls withheld, results without a stored
+call, results withheld because their call is out of the current scope) and
+`capture_policy`.
 
 Indexes created before 0.3.0 keep their earlier unscoped rows, reported as
 `capture_policy: legacy_unscoped_rows`; new rows follow the current scope. Run

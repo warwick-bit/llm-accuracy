@@ -814,7 +814,7 @@ def test_default_scope_stores_external_results_and_skips_local_tools(store, tmp_
     assert store.search('webword')['matches']
     assert store.status()['capture_policy'] == 'scoped'
     assert store.status()['capture_counts'] == {'calls_out_of_scope': 1, 'calls_withheld_restricted': 0,
-                                                'results_without_stored_call': 1}
+                                                'results_without_stored_call': 1, 'results_withheld_by_scope': 0}
 
 
 def test_capture_all_keeps_local_tools(store, tmp_path, engine):
@@ -828,7 +828,8 @@ def test_capture_all_keeps_local_tools(store, tmp_path, engine):
 @pytest.mark.parametrize('mode', ['external', 'all'])
 def test_restricted_tool_names_are_withheld_in_every_mode(store, tmp_path, engine, mode):
     names = ['mcp__synthetic-hr__get_employee_profile', 'mcp__synthetic__getPayrollRun',
-             'mcp__payroll-sync__list_runs', 'mcp__synthetic__read_secret']
+             'mcp__payroll-sync__list_runs', 'mcp__synthetic__read_secret', 'mcp__hr__list_profiles',
+             'mcp__people__getSSNProfile']
     rows = []
     for index, name in enumerate(names):
         rows += [tool_call(f'r{index}', name), result(f'r{index}', text='confidentialword')]
@@ -838,6 +839,24 @@ def test_restricted_tool_names_are_withheld_in_every_mode(store, tmp_path, engin
     assert store.search('confidentialword')['matches'] == []
     custom = engine.CaptureScope(mode, ('dataset',))
     assert custom.classify({'name': 'mcp__synthetic__query_dataset', 'body': {'type': 'tool_use'}})[0] == 'withhold'
+    # Whole words only: an acronym run or a longer word containing a token is not a match.
+    for name in ('mcp__synthetic__getHTTPStatus', 'mcp__chrome__navigate', 'mcp__synthetic__taxonomy'):
+        assert engine.CaptureScope(mode).classify({'name': name, 'body': {'type': 'tool_use'}})[0] != 'withhold'
+
+
+def test_result_is_rechecked_against_the_current_scope_before_storage(store, tmp_path, engine):
+    log = tmp_path / 'log'
+    write_log(log, tool_call('q1', 'mcp__synthetic__query_dataset'), tool_call('local', 'Bash', {'command': 'ls'}))
+    store.sync(log, scope=engine.CaptureScope('all'))
+    assert store.status()['events'] == 2
+    with log.open('a') as stream:
+        for row in (result('q1', text='confidentialword'), result('local', text='localword')):
+            stream.write(json.dumps(row) + '\n')
+    # The configuration changed while both calls were in flight.
+    outcome = store.sync(log, scope=engine.CaptureScope('external', ('dataset',)))
+    assert outcome['results_withheld_by_scope'] == 2
+    assert store.search('confidentialword')['matches'] == [] and store.search('localword')['matches'] == []
+    assert store.status()['capture_counts']['results_withheld_by_scope'] == 2
 
 
 def test_codex_cells_are_scoped_by_referenced_tools_and_restricted_cells_withheld(store, tmp_path, engine):
@@ -880,6 +899,26 @@ def test_recent_external_results_list_ids_without_call_or_result_content(store, 
     assert json.loads(store.fetch(listed[1]['id'])['text'])['content'] == 'resultword11'
 
 
+def test_recent_external_results_follow_result_arrival_order(store, tmp_path, engine):
+    rows = [tool_call('slow', 'mcp__synthetic__query_dataset')]
+    for index in range(10):
+        rows += [tool_call(f'q{index}', 'mcp__synthetic__query_dataset'), result(f'q{index}', text=f'r{index}')]
+    rows.append(result('slow', text='slowword'))
+    store.sync(write_log(tmp_path / 'log', *rows))
+    listed = store.recent_external(engine.CaptureScope())
+    assert len(listed) == 10
+    assert json.loads(store.fetch(listed[0]['id'])['text'])['content'] == 'slowword'
+    assert json.loads(store.fetch(listed[-1]['id'])['text'])['content'] == 'r1'
+
+
+def test_recent_external_results_skip_ambiguous_pairs(store, tmp_path, engine):
+    rows = [tool_call('dup', 'mcp__synthetic__query_dataset'), result('dup', text='first'),
+            result('dup', text='second'), tool_call('ok', 'mcp__synthetic__query_dataset'), result('ok', text='okword')]
+    store.sync(write_log(tmp_path / 'log', *rows))
+    listed = store.recent_external(engine.CaptureScope())
+    assert [json.loads(store.fetch(item['id'])['text'])['content'] for item in listed] == ['okword']
+
+
 def test_fetch_and_remember_accept_a_unique_id_prefix(store, tmp_path):
     store.sync(write_log(tmp_path / 'log', call(), result()))
     full = store.search('receipts')['matches'][0]['id']
@@ -913,6 +952,13 @@ def test_legacy_unscoped_index_is_reported_and_listing_stays_external(tmp_path, 
     try:
         assert reopened.status()['capture_policy'] == 'legacy_unscoped_rows'
         assert reopened.recent_external(engine.CaptureScope()) == []
+        # A legacy local call still in flight at upgrade does not get its result stored.
+        with reopened.db:
+            for event in engine.tool_events(tool_call('inflight', 'Bash', {'command': 'ls'})):
+                reopened._insert_event(event, rows[0], engine.sha(str((tmp_path / 'log').absolute()).encode()), 0)
+        outcome = reopened.sync(write_log(tmp_path / 'log', result('inflight', text='inflightword')))
+        assert outcome['results_withheld_by_scope'] == 1
+        assert reopened.search('inflightword')['matches'] == []
         # Earlier unscoped rows stay searchable until the session is cleared.
         assert reopened.search('localword')['matches']
     finally:

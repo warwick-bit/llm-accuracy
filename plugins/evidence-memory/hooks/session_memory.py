@@ -22,14 +22,15 @@ PAGE_CHARACTERS = 2048
 RETENTION_SECONDS = 30 * 24 * 3600
 KINDS = ("decision", "correction", "scope", "definition", "provenance", "artifact", "checkpoint")
 CAPTURE_MODES = ("external", "all")
-CAPTURE_COUNTERS = ("calls_out_of_scope", "calls_withheld_restricted", "results_without_stored_call")
+CAPTURE_COUNTERS = ("calls_out_of_scope", "calls_withheld_restricted", "results_without_stored_call",
+                    "results_withheld_by_scope")
 RECENT_RESULTS = 10
 WEB_TOOLS = ("WebFetch", "WebSearch")
 # Codex logs one outer JavaScript call; these references suggest, but do not prove, which inner tools ran.
 CODEX_EXTERNAL_REFERENCE = re.compile(r"\btools\s*\.\s*(mcp__[\w-]+__[\w-]+|web__run)\s*\(")
 MCP_TOOL_NAME = re.compile(r"mcp__[\w-]+__[\w-]+")
 RESTRICTED_TOKENS = frozenset((
-    "bank", "credential", "credentials", "employee", "employees", "leave", "passport", "password",
+    "bank", "credential", "credentials", "employee", "employees", "hr", "leave", "passport", "password",
     "passwords", "payroll", "payslip", "payslips", "pension", "salaries", "salary", "secret", "secrets",
     "ssn", "superannuation", "tax", "timesheet", "timesheets"))
 
@@ -101,6 +102,8 @@ def row_session(row: dict[str, Any]) -> str | None:
 
 def name_tokens(name: str) -> set[str]:
     spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name)
+    # Also split an acronym from the word after it: getSSNProfile -> get SSN Profile.
+    spaced = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", spaced)
     return {token.lower() for token in re.split(r"[^A-Za-z0-9]+", spaced) if token}
 
 
@@ -304,11 +307,19 @@ class Store:
                             counts["calls_withheld_restricted" if decision == "withhold"
                                    else "calls_out_of_scope"] += 1
                             continue
-                    elif not self.db.execute("SELECT 1 FROM events WHERE call_id=? AND kind='call' AND source=?",
-                                             (event["call_id"], source)).fetchone():
-                        # A result is stored only beside its own stored call from this transcript.
-                        counts["results_without_stored_call"] += 1
-                        continue
+                    else:
+                        stored = self.db.execute(
+                            "SELECT name, body FROM events WHERE call_id=? AND kind='call' AND source=? LIMIT 1",
+                            (event["call_id"], source)).fetchone()
+                        if not stored:
+                            # A result is stored only beside its own stored call from this transcript.
+                            counts["results_without_stored_call"] += 1
+                            continue
+                        # Recheck the call under the current scope: the configuration may have changed, or the
+                        # call may come from a legacy unscoped index, since the call was stored.
+                        if scope.classify({"name": stored["name"], "body": json.loads(stored["body"])})[0] != "capture":
+                            counts["results_withheld_by_scope"] += 1
+                            continue
                     self._insert_event(event, row, source, start)
             offset = stream.tell()
             rows += 1
@@ -456,24 +467,28 @@ class Store:
         return prefix if count == 1 else identity
 
     def recent_external(self, scope: CaptureScope, limit: int = RECENT_RESULTS) -> list[dict[str, Any]]:
-        """Newest paired external results, as IDs and metadata only; no call or result content."""
+        """Most recently arrived paired external results, as IDs and metadata only; no call or result content."""
         listing = scope.listing()
-        items = []
-        calls = self.db.execute(
-            "SELECT call_id, name, body, source FROM events WHERE kind='call' AND (name LIKE 'mcp\\_\\_%' ESCAPE '\\' "
-            "OR name IN (?, ?) OR body LIKE '%mcp\\_\\_%' ESCAPE '\\' OR body LIKE '%web\\_\\_run%' ESCAPE '\\') "
-            "ORDER BY rowid DESC LIMIT ?", (*WEB_TOOLS, 5 * limit)).fetchall()
-        for call in calls:
-            decision, tools = listing.classify({"name": call["name"], "body": json.loads(call["body"])})
+        items, seen = [], set()
+        # Order by result arrival, not call order: overlapping calls can return out of order.
+        rows = self.db.execute(
+            "SELECT r.id, r.call_id, r.source, r.timestamp, r.error, length(r.body) AS characters, "
+            "c.name, c.body AS call_body FROM events r JOIN events c "
+            "ON c.call_id=r.call_id AND c.kind='call' AND c.source IS r.source WHERE r.kind='result' AND "
+            "(c.name LIKE 'mcp\\_\\_%' ESCAPE '\\' OR c.name IN (?, ?) OR c.body LIKE '%mcp\\_\\_%' ESCAPE '\\' "
+            "OR c.body LIKE '%web\\_\\_run%' ESCAPE '\\') ORDER BY r.rowid DESC LIMIT ?",
+            (*WEB_TOOLS, 5 * limit)).fetchall()
+        for result in rows:
+            if result["id"] in seen:
+                continue
+            seen.add(result["id"])
+            decision, tools = listing.classify({"name": result["name"], "body": json.loads(result["call_body"])})
             if decision != "capture":
                 continue
-            results = self.db.execute(
-                "SELECT id, timestamp, error, length(body) AS characters FROM events "
-                "WHERE call_id=? AND kind='result' AND source=? LIMIT 2",
-                (call["call_id"], call["source"])).fetchall()
-            if len(results) != 1:
+            pair = self.db.execute("SELECT sum(kind='call'), sum(kind='result') FROM events "
+                                   "WHERE call_id=? AND source IS ?", (result["call_id"], result["source"])).fetchone()
+            if tuple(pair) != (1, 1):
                 continue
-            result = results[0]
             items.append({"id": self.short_id(result["id"]),
                           "tools": tools[:3] + ([f"+{len(tools) - 3} more"] if len(tools) > 3 else []),
                           "at": result["timestamp"], "logged_characters": result["characters"],
