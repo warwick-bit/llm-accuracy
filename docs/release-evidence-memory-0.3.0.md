@@ -27,6 +27,11 @@ for its limits; live long-session benefit remains unmeasured.
 `/evidence-memory:memory clear`; `status` reports them as
 `capture_policy: legacy_unscoped_rows`. New rows follow the new scope.
 
+**Read actions work in read-only sandboxes.** `status`, `lookup`, `search`,
+`fetch` and `state` fall back to a read-only open when the data directory
+cannot be written, as in Codex's sandbox or a sandboxed shell; they then record
+no retrieval counts.
+
 To update, run `claude plugin marketplace update llm-accuracy` and
 `claude plugin update evidence-memory@llm-accuracy`, then restart Claude Code or
 run `/reload-plugins`.
