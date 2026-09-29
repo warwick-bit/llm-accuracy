@@ -1,8 +1,8 @@
 {
   "name": "evidence-memory",
   "displayName": "Evidence Memory",
-  "description": "Experimental current-session search and correction memory; exact tool results stay local and may contain sensitive data.",
-  "version": "0.2.1",
+  "description": "Experimental current-session search and correction memory for external tool results (MCP and web by default); exact results stay local and may contain sensitive data.",
+  "version": "0.3.0",
   "defaultEnabled": false,
   "author": {
     "name": "Warwick"

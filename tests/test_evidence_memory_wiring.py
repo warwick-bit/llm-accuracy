@@ -42,7 +42,7 @@ def test_plugin_autostarts_without_backfill_and_stop_stays_off(tmp_path: Path, a
     transcript = tmp_path / "synthetic.jsonl"
     old = {"sessionId": "synthetic-session", "timestamp": "2020-01-01T00:00:00Z",
            "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "old",
-                       "name": "query_dataset", "input": {"metric": "old"}}]}}
+                       "name": "mcp__synthetic__query_dataset", "input": {"metric": "old"}}]}}
     transcript.write_text(json.dumps(old) + "\n")
     payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
                "transcript_path": str(transcript)}
@@ -54,7 +54,7 @@ def test_plugin_autostarts_without_backfill_and_stop_stays_off(tmp_path: Path, a
     fresh = [
         {"sessionId": "synthetic-session", "timestamp": stamp,
          "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "new",
-                     "name": "query_dataset", "input": {"metric": "new"}}]}},
+                     "name": "mcp__synthetic__query_dataset", "input": {"metric": "new"}}]}},
         {"sessionId": "synthetic-session", "timestamp": stamp,
          "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "new",
                      "content": "new metric collected"}]}},
@@ -80,7 +80,7 @@ def test_plugin_autostarts_without_backfill_and_stop_stays_off(tmp_path: Path, a
     resumed = [
         {"sessionId": "synthetic-session", "timestamp": resumed_stamp,
          "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "resumed",
-                     "name": "query_dataset", "input": {"metric": "resumed"}}]}},
+                     "name": "mcp__synthetic__query_dataset", "input": {"metric": "resumed"}}]}},
         {"sessionId": "synthetic-session", "timestamp": resumed_stamp,
          "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "resumed",
                      "content": "resumed metric collected"}]}},
@@ -120,7 +120,7 @@ def test_independent_hook_capture_restore_and_clear(tmp_path: Path) -> None:
     rows = [
         {"sessionId": "synthetic-session", "timestamp": "2026-09-01T00:00:00Z",
          "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "one",
-                     "name": "query_dataset", "input": {"metric": "metric007"}}]}},
+                     "name": "mcp__synthetic__query_dataset", "input": {"metric": "metric007"}}]}},
         {"sessionId": "synthetic-session", "timestamp": "2026-09-01T00:00:01Z",
          "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "one",
                      "content": "metric007 collected 123 AUD"}]}},
@@ -184,7 +184,7 @@ def test_prompt_before_transcript_is_quiet_and_later_capture_catches_up(
     rows = [
         {"sessionId": "synthetic-session", "timestamp": stamp,
          "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "fresh",
-                     "name": "synthetic_query", "input": {"key": "fresh"}}]}},
+                     "name": "mcp__synthetic__query", "input": {"key": "fresh"}}]}},
         {"sessionId": "synthetic-session", "timestamp": stamp,
          "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "fresh",
                      "content": "fresh result"}]}},
@@ -211,7 +211,7 @@ def test_busy_session_lock_reports_safe_code_and_later_capture_catches_up(tmp_pa
     stamp = datetime.now(timezone.utc).isoformat()
     transcript.write_text(json.dumps({"sessionId": "synthetic-session", "timestamp": stamp,
                                       "message": {"role": "assistant", "content": [
-                                          {"type": "tool_use", "id": "fresh", "name": "synthetic_query",
+                                          {"type": "tool_use", "id": "fresh", "name": "mcp__synthetic__query",
                                            "input": {"key": "fresh"}}]}}) + "\n")
     lock = data / "evidence-memory" / "locks" / hashlib.sha256(b"synthetic-session").hexdigest()
     with lock.open("a+b") as stream:

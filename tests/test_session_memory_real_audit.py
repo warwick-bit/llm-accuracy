@@ -20,7 +20,7 @@ def fixture(path, *, retained=False):
     rows = [
         {"type": "session_meta", "payload": {"id": "synthetic-session"}},
         {"type": "response_item", "payload": {"type": "custom_tool_call", "call_id": "call-1",
-                                              "name": "query_dataset", "arguments": "{}"}},
+                                              "name": "mcp__synthetic__query_dataset", "arguments": "{}"}},
         {"type": "response_item", "payload": {"type": "custom_tool_call_output", "call_id": "call-1",
                                               "output": {"metric": marker, "value": 17}}},
         {"type": "compacted", "payload": {"replacement_history": "phase one"}},
@@ -59,7 +59,7 @@ def test_claude_real_audit_replays_without_exposing_tool_result(tmp_path):
                 "timestamp": "2026-09-01T00:00:00Z",
                 "message": {"role": role, "content": [block]}, **extra}
     rows = [
-        row("assistant", {"type": "tool_use", "id": "call-1", "name": "query_dataset", "input": {}}),
+        row("assistant", {"type": "tool_use", "id": "call-1", "name": "mcp__synthetic__query_dataset", "input": {}}),
         row("user", {"type": "tool_result", "tool_use_id": "call-1", "content": marker}),
         *(row("user", {"type": "text", "text": f"phase {index}"}, isCompactSummary=True)
           for index in range(3)),

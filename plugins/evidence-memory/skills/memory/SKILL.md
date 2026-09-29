@@ -7,6 +7,14 @@ Use the local memory CLI below. It never searches another session or contacts a
 provider. Check `status` before relying on capture; a missing index means earlier
 tool evidence may exist only in the original transcript.
 
+By default only external results are stored: MCP tools, web fetch/search, and
+Codex cells that call an MCP or web tool. Local shell, file and edit output is
+not stored; re-read the file or re-run the local command instead. Tools whose
+names suggest HR, payroll, bank, tax, identity or secret data are withheld and
+counted in `status`. After compaction, the injected packet lists recent external
+result IDs and a resolved `command_prefix`; use that prefix when the placeholders
+below are not substituted.
+
 ```bash
 if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_PYTHON=python; fi
 "$MEMORY_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_DATA}" --session-id "${CLAUDE_SESSION_ID}" status
@@ -31,7 +39,8 @@ Use the same quoted command prefix for these actions:
   are newest first; follow `--offset NEXT` for more pages. Search pages are a
   live view, so avoid concurrent sync while paging or deduplicate IDs.
 - `fetch ID`: first page, paired call/result links, timestamp, hash, error and
-  completeness boundaries. Fetch the linked call to check original filters.
+  completeness boundaries. `ID` may be the full ID or a unique prefix of at least
+  12 characters, as listed in the packet. Fetch the linked call to check original filters.
   Follow `--start NEXT` until `next` is null; `--pointer /input/currency` selects
   a JSON field before paging. Do not claim a page is the whole result.
 - `state`: current explicit decisions/corrections, newest first. Follow
@@ -48,7 +57,8 @@ Record a state item when the user settles/corrects a decision, names a canonical
 artifact, or fixes a metric's grain, filters, currency or time window. Preserve
 those details together. Use the same key and previous revision to supersede an
 old item. Distinguish user decisions from measured facts; add evidence IDs for
-claims grounded in tool output. Empty evidence is permitted for user decisions
+claims grounded in tool output, and cite the same ID in any notes or ledgers that
+rely on the result. Empty evidence is permitted for user decisions
 and is not proof of provider data. Record a compact checkpoint before compaction
 when useful. Do not invent a decision from ambiguous conversation.
 
