@@ -13,7 +13,7 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 MAX_DATABASE_BYTES = 128 * 1024 * 1024
 MAX_LINE_BYTES = 8 * 1024 * 1024
@@ -475,19 +475,31 @@ class Store:
                                 (prefix, prefix + "g")).fetchone()[0]
         return prefix if count == 1 else identity
 
+    def _external_candidates(self, batch: int) -> Iterator[sqlite3.Row]:
+        """Results whose call may name an external tool, newest arrival first.
+
+        Pages by rowid until exhausted, so filtered candidates never hide an older eligible result.
+        Order is by result arrival, not call order: overlapping calls can return out of order.
+        """
+        before: list[int] = []
+        while True:
+            rows = self.db.execute(
+                "SELECT r.rowid AS position, r.id, r.call_id, r.source, r.timestamp, r.error, "
+                "length(r.body) AS characters, c.name, c.body AS call_body FROM events r JOIN events c "
+                "ON c.call_id=r.call_id AND c.kind='call' AND c.source IS r.source WHERE r.kind='result' AND "
+                "(c.name LIKE 'mcp\\_\\_%' ESCAPE '\\' OR c.name IN (?, ?) OR c.body LIKE '%mcp\\_\\_%' ESCAPE '\\' "
+                f"OR c.body LIKE '%web\\_\\_run%' ESCAPE '\\'){' AND r.rowid<?' if before else ''} "
+                "ORDER BY r.rowid DESC LIMIT ?", (*WEB_TOOLS, *before, batch)).fetchall()
+            yield from rows
+            if len(rows) < batch:
+                return
+            before = [rows[-1]["position"]]
+
     def recent_external(self, scope: CaptureScope, limit: int = RECENT_RESULTS) -> list[dict[str, Any]]:
         """Most recently arrived paired external results, as IDs and metadata only; no call or result content."""
         listing = scope.listing()
         items, seen = [], set()
-        # Order by result arrival, not call order: overlapping calls can return out of order.
-        rows = self.db.execute(
-            "SELECT r.id, r.call_id, r.source, r.timestamp, r.error, length(r.body) AS characters, "
-            "c.name, c.body AS call_body FROM events r JOIN events c "
-            "ON c.call_id=r.call_id AND c.kind='call' AND c.source IS r.source WHERE r.kind='result' AND "
-            "(c.name LIKE 'mcp\\_\\_%' ESCAPE '\\' OR c.name IN (?, ?) OR c.body LIKE '%mcp\\_\\_%' ESCAPE '\\' "
-            "OR c.body LIKE '%web\\_\\_run%' ESCAPE '\\') ORDER BY r.rowid DESC LIMIT ?",
-            (*WEB_TOOLS, 5 * limit)).fetchall()
-        for result in rows:
+        for result in self._external_candidates(5 * limit):
             if result["id"] in seen:
                 continue
             seen.add(result["id"])
