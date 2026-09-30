@@ -5,7 +5,10 @@ reconciles sources that disagree and the data does not say which source is
 official, the answer must name the source the governing rule or
 source-of-truth registry picks and state that basis. The audit now treats
 "the data can't establish which is official" as a correction, and naming the
-other source as wrong. Hooks and other skills are unchanged.
+other source as wrong. The rule must be checkable (a registry entry, a
+documented definition, or the user), never taken from the audited answer;
+without one, the answer should say official status is unconfirmed. Hooks
+and other skills are unchanged.
 
 ## Update
 

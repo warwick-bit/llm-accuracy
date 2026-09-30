@@ -190,5 +190,9 @@ def test_self_audit_requires_a_committed_official_source() -> None:
 
     assert "check that it commits to the official source" in skill
     assert "state that basis" in skill
-    assert "\"The data can't establish which is official\" is a correction" in skill
+    assert "\"the data can't establish which is official\" is a correction" in skill
     assert "withheld source" in skill
+    # No checkable rule -> unconfirmed, never a rule borrowed from the answer.
+    assert "never taken from the answer being audited" in skill
+    assert "say official status is unconfirmed" in skill
+    assert "withheld-source claim" in skill

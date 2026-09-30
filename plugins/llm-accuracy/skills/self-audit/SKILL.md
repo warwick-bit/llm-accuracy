@@ -36,8 +36,13 @@ or bot output review; route those to the relevant domain/plugin review skill.
 5. If the answer reconciles sources that disagree, check that it commits to
    the official source. When the data does not say which source is official,
    the answer must name the source that the governing rule or source-of-truth
-   registry picks and state that basis. "The data can't establish which is
-   official" is a correction, not caution; naming the other source is wrong.
+   registry picks and state that basis. The rule must be checkable (a registry
+   entry, a documented definition, or the user), never taken from the answer
+   being audited. With a checkable rule, "the data can't establish which is
+   official" is a correction, not caution, and naming the other source is
+   wrong. With none, the answer should name the source it used and why, say
+   official status is unconfirmed, and say what would confirm it; an invented
+   rule is the error.
 6. Classify each material claim as supported, unsupported, garbled, overstated,
    missing caveat, withheld source, or not checked.
 7. Give the corrected answer in plain language. Lead with the verdict, then
@@ -46,8 +51,8 @@ or bot output review; route those to the relevant domain/plugin review skill.
 ## Output Shape
 
 - Verdict: one sentence stating whether the prior answer was accurate enough.
-- Corrections: concise bullets for each unsupported, garbled, or overstated
-  claim.
+- Corrections: concise bullets for each unsupported, garbled, overstated, or
+  withheld-source claim.
 - Supported claims: mention only material claims that survived re-checking.
 - Evidence: use the footer labels from `${CLAUDE_PLUGIN_ROOT}/references/evidence-discipline.md`
   when the audit depends on business/provider/customer or readiness evidence.
