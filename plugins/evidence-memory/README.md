@@ -17,6 +17,52 @@ stops capture and deletes that session's evidence and state. `begin-plan` and
 capture stays stopped in that session until `/evidence-memory:memory enable`
 explicitly resumes it.
 
+## What is captured
+
+Since 0.3.0 the default capture scope is **external results**: the calls and
+results of MCP tools (`mcp__*`), `WebFetch` and `WebSearch`. Local shell, file,
+edit and agent tools are skipped because their output can usually be reproduced
+in the same session, and they carried most of the stored volume without being
+retrieved. A result is stored only beside its own stored call from the same
+transcript; results without one are counted, not archived as unpaired evidence.
+
+Codex records one outer JavaScript cell per turn step. A cell is treated as
+external when its code calls `tools.mcp__…(` or `tools.web__run(`; the whole cell
+and its combined output are stored, including any local commands in the same
+cell. This is a signal from the logged code, not proof of which inner tools ran.
+
+Calls to MCP tools whose names contain a restricted word are **withheld**: neither
+the call nor its result is stored, in any capture mode. The default words cover
+HR, payroll, bank, tax, identity and secret tools (`bank`, `credential(s)`,
+`employee(s)`, `hr`, `leave`, `passport`, `password(s)`, `payroll`, `payslip(s)`,
+`pension`, `salary`/`salaries`, `secret(s)`, `ssn`, `superannuation`, `tax`,
+`timesheet(s)`), matched as whole words after splitting the name on
+punctuation and case changes (`getSSNProfile` contains `ssn`). A Codex cell
+that mentions any restricted MCP name is withheld whole. Withholding is best
+effort and name-based: a tool with an innocuous name,
+such as a general SQL tool, can still return sensitive rows.
+
+An optional `${CLAUDE_PLUGIN_DATA}/config.json` changes the preference:
+
+```json
+{"capture": "all", "extra_restricted_tokens": ["patient"]}
+```
+
+`capture` is `external` (default) or `all`, which restores the 0.2 behaviour of
+storing every tool call except withheld ones. `extra_restricted_tokens` adds
+alphanumeric words to the withheld list; the defaults cannot be removed. An
+invalid, oversized or symlinked file is ignored and `status.capture.config`
+reports `invalid_using_default`. The file is a local preference, not a security
+boundary. A change applies to rows read afterwards, including results of calls
+stored earlier; rows already stored stay until `disable`. `status` also reports
+`capture_counts` (calls out of scope, calls withheld, results without a stored
+call, results withheld because their call is out of the current scope) and
+`capture_policy`.
+
+Indexes created before 0.3.0 keep their earlier unscoped rows, reported as
+`capture_policy: legacy_unscoped_rows`; new rows follow the current scope. Run
+`clear` to remove the earlier rows.
+
 ## Experimental evidence memory (plugin opt-in)
 
 This experiment stores durable decisions and searchable logged tool evidence.
@@ -34,10 +80,16 @@ that memory improved real answers. See `docs/plans/session-evidence-memory.md`
 and its validation receipts for the exact populations and limits.
 
 The `memory` skill provides commands and model guidance. To resume a session
-after its evidence was cleared, run:
+after its evidence was cleared, run `/evidence-memory:memory enable`; the skill
+text carries the resolved plugin paths and session ID. `${CLAUDE_PLUGIN_ROOT}`,
+`${CLAUDE_PLUGIN_DATA}` and `${CLAUDE_SESSION_ID}` are substituted in hook and
+skill text, not set in an ordinary shell, so a manual command needs explicit
+values:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_DATA}" --session-id "${CLAUDE_SESSION_ID}" enable
+python3 ~/.claude/plugins/cache/llm-accuracy/evidence-memory/<version>/hooks/memory.py \
+  --plugin-data ~/.claude/plugins/data/evidence-memory-llm-accuracy \
+  --session-id <session-id> enable
 ```
 
 Use `python` if `python3` is unavailable. The CLI also accepts explicit paths and
@@ -48,6 +100,13 @@ and revision syntax. `status` also shows local counts of completed CLI lookup
 outcomes, search hits/misses and successful fetches. It stores no query keys,
 searched text, result content or timestamps in those counters; failed counting
 never blocks retrieval. The counts reset with disable, clear or begin-plan.
+When a sandbox makes the plugin data directory read-only, `status`, `lookup`,
+`search`, `fetch` and `state` still work: they open the index read-only, share
+the session lock if it exists, and record no retrieval counts (`status` reports
+`read_only: true`). `sync`, `remember`, `enable` and `disable` still need a
+writable data directory; only permission and read-only filesystem refusals fall
+back. The fallback is chosen when the session lock is taken, so a writable data
+directory holding a read-only index file still fails closed.
 Claude's prompt, PostToolUse, PostToolUseFailure, Stop and compaction hooks sync
 incrementally while capture is active. A call result not yet flushed to the
 transcript is captured on a later hook; there is no guarantee after abrupt exit.
@@ -60,7 +119,8 @@ plan. It stores exact JSON **values logged by the host** for tool calls/results,
 including arguments, rendered result blocks and Claude's richer `toolUseResult`
 when present. It is not a complete raw transcript or a complete provider archive.
 It preserves evidence after the original log is deleted. IDs link calls/results;
-hashes check local body integrity. `lookup KEY` returns one unambiguous linked
+hashes check local body integrity. `fetch` accepts a full ID or a unique prefix
+of at least 12 characters and reports `ambiguous_id` otherwise. `lookup KEY` returns one unambiguous linked
 call/result and the latest correction for that exact key in one bounded response.
 It reports failed, missing, ambiguous and paged evidence instead of silently
 treating it as a complete answer. FTS5 provides literal keyword search; Python
@@ -70,9 +130,16 @@ fetch never read original logs. Neither mode guarantees semantic recall.
 Decisions and corrections are explicitly written, with revision checks and
 optional evidence IDs. Corrections supersede the same key; audit history remains.
 They do not expire merely because the rolling conversation reaches 64 KiB.
-After compaction, a bounded subset of current state and retrieval directions is
-injected within the existing host output budget. The model must use the skill to
-retrieve additional state/evidence; storage alone does not guarantee it will.
+After compaction, the injected packet lists up to ten recent paired external
+results, newest first, as a short ID, tool name(s), time, logged size and host
+error flag. It carries no call arguments or result content, because call input
+can hold secrets or instruction-like text; the model fetches the ID to see both.
+The packet also carries a bounded subset of current state and a resolved
+`command_prefix` for the CLI. It stays within the host output budget, dropping
+the oldest listed results before any state, and is omitted when there is no
+listed result or state. The model must still choose to retrieve; storage alone
+does not guarantee it will. An ID is provenance for a logged historical result,
+not verification.
 
 Limits: database pages are capped at 128 MiB per session (temporary SQLite journal
 space is additional); a source line is capped at 8 MiB; each sync processes up to
@@ -120,3 +187,5 @@ I/O, not a general improvement in model answer accuracy. A clean native Windows
 installed-host smoke passed with synthetic data; live long-session benefit and
 macOS host behaviour remain unmeasured. See the
 [standalone validation receipt](../../docs/validation/evidence-memory-standalone-2026-09-25.json).
+The 0.3.0 scope choices and restore-packet comparison are in the
+[0.3.0 receipt](../../docs/validation/evidence-memory-0.3.0-2026-09-30.json).

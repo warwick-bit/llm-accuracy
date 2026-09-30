@@ -13,7 +13,7 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 MAX_DATABASE_BYTES = 128 * 1024 * 1024
 MAX_LINE_BYTES = 8 * 1024 * 1024
@@ -21,6 +21,18 @@ MAX_BATCH_BYTES = 8 * 1024 * 1024
 PAGE_CHARACTERS = 2048
 RETENTION_SECONDS = 30 * 24 * 3600
 KINDS = ("decision", "correction", "scope", "definition", "provenance", "artifact", "checkpoint")
+CAPTURE_MODES = ("external", "all")
+CAPTURE_COUNTERS = ("calls_out_of_scope", "calls_withheld_restricted", "results_without_stored_call",
+                    "results_withheld_by_scope")
+RECENT_RESULTS = 10
+WEB_TOOLS = ("WebFetch", "WebSearch")
+# Codex logs one outer JavaScript call; these references suggest, but do not prove, which inner tools ran.
+CODEX_EXTERNAL_REFERENCE = re.compile(r"\btools\s*\.\s*(mcp__[\w-]+__[\w-]+|web__run)\s*\(")
+MCP_TOOL_NAME = re.compile(r"mcp__[\w-]+__[\w-]+")
+RESTRICTED_TOKENS = frozenset((
+    "bank", "credential", "credentials", "employee", "employees", "hr", "leave", "passport", "password",
+    "passwords", "payroll", "payslip", "payslips", "pension", "salaries", "salary", "secret", "secrets",
+    "ssn", "superannuation", "tax", "timesheet", "timesheets"))
 
 
 def encoded(value: Any) -> str:
@@ -88,19 +100,69 @@ def row_session(row: dict[str, Any]) -> str | None:
     return None
 
 
+def name_tokens(name: str) -> set[str]:
+    spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", name)
+    # Also split an acronym from the word after it: getSSNProfile -> get SSN Profile.
+    spaced = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1 \2", spaced)
+    return {token.lower() for token in re.split(r"[^A-Za-z0-9]+", spaced) if token}
+
+
+class CaptureScope:
+    """Choose which logged tool calls to store, from tool names alone.
+
+    Withholding is best effort: a tool with an innocuous name can still return
+    sensitive content, and the local configuration is a preference, not a boundary.
+    """
+
+    def __init__(self, mode: str = "external", extra_restricted: tuple[str, ...] = ()):
+        if mode not in CAPTURE_MODES:
+            raise ValueError("invalid_capture_mode")
+        self.mode = mode
+        self.restricted = RESTRICTED_TOKENS | {token.lower() for token in extra_restricted}
+
+    def listing(self) -> "CaptureScope":
+        """The external rule with the same withholding; the recent-results index uses it in every mode."""
+        return CaptureScope("external", tuple(self.restricted))
+
+    def classify(self, event: dict[str, Any]) -> tuple[str, list[str]]:
+        """Return capture, skip or withhold for one call, plus the external tools it references."""
+        name, body = event["name"], event["body"]
+        mentioned = [name] if name.startswith("mcp__") else []
+        external = [name] if name.startswith("mcp__") or name in WEB_TOOLS else []
+        code = (body.get("input") if body.get("type") == "custom_tool_call" else
+                body.get("arguments") if body.get("type") == "function_call" else None)
+        if isinstance(code, str):
+            # Any restricted name in a mixed Codex cell withholds the whole cell.
+            mentioned += MCP_TOOL_NAME.findall(code)
+            external += [match.group(1) for match in CODEX_EXTERNAL_REFERENCE.finditer(code)]
+        if any(name_tokens(item[len("mcp__"):]) & self.restricted for item in mentioned):
+            return "withhold", []
+        if external or self.mode == "all":
+            return "capture", list(dict.fromkeys(external))
+        return "skip", []
+
+
 class Store:
     """One session/plan database. SQLite commits evidence and offsets together."""
 
-    def __init__(self, path: Path, session_id: str, plan_id: str, *, create: bool = False):
+    def __init__(self, path: Path, session_id: str, plan_id: str, *, create: bool = False, read_only: bool = False):
         if path.is_symlink() or (not create and not path.is_file()):
             raise ValueError("memory_not_enabled")
+        if create and read_only:
+            raise ValueError("invalid_store_mode")
         if create and not path.exists():
             descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             os.close(descriptor)
-        self.db = sqlite3.connect(str(path), timeout=0.15)
+        # Read-only opens serve read actions in a host sandbox that refuses every write.
+        self.read_only = read_only
+        if read_only:
+            self.db = sqlite3.connect(path.absolute().as_uri() + "?mode=ro", uri=True, timeout=0.15)
+        else:
+            self.db = sqlite3.connect(str(path), timeout=0.15)
         self.db.row_factory = sqlite3.Row
         try:
-            self.db.execute("PRAGMA journal_mode=DELETE")
+            if not read_only:
+                self.db.execute("PRAGMA journal_mode=DELETE")
             self.db.execute("PRAGMA secure_delete=ON")
             page_size = self.db.execute("PRAGMA page_size").fetchone()[0]
             self.db.execute(f"PRAGMA max_page_count={MAX_DATABASE_BYTES // page_size}")
@@ -144,12 +206,26 @@ class Store:
             raise ValueError("memory_scope_or_expiry")
         # An enabled experimental index may predate local retrieval counters.
         try:
-            with self.db:
-                self.db.execute("CREATE TABLE IF NOT EXISTS retrieval_counts("
-                                "outcome TEXT PRIMARY KEY, count INTEGER NOT NULL)")
+            if not self.read_only:
+                with self.db:
+                    self.db.execute("CREATE TABLE IF NOT EXISTS retrieval_counts("
+                                    "outcome TEXT PRIMARY KEY, count INTEGER NOT NULL)")
         except sqlite3.Error:
             # A full legacy index must remain readable even if counters cannot be added.
             pass
+        # Indexes created before capture scoping keep their unscoped rows until cleared.
+        # A read-only open derives the same label without recording it.
+        self.capture_policy = meta.get("capture_policy")
+        if self.capture_policy is None:
+            unscoped = self.db.execute("SELECT 1 FROM events LIMIT 1").fetchone() is not None
+            self.capture_policy = "legacy_unscoped_rows" if unscoped else "scoped"
+            if not self.read_only:
+                try:
+                    with self.db:
+                        self.db.execute("INSERT OR IGNORE INTO meta VALUES ('capture_policy', ?)",
+                                        (self.capture_policy,))
+                except sqlite3.Error:
+                    pass
         self.counts_available = bool(self.db.execute(
             "SELECT 1 FROM sqlite_master WHERE name='retrieval_counts'").fetchone())
         self.fts = bool(self.db.execute("SELECT 1 FROM sqlite_master WHERE name='search'").fetchone())
@@ -164,7 +240,7 @@ class Store:
                            "fetch_hit"):
             # An unfamiliar future status must not replace a successful retrieval with an error.
             return
-        if not self.counts_available:
+        if self.read_only or not self.counts_available:
             return
         try:
             with self.db:
@@ -188,10 +264,12 @@ class Store:
             self.db.execute("INSERT INTO search(rowid, name, body) VALUES (?, ?, ?)",
                             (result.lastrowid, event["name"], body))
 
-    def _read_batch(self, stream: Any, source: str, offset: int, *, cutoff: str) -> dict[str, Any]:
+    def _read_batch(self, stream: Any, source: str, offset: int, *, cutoff: str,
+                    scope: CaptureScope) -> dict[str, Any]:
         read_bytes = 0
         rows = 0
         rejected = 0
+        counts = dict.fromkeys(CAPTURE_COUNTERS, 0)
         status = "caught_up"
         deadline = time.monotonic() + 1.0
         while read_bytes < MAX_BATCH_BYTES and time.monotonic() < deadline:
@@ -236,13 +314,41 @@ class Store:
                     status = "invalid_tool_identity"
                     break
                 for event in events:
+                    if event["kind"] == "call":
+                        decision, _ = scope.classify(event)
+                        if decision != "capture":
+                            counts["calls_withheld_restricted" if decision == "withhold"
+                                   else "calls_out_of_scope"] += 1
+                            continue
+                    else:
+                        stored = self.db.execute(
+                            "SELECT name, body FROM events WHERE call_id=? AND kind='call' AND source=? LIMIT 1",
+                            (event["call_id"], source)).fetchone()
+                        if not stored:
+                            # A result is stored only beside its own stored call from this transcript.
+                            counts["results_without_stored_call"] += 1
+                            continue
+                        # Recheck the call under the current scope: the configuration may have changed, or the
+                        # call may come from a legacy unscoped index, since the call was stored.
+                        if scope.classify({"name": stored["name"], "body": json.loads(stored["body"])})[0] != "capture":
+                            counts["results_withheld_by_scope"] += 1
+                            continue
                     self._insert_event(event, row, source, start)
             offset = stream.tell()
             rows += 1
         else:
             status = "more_pending"
         return {"status": status, "offset": offset, "bytes_read": read_bytes,
-                "rows": rows, "rows_excluded_by_plan": rejected}
+                "rows": rows, "rows_excluded_by_plan": rejected, **counts}
+
+    def _capture_counts(self) -> dict[str, int]:
+        row = self.db.execute("SELECT value FROM meta WHERE key='capture_counts'").fetchone()
+        try:
+            stored = json.loads(row[0]) if row else {}
+        except (TypeError, ValueError):
+            stored = {}
+        stored = stored if isinstance(stored, dict) else {}
+        return {key: stored[key] if type(stored.get(key)) is int else 0 for key in CAPTURE_COUNTERS}
 
     def _verify_source(self, stream: Any) -> int:
         """Require an explicit host session identity before trusting the source."""
@@ -266,8 +372,9 @@ class Store:
                     break
         raise ValueError("transcript_identity_unavailable")
 
-    def sync(self, transcript: Path, *, cutoff: str = "") -> dict[str, Any]:
+    def sync(self, transcript: Path, *, cutoff: str = "", scope: CaptureScope | None = None) -> dict[str, Any]:
         """Incrementally ingest one explicitly scoped transcript; no directory scans."""
+        scope = scope or CaptureScope()
         if transcript.is_symlink() or not transcript.is_file():
             raise ValueError("transcript_unavailable")
         source = sha(str(transcript.absolute()).encode())
@@ -297,8 +404,12 @@ class Store:
                 offset = 0
             stream.seek(offset)
             with self.db:
-                result = self._read_batch(stream, source, offset, cutoff=cutoff)
+                result = self._read_batch(stream, source, offset, cutoff=cutoff, scope=scope)
                 offset = result["offset"]
+                if any(result[key] for key in CAPTURE_COUNTERS):
+                    totals = self._capture_counts()
+                    self.db.execute("INSERT OR REPLACE INTO meta VALUES ('capture_counts', ?)",
+                                    (encoded({key: totals[key] + result[key] for key in CAPTURE_COUNTERS}),))
                 stream.seek(0)
                 prefix = stream.read(min(offset, 4096))
                 stream.seek(max(0, offset - 4096))
@@ -346,7 +457,74 @@ class Store:
                 "search_mode": "fts5" if self.fts else "literal_scan", "transcript_bytes_read": 0,
                 "trust": "untrusted historical evidence; completeness and current validity unknown"}
 
+    def resolve_id(self, identity: str) -> str:
+        """Return the stored ID for a full ID or a unique prefix of at least 12 hex characters."""
+        if not isinstance(identity, str) or not re.fullmatch(r"[0-9a-f]{12,64}", identity):
+            raise ValueError("evidence_not_found")
+        if len(identity) == 64:
+            return identity
+        # Hex IDs sort below "g", so this range is exactly the prefix and uses the primary key.
+        rows = self.db.execute("SELECT id FROM events WHERE id >= ? AND id < ? ORDER BY id LIMIT 2",
+                               (identity, identity + "g")).fetchall()
+        if not rows:
+            raise ValueError("evidence_not_found")
+        if len(rows) > 1:
+            raise ValueError("ambiguous_id")
+        return rows[0]["id"]
+
+    def short_id(self, identity: str) -> str:
+        """The shortest listed prefix (12 characters unless that is ambiguous) for an ID."""
+        prefix = identity[:12]
+        count = self.db.execute("SELECT count(*) FROM events WHERE id >= ? AND id < ?",
+                                (prefix, prefix + "g")).fetchone()[0]
+        return prefix if count == 1 else identity
+
+    def _external_candidates(self, batch: int) -> Iterator[sqlite3.Row]:
+        """Results whose call may name an external tool, newest arrival first.
+
+        Pages by rowid until exhausted, so filtered candidates never hide an older eligible result.
+        Order is by result arrival, not call order: overlapping calls can return out of order.
+        """
+        before: list[int] = []
+        while True:
+            rows = self.db.execute(
+                "SELECT r.rowid AS position, r.id, r.call_id, r.source, r.timestamp, r.error, "
+                "length(r.body) AS characters, c.name, c.body AS call_body FROM events r JOIN events c "
+                "ON c.call_id=r.call_id AND c.kind='call' AND c.source IS r.source WHERE r.kind='result' AND "
+                "(c.name LIKE 'mcp\\_\\_%' ESCAPE '\\' OR c.name IN (?, ?) OR c.body LIKE '%mcp\\_\\_%' ESCAPE '\\' "
+                f"OR c.body LIKE '%web\\_\\_run%' ESCAPE '\\'){' AND r.rowid<?' if before else ''} "
+                "ORDER BY r.rowid DESC LIMIT ?", (*WEB_TOOLS, *before, batch)).fetchall()
+            yield from rows
+            if len(rows) < batch:
+                return
+            before = [rows[-1]["position"]]
+
+    def recent_external(self, scope: CaptureScope, limit: int = RECENT_RESULTS) -> list[dict[str, Any]]:
+        """Most recently arrived paired external results, as IDs and metadata only; no call or result content."""
+        listing = scope.listing()
+        items, seen = [], set()
+        for result in self._external_candidates(5 * limit):
+            if result["id"] in seen:
+                continue
+            seen.add(result["id"])
+            decision, tools = listing.classify({"name": result["name"], "body": json.loads(result["call_body"])})
+            if decision != "capture":
+                continue
+            # Count across sources, as fetch links a call ID, so every listed result fetches as paired.
+            pair = self.db.execute("SELECT sum(kind='call'), sum(kind='result') FROM events WHERE call_id=?",
+                                   (result["call_id"],)).fetchone()
+            if tuple(pair) != (1, 1):
+                continue
+            items.append({"id": self.short_id(result["id"]),
+                          "tools": tools[:3] + ([f"+{len(tools) - 3} more"] if len(tools) > 3 else []),
+                          "at": result["timestamp"], "logged_characters": result["characters"],
+                          "host_error": bool(result["error"])})
+            if len(items) == limit:
+                break
+        return items
+
     def fetch(self, identity: str, *, start: int = 0, pointer: str = "") -> dict[str, Any]:
+        identity = self.resolve_id(identity)
         row = self.db.execute("SELECT * FROM events WHERE id=?", (identity,)).fetchone()
         if not row:
             raise ValueError("evidence_not_found")
@@ -443,9 +621,18 @@ class Store:
             previous = self.db.execute("SELECT max(revision) FROM states WHERE key=?", (key,)).fetchone()[0] or 0
             if previous != expected:
                 raise ValueError("state_revision_conflict")
+            resolved = []
             for identity in evidence:
+                try:
+                    identity = self.resolve_id(identity)
+                except ValueError as exc:
+                    if str(exc) != "evidence_not_found":
+                        raise
+                    raise ValueError("state_evidence_not_found") from None
                 if not self.db.execute("SELECT 1 FROM events WHERE id=?", (identity,)).fetchone():
                     raise ValueError("state_evidence_not_found")
+                resolved.append(identity)
+            evidence = resolved
             result = self.db.execute("INSERT INTO states(key,kind,text,evidence,previous,timestamp) VALUES (?,?,?,?,?,?)",
                                      (key, kind, text, encoded(evidence), previous, time.time()))
             self.db.execute("UPDATE meta SET value=? WHERE key='expires'", (str(time.time() + RETENTION_SECONDS),))
@@ -467,11 +654,15 @@ class Store:
                 "trust": "explicitly recorded historical state, not independently verified"}
 
     def status(self) -> dict[str, Any]:
+        meta = dict(self.db.execute("SELECT key,value FROM meta"))
         return {"events": self.db.execute("SELECT count(*) FROM events").fetchone()[0],
                 "state_revisions": self.db.execute("SELECT count(*) FROM states").fetchone()[0],
                 "retrieval_counts": (dict(self.db.execute("SELECT outcome,count FROM retrieval_counts"))
                                      if self.counts_available else {}),
-                "last_sync": json.loads(dict(self.db.execute("SELECT key,value FROM meta")).get("last_sync", "null")),
+                "last_sync": json.loads(meta.get("last_sync", "null")),
+                "capture_policy": self.capture_policy,
+                "capture_counts": self._capture_counts(),
                 "database_bytes": self.path.stat().st_size, "quota_bytes": MAX_DATABASE_BYTES,
                 "search_mode": "fts5" if self.fts else "literal_scan", "scope": "current session and plan",
+                "read_only": self.read_only,
                 "expires_at_unix": float(self.db.execute("SELECT value FROM meta WHERE key='expires'").fetchone()[0])}

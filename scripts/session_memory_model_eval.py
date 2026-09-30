@@ -58,7 +58,7 @@ def make_fixture(root: Path) -> tuple[str, Any, dict[str, dict[str, Any]]]:
             result = {"metric": metric, "gross": value + 117,
                       "collected_before_fees": value, "currency": "AUD"}
             write(stream, tool_row({"type": "tool_use", "id": call_id,
-                                    "name": "query_dataset", "input": {"metric": metric}}))
+                                    "name": "mcp__synthetic__query_dataset", "input": {"metric": metric}}))
             write(stream, tool_row({"type": "tool_result", "tool_use_id": call_id,
                                     "content": result}, "user"))
             if metric in CASES:
@@ -68,7 +68,7 @@ def make_fixture(root: Path) -> tuple[str, Any, dict[str, dict[str, Any]]]:
             write(stream, {"message": {"role": "user", "content":
                   f"Correction for {metric}: use collected_before_fees, not gross."}})
         write(stream, tool_row({"type": "tool_use", "id": "call-048",
-                                "name": "query_dataset", "input": {"metric": "metric048"}}))
+                                "name": "mcp__synthetic__query_dataset", "input": {"metric": "metric048"}}))
         write(stream, tool_row({"type": "tool_result", "tool_use_id": "call-048",
                                 "content": {"metric": "metric048", "error": "query failed"},
                                 "is_error": True}, "user"))

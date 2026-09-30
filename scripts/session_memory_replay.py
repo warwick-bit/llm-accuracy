@@ -88,7 +88,7 @@ def seed(transcript: Path) -> dict[str, Any]:
                                  'filters': {'status': 'collected'}, 'note': '❯ → ●'}}
             expected[key] = block
             write(stream, tool_row({'type': 'tool_use', 'id': f'call-{index}',
-                  'name': 'query_dataset', 'input': {'metric': key, 'status': 'collected'}}))
+                  'name': 'mcp__synthetic__query_dataset', 'input': {'metric': key, 'status': 'collected'}}))
             write(stream, tool_row(block, 'user'))
             write(stream, {'message': {'role': 'assistant', 'content':
                   f"Earlier evidence {key}: {100 + index} collected AUD."}})

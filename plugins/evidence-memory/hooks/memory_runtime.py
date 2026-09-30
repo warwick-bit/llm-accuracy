@@ -29,6 +29,7 @@ SCHEMA_VERSION = 1
 RETENTION_DAYS = 30
 HOST_CONTEXT_CHARACTER_BUDGET = 9500
 MEMORY_FILES = ("memory.sqlite3", "memory.sqlite3-journal", "memory.sqlite3-wal", "memory.sqlite3-shm")
+READ_ONLY_ERRNOS = frozenset((errno.EACCES, errno.EPERM, errno.EROFS))
 
 
 def utc_now() -> datetime:
@@ -284,6 +285,45 @@ def session_hash_lock(root: Path, session_hash: str, *, wait: bool = True) -> It
             elif msvcrt is not None:
                 os.lseek(descriptor, 0, os.SEEK_SET)
                 msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+    finally:
+        os.close(descriptor)
+
+
+def is_read_only_error(error: BaseException) -> bool:
+    """A permission or read-only filesystem refusal, such as a host sandbox returns."""
+    return isinstance(error, OSError) and error.errno in READ_ONLY_ERRNOS
+
+
+@contextmanager
+def shared_session_lock(root: Path, session_hash: str, *, wait: bool = True) -> Iterator[None]:
+    """Share an existing session lock without creating or changing any file.
+
+    Read actions use this inside a read-only sandbox. Without a lock file, or on
+    a host without fcntl, the read proceeds unlocked; SQLite's own locking still
+    gives it a consistent snapshot.
+    """
+    if not re.fullmatch(r"[0-9a-f]{64}", session_hash):
+        raise ValueError("invalid_session")
+    path = state_directory(root) / "locks" / session_hash
+    if path.is_symlink():
+        raise OSError("unsafe_memory_path")
+    try:
+        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    except FileNotFoundError:
+        descriptor = -1
+    if descriptor < 0:
+        yield
+        return
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise OSError("unsafe_memory_path")
+        if fcntl is not None:
+            fcntl.flock(descriptor, fcntl.LOCK_SH | (0 if wait else fcntl.LOCK_NB))
+        try:
+            yield
+        finally:
+            if fcntl is not None:
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
     finally:
         os.close(descriptor)
 
