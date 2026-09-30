@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.6.4"
+    assert claude["version"] == "0.6.5"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -178,3 +178,17 @@ def test_cowork_deterministic_data_smoke_receipt_records_final_boundaries() -> N
     assert checks["receipt_validator_status"] == "pass"
     assert checks["receipt_validator_errors"] == []
     assert receipt["evidence_boundary"]["raw_content_committed"] is False
+
+
+def test_self_audit_requires_a_committed_official_source() -> None:
+    # A reviewer that accepts "the data can't establish which is official"
+    # passed withheld-source answers in a reviewer benchmark; with this rule
+    # it caught them. Withholding is a correction, not caution.
+    skill = " ".join(
+        (PLUGIN / "skills" / "self-audit" / "SKILL.md").read_text(encoding="utf-8").split()
+    )
+
+    assert "check that it commits to the official source" in skill
+    assert "state that basis" in skill
+    assert "\"The data can't establish which is official\" is a correction" in skill
+    assert "withheld source" in skill

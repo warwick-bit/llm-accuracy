@@ -33,9 +33,14 @@ or bot output review; route those to the relevant domain/plugin review skill.
 4. Re-derive each load-bearing claim from current source evidence when tools or
    files are available. If source evidence is unavailable, say that rather than
    substituting memory.
-5. Classify each material claim as supported, unsupported, garbled, overstated,
-   missing caveat, or not checked.
-6. Give the corrected answer in plain language. Lead with the verdict, then
+5. If the answer reconciles sources that disagree, check that it commits to
+   the official source. When the data does not say which source is official,
+   the answer must name the source that the governing rule or source-of-truth
+   registry picks and state that basis. "The data can't establish which is
+   official" is a correction, not caution; naming the other source is wrong.
+6. Classify each material claim as supported, unsupported, garbled, overstated,
+   missing caveat, withheld source, or not checked.
+7. Give the corrected answer in plain language. Lead with the verdict, then
    include evidence notes and confidence aligned with the body.
 
 ## Output Shape
