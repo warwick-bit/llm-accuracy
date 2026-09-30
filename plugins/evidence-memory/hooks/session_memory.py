@@ -214,14 +214,18 @@ class Store:
             # A full legacy index must remain readable even if counters cannot be added.
             pass
         # Indexes created before capture scoping keep their unscoped rows until cleared.
-        if "capture_policy" not in meta and not self.read_only:
-            try:
-                unscoped = self.db.execute("SELECT 1 FROM events LIMIT 1").fetchone() is not None
-                with self.db:
-                    self.db.execute("INSERT OR IGNORE INTO meta VALUES ('capture_policy', ?)",
-                                    ("legacy_unscoped_rows" if unscoped else "scoped",))
-            except sqlite3.Error:
-                pass
+        # A read-only open derives the same label without recording it.
+        self.capture_policy = meta.get("capture_policy")
+        if self.capture_policy is None:
+            unscoped = self.db.execute("SELECT 1 FROM events LIMIT 1").fetchone() is not None
+            self.capture_policy = "legacy_unscoped_rows" if unscoped else "scoped"
+            if not self.read_only:
+                try:
+                    with self.db:
+                        self.db.execute("INSERT OR IGNORE INTO meta VALUES ('capture_policy', ?)",
+                                        (self.capture_policy,))
+                except sqlite3.Error:
+                    pass
         self.counts_available = bool(self.db.execute(
             "SELECT 1 FROM sqlite_master WHERE name='retrieval_counts'").fetchone())
         self.fts = bool(self.db.execute("SELECT 1 FROM sqlite_master WHERE name='search'").fetchone())
@@ -506,8 +510,9 @@ class Store:
             decision, tools = listing.classify({"name": result["name"], "body": json.loads(result["call_body"])})
             if decision != "capture":
                 continue
-            pair = self.db.execute("SELECT sum(kind='call'), sum(kind='result') FROM events "
-                                   "WHERE call_id=? AND source IS ?", (result["call_id"], result["source"])).fetchone()
+            # Count across sources, as fetch links a call ID, so every listed result fetches as paired.
+            pair = self.db.execute("SELECT sum(kind='call'), sum(kind='result') FROM events WHERE call_id=?",
+                                   (result["call_id"],)).fetchone()
             if tuple(pair) != (1, 1):
                 continue
             items.append({"id": self.short_id(result["id"]),
@@ -655,7 +660,7 @@ class Store:
                 "retrieval_counts": (dict(self.db.execute("SELECT outcome,count FROM retrieval_counts"))
                                      if self.counts_available else {}),
                 "last_sync": json.loads(meta.get("last_sync", "null")),
-                "capture_policy": meta.get("capture_policy", "unknown"),
+                "capture_policy": self.capture_policy,
                 "capture_counts": self._capture_counts(),
                 "database_bytes": self.path.stat().st_size, "quota_bytes": MAX_DATABASE_BYTES,
                 "search_mode": "fts5" if self.fts else "literal_scan", "scope": "current session and plan",
