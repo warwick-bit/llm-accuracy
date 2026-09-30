@@ -146,7 +146,8 @@ When a sandbox makes the plugin data directory read-only, `status`, `lookup`,
 the session lock if it exists, and record no retrieval counts (`status` reports
 `read_only: true`). `sync`, `remember`, `enable` and `disable` still need a
 writable data directory; only permission and read-only filesystem refusals fall
-back.
+back. The fallback is chosen when the session lock is taken, so a writable data
+directory holding a read-only index file still fails closed.
 Claude's prompt, PostToolUse, PostToolUseFailure, Stop and compaction hooks sync
 incrementally while capture is active. A call result not yet flushed to the
 transcript is captured on a later hook; there is no guarantee after abrupt exit.

@@ -930,6 +930,18 @@ def test_recent_external_results_scan_past_filtered_candidates(store, tmp_path, 
     assert [json.loads(store.fetch(item['id'])['text'])['content'] for item in listed] == ['oldword']
 
 
+def test_recent_external_results_match_fetch_pairing_across_sources(store, tmp_path, engine):
+    # fetch links a call ID across transcripts, so a reused ID is ambiguous and must not be listed.
+    store.sync(write_log(tmp_path / 'first', tool_call('dup', 'mcp__synthetic__query_dataset', {'filter': 'a'}),
+                         result('dup', text='firstword')))
+    store.sync(write_log(tmp_path / 'second', tool_call('dup', 'mcp__synthetic__query_dataset', {'filter': 'b'}),
+                         result('dup', text='secondword'), tool_call('ok', 'mcp__synthetic__query_dataset'),
+                         result('ok', text='okword')))
+    listed = store.recent_external(engine.CaptureScope())
+    assert [json.loads(store.fetch(item['id'])['text'])['content'] for item in listed] == ['okword']
+    assert all(store.fetch(item['id'])['pairing'] == 'paired' for item in listed)
+
+
 def test_fetch_and_remember_accept_a_unique_id_prefix(store, tmp_path):
     store.sync(write_log(tmp_path / 'log', call(), result()))
     full = store.search('receipts')['matches'][0]['id']
@@ -974,6 +986,23 @@ def test_legacy_unscoped_index_is_reported_and_listing_stays_external(tmp_path, 
         assert reopened.search('localword')['matches']
     finally:
         reopened.close()
+
+
+def test_read_only_open_reports_a_legacy_index_without_labelling_it(tmp_path, engine):
+    path = tmp_path / 'memory.sqlite3'
+    legacy = engine.Store(path, 'synthetic-session', 'default', create=True)
+    row = tool_call('local', 'Bash', {'command': 'ls'})
+    with legacy.db:
+        for event in engine.tool_events(row):
+            legacy._insert_event(event, row, 'legacy-source', 0)
+        legacy.db.execute("DELETE FROM meta WHERE key='capture_policy'")
+    legacy.close()
+    viewer = engine.Store(path, 'synthetic-session', 'default', read_only=True)
+    try:
+        assert viewer.status()['capture_policy'] == 'legacy_unscoped_rows'
+        assert viewer.db.execute("SELECT count(*) FROM meta WHERE key='capture_policy'").fetchone()[0] == 0
+    finally:
+        viewer.close()
 
 
 def enabled_hook(tmp_path, monkeypatch, *rows):
