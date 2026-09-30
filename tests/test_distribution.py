@@ -196,3 +196,5 @@ def test_self_audit_requires_a_committed_official_source() -> None:
     assert "never taken from the answer being audited" in skill
     assert "say official status is unconfirmed" in skill
     assert "withheld-source claim" in skill
+    assert "naming the other source is wrong" in skill
+    assert "an invented rule is the error" in skill

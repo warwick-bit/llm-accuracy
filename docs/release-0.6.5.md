@@ -27,5 +27,7 @@ In a private reviewer benchmark (six cases, one run each, screen-grade),
 reviewers without this rule passed 4 of 6 answers that withheld the official
 source. With the rule they caught 6 of 6. The rule alone did not stop one
 model from accepting an answer's own wrong domain rule; giving the reviewer
-the registry entry did. It improves one audit check; it does not guarantee a
-correct answer.
+a source-of-truth card listing each topic's official-source rule did. The
+checkable-rule and "unconfirmed" clauses were added after that benchmark and
+are untested. It improves one audit check; it does not guarantee a correct
+answer.
