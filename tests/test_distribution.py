@@ -69,13 +69,30 @@ def test_evidence_memory_is_independent_and_explicit() -> None:
     assert manifest["defaultEnabled"] is False
     assert "dependencies" not in manifest
     assert (EVIDENCE / "hooks" / "memory.py").exists()
-    assert not (EVIDENCE / ".codex-plugin").exists()
+    codex = load_json("plugins/evidence-memory/.codex-plugin/plugin.json")
+    assert (codex["name"], codex["version"], codex["license"]) == (
+        manifest["name"], manifest["version"], manifest["license"])
+    assert (codex["hooks"], codex["skills"]) == ("./hooks/codex-hooks.json", "./skills/")
 
 
-def test_distribution_contains_no_codex_runtime_package() -> None:
-    assert not (ROOT / ".agents" / "plugins" / "marketplace.json").exists()
-    assert not (PLUGIN / ".codex-plugin" / "plugin.json").exists()
-    assert not (DETERMINISTIC / ".codex-plugin" / "plugin.json").exists()
+def test_codex_marketplace_publishes_only_evidence_memory() -> None:
+    codex = load_json(".agents/plugins/marketplace.json")
+    assert codex["name"] == "llm-accuracy"
+    assert [(entry["name"], entry["source"]) for entry in codex["plugins"]] == [
+        ("evidence-memory", {"source": "local", "path": "./plugins/evidence-memory"})]
+    for plugin in (PLUGIN, DETERMINISTIC, LEDGER):
+        assert not (plugin / ".codex-plugin").exists()
+
+
+def test_codex_hooks_reuse_the_claude_hook_commands() -> None:
+    claude = load_json("plugins/evidence-memory/hooks/hooks.json")["hooks"]
+    codex = load_json("plugins/evidence-memory/hooks/codex-hooks.json")["hooks"]
+    assert set(codex) == {"UserPromptSubmit", "Stop", "PreCompact", "PostToolUse", "SessionStart"}
+    for event, groups in codex.items():
+        commands = [hook["command"] for group in groups for hook in group["hooks"]]
+        assert commands == [hook["command"] for group in claude[event] for hook in group["hooks"]]
+        assert all(hook["timeout"] <= 10 for group in groups for hook in group["hooks"])
+    assert "hook-restore" in codex["SessionStart"][0]["hooks"][0]["command"]
 
 
 def test_distribution_excludes_external_integrations_and_updater() -> None:

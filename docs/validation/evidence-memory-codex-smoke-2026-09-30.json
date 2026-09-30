@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-30",
+  "kind": "installed_host_smoke",
+  "host": "codex-cli 0.158.0 on Linux (WSL2), isolated CODEX_HOME, plugin installed from a local marketplace",
+  "data": "Synthetic stdio MCP server only: a metric lookup tool and a restricted-name record tool returning a fixed marker. No user data.",
+  "sample": "n=1 session per check; screen-grade, not a benefit measurement.",
+  "capture": {
+    "hooks_fired": ["UserPromptSubmit", "PostToolUse", "PreCompact", "SessionStart", "Stop"],
+    "logged_tool_unit": "code-mode exec cell (custom_tool_call)",
+    "lookup_cell_stored": true,
+    "tool_discovery_cell_without_mcp_call": "skipped (calls_out_of_scope)",
+    "restricted_cell": "withheld (calls_withheld_restricted=1; its output counted as results_without_stored_call=1)",
+    "restricted_marker_searchable": false,
+    "mixed_cell_with_restricted_call": "withheld whole, as designed"
+  },
+  "restore_packet": {
+    "injected_on_compact_session_start": true,
+    "listed_result_ids": 1,
+    "command_prefix_present": true,
+    "restricted_marker_in_packet": false
+  },
+  "sandbox_reads": {
+    "method": "codex sandbox running memory.py status/search/fetch/lookup/state against the smoke index",
+    "before_read_only_fallback": "0/5 succeeded (OSError; sandbox reports read-only file system)",
+    "after_read_only_fallback": "5/5 succeeded",
+    "sandbox_still_blocks_writes": true
+  },
+  "resume_question": {
+    "prompt": "Asked for one metric's earlier value without calling the MCP server again.",
+    "before_fallback": "Model ran the packet's command_prefix fetch, which failed; it then inspected the SQLite file directly across many cells (25.3k tokens).",
+    "after_fallback": "Model ran 2 successful fetch commands (result, then linked call), answered the exact synthetic value and cited the evidence ID (11.8k tokens).",
+    "caveat": "The before run's synthetic lookups received a wrong argument name, so only its failure path, not its answer, is comparable; token counts are single runs."
+  },
+  "skill_command_before_compaction": {
+    "session_id_in_shell": "CODEX_THREAD_ID and CODEX_SESSION_ID were both visible to a model-run shell command and equal to the rollout session ID.",
+    "run": "In a fresh session with no compaction, the model ran the skill's Codex block verbatim inside the default read-only sandbox.",
+    "result": "exit 0; enabled true; read_only true; capture_policy scoped.",
+    "harness_note": "Hook trust was bypassed with --dangerously-bypass-hook-trust in the isolated home; without trust, plugin hooks did not start capture and the command reported memory_scope_or_expiry."
+  },
+  "not_checked": ["interactive Codex TUI hook trust flow", "remember/sync inside the sandbox (expected to need a writable data directory)", "macOS and Windows Codex hosts", "live long-session benefit"]
+}

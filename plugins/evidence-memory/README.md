@@ -63,6 +63,47 @@ Indexes created before 0.3.0 keep their earlier unscoped rows, reported as
 `capture_policy: legacy_unscoped_rows`; new rows follow the current scope. Run
 `clear` to remove the earlier rows.
 
+## Codex (experimental)
+
+The same hook commands also run as a Codex plugin. Codex CLI 0.158 was
+smoke-tested with synthetic data; other versions are untested.
+
+```bash
+codex plugin marketplace add warwick-bit/llm-accuracy
+codex plugin add evidence-memory@llm-accuracy
+```
+
+A local clone path also works as the marketplace source. Plugin hooks need
+`[features] hooks = true` in Codex's `config.toml`, and Codex must trust them
+before they run. Unlike Claude Code, **installing the plugin in Codex enables
+it**: capture starts at a fresh cutoff in each new session. Remove it with
+`codex plugin remove evidence-memory@llm-accuracy`. Data is stored in the
+`evidence-memory-llm-accuracy` folder under `$CODEX_HOME/plugins/data`
+(normally `~/.codex`).
+
+- **Captured unit:** Codex logs one code-mode `exec` cell, not each tool call. A
+  cell is stored when its code calls `tools.mcp__…(` or `tools.web__run(`, and
+  its stored result is only what the cell printed. A cell that calls a tool
+  without printing stores no values. A cell that mentions any restricted MCP
+  name is withheld whole, so other results in that cell are not stored either.
+- **Error signal:** cell outputs carry no error flag
+  (`host_error_signal: error_flag_absent`); inspect the result before using it.
+- **Skill paths:** Codex does not fill in the skill's `${CLAUDE_…}`
+  placeholders, so the skill also ships a Codex command. It finds the newest
+  cached `memory.py` under `$CODEX_HOME` (default `~/.codex`) and passes that
+  data folder and `$CODEX_THREAD_ID`, the session ID Codex 0.158 exports to
+  shell commands. After the first compaction the restore packet's
+  `command_prefix` gives the same command already resolved.
+- **Sandbox:** read actions work in Codex's read-only sandbox. `remember`,
+  `sync`, `enable` and `disable` need a writable plugin data directory, which
+  the default Codex sandboxes do not grant.
+- **Events:** Codex has no `PostCompact` or `PostToolUseFailure` hook. Capture
+  runs on prompt, tool, stop and pre-compaction events; the packet is restored
+  on `SessionStart`.
+
+See the [Codex smoke receipt](../../docs/validation/evidence-memory-codex-smoke-2026-09-30.json)
+for what was checked.
+
 ## Experimental evidence memory (plugin opt-in)
 
 This experiment stores durable decisions and searchable logged tool evidence.

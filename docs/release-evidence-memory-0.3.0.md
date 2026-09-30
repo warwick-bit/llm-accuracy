@@ -32,6 +32,13 @@ for its limits; live long-session benefit remains unmeasured.
 cannot be written, as in Codex's sandbox or a sandboxed shell; they then record
 no retrieval counts.
 
+**Codex (experimental).** Evidence Memory also installs as a Codex plugin with
+the same hook commands (`codex plugin add evidence-memory@llm-accuracy`). In
+Codex, installing enables capture, the stored unit is a whole code-mode cell's
+printed output, and the skill uses a Codex-specific command because Codex
+does not fill in its placeholders; see the
+[plugin guide](../plugins/evidence-memory/README.md#codex-experimental).
+
 To update, run `claude plugin marketplace update llm-accuracy` and
 `claude plugin update evidence-memory@llm-accuracy`, then restart Claude Code or
 run `/reload-plugins`.

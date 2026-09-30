@@ -1,0 +1,20 @@
+{
+  "name": "evidence-memory",
+  "version": "0.3.0",
+  "description": "Experimental current-session search and correction memory for external tool results (MCP and web by default); exact results stay local and may contain sensitive data.",
+  "author": {
+    "name": "Warwick"
+  },
+  "homepage": "https://github.com/warwick-bit/llm-accuracy",
+  "repository": "https://github.com/warwick-bit/llm-accuracy",
+  "license": "MIT",
+  "hooks": "./hooks/codex-hooks.json",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Evidence Memory",
+    "shortDescription": "Current-session memory for external tool results",
+    "developerName": "Warwick",
+    "category": "Productivity",
+    "capabilities": ["Read"]
+  }
+}
