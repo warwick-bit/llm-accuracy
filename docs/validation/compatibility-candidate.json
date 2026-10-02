@@ -13,11 +13,11 @@
     },
     "session-ledger": {
       "version": "0.3.0",
-      "sha256": "88dfd1afdd9b10cfee443e2351e2c1115b3e386d966ca450671acff91e550bf3"
+      "sha256": "343250edfe1f54f0ec8a6340377dc87946fbf922c67b1c7bee83839bcd01c45f"
     },
     "evidence-memory": {
       "version": "0.4.0",
-      "sha256": "d9cb0873ef298e97f6d33f013d4ca20b4a438da050d99de7783febea15a1e054"
+      "sha256": "d090f7c51a2e4af774e9a6d55f492647f7c95ee1897c2efcf2d5464aa19039d2"
     }
   },
   "targets": {
@@ -28,6 +28,24 @@
       "outcome": "pass",
       "host_version": "2.1.287",
       "python_version": "3.12.3",
+      "packages": {
+        "llm-accuracy": {
+          "version": "0.7.0",
+          "sha256": "2a9a38804e274aa09d9d65a5e8a339a19c2c3a25632a442f2cf5ce03f55621cc"
+        },
+        "deterministic-data": {
+          "version": "0.1.0",
+          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+        },
+        "session-ledger": {
+          "version": "0.3.0",
+          "sha256": "343250edfe1f54f0ec8a6340377dc87946fbf922c67b1c7bee83839bcd01c45f"
+        },
+        "evidence-memory": {
+          "version": "0.4.0",
+          "sha256": "d090f7c51a2e4af774e9a6d55f492647f7c95ee1897c2efcf2d5464aa19039d2"
+        }
+      },
       "checks": {
         "clean_install": true,
         "configured_python": true,

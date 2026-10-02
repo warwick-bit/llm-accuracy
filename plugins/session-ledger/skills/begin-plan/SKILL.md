@@ -20,7 +20,7 @@ Execute this argument vector after substituting the host placeholders:
 
 Use direct execution when available. With a shell tool, quote every element
 as a literal for the active shell (PowerShell: `&` before the executable and
-single quotes with embedded apostrophes doubled; POSIX: shell-escaped single
+single quotes with embedded ASCII/smart single quotes (U+2018–U+201B) doubled; POSIX: shell-escaped single
 arguments). Never evaluate substituted text as a complete shell command.
 If local execution or a required placeholder is unavailable, report that the
 operation could not be confirmed. This skill has no shell preprocessing.

@@ -105,7 +105,8 @@ def command_prefix(root: Path, session_id: str) -> str:
 
 def shell_prefix(parts: tuple[str, ...], *, windows: bool) -> str:
     if windows:
-        return "& " + " ".join("'" + part.replace("'", "''") + "'" for part in parts)
+        quotes = {ord(mark): mark * 2 for mark in "'\u2018\u2019\u201a\u201b"}
+        return "& " + " ".join("'" + part.translate(quotes) + "'" for part in parts)
     return " ".join(shlex.quote(part) for part in parts)
 
 

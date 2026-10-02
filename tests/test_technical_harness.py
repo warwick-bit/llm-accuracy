@@ -40,6 +40,24 @@ def result(answer, **updates):
     }
 
 
+def test_explicit_plugin_probe_configures_the_loaded_plugin_name(modules, tmp_path, monkeypatch):
+    probe = modules[1]
+    monkeypatch.setenv('CLAUDE_CONFIG_DIR', str(tmp_path / 'synthetic-auth'))
+    monkeypatch.setattr(probe.shutil, 'which', lambda name: 'synthetic-claude')
+    observed = []
+
+    def capture(command, cwd, env, stdin, timeout):
+        observed.append(command)
+        return {'status': 'ok', 'answers': []}
+
+    monkeypatch.setattr(probe, 'communicate', capture)
+    assert probe.run_probe(['synthetic'], PLUGIN)['status'] == 'ok'
+    command = observed[0]
+    assert command[command.index('--plugin-dir') + 1] == str(PLUGIN.resolve())
+    options = json.loads(command[command.index('--settings') + 1])
+    assert options == {'pluginConfigs': {'llm-accuracy': {'options': {'python_executable': sys.executable}}}}
+
+
 @pytest.mark.parametrize(
     "answer,valid,passed",
     [

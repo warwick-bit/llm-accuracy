@@ -81,7 +81,8 @@ def test_windows_memory_prefix_quotes_literals():
     assert module.shell_prefix(("C:/Python O'Brien/python.exe", '$literal'), windows=True) == "& 'C:/Python O''Brien/python.exe' '$literal'"
 
 
-def test_memory_prefix_round_trips_through_its_named_shell(tmp_path):
+@pytest.mark.parametrize('quote', ["'", '\u2018', '\u2019', '\u201a', '\u201b'])
+def test_memory_prefix_round_trips_through_its_named_shell(tmp_path, quote):
     shell = shutil.which('pwsh') if os.name == 'nt' else HOOK_SHELL
     if not shell:
         pytest.skip('named shell unavailable; direct argv remains the execution contract')
@@ -90,7 +91,7 @@ def test_memory_prefix_round_trips_through_its_named_shell(tmp_path):
     spec.loader.exec_module(module)
     target = tmp_path / "script O'Brien é $ literal.py"
     target.write_text('import json,sys\nprint(json.dumps(sys.argv[1:]))\n')
-    arguments = [sys.executable, str(target), "value O'Brien é $ literal"]
+    arguments = [sys.executable, str(target), f"value O{quote}Brien é $ literal"]
     command = module.shell_prefix(arguments, windows=os.name == 'nt')
     shell_args = [shell, '-NoProfile', '-NonInteractive', '-Command', command] if os.name == 'nt' else [shell, '-c', command]
     result = subprocess.run(shell_args, capture_output=True, text=True, encoding='utf-8', timeout=15)

@@ -17,6 +17,7 @@ def test_candidate_requires_current_installed_smoke_before_release():
 def test_wsl_smoke_cannot_certify_native_windows_or_macos():
     receipt = guard.candidate(ROOT)
     receipt['targets']['code-wsl'] = {'outcome': 'pass', 'host_version': '2.1.287',
+                                    'python_version': '3.12.3', 'packages': receipt['packages'],
                                     'checks': dict.fromkeys(guard.CHECKS, True)}
     errors = guard.validate(ROOT, receipt, release=True)
     assert 'clean_installed_smoke_required_code-wsl' not in errors
@@ -42,3 +43,13 @@ def test_unsubstantiated_pass_does_not_satisfy_release():
     errors = guard.validate(ROOT, receipt, release=True)
     assert 'missing_host_version_code-wsl' in errors
     assert 'missing_checks_code-wsl' in errors
+
+
+def test_each_pass_keeps_its_original_source_binding_and_python_version():
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-windows'] = {
+        'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.8.0',
+        'packages': {}, 'checks': dict.fromkeys(guard.CHECKS, True)}
+    errors = guard.validate(ROOT, receipt)
+    assert 'missing_or_unsupported_python_version_code-windows' in errors
+    assert 'stale_target_packages_code-windows' in errors

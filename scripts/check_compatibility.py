@@ -51,6 +51,15 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
             checks = row.get('checks', {})
             if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):
                 errors.append('missing_host_version_' + target)
+            elif tuple(map(int, version.split('.'))) < (2, 1, 287) and target.startswith('code-'):
+                errors.append('unsupported_host_version_' + target)
+            python = row.get('python_version', '')
+            if target.startswith('code-') and (not isinstance(python, str)
+                    or not re.fullmatch(r'\d+\.\d+\.\d+', python)
+                    or tuple(map(int, python.split('.'))) < (3, 9, 0)):
+                errors.append('missing_or_unsupported_python_version_' + target)
+            if row.get('packages') != expected['packages']:
+                errors.append('stale_target_packages_' + target)
             if not isinstance(checks, dict) or set(checks) != set(CHECKS) or any(v is not True for v in checks.values()):
                 errors.append('missing_checks_' + target)
     if release:

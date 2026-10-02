@@ -24,7 +24,7 @@ with `${CLAUDE_PLUGIN_ROOT}/hooks/memory.py`, `--plugin-data`,
 `${CLAUDE_PLUGIN_DATA}`, `--session-id`, `${CLAUDE_SESSION_ID}`, then `status`.
 Use an argument vector when available. Otherwise quote each value as a literal
 for the active shell: PowerShell uses `&` before the executable and single quotes
-with embedded apostrophes doubled; POSIX uses shell-escaped single arguments.
+with embedded ASCII/smart single quotes (U+2018–U+201B) doubled; POSIX uses shell-escaped single arguments.
 Never evaluate substituted text as a complete shell command. If local execution
 or any required placeholder is unavailable (including Claude Desktop Chat),
 say memory capture is unavailable; do not claim retrieval or persistence.

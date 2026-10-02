@@ -63,7 +63,9 @@ installed plugin's saved option or current-session activation. Its isolated
 `docs/validation/compatibility-candidate.json` is a raw-free record bound to the
 version and SHA-256 of every package's source tree. Every required OS/host cell
 must say `pass` or `untested`. A pass needs a host version and all required QA
-checks. Historical receipts cannot establish a current candidate's support.
+checks, its own package source bindings, and a supported Python version for Code.
+These are maintainer QA records, not an independently authenticated test oracle.
+Historical receipts cannot establish a current candidate's support.
 
 After changing any package file, run `python3 scripts/check_compatibility.py
 --write-candidate` to reset all installed-host outcomes to `untested`. Perform
