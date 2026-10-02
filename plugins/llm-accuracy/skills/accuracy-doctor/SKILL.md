@@ -21,11 +21,13 @@ phrases, paths, prompts, tool output or credentials. Explain fixed diagnostic
 codes using the plugin README. Do not dump settings files or ask for credentials.
 
 Lead with `presentation.headline` verbatim. Report the diagnostic details, then
-end with `Checked:`, `Gap:` and `Next:` using the corresponding `presentation`
-values verbatim. Do not upgrade the headline to "working", "healthy" or
-"nothing needs fixing". These fields describe bounded probes, not the whole
-runtime. If an older doctor lacks `presentation`, preserve the same scope and
-explicitly mark current-session activation and factual accuracy unverified.
+end with a `---` divider (blank line before and after), then `- **Checked:**`,
+`- **Gap:**` and `- **Next:**` bullets using the corresponding `presentation`
+values verbatim. Do not upgrade
+the headline to "working", "healthy" or "nothing needs fixing". These fields
+describe bounded probes, not the whole runtime. If an older doctor lacks
+`presentation`, preserve the same scope and explicitly mark current-session
+activation and factual accuracy unverified.
 
 The host inventory filters the plugin name before `@`; the marketplace name
 after `@` is not the plugin identity. Every returned installation is for

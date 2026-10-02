@@ -78,22 +78,25 @@ before asserting them. Recall is not evidence.
 
 ## Evidence footer
 
-For substantive technical diagnoses and verification claims, use a compact
-footer with `Checked`, `Gap` and `Next`. `Checked` names checks actually
-performed, their outcome and scope, or explicitly says none. `Gap` names
-unresolved or untested parts. `Next` names the smallest useful action, or none
-when the requested scope is complete. Keep any material uncertainty in the
-answer body too. This is a model-written evidence summary, not a validated
-receipt. Skip it for routine replies without a diagnosis or verification claim.
+For substantive technical diagnoses and verification claims, end with a `---`
+divider (blank line before and after) and a compact footer of bold-labelled
+bullets: `- **Checked:**`, `- **Gap:**` and `- **Next:**`. `Checked` names
+checks actually performed, their outcome and scope, or explicitly says none.
+`Gap` names unresolved or untested parts. `Next` names the smallest useful
+action, or none when the requested scope is complete. Keep any material
+uncertainty in the answer body too. This is a model-written evidence summary,
+not a validated receipt. Skip it for routine replies without a diagnosis or
+verification claim.
 
-For other consequential factual answers, include concise labels where relevant:
+For other consequential factual answers, end with the same `---` divider and
+bold-labelled bullets for the labels that apply:
 
-- Source
-- Time window
-- Scope or denominator
-- Caveat or data gap
-- Direct evidence versus inference
-- Next step
+- **Source:**
+- **Time window:**
+- **Scope or denominator:**
+- **Caveat or data gap:**
+- **Direct evidence versus inference:**
+- **Next step:**
 
 For multi-source, disputed, blocked, or complex answers, also include conflict
 status, source freshness, and entity/denominator alignment. If an input is

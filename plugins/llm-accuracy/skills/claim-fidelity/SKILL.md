@@ -68,7 +68,8 @@ verified fact or require new tool calls merely to repeat still-valid evidence.
 ## Output
 
 For a substantive technical diagnosis or verification claim, lead with the
-conclusion and its uncertainty, then end with three short evidence bullets:
+conclusion and its uncertainty, then end with a `---` divider (blank line
+before and after) and three short evidence bullets:
 
 - **Checked:** checks actually performed, their result and relevant scope. If
   none were performed, say so; proposed checks do not belong here.

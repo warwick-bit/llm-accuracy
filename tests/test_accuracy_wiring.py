@@ -236,7 +236,10 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
     assert "Checked / Gap / Next" in context
     assert "actual checks or supplied evidence, with scope" in context
     assert "including rejecting" in context
-    assert context.count("Checked: actual") == 1
+    assert context.count("- **Checked:** actual") == 1
+    assert "footer:\n\n---\n\n- **Checked:**" in context
+    assert "\n- **Gap:** remaining" in context
+    assert "\n- **Next:** smallest" in context
     assert "Skip this footer for routine replies" in context
     assert len(context) <= 1500
 

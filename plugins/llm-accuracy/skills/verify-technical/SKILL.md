@@ -51,7 +51,7 @@ it too. A correct verdict does not excuse an unsupported reason.
 
 Lead with the supported conclusion and uncertainty. Preserve that same scope in
 short status labels, summaries and follow-ups. End substantive diagnoses
-or verification claims with:
+or verification claims with a `---` divider (blank line before and after), then:
 
 - **Checked:** actual checks, outcomes and scope; explicitly say none if none ran.
 - **Gap:** unresolved causes, unavailable checks or untested environments.
