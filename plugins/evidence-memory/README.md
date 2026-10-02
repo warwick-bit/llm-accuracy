@@ -231,9 +231,10 @@ No network, external telemetry or cross-session retrieval is added. Never commit
 memory, transcripts or real query results as fixtures.
 
 Synthetic replay tests establish storage/retrieval properties and measured local
-I/O, not a general improvement in model answer accuracy. A clean native Windows
-installed-host smoke passed with synthetic data; live long-session benefit and
-macOS host behaviour remain unmeasured. See the
+I/O, not a general improvement in model answer accuracy. A historical native
+Windows installed-host smoke passed with synthetic data on 25 Sep 2026; it does
+not certify the current 0.4.0 candidate. Live long-session benefit and macOS
+host behaviour remain unmeasured. See the
 [standalone validation receipt](../../docs/validation/evidence-memory-standalone-2026-09-25.json).
 The 0.3.0 scope choices and restore-packet comparison are in the
 [0.3.0 receipt](../../docs/validation/evidence-memory-0.3.0-2026-09-30.json).

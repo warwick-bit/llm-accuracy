@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import subprocess
+import shutil
 from pathlib import Path
 
 import pytest
@@ -128,3 +129,28 @@ def test_required_aggregate_cannot_ignore_publication_failure_or_skip():
     assert 'needs: [gates, windows, windows-native, macos, publication]' in aggregate
     assert 'if: always()' in aggregate
     assert 'test "${{ needs.publication.result }}" = "success"' in aggregate
+
+
+def test_actual_all_pass_receipt_cannot_certify_redirected_catalog(repository):
+    root, _ = repository
+    for folder in ('plugins', '.claude-plugin', '.agents'):
+        shutil.copytree(ROOT / folder, root / folder, ignore=shutil.ignore_patterns('__pycache__'))
+    contract = importlib.import_module('check_compatibility')
+    receipt = contract.candidate(root)
+    for target in contract.TARGETS:
+        receipt['targets'][target] = {
+            'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.12.3',
+            'packages': contract.target_packages(receipt['packages'], target),
+            'checks': dict.fromkeys(contract.target_checks(target), True)}
+    assert guard.validate(root, receipt, release=True) == []
+    path = root / 'docs/validation/compatibility-candidate.json'
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(receipt))
+    git(root, 'add', '.')
+    git(root, '-c', 'commit.gpgsign=false', 'commit', '-qm', 'synthetic all-pass baseline')
+    base = git(root, 'rev-parse', 'HEAD')
+    path = root / '.claude-plugin/marketplace.json'
+    catalog = json.loads(path.read_text())
+    catalog['plugins'][0]['source'] = 'https://example.invalid/untested'
+    commit(root, '.claude-plugin/marketplace.json', json.dumps(catalog))
+    assert guard.publication_errors(root, base=base) == ['invalid_claude_marketplace_routes']

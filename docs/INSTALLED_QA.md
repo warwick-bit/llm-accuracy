@@ -51,7 +51,7 @@ does not certify either Windows scenario. Native Linux is also separate from WSL
 
 ## Desktop skills QA
 
-Use the actual Windows/macOS Desktop application and a fresh test context. Test
+Use the actual Windows/macOS/Linux beta Desktop application and a fresh test context. Test
 Chat and Cowork separately, with only Accuracy and Deterministic Data:
 
 1. Install the candidate stateless packages and verify their source/version.
@@ -66,6 +66,11 @@ Record the actual app version, the two package bindings and the exact
 is required for stateless UI QA. Code-only checks cannot certify these targets.
 Desktop Code UI and Cowork hook execution remain explicitly unverified even
 after these stateless checks pass.
+
+Linux beta needs its supported Ubuntu/Debian desktop environment; Cowork also
+needs working KVM/QEMU virtualisation. Follow the
+[official Linux Desktop requirements](https://code.claude.com/docs/en/desktop-linux).
+WSL terminal QA cannot substitute for this Desktop UI.
 
 ## Review the publication decision
 

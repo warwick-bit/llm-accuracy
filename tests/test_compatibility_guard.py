@@ -1,5 +1,8 @@
 import importlib.util
 import shutil
+import json
+
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -133,3 +136,59 @@ def test_package_binding_changes_only_with_packaged_source(tmp_path):
     packaged = tmp_path / 'plugins/llm-accuracy/README.md'
     packaged.write_text('Synthetic packaged guide change')
     assert guard.package_binding(tmp_path, 'llm-accuracy') != before
+
+
+@pytest.fixture
+def distribution(tmp_path):
+    for folder in ('plugins', '.claude-plugin', '.agents'):
+        shutil.copytree(ROOT / folder, tmp_path / folder, ignore=shutil.ignore_patterns('__pycache__'))
+    return tmp_path
+
+
+@pytest.mark.parametrize('change', ['external', 'dictionary', 'unknown', 'duplicate', 'name',
+                                  'inline_hooks', 'strict_override', 'traversal', 'missing_prefix',
+                                  'null', 'case', 'extra_codex', 'codex_redirect', 'codex_policy'])
+def test_catalog_routes_and_behavior_cannot_reuse_package_attestations(distribution, change):
+    path = distribution / ('.agents/plugins/marketplace.json' if change.startswith(('extra_codex', 'codex_'))
+                           else '.claude-plugin/marketplace.json')
+    value = json.loads(path.read_text())
+    entry = value['plugins'][0]
+    if change == 'external':
+        entry['source'] = 'https://example.invalid/untested'
+    elif change == 'dictionary':
+        entry['source'] = {'source': 'github', 'repo': 'synthetic/untested'}
+    elif change == 'unknown':
+        value['plugins'].append({'name': 'untested', 'source': './plugins/untested'})
+    elif change == 'duplicate':
+        value['plugins'][1] = entry.copy()
+    elif change == 'name':
+        value['name'] = 'untested-marketplace'
+    elif change == 'inline_hooks':
+        entry['hooks'] = {'SessionStart': []}
+    elif change == 'strict_override':
+        entry['strict'] = False
+    elif change == 'traversal':
+        entry['source'] = './plugins/../untested'
+    elif change == 'missing_prefix':
+        entry['source'] = 'plugins/llm-accuracy'
+    elif change == 'null':
+        entry['name'] = None
+    elif change == 'case':
+        entry['name'] = 'LLM-Accuracy'
+    elif change == 'extra_codex':
+        value['plugins'].append(entry.copy())
+    elif change == 'codex_redirect':
+        entry['source']['path'] = './plugins/untested'
+    elif change == 'codex_policy':
+        entry['policy']['installation'] = 'REQUIRED'
+    path.write_text(json.dumps(value))
+    label = 'invalid_codex_marketplace_routes' if 'codex' in change else 'invalid_claude_marketplace_routes'
+    assert label in guard.validate(distribution, guard.candidate(distribution))
+
+
+def test_metadata_only_catalog_edit_keeps_fixed_routes(distribution):
+    path = distribution / '.claude-plugin/marketplace.json'
+    value = json.loads(path.read_text())
+    value['description'] = value['plugins'][0]['description'] = 'Synthetic metadata'
+    path.write_text(json.dumps(value))
+    assert guard.validate(distribution, guard.candidate(distribution)) == []

@@ -24,8 +24,9 @@ the actual Python executable, with no arguments.
 - **Claude Desktop Chat / web chat:** skills-only. No hooks, doctor execution,
   local ledger or evidence capture. Accuracy and Deterministic Data provide
   instructions; executing a local validator requires a separate capable host.
-  Desktop itself is a Windows/macOS product; WSL/Linux users use Code or web.
-- **Cowork on Windows/macOS:** stateless Accuracy and Deterministic Data only.
+  Desktop exists on Windows/macOS and Linux beta; each UI needs its own receipt.
+  On WSL, use the Windows Desktop application for Desktop sessions.
+- **Cowork on Windows/macOS/Linux beta:** stateless Accuracy and Deterministic Data only.
   Candidate hook delivery remains unverified. A stateless skills receipt does
   not certify hooks or Python execution. Do not assume a configured
   desktop Python exists inside Cowork's execution environment. Session Ledger
@@ -73,9 +74,9 @@ After changing any package file, run `python3 scripts/check_compatibility.py
 --write-candidate` to reset all installed-host outcomes to `untested`. Perform
 the actual QA before replacing an outcome. Do not carry forward a pass or edit
 its hash to fit new source. Run the checker in every PR; before a release run
-it with `--release`, which requires all nine installed-host targets: Code on
+it with `--release`, which requires all eleven installed-host targets: Code on
 Linux, WSL, Windows without Git Bash, Windows with Git Bash, and macOS; Desktop
-Chat and Cowork on Windows and macOS. A WSL pass cannot certify another OS.
+Chat and Cowork on Windows, macOS and Linux beta. A WSL pass cannot certify another OS.
 Missing, stale or incomplete evidence fails
 the check. Explicit untested cells are coverage gaps, never support proof.
 
@@ -102,6 +103,10 @@ QA, including Windows, so bindings match the published source. Changing a root
 guide does not change a package binding; changing its packaged README does.
 This guards accidental regressions, not malicious changes by an authorised
 maintainer. Checker, receipt and workflow edits require independent review.
+Both marketplace catalogs must keep the fixed local package routes and package
+identities. Redirected sources, duplicate/unknown packages, inline hook overrides
+and changed Codex installation/authentication policy fail; metadata descriptions
+may change. Existing package QA cannot certify a new catalog source.
 
 The required combined `release-gates` check includes Linux Python 3.9–3.14,
 native Windows Python 3.9/3.14, Git Bash Windows controls, and macOS. The native
@@ -138,6 +143,10 @@ not establish them.
 Official host contracts: [exec hooks](https://code.claude.com/docs/en/hooks),
 [plugin configuration](https://code.claude.com/docs/en/plugins-reference),
 and [plugins in Claude](https://support.claude.com/en/articles/13837440-use-plugins-in-claude).
+Linux Desktop beta provides Chat/Cowork/Code on supported Ubuntu/Debian hosts;
+Cowork additionally needs working virtualisation. Its plugin UI remains
+unverified here. [Linux Desktop requirements](https://code.claude.com/docs/en/desktop-linux)
+were checked on 3 Oct 2026; beta behavior can change.
 
 ## Evidence Memory contention
 

@@ -24,8 +24,8 @@ Linux/WSL, Windows, macOS and Desktop modes must remain explicit. Historical
 receipts are not reused. Read [the compatibility contract](COMPATIBILITY.md)
 and [current outcomes](validation/compatibility-candidate.json) before claiming
 installed-host support. Main is the marketplace delivery branch. Its required
-publication check holds package changes until all nine targets pass: Linux/WSL,
-macOS, both Windows Bash scenarios, and Chat/Cowork on Windows/macOS. This
+publication check holds package changes until all eleven targets pass: Linux/WSL,
+macOS, both Windows Bash scenarios, and Chat/Cowork on Windows/macOS/Linux beta. This
 candidate remains on hold while required installed QA is missing.
 
 Desktop Chat remains skills-only; Cowork supports only the stateless packages

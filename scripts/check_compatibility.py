@@ -11,7 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ('llm-accuracy', 'deterministic-data', 'session-ledger', 'evidence-memory')
 TARGETS = ('code-linux', 'code-wsl', 'code-windows-no-bash', 'code-windows-git-bash', 'code-macos',
-           'desktop-chat-windows', 'desktop-chat-macos', 'cowork-windows', 'cowork-macos')
+           'desktop-chat-windows', 'desktop-chat-macos', 'cowork-windows', 'cowork-macos',
+           'desktop-chat-linux', 'cowork-linux')
 CHECKS = ('clean_install', 'configured_python', 'prompt_delivery', 'upgrade', 'uninstall')
 CHAT_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'no_local_hooks', 'upgrade', 'uninstall')
 COWORK_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'stateless_boundary', 'upgrade', 'uninstall')
@@ -53,8 +54,36 @@ def candidate(root: Path) -> dict:
                              'desktop_code': 'unverified_ui', 'codex_memory': 'experimental_posix_only'}}
 
 
-def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
+def marketplace_errors(root: Path) -> list[str]:
     errors = []
+    claude = json.loads((root / '.claude-plugin/marketplace.json').read_text(encoding='utf-8'))
+    entries = claude.get('plugins') if isinstance(claude, dict) else None
+    if (not isinstance(entries, list) or len(entries) != len(PACKAGES)
+            or claude.get('name') != 'llm-accuracy'
+            or set(claude) - {'$schema', 'name', 'description', 'owner', 'plugins'}
+            or any(not isinstance(row, dict) or set(row) - {'name', 'source', 'description', 'category'}
+                   or row.get('name') not in PACKAGES
+                   or row.get('source') != './plugins/' + row.get('name', '') for row in entries)
+            or {row.get('name') for row in entries} != set(PACKAGES)):
+        errors.append('invalid_claude_marketplace_routes')
+    codex = json.loads((root / '.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
+    entries = codex.get('plugins') if isinstance(codex, dict) else None
+    if (not isinstance(entries, list) or len(entries) != 1 or not isinstance(entries[0], dict)
+            or codex.get('name') != 'llm-accuracy' or set(codex) - {'name', 'interface', 'plugins'}
+            or set(entries[0]) - {'name', 'source', 'policy', 'category', 'description'}
+            or entries[0].get('name') != 'evidence-memory'
+            or entries[0].get('source') != {'source': 'local', 'path': './plugins/evidence-memory'}
+            or entries[0].get('policy') != {'installation': 'AVAILABLE', 'authentication': 'ON_USE'}):
+        errors.append('invalid_codex_marketplace_routes')
+    for name in PACKAGES:
+        manifest = json.loads((root / 'plugins' / name / '.claude-plugin/plugin.json').read_text(encoding='utf-8'))
+        if not isinstance(manifest, dict) or manifest.get('name') != name:
+            errors.append('invalid_package_identity_' + name)
+    return errors
+
+
+def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
+    errors = marketplace_errors(root)
     if not isinstance(receipt, dict):
         return ['invalid_compatibility_receipt']
     expected = candidate(root)
@@ -117,7 +146,7 @@ def main() -> int:
     try:
         receipt = json.loads(path.read_text())
         errors = validate(args.root, receipt, release=args.release)
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         errors = ['invalid_compatibility_receipt']
     print(json.dumps({'status': 'fail' if errors else 'pass', 'errors': errors}))
     return int(bool(errors))
