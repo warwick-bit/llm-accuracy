@@ -67,6 +67,7 @@ SESSION_FIELDS = (
 INSTALL_CHECKS = (
     "marketplace_add",
     "plugin_install",
+    "python_configured",
     "installed_enabled_version",
     "installed_files_match_source",
 )
@@ -135,14 +136,15 @@ def auth_profile(root: Path) -> dict[str, str]:
 
 
 def run_cli(
-    command: list[str], env: dict[str, str], cwd: Path
+    command: list[str], env: dict[str, str], cwd: Path, input_text: str | None = None
 ) -> subprocess.CompletedProcess:
     """Run one setup command; callers read only exit codes or parsed fields."""
     try:
         return subprocess.run(
-            command, env=env, cwd=cwd, capture_output=True, text=True, timeout=180
+            command, env=env, cwd=cwd, input=input_text,
+            capture_output=True, text=True, encoding="utf-8", timeout=180
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except (OSError, subprocess.TimeoutExpired, UnicodeError):
         return subprocess.CompletedProcess(command, -1, "", "")
 
 
@@ -214,6 +216,14 @@ def session_command(
     ]
     if plugin_dir is not None:
         command.extend(["--setting-sources", "", "--plugin-dir", str(plugin_dir)])
+        manifest = json.loads(
+            (plugin_dir / ".claude-plugin/plugin.json").read_text(encoding="utf-8")
+        )
+        if "python_executable" not in manifest.get("userConfig", {}):
+            raise ValueError("archive is missing the required Python option")
+        command.extend(["--settings", json.dumps({"pluginConfigs": {
+            manifest["name"]: {"options": {"python_executable": sys.executable}}
+        }})])
     return command
 
 
@@ -268,6 +278,11 @@ def run_smoke(claude: str, model: str, timeout: int, live: bool) -> dict:
         checks["marketplace_add"] = add.returncode == 0
         install = run_cli([claude, "plugin", "install", plugin_id], env, work)
         checks["plugin_install"] = install.returncode == 0
+        configure = run_cli(
+            [claude, "plugin", "configure", plugin_id, "--values-stdin"],
+            env, work, json.dumps({"python_executable": sys.executable}),
+        )
+        checks["python_configured"] = configure.returncode == 0
         listing = run_cli([claude, "plugin", "list", "--json"], env, work)
         entry = installed_entry(listing.stdout, plugin_id)
         checks["installed_enabled_version"] = (

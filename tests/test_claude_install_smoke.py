@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -158,6 +159,9 @@ def test_receipt_passes_only_when_every_gate_passes():
     )
     assert smoke.receipt_passed({**checks, "isolated_cleanup": False}) is False
     assert smoke.receipt_passed({**checks, "plugin_install": False}) is False
+    assert smoke.receipt_passed({**checks, "python_configured": False}) is False
+    missing = {key: value for key, value in checks.items() if key != "python_configured"}
+    assert smoke.receipt_passed(missing) is False
     skipped = {
         key: value for key, value in checks.items() if not isinstance(value, dict)
     }
@@ -212,21 +216,33 @@ def test_invalid_model_is_rejected_before_any_host_call(monkeypatch, capsys):
 
 
 def test_archive_session_loads_only_the_extracted_plugin(tmp_path):
+    (tmp_path / ".claude-plugin").mkdir()
+    (tmp_path / ".claude-plugin/plugin.json").write_text(json.dumps({
+        "name": "synthetic-accuracy", "userConfig": {"python_executable": {}}
+    }), encoding="utf-8")
     command = smoke.session_command("/opt/candidate/claude", "sonnet", tmp_path)
     assert command[0] == "/opt/candidate/claude"
     assert command[command.index("--setting-sources") + 1] == ""
     assert command[command.index("--plugin-dir") + 1] == str(tmp_path)
+    settings = json.loads(command[command.index("--settings") + 1])
+    assert settings == {"pluginConfigs": {
+        "synthetic-accuracy": {"options": {"python_executable": sys.executable}}
+    }}
 
 
-def fake_host(monkeypatch, tmp_path, list_code=0):
+def fake_host(monkeypatch, tmp_path, list_code=0, configure_code=0):
     """Replace every host boundary; return the commands the smoke issued."""
     commands = []
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "auth"))
     monkeypatch.setattr(smoke, "tracked_plugin_files", lambda plugin: [])
     monkeypatch.setattr(smoke, "host_version", lambda claude: "2.1.287 (Claude Code)")
 
-    def run_cli(command, env, cwd):
+    def run_cli(command, env, cwd, input_text=None):
         commands.append(command)
+        if command[1:3] == ["plugin", "configure"]:
+            assert json.loads(input_text) == {"python_executable": sys.executable}
+            assert Path(env["CLAUDE_CONFIG_DIR"]).name == "profile"
+            return subprocess.CompletedProcess(command, configure_code, "", "")
         if command[1:3] != ["plugin", "list"]:
             return subprocess.CompletedProcess(command, 0, "", "")
         installed = Path(env["CLAUDE_CONFIG_DIR"]) / "plugins/cache/llm-accuracy"
@@ -243,6 +259,9 @@ def fake_host(monkeypatch, tmp_path, list_code=0):
         output.parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(output, "w") as bundle:
             bundle.writestr("synthetic.txt", "synthetic")
+            bundle.writestr(".claude-plugin/plugin.json", json.dumps({
+                "name": "llm-accuracy", "userConfig": {"python_executable": {}}
+            }))
         return output
 
     def communicate(command, cwd, env, stdin, timeout):
@@ -265,6 +284,40 @@ def test_every_command_uses_the_selected_executable(monkeypatch, tmp_path):
     assert sum("--plugin-dir" in command for command in sessions) == 1
     assert receipt["checks"]["archive_session"]["passed"] is True
     assert receipt["checks"]["isolated_cleanup"] is True
+    assert receipt["checks"]["python_configured"] is True
+    configure = [command for command in commands if command[1:3] == ["plugin", "configure"]]
+    assert configure == [["/opt/candidate/claude", "plugin", "configure",
+                          smoke.marketplace_plugin_id(), "--values-stdin"]]
+
+
+def test_failed_python_configuration_blocks_receipt(monkeypatch, tmp_path):
+    fake_host(monkeypatch, tmp_path, configure_code=1)
+    receipt = smoke.run_smoke("/opt/candidate/claude", "sonnet", 30, False)
+    assert receipt["checks"]["python_configured"] is False
+    assert receipt["passed"] is False
+
+
+def test_configure_input_is_literal_and_bounded(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(smoke.subprocess, "run", lambda *a, **k: calls.append((a, k)))
+    python = "C:/Python's smart ’ path/日本/python.exe"
+    smoke.run_cli(["claude", "plugin", "configure", "x", "--values-stdin"],
+                  {"CLAUDE_CONFIG_DIR": str(tmp_path)}, tmp_path,
+                  json.dumps({"python_executable": python}))
+    assert json.loads(calls[0][1]["input"]) == {"python_executable": python}
+    assert calls[0][1]["timeout"] == 180
+    assert calls[0][1]["text"] is True
+    assert calls[0][1]["encoding"] == "utf-8"
+    assert "shell" not in calls[0][1]
+
+
+def test_cli_decode_failure_fails_without_echo(monkeypatch, tmp_path):
+    def fail(*args, **kwargs):
+        raise UnicodeDecodeError("utf-8", b"private-needle\xff", 14, 15, "invalid")
+    monkeypatch.setattr(smoke.subprocess, "run", fail)
+    result = smoke.run_cli(["claude", "plugin", "configure"], {}, tmp_path, "{}")
+    assert result.returncode == -1
+    assert result.stdout == result.stderr == ""
 
 
 def test_failed_listing_is_not_enabled_version_evidence(monkeypatch, tmp_path):

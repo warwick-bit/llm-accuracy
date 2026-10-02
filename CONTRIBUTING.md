@@ -29,7 +29,9 @@ It installs the plugin from this checkout through a local-path marketplace into
 an auth-only temporary profile, checks the installed files byte for byte, then
 runs three short Sonnet sessions: installed, installed with the `# fidelity-ok`
 bypass, and the release archive. The receipt holds only counts, booleans and
-hashes. `--skip-live` checks the installation without model calls.
+hashes. It configures the running Python executable only inside the temporary
+profiles, including explicit settings for the archive session. Configuration
+failure blocks the smoke. `--skip-live` checks the installation without model calls.
 
 Keep the plugins generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
