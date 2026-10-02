@@ -46,7 +46,6 @@ from host_probe import (  # noqa: E402
     CONTROL_VARS,
     _termination_cleanup,
     communicate,
-    run_probe,
 )
 
 SCOPE = "fresh_profile_local_marketplace_and_archive"
@@ -185,9 +184,15 @@ def installed_mismatches(
     return count
 
 
-def session_command(claude: str, model: str) -> list[str]:
-    """Load the profile's installed plugins with no tools, MCPs or saved session."""
-    return [
+def session_command(
+    claude: str, model: str, plugin_dir: Path | None = None
+) -> list[str]:
+    """Run one no-tool, no-MCP turn without saving the session.
+
+    Without `plugin_dir` the profile's settings load its installed plugins. With
+    it, profile settings are ignored so only that plugin directory loads.
+    """
+    command = [
         claude,
         "--print",
         "--input-format",
@@ -207,6 +212,9 @@ def session_command(claude: str, model: str) -> list[str]:
         "--max-budget-usd",
         "1.00",
     ]
+    if plugin_dir is not None:
+        command.extend(["--setting-sources", "", "--plugin-dir", str(plugin_dir)])
+    return command
 
 
 def stream_input(prompt: str) -> str:
@@ -263,7 +271,9 @@ def run_smoke(claude: str, model: str, timeout: int, live: bool) -> dict:
         listing = run_cli([claude, "plugin", "list", "--json"], env, work)
         entry = installed_entry(listing.stdout, plugin_id)
         checks["installed_enabled_version"] = (
-            entry.get("enabled") is True and entry.get("version") == version
+            listing.returncode == 0
+            and entry.get("enabled") is True
+            and entry.get("version") == version
         )
         installed = path_inside(entry.get("installPath"), profile)
         checks["tracked_files"] = len(tracked)
@@ -296,8 +306,12 @@ def run_smoke(claude: str, model: str, timeout: int, live: bool) -> dict:
             extracted = root / "archive" / PLUGIN.name
             with zipfile.ZipFile(archive) as bundle:
                 bundle.extractall(extracted)
-            result = run_probe(
-                [TECHNICAL_PROMPT], extracted, model=model, timeout=timeout
+            result = communicate(
+                session_command(claude, model, extracted),
+                work,
+                auth_profile(root / "archive"),
+                stream_input(TECHNICAL_PROMPT),
+                timeout,
             )
             checks["archive_session"] = session_summary(result, 1)
     checks["isolated_cleanup"] = not root.exists()
@@ -358,11 +372,22 @@ def main(arguments: Sequence[str] | None = None) -> int:
         # Raised for uncommitted plugin changes or a failed boundary check.
         print(f"claude_install_smoke: {error}", file=sys.stderr)
         return 2
+    except (OSError, KeyError, subprocess.SubprocessError) as error:
+        # Name the failure class only: messages can carry local paths.
+        print(f"claude_install_smoke: {type(error).__name__}", file=sys.stderr)
+        return 2
     text = json.dumps(receipt, indent=2) + "\n"
-    if options.receipt:
-        options.receipt.parent.mkdir(parents=True, exist_ok=True)
-        options.receipt.write_text(text, encoding="utf-8")
     print(text, end="")
+    if options.receipt:
+        try:
+            options.receipt.parent.mkdir(parents=True, exist_ok=True)
+            options.receipt.write_text(text, encoding="utf-8")
+        except OSError as error:
+            print(
+                f"claude_install_smoke: receipt not written ({type(error).__name__})",
+                file=sys.stderr,
+            )
+            return 2
     return 0 if receipt["passed"] else 1
 
 

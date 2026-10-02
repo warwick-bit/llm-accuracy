@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -207,3 +209,100 @@ def test_invalid_model_is_rejected_before_any_host_call(monkeypatch, capsys):
     )
     assert smoke.main(["--model", "sonnet; rm -rf /"]) == 2
     assert "invalid model" in capsys.readouterr().err
+
+
+def test_archive_session_loads_only_the_extracted_plugin(tmp_path):
+    command = smoke.session_command("/opt/candidate/claude", "sonnet", tmp_path)
+    assert command[0] == "/opt/candidate/claude"
+    assert command[command.index("--setting-sources") + 1] == ""
+    assert command[command.index("--plugin-dir") + 1] == str(tmp_path)
+
+
+def fake_host(monkeypatch, tmp_path, list_code=0):
+    """Replace every host boundary; return the commands the smoke issued."""
+    commands = []
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "auth"))
+    monkeypatch.setattr(smoke, "tracked_plugin_files", lambda plugin: [])
+    monkeypatch.setattr(smoke, "host_version", lambda claude: "2.1.287 (Claude Code)")
+
+    def run_cli(command, env, cwd):
+        commands.append(command)
+        if command[1:3] != ["plugin", "list"]:
+            return subprocess.CompletedProcess(command, 0, "", "")
+        installed = Path(env["CLAUDE_CONFIG_DIR"]) / "plugins/cache/llm-accuracy"
+        installed.mkdir(parents=True)
+        entry = {
+            "id": smoke.marketplace_plugin_id(),
+            "version": smoke.plugin_version(smoke.PLUGIN),
+            "enabled": True,
+            "installPath": str(installed),
+        }
+        return subprocess.CompletedProcess(command, list_code, json.dumps([entry]), "")
+
+    def build_archive(output, plugin):
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(output, "w") as bundle:
+            bundle.writestr("synthetic.txt", "synthetic")
+        return output
+
+    def communicate(command, cwd, env, stdin, timeout):
+        commands.append(command)
+        return probe(fidelity_hook_responses=0 if "fidelity-ok" in stdin else 1)
+
+    monkeypatch.setattr(smoke, "run_cli", run_cli)
+    monkeypatch.setattr(smoke, "build_archive", build_archive)
+    monkeypatch.setattr(smoke, "communicate", communicate)
+    return commands
+
+
+def test_every_command_uses_the_selected_executable(monkeypatch, tmp_path):
+    commands = fake_host(monkeypatch, tmp_path)
+    receipt = smoke.run_smoke("/opt/candidate/claude", "sonnet", 30, True)
+    assert receipt["passed"] is True
+    assert {command[0] for command in commands} == {"/opt/candidate/claude"}
+    sessions = [command for command in commands if "--print" in command]
+    assert len(sessions) == 3
+    assert sum("--plugin-dir" in command for command in sessions) == 1
+    assert receipt["checks"]["archive_session"]["passed"] is True
+    assert receipt["checks"]["isolated_cleanup"] is True
+
+
+def test_failed_listing_is_not_enabled_version_evidence(monkeypatch, tmp_path):
+    fake_host(monkeypatch, tmp_path, list_code=1)
+    receipt = smoke.run_smoke("/opt/candidate/claude", "sonnet", 30, False)
+    assert receipt["checks"]["installed_enabled_version"] is False
+    assert receipt["passed"] is False
+
+
+def test_skip_live_makes_no_model_calls(monkeypatch, tmp_path):
+    commands = fake_host(monkeypatch, tmp_path)
+    receipt = smoke.run_smoke("/opt/candidate/claude", "sonnet", 30, False)
+    assert not [command for command in commands if "--print" in command]
+    assert receipt["checks"]["live_sessions"] == "skipped"
+    assert receipt["passed"] is True
+
+
+def test_filesystem_failure_reports_class_without_path(monkeypatch, capsys):
+    monkeypatch.setattr(smoke.shutil, "which", lambda name: "/opt/candidate/claude")
+
+    def fail(*args):
+        raise PermissionError(13, "denied", "/synthetic-home/.claude/.credentials.json")
+
+    monkeypatch.setattr(smoke, "run_smoke", fail)
+    assert smoke.main([]) == 2
+    error = capsys.readouterr().err
+    assert "PermissionError" in error
+    assert "synthetic-home" not in error
+
+
+def test_receipt_write_failure_reports_class_without_path(
+    monkeypatch, tmp_path, capsys
+):
+    monkeypatch.setattr(smoke.shutil, "which", lambda name: "/opt/candidate/claude")
+    monkeypatch.setattr(smoke, "run_smoke", lambda *args: {"passed": True})
+    blocked = tmp_path / "synthetic-receipt-dir"
+    blocked.mkdir()
+    assert smoke.main(["--receipt", str(blocked)]) == 2
+    error = capsys.readouterr().err
+    assert "receipt not written" in error
+    assert "synthetic-receipt-dir" not in error
