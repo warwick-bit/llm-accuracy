@@ -10,7 +10,10 @@ After session-level disable, clear or begin-plan, the retained cutoff prevents
 earlier rows from being indexed on an explicit resume.
 
 Install it with `/plugin install evidence-memory@llm-accuracy`, then enable the
-plugin in `/plugin` and restart Claude Code or run `/reload-plugins`. Capture
+plugin in `/plugin`. Set its **Python executable** option in `/config` to a
+working Python 3.9+ executable, with no arguments, before restarting Claude Code
+or running `/reload-plugins`. This option is also required when upgrading to
+the source candidate. Capture
 begins at the next session start or prompt. `/evidence-memory:memory disable`
 stops capture and deletes that session's evidence and state. `begin-plan` and
 `clear` do the same. Each deletion retains a fresh local cutoff marker so

@@ -10,9 +10,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ('llm-accuracy', 'deterministic-data', 'session-ledger', 'evidence-memory')
-TARGETS = ('code-linux', 'code-wsl', 'code-windows', 'code-macos',
+TARGETS = ('code-linux', 'code-wsl', 'code-windows-no-bash', 'code-windows-git-bash', 'code-macos',
            'desktop-chat-windows', 'desktop-chat-macos', 'cowork-windows', 'cowork-macos')
 CHECKS = ('clean_install', 'configured_python', 'prompt_delivery', 'upgrade', 'uninstall')
+CHAT_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'no_local_hooks', 'upgrade', 'uninstall')
+COWORK_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'stateless_boundary', 'upgrade', 'uninstall')
+
+
+def target_checks(target: str) -> tuple:
+    if target.startswith('desktop-chat-'):
+        return CHAT_CHECKS
+    if target.startswith('cowork-'):
+        return COWORK_CHECKS
+    if target == 'code-windows-no-bash':
+        return CHECKS + ('git_bash_absent',)
+    if target == 'code-windows-git-bash':
+        return CHECKS + ('git_bash_present',)
+    return CHECKS
+
+
+def target_packages(packages: dict, target: str) -> dict:
+    names = PACKAGES if target.startswith('code-') else PACKAGES[:2]
+    return {name: packages[name] for name in names}
 
 
 def package_binding(root: Path, name: str) -> dict:
@@ -26,15 +45,18 @@ def package_binding(root: Path, name: str) -> dict:
 
 
 def candidate(root: Path) -> dict:
-    return {'schema_version': 1, 'minimum_claude_code': '2.1.287',
+    return {'schema_version': 2, 'minimum_claude_code': '2.1.287',
             'python_minimum': '3.9', 'packages': {name: package_binding(root, name) for name in PACKAGES},
             'targets': {target: {'outcome': 'untested'} for target in TARGETS},
             'capabilities': {'code': 'configured_exec_hooks', 'desktop_chat': 'skills_only',
-                             'cowork': 'stateless_plugins_only', 'codex_memory': 'experimental_posix_only'}}
+                             'cowork': 'stateless_skills_only_unverified_hooks',
+                             'desktop_code': 'unverified_ui', 'codex_memory': 'experimental_posix_only'}}
 
 
 def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
     errors = []
+    if not isinstance(receipt, dict):
+        return ['invalid_compatibility_receipt']
     expected = candidate(root)
     for key in ('schema_version', 'minimum_claude_code', 'python_minimum', 'packages', 'capabilities'):
         if receipt.get(key) != expected[key]:
@@ -58,13 +80,13 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
                     or not re.fullmatch(r'\d+\.\d+\.\d+', python)
                     or tuple(map(int, python.split('.'))) < (3, 9, 0)):
                 errors.append('missing_or_unsupported_python_version_' + target)
-            if row.get('packages') != expected['packages']:
+            if row.get('packages') != target_packages(expected['packages'], target):
                 errors.append('stale_target_packages_' + target)
-            if not isinstance(checks, dict) or set(checks) != set(CHECKS) or any(v is not True for v in checks.values()):
+            if not isinstance(checks, dict) or set(checks) != set(target_checks(target)) or any(v is not True for v in checks.values()):
                 errors.append('missing_checks_' + target)
     if release:
-        for target in TARGETS[:4]:
-            if targets[target].get('outcome') != 'pass':
+        for target in TARGETS:
+            if not isinstance(targets[target], dict) or targets[target].get('outcome') != 'pass':
                 errors.append('clean_installed_smoke_required_' + target)
     for name in ('llm-accuracy', 'session-ledger', 'evidence-memory'):
         directory = root / 'plugins' / name

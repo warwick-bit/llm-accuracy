@@ -21,7 +21,7 @@ still be the wrong answer. Most people should install only this plugin first.
 The basic loop is:
 
 1. You ask Claude a normal question.
-2. A Claude Code or Cowork hook adds a short general evidence reminder on each
+2. A configured Claude Code hook adds a short general evidence reminder on each
    non-empty prompt, including technical requests and brief follow-ups.
 3. Claude is asked to clarify material ambiguity or keep the answer aligned
    with the source's population, definition, time window, freshness and
@@ -33,6 +33,9 @@ The hooks are advisory. They help Claude reason more carefully, but they do not
 independently verify the source or guarantee the final answer. **Deterministic
 Data** is the separate plugin for applying your own reviewed definitions and
 declared source routes to repeat data questions.
+
+For this source candidate, Cowork hook delivery remains unverified. Desktop Chat
+uses skills only. See [platform capabilities and current QA](docs/COMPATIBILITY.md).
 
 The general reminder asks Claude to verify measurements and coverage, test
 competing causes, and revisit dependent conclusions when correcting a diagnosis.
@@ -96,8 +99,8 @@ and source. Then install LLM Accuracy.
 That answer sounds useful, but it silently chose the revenue definition,
 period, currency and source.
 
-You need a current, signed-in Claude Code installation with the `plugin`
-subcommand. If `/plugin` is unavailable, update Claude Code first; the
+This source candidate needs signed-in Claude Code **2.1.287+** and a working
+**Python 3.9+** executable. If `/plugin` is unavailable, update Claude Code first; the
 [installation guide](docs/INSTALL.md#claude-code-terminal-or-ide--full-plugin)
 covers the full prerequisites and troubleshooting path.
 
@@ -107,6 +110,12 @@ Install it in Claude Code:
 claude plugin marketplace add warwick-bit/llm-accuracy --scope user
 claude plugin install llm-accuracy@llm-accuracy --scope user
 ```
+
+After installing, open `/config` in Claude Code and set LLM Accuracy's **Python
+executable** option. Use a verified `python3` on Linux/WSL/macOS, or a verified
+`python` or absolute `python.exe` path on native Windows. Supply one executable,
+with no arguments; Git Bash is optional. Check that executable's `--version`
+first. Configuration is required for hooks to run.
 
 Run `/reload-plugins`, then ask the same question again:
 
@@ -388,8 +397,8 @@ Choose the installation path that matches your Claude environment.
   hooks. Follow the [terminal guide](docs/INSTALL.md#claude-code-terminal-or-ide--full-plugin).
 - **Claude Desktop Chat:** upload the release ZIP for skills-only use. The
   automatic advisory hooks do not run in chat.
-- **Claude Cowork:** upload the same ZIP for the full skills-and-hooks
-  experience.
+- **Claude Cowork:** upload the stateless plugin ZIP for skills. Current
+  candidate hook delivery is unverified; local persistence plugins are unsupported.
 - **Claude chat on the web:** add the GitHub marketplace through
   **Customize → Plugins** for skills-only use; Chat does not run the advisory
   hooks. Team and Enterprise owners can alternatively distribute it through an

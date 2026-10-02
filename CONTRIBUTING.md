@@ -8,6 +8,14 @@ Run `python3 scripts/check_compatibility.py`, keep all OS/host cells explicit,
 and record current installed-host QA before a release (`--release`). Tests on
 Windows with Git Bash do not establish support without it; Chat is skills-only.
 
+Main is the marketplace delivery branch. Protected changes require installed
+QA for every target before merging, not just before tagging. Run
+`python3 scripts/check_marketplace_publication.py --base-ref BASE_SHA` using
+the actual PR base commit. Main/tag builds use `--release`. Keep publication
+in the required CI aggregate; independently review checker/workflow/receipt
+changes. Chat/Cowork use their own skills checks, and Windows requires separate
+with/without Git Bash receipts. Leave unavailable targets untested.
+
 Never include credentials, customer data, raw prompts, provider responses, logs,
 or private transcripts. Replace names, IDs, amounts, dates, and examples with
 synthetic equivalents.

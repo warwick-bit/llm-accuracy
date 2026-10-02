@@ -1,0 +1,116 @@
+"""Bundle QA must reject false proof and keep host content out of reports."""
+import importlib.util
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location('bundle_smoke', ROOT / 'scripts/claude_bundle_smoke.py')
+bundle = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(bundle)
+
+
+def test_installed_byte_missing_and_extra_files_are_failures(tmp_path):
+    source, profile = tmp_path / 'source', tmp_path / 'profile'
+    entries = []
+    for name in bundle.PACKAGES:
+        origin, installed = source / 'plugins' / name, profile / name
+        for directory in (origin, installed):
+            (directory / '.claude-plugin').mkdir(parents=True)
+            (directory / '.claude-plugin/plugin.json').write_text('{"version":"1.0.0"}')
+            (directory / 'source.py').write_text('synthetic original')
+        entries.append({'id': name + '@llm-accuracy', 'version': '1.0.0', 'installPath': str(installed)})
+    listing = json.dumps(entries)
+    assert bundle.installation_matches(listing, source, profile)
+    changed = profile / bundle.PACKAGES[0] / 'source.py'
+    changed.write_text('synthetic wrong byte')
+    assert not bundle.installation_matches(listing, source, profile)
+    changed.unlink()
+    assert not bundle.installation_matches(listing, source, profile)
+    changed.write_text('synthetic original')
+    (changed.parent / 'extra.py').write_text('synthetic extra')
+    assert not bundle.installation_matches(listing, source, profile)
+
+
+def test_installation_path_must_be_inside_temporary_profile(tmp_path):
+    listing = json.dumps([{'id': 'llm-accuracy@llm-accuracy', 'version': '1.0.0',
+                           'installPath': str(ROOT / 'plugins/llm-accuracy')}])
+    assert not bundle.installation_matches(listing, ROOT, tmp_path)
+
+
+def test_missing_python_configuration_fails_without_reporting_contents(tmp_path):
+    (tmp_path / 'settings.json').write_text('{"private":"SYNTHETIC_SENTINEL"}')
+    options = bundle.python_options(tmp_path)
+    assert all(value is None for value in options.values())
+    assert 'SYNTHETIC_SENTINEL' not in json.dumps(options)
+
+
+def test_one_remaining_bundle_registration_is_not_uninstalled():
+    assert bundle.bundle_removed('[]')
+    assert not bundle.bundle_removed('[{"id":"evidence-memory@llm-accuracy"}]')
+
+
+@pytest.mark.parametrize('count', [0, 2])
+def test_missing_or_duplicate_prompt_delivery_cannot_pass(count):
+    report = {'status': 'ok', 'result_count': 1, 'fidelity_hook_responses': count,
+              'host_inventory': {'accuracy_plugin_count': 1, 'tool_count': 0, 'mcp_count': 0}}
+    assert not bundle.delivery_passed(report)
+    report['fidelity_hook_responses'] = 1
+    assert bundle.delivery_passed(report)
+
+
+def test_live_prompt_with_tools_or_mcps_cannot_pass():
+    report = {'status': 'ok', 'result_count': 1, 'fidelity_hook_responses': 1,
+              'host_inventory': {'accuracy_plugin_count': 1, 'tool_count': 1, 'mcp_count': 0}}
+    assert not bundle.delivery_passed(report)
+    report['host_inventory'].update(tool_count=0, mcp_count=1)
+    assert not bundle.delivery_passed(report)
+
+
+def test_partial_installation_smoke_is_not_success(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(bundle, 'run_smoke', lambda *a, **k: {'status': 'partial', 'partial': True})
+    assert bundle.main(['--baseline', 'synthetic', '--receipt', str(tmp_path / 'receipt.json'), '--skip-live']) == 2
+    assert json.loads(capsys.readouterr().out)['partial'] is True
+
+
+def test_host_failure_never_echoes_raw_sensitive_content(tmp_path, monkeypatch, capsys):
+    def fail(*args, **kwargs):
+        raise ValueError('SYNTHETIC_SENTINEL settings stdout stderr answer')
+    monkeypatch.setattr(bundle, 'run_smoke', fail)
+    path = tmp_path / 'receipt.json'
+    assert bundle.main(['--baseline', 'synthetic', '--receipt', str(path)]) == 1
+    assert 'SYNTHETIC_SENTINEL' not in capsys.readouterr().out + path.read_text()
+
+
+def test_bundle_source_rejects_dirty_and_untracked_package_bytes(tmp_path, monkeypatch):
+    def git(*args):
+        return subprocess.run(['git', '-C', str(tmp_path), *args], capture_output=True, check=True)
+    git('init', '-q')
+    git('config', 'user.name', 'Synthetic QA')
+    git('config', 'user.email', 'qa@example.invalid')
+    for name in bundle.PACKAGES:
+        folder = tmp_path / 'plugins' / name
+        folder.mkdir(parents=True)
+        (folder / 'source.py').write_text('synthetic original')
+    git('add', '.')
+    git('-c', 'commit.gpgsign=false', 'commit', '-qm', 'synthetic fixture')
+    monkeypatch.setattr(bundle, 'ROOT', tmp_path)
+    monkeypatch.setattr(bundle.smoke, 'ROOT', tmp_path)
+    assert bundle.require_committed_source() == git('rev-parse', 'HEAD').stdout.decode().strip()
+    file = tmp_path / 'plugins/llm-accuracy/source.py'
+    file.write_text('synthetic dirty')
+    with pytest.raises(ValueError):
+        bundle.require_committed_source()
+    file.write_text('synthetic original')
+    (file.parent / 'extra.py').write_text('synthetic untracked')
+    with pytest.raises(ValueError, match='bundle_source_not_committed'):
+        bundle.require_committed_source()
+
+
+def test_missing_upgrade_baseline_fails_before_host_runs(monkeypatch):
+    monkeypatch.setattr(bundle, 'require_committed_source', lambda: 'synthetic')
+    monkeypatch.setattr(bundle.smoke, 'auth_profile', lambda *a: pytest.fail('host setup ran'))
+    with pytest.raises(ValueError, match='publication_base_unavailable'):
+        bundle.run_smoke('synthetic-host', 'synthetic-missing-baseline')

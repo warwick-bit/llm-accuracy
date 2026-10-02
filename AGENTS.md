@@ -50,3 +50,12 @@ release, also run it with `--release`. Reset stale candidate receipts to unteste
 never copy a historical pass onto changed source. Preserve native Windows without
 Git Bash CI and its no-skip check. Skills must not assume POSIX preprocessing or
 local execution in Chat. Keep Codex manifests free of Claude userConfig placeholders.
+
+Main publishes the marketplace. Before merging protected source, run
+`python3 scripts/check_marketplace_publication.py --base-ref BASE_SHA` with the
+actual PR base commit; main/tag builds use `--release`. Keep publication in the
+required `release-gates` aggregate and fail on missing or skipped jobs. Its
+narrow docs/test exemptions do not cover package READMEs, catalogs or receipts.
+Independently review checker/workflow/receipt changes. Require both Windows
+Bash scenarios and host-specific Chat/Cowork QA; terminal receipts do not
+certify Desktop Code UI. Never manufacture a pass to clear a publication hold.

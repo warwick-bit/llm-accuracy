@@ -28,7 +28,9 @@ In Claude Code, run these commands separately:
 The plugin is deliberately disabled by default because it persists local
 conversation text. Installing it alone does not confirm that its hooks run.
 Open `/plugin`, show disabled plugins if needed, enable Session Ledger, and
-check that the Errors tab is empty. Then exit and start a new Claude Code
+check that the Errors tab is empty. Set this plugin's **Python executable** option
+in `/config` to a working Python 3.9+ executable, with no arguments.
+Then exit and start a new Claude Code
 session. After updating Claude Code itself, check the new session's version;
 an already-open process continues to use its previous version.
 
@@ -40,8 +42,9 @@ claude plugin marketplace update llm-accuracy
 claude plugin update session-ledger@llm-accuracy
 ```
 
-Confirm version 0.2.7 or later and the enabled state in `/plugin`, then restart
-Claude Code. This production plugin is separate from any temporary QA plugin;
+Confirm the installed version and enabled state in `/plugin`. Upgrading to the
+source candidate also requires its Python option; set it in `/config` before
+restarting Claude Code. This plugin is separate from any temporary QA plugin;
 close the QA launcher and use your normal Claude Code launch for everyday work.
 
 ## What it does

@@ -35,7 +35,12 @@ mean the underlying claim is correct.
 
 ## Day-to-day use
 
-Once installed and activated, use Claude Code or Cowork normally. A general
+In Claude Code, configure this plugin's **Python executable** option in `/config`
+before reloading. Use a working Python 3.9+ executable with no arguments.
+Cowork stateless skills are a separate target; this source candidate's hook
+delivery in Cowork is unverified and Desktop Chat runs no hooks.
+
+Once installed, configured and activated in Claude Code, a general
 fidelity reminder covers each non-empty prompt, including technical requests,
 file paths, implementation requests and brief follow-ups. It asks Claude to
 verify the measurement, population and environment, establish coverage before

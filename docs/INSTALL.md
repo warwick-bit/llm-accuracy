@@ -66,7 +66,8 @@ claude plugin marketplace add warwick-bit/llm-accuracy --scope user
 claude plugin install llm-accuracy@llm-accuracy --scope user
 ```
 
-Start or return to Claude Code, then run:
+Start or return to Claude Code. Open `/config` and set LLM Accuracy's **Python
+executable** option to the verified executable from the prerequisites. Then run:
 
 ```text
 /reload-plugins
@@ -149,8 +150,9 @@ claude plugin install session-ledger@llm-accuracy --scope user
 claude plugin enable session-ledger@llm-accuracy --scope user
 ```
 
-Then run `/reload-plugins` in an active Claude Code session, or start a new
-one. After that, use Claude normally: the ledger starts automatically with the
+Before reloading, open `/config` and set Session Ledger's **Python executable**
+option; each hook plugin has its own option. Then run `/reload-plugins` in an
+active Claude Code session, or start a new one. After that, use Claude normally: the ledger starts automatically with the
 session, captures a bounded rolling user/assistant session record on user-prompt
 and turn-complete hooks, flushes it before context compaction, and restores it
 only when that same compacted session continues. It never carries into a
@@ -206,7 +208,8 @@ claude plugin install evidence-memory@llm-accuracy --scope user
 claude plugin enable evidence-memory@llm-accuracy --scope user
 ```
 
-Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
+Open `/config` and set Evidence Memory's **Python executable** option before
+reloading. Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
 start or prompt, with a fresh cutoff that excludes earlier transcript rows.
 The `/evidence-memory:memory` skill provides search, lookup, correction,
 `disable`, `begin-plan`, and `clear`. Those deletion commands stop capture for
@@ -221,7 +224,10 @@ capture.
 
 ### Update or remove
 
-To update to the latest released versions:
+Marketplace updates read the repository's default branch, currently `main`.
+They can make a source candidate installable before a GitHub release is tagged;
+check [current compatibility evidence](COMPATIBILITY.md) before upgrading.
+To update the marketplace versions:
 
 ```bash
 claude plugin marketplace update llm-accuracy
@@ -231,8 +237,13 @@ claude plugin update session-ledger@llm-accuracy --scope user
 claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
-Run the optional plugin updates only for plugins you installed. Then run
-`/reload-plugins` in an active Claude Code session.
+Run the optional plugin updates only for plugins you installed. On upgrade to
+Accuracy 0.7.0, Ledger 0.3.0 or Memory 0.4.0, open `/config` and set each installed
+hook plugin's **Python executable** option before reloading. Then run
+`/reload-plugins` in an active Claude Code session. The read-only command
+`claude plugin configure PLUGIN@llm-accuracy` shows options and which are unset;
+it does not save values without `--values-stdin`. For headless configuration,
+see [the compatibility guide](COMPATIBILITY.md#configure-python-before-starting-a-session).
 
 Marketplace auto-update is off by default for third-party marketplaces like
 this one. To opt in, run `/plugin`, open **Marketplaces**, select
@@ -277,11 +288,13 @@ In the **Chat** tab, LLM Accuracy's skills are available, including self-audit.
 The automatic advisory hooks do not run in chat, so use the skill when you want
 an explicit check of an earlier answer.
 
-### Claude Cowork — full plugin
+### Claude Cowork — stateless plugin candidate
 
-In **Cowork**, the plugin's skills and advisory hooks can run. The hook behavior
-is the same general-plus-targeted, non-blocking behavior described for Claude
-Code terminal. The new general mode still needs a Cowork runtime smoke.
+In **Cowork**, use only stateless LLM Accuracy or Deterministic Data. The current
+candidate's configured Python hook delivery is unverified in Cowork's execution
+environment; do not assume the desktop's Python is available there. Session
+Ledger and Evidence Memory are unsupported. Record a current Cowork smoke before
+claiming automatic reminders work; Desktop Chat remains skills-only.
 
 ## Claude chat on the web — personal marketplace (skills only)
 

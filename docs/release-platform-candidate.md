@@ -23,6 +23,12 @@ mandatory cases. Current candidate source hashes bind installed-host receipts;
 Linux/WSL, Windows, macOS and Desktop modes must remain explicit. Historical
 receipts are not reused. Read [the compatibility contract](COMPATIBILITY.md)
 and [current outcomes](validation/compatibility-candidate.json) before claiming
-installed-host support. Tag releases require installed Code smokes on all four
-OS targets. Desktop Chat remains skills-only; Cowork supports only
-the stateless packages here. Native Codex without a POSIX hook shell is unsupported.
+installed-host support. Main is the marketplace delivery branch. Its required
+publication check holds package changes until all nine targets pass: Linux/WSL,
+macOS, both Windows Bash scenarios, and Chat/Cowork on Windows/macOS. This
+candidate remains on hold while required installed QA is missing.
+
+Desktop Chat remains skills-only; Cowork supports only the stateless packages
+here, with candidate hook delivery unverified. Desktop Code UI is separately
+unverified; terminal receipts do not certify it. Native Codex without a POSIX
+hook shell is unsupported.

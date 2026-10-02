@@ -14,18 +14,20 @@ the actual Python executable, with no arguments.
 
 ## OS and host boundaries
 
-- **Claude Code terminal/IDE, including Desktop's local Code mode:** Linux,
+- **Claude Code terminal/IDE:** Linux,
   WSL, native Windows and macOS use the same exec-form registrations. CI checks
   shipped commands on Linux, Windows with and without Git Bash, and macOS.
   Automated Python tests do not establish installation or delivery in a real
   Claude session. See the current candidate receipt for installed-host results.
+- **Desktop's local Code mode:** candidate only; UI delivery is unverified.
+  A terminal Code receipt does not certify this UI.
 - **Claude Desktop Chat / web chat:** skills-only. No hooks, doctor execution,
   local ledger or evidence capture. Accuracy and Deterministic Data provide
   instructions; executing a local validator requires a separate capable host.
   Desktop itself is a Windows/macOS product; WSL/Linux users use Code or web.
 - **Cowork on Windows/macOS:** stateless Accuracy and Deterministic Data only.
-  Hook capability exists, but the candidate's installed delivery remains
-  unverified until a current smoke is recorded. Do not assume a configured
+  Candidate hook delivery remains unverified. A stateless skills receipt does
+  not certify hooks or Python execution. Do not assume a configured
   desktop Python exists inside Cowork's execution environment. Session Ledger
   and Evidence Memory are unsupported here.
 - **Codex Evidence Memory:** a separate experimental POSIX package, for
@@ -71,15 +73,42 @@ After changing any package file, run `python3 scripts/check_compatibility.py
 --write-candidate` to reset all installed-host outcomes to `untested`. Perform
 the actual QA before replacing an outcome. Do not carry forward a pass or edit
 its hash to fit new source. Run the checker in every PR; before a release run
-it with `--release`, which additionally requires clean installed Code smokes on
-Linux, WSL, native Windows and macOS. A WSL pass cannot certify Windows or macOS.
-Tag builds run the release check. Missing, stale or incomplete evidence fails
+it with `--release`, which requires all nine installed-host targets: Code on
+Linux, WSL, Windows without Git Bash, Windows with Git Bash, and macOS; Desktop
+Chat and Cowork on Windows and macOS. A WSL pass cannot certify another OS.
+Missing, stale or incomplete evidence fails
 the check. Explicit untested cells are coverage gaps, never support proof.
+
+Code receipts bind all four packages and require `clean_install`,
+`configured_python`, `prompt_delivery`, `upgrade`, and `uninstall`. Windows
+additionally requires its own `git_bash_absent` or `git_bash_present` proof.
+Chat receipts bind only Accuracy and Deterministic Data and require
+`clean_install`, `skills_available`, `skill_invocation`, `no_local_hooks`,
+`upgrade`, and `uninstall`. Cowork uses the same stateless packages and checks,
+with `stateless_boundary` instead of `no_local_hooks`.
+
+Main is the marketplace delivery branch: merging package changes publishes
+them before a tag. `scripts/check_marketplace_publication.py --base-ref BASE_SHA`
+requires the release evidence on protected PR changes; main and tag builds use
+`--release` unconditionally. Only ordinary root README/CONTRIBUTING Markdown,
+Markdown under `docs/`, and Python tests under `tests/` are exempt. Package
+READMEs, catalogs, receipts, scripts, workflows, unknown paths, symlinks, and
+deleted or moved protected source remain guarded. Missing, invalid or
+non-ancestor base commits fail closed.
+
+Package hashes cover sorted relative paths and exact source bytes, excluding
+Python caches. Use a clean LF checkout (`core.autocrlf=false`) for installed
+QA, including Windows, so bindings match the published source. Changing a root
+guide does not change a package binding; changing its packaged README does.
+This guards accidental regressions, not malicious changes by an authorised
+maintainer. Checker, receipt and workflow edits require independent review.
 
 The required combined `release-gates` check includes Linux Python 3.9–3.14,
 native Windows Python 3.9/3.14, Git Bash Windows controls, and macOS. The native
 gate verifies mandatory hook cases were present and not skipped. Keep that
 combined check required in branch protection when editing workflow names.
+The publication job is also a mandatory dependency: failure, cancellation or
+skipping must fail the aggregate. Keep strict, up-to-date branch protection.
 
 ## Installed-host QA
 
@@ -91,14 +120,20 @@ host version and Python version, source binding and outcome, without raw logs.
 2. Configure Python, reload, and prove prompt-hook delivery in a fresh session.
    Exercise a path containing spaces/apostrophes/Unicode. Check an invalid
    executable is advisory; restore configuration and prove delivery again.
-3. Upgrade from the previous package and verify saved options, capture cutoff,
-   pause/clear boundaries and exactly-once persistence remain intact.
-4. Uninstall and verify registration removal. For persistence, check default
-   data deletion and deliberate `--keep-data` retention separately.
+3. Upgrade from the previous package and verify versions, registrations and
+   saved options. Record any required new configuration step.
+4. Uninstall and verify registration removal.
 5. Repeat native Windows without Git Bash, Windows with Git Bash, Linux/WSL
    and macOS. For Desktop, record **Chat**, **Code** or **Cowork** separately;
    a Chat skills test cannot certify a Cowork hook. Confirm Chat never claims
    it captured or retrieved local memory. Leave unavailable targets untested.
+
+Use the host-specific check names above for Desktop skills QA. Code checks
+cannot substitute for a Desktop receipt. Synthetic persistence tests separately
+cover capture cutoff, pause/clear boundaries, exactly-once writes and expiry.
+Claims about live installed capture or default deletion versus `--keep-data`
+retention require separate installed-session QA; registration checks alone do
+not establish them.
 
 Official host contracts: [exec hooks](https://code.claude.com/docs/en/hooks),
 [plugin configuration](https://code.claude.com/docs/en/plugins-reference),

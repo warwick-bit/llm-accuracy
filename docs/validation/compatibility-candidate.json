@@ -1,11 +1,11 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "minimum_claude_code": "2.1.287",
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
       "version": "0.7.0",
-      "sha256": "29ead817578ac51b9ae8ef73a90ac793b9a921b7274ae8ee3678c89d453f3113"
+      "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
     },
     "deterministic-data": {
       "version": "0.1.0",
@@ -13,11 +13,11 @@
     },
     "session-ledger": {
       "version": "0.3.0",
-      "sha256": "343250edfe1f54f0ec8a6340377dc87946fbf922c67b1c7bee83839bcd01c45f"
+      "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
     },
     "evidence-memory": {
       "version": "0.4.0",
-      "sha256": "d090f7c51a2e4af774e9a6d55f492647f7c95ee1897c2efcf2d5464aa19039d2"
+      "sha256": "bb988715b18c90def14d3f6114547885420ac222cc27093fe66a261c0620da3e"
     }
   },
   "targets": {
@@ -25,36 +25,12 @@
       "outcome": "untested"
     },
     "code-wsl": {
-      "outcome": "pass",
-      "host_version": "2.1.287",
-      "python_version": "3.12.3",
-      "packages": {
-        "llm-accuracy": {
-          "version": "0.7.0",
-          "sha256": "29ead817578ac51b9ae8ef73a90ac793b9a921b7274ae8ee3678c89d453f3113"
-        },
-        "deterministic-data": {
-          "version": "0.1.0",
-          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
-        },
-        "session-ledger": {
-          "version": "0.3.0",
-          "sha256": "343250edfe1f54f0ec8a6340377dc87946fbf922c67b1c7bee83839bcd01c45f"
-        },
-        "evidence-memory": {
-          "version": "0.4.0",
-          "sha256": "d090f7c51a2e4af774e9a6d55f492647f7c95ee1897c2efcf2d5464aa19039d2"
-        }
-      },
-      "checks": {
-        "clean_install": true,
-        "configured_python": true,
-        "prompt_delivery": true,
-        "upgrade": true,
-        "uninstall": true
-      }
+      "outcome": "untested"
     },
-    "code-windows": {
+    "code-windows-no-bash": {
+      "outcome": "untested"
+    },
+    "code-windows-git-bash": {
       "outcome": "untested"
     },
     "code-macos": {
@@ -76,7 +52,8 @@
   "capabilities": {
     "code": "configured_exec_hooks",
     "desktop_chat": "skills_only",
-    "cowork": "stateless_plugins_only",
+    "cowork": "stateless_skills_only_unverified_hooks",
+    "desktop_code": "unverified_ui",
     "codex_memory": "experimental_posix_only"
   }
 }
