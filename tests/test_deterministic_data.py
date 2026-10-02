@@ -152,7 +152,7 @@ def test_invalid_status_types_return_structured_errors(invalid, tmp_path):
     assert "status_invalid" in output["errors"]
 
 
-def test_deep_catalogue_json_returns_structured_unreadable(tmp_path):
+def test_deep_catalogue_json_fails_without_echo(tmp_path):
     path = tmp_path / "catalogue.json"
     path.write_text(
         "[" * 10_000 + '"SYNTHETIC-NO-ECHO"' + "]" * 10_000, encoding="utf-8"
@@ -165,5 +165,7 @@ def test_deep_catalogue_json_returns_structured_unreadable(tmp_path):
     assert process.stderr == ""
     output = json.loads(process.stdout)
     assert output["status"] == "fail"
-    assert output["errors"] == ["catalogue_unreadable"]
+    # Decoder recursion limits differ by Python version and OS. A decoder may
+    # reject the depth or parse the outer list, which is still an invalid catalogue.
+    assert output["errors"] in (["catalogue_unreadable"], ["catalogue_not_object"])
     assert "SYNTHETIC-NO-ECHO" not in process.stdout

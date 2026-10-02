@@ -174,7 +174,7 @@ def test_invalid_enum_types_return_structured_errors(plugin, invalid, path, erro
 
 @pytest.mark.parametrize("plugin", [CORE, DATA], ids=["accuracy", "data"])
 @pytest.mark.parametrize("via_file", [False, True], ids=["stdin", "file"])
-def test_deep_json_returns_structured_unreadable(plugin, via_file, tmp_path):
+def test_deep_json_fails_without_echo(plugin, via_file, tmp_path):
     raw = "[" * 10_000 + '"SYNTHETIC-NO-ECHO"' + "]" * 10_000
     command = [sys.executable, str(plugin / "scripts" / "validate_evidence_receipt.py")]
     if via_file:
@@ -189,5 +189,7 @@ def test_deep_json_returns_structured_unreadable(plugin, via_file, tmp_path):
     assert process.stderr == ""
     output = json.loads(process.stdout)
     assert output["status"] == "fail"
-    assert output["errors"] == ["receipt_unreadable"]
+    # Either decoder-depth rejection or structural rejection is safe. Do not
+    # assume one recursion threshold across Python versions and operating systems.
+    assert output["errors"] in (["receipt_unreadable"], ["receipt_not_object"])
     assert "SYNTHETIC-NO-ECHO" not in process.stdout
