@@ -21,8 +21,9 @@ phrases, paths, prompts, tool output or credentials. Explain fixed diagnostic
 codes using the plugin README. Do not dump settings files or ask for credentials.
 
 Lead with `presentation.headline` verbatim. Report the diagnostic details, then
-end with a `---` divider, then `- **Checked:**`, `- **Gap:**` and `- **Next:**`
-bullets using the corresponding `presentation` values verbatim. Do not upgrade
+end with a `---` divider (blank line before and after), then `- **Checked:**`,
+`- **Gap:**` and `- **Next:**` bullets using the corresponding `presentation`
+values verbatim. Do not upgrade
 the headline to "working", "healthy" or "nothing needs fixing". These fields
 describe bounded probes, not the whole runtime. If an older doctor lacks
 `presentation`, preserve the same scope and explicitly mark current-session

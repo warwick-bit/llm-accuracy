@@ -35,8 +35,16 @@ Start a new Claude Code session or run `/reload-plugins`, then confirm package
 
 ## Validation and limits
 
-Wiring tests pin the new template in the injected reminder and keep it within
-the 1,500-character budget. The technical harness's footer check already
-accepted bold bullet labels, and a new test confirms it accepts the divider
-form. This changes formatting only; no live model run measured whether
-footers now follow the new layout more often.
+Wiring tests pin the new template in the injected reminder. The general reminder
+is 1,451 characters against its 1,500 cap; with a custom phrase's detailed
+guidance it is 1,990 against the 2,000 cap. The technical harness's footer
+check already accepted bold bullet labels, and a new test confirms it accepts
+the divider form.
+
+A clean temporary Claude Code 2.1.287 profile on Linux/WSL installed the
+candidate through a local-path marketplace; installed files matched the
+committed package byte for byte. One Sonnet session through that install, and
+one through the release ZIP in a separate profile, each received the new
+template and ended with the divider and bullets. That is one run per path, not
+an adherence rate: this changes formatting only, and no repeated live run
+measured how often footers follow the new layout.
