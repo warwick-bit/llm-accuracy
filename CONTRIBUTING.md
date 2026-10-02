@@ -14,6 +14,18 @@ python3 -m pytest -q
 find plugins -path '*/hooks/*.py' -print0 | xargs -0 -r python3 -m py_compile
 ```
 
+Before a release, run the clean installation smoke on the committed tree:
+
+```bash
+python3 scripts/claude_install_smoke.py --receipt docs/validation/claude-code-smoke-<version>.json
+```
+
+It installs the plugin from this checkout through a local-path marketplace into
+an auth-only temporary profile, checks the installed files byte for byte, then
+runs three short Sonnet sessions: installed, installed with the `# fidelity-ok`
+bypass, and the release archive. The receipt holds only counts, booleans and
+hashes. `--skip-live` checks the installation without model calls.
+
 Keep the plugins generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
 
