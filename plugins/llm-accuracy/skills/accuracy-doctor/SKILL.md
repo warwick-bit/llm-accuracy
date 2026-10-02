@@ -6,11 +6,27 @@ argument-hint: "[optional: live]"
 
 # Accuracy doctor
 
-Run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/accuracy_doctor.py"` (use `python`
-when Python 3 is installed under that name). On Windows, the command probe needs
-Git Bash; `--shell` accepts its executable path.
+Execute this vector with the configured Python executable after substituting
+the host placeholders:
 
-The command probe requires local Python and a shell. Host inventory and `--live`
+```json
+[
+  "${user_config.python_executable}",
+  "${CLAUDE_PLUGIN_ROOT}/scripts/accuracy_doctor.py",
+  "--python-executable",
+  "${user_config.python_executable}"
+]
+```
+
+The command probe uses direct execution and requires a working Python 3.9+
+executable. It does not require Git Bash or another shell. Use an argument
+vector when available; with a shell tool, quote each element for that shell
+(PowerShell: `&` before the executable and doubled ASCII/smart single quotes;
+POSIX: shell-escaped literal arguments). Never evaluate substituted text as a
+complete shell command. If a required placeholder is unavailable, report the
+check as unavailable.
+
+Host inventory and `--live`
 also require a locally installed Claude Code CLI. In a skills-only host or a
 host without these tools, report the check as unavailable; do not imply that
 this command diagnoses that host's activation.

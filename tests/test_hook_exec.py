@@ -67,6 +67,22 @@ def test_doctor_rejects_missing_and_unusable_executables(tmp_path):
     assert doctor.python_status(sys.executable + ' --version') == {'status': 'unusable'}
 
 
+def test_shipped_doctor_skill_vector_matches_the_cli():
+    plugin = ROOT / 'plugins/llm-accuracy'
+    source = (plugin / 'skills/accuracy-doctor/SKILL.md').read_text()
+    vector = json.loads(source.split('```json\n', 1)[1].split('\n```', 1)[0])
+    argv = [part.replace('${user_config.python_executable}', sys.executable)
+            .replace('${CLAUDE_PLUGIN_ROOT}', str(plugin)) for part in vector]
+    help_result = subprocess.run([*argv, '--help'], capture_output=True, text=True, timeout=15)
+    assert help_result.returncode == 0 and help_result.stderr == ''
+    assert '--python-executable' in help_result.stdout
+    result = subprocess.run(argv, capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0 and result.stderr == ''
+    report = json.loads(result.stdout)
+    assert report['python']['status'] == 'ok'
+    assert report['python_selection'] == 'explicit'
+
+
 @pytest.mark.parametrize('output,code,status', [('store alias', 1, 'unusable'), ('[3, 8, 20]', 0, 'unsupported_version')])
 def test_doctor_diagnoses_store_alias_and_old_version(monkeypatch, output, code, status):
     doctor = doctor_module()
