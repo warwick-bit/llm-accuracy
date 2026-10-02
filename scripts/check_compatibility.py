@@ -13,7 +13,8 @@ PACKAGES = ('llm-accuracy', 'deterministic-data', 'session-ledger', 'evidence-me
 TARGETS = ('code-linux', 'code-wsl', 'code-windows-no-bash', 'code-windows-git-bash', 'code-macos',
            'desktop-chat-windows', 'desktop-chat-macos', 'cowork-windows', 'cowork-macos',
            'desktop-chat-linux', 'cowork-linux')
-CHECKS = ('clean_install', 'configured_python', 'prompt_delivery', 'upgrade', 'uninstall')
+CHECKS = ('clean_install', 'configured_python', 'prompt_delivery', 'upgrade', 'uninstall',
+          'invalid_python_advisory_then_recovery')
 CHAT_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'no_local_hooks', 'upgrade', 'uninstall')
 COWORK_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'stateless_boundary', 'upgrade', 'uninstall')
 
@@ -35,10 +36,18 @@ def target_packages(packages: dict, target: str) -> dict:
     return {name: packages[name] for name in names}
 
 
+def target_identity(target: str) -> tuple[str, str]:
+    if target not in TARGETS:
+        raise ValueError('unknown_compatibility_target')
+    platform = 'Windows' if 'windows' in target else 'Darwin' if 'macos' in target else 'Linux/WSL' if target == 'code-wsl' else 'Linux'
+    kind = 'code' if target.startswith('code-') else 'desktop_chat' if target.startswith('desktop-chat-') else 'cowork'
+    return platform, kind
+
+
 def package_binding(root: Path, name: str) -> dict:
     directory = root / 'plugins' / name
     digest = hashlib.sha256()
-    for path in sorted(directory.rglob('*')):
+    for path in sorted(directory.rglob('*'), key=lambda item: item.relative_to(directory).as_posix()):
         if path.is_file() and '__pycache__' not in path.parts:
             digest.update(path.relative_to(directory).as_posix().encode() + b'\0' + path.read_bytes() + b'\0')
     manifest = json.loads((directory / '.claude-plugin/plugin.json').read_text())
@@ -98,6 +107,8 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
             errors.append('invalid_outcome_' + target)
             continue
         if row['outcome'] == 'pass':
+            if (row.get('platform'), row.get('host_kind')) != target_identity(target):
+                errors.append('invalid_host_identity_' + target)
             version = row.get('host_version', '')
             checks = row.get('checks', {})
             if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):

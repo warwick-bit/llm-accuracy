@@ -138,8 +138,10 @@ def test_actual_all_pass_receipt_cannot_certify_redirected_catalog(repository):
     contract = importlib.import_module('check_compatibility')
     receipt = contract.candidate(root)
     for target in contract.TARGETS:
+        platform, kind = contract.target_identity(target)
         receipt['targets'][target] = {
             'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.12.3',
+            'platform': platform, 'host_kind': kind,
             'packages': contract.target_packages(receipt['packages'], target),
             'checks': dict.fromkeys(contract.target_checks(target), True)}
     assert guard.validate(root, receipt, release=True) == []

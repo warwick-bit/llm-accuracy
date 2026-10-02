@@ -155,6 +155,7 @@ def run_smoke(claude, baseline, *, live=True, timeout=60):
         env = smoke.auth_profile(root)
         checks = lifecycle(claude, root, source, env)
         checks['prompt_delivery'] = False
+        checks['invalid_python_advisory_then_recovery'] = False
         if live:
             command = smoke.session_command(claude, 'sonnet')
             command.extend(['--setting-sources', 'user', '--effort', 'low'])
@@ -169,6 +170,7 @@ def run_smoke(claude, baseline, *, live=True, timeout=60):
                                        smoke.stream_input('Reply exactly OK. Do not use tools.'), timeout)
             checks['prompt_delivery'] = delivery_passed(result)
             report['invalid_python_advisory_then_recovery'] = advisory and checks['prompt_delivery']
+            checks['invalid_python_advisory_then_recovery'] = report['invalid_python_advisory_then_recovery']
         for name in PACKAGES:
             action(claude, env, root, 'uninstall', name + '@llm-accuracy')
         checks['uninstall'] = bundle_removed(installed_listing(claude, env, root))

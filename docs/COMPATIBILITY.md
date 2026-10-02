@@ -67,6 +67,10 @@ installed plugin's saved option or current-session activation. Its isolated
 version and SHA-256 of every package's source tree. Every required OS/host cell
 must say `pass` or `untested`. A pass needs a host version and all required QA
 checks, its own package source bindings, and a supported Python version for Code.
+Every pass also needs its actual `platform` and `host_kind`, matching the target.
+Code uses `code`; Desktop uses `desktop_chat` or `cowork`. Platform labels are
+`Linux`, `Linux/WSL`, `Windows` or `Darwin` (macOS). Copying a WSL receipt into a
+Mac/Linux row or a Chat receipt into Cowork fails this consistency check.
 These are maintainer QA records, not an independently authenticated test oracle.
 Historical receipts cannot establish a current candidate's support.
 
@@ -81,7 +85,8 @@ Missing, stale or incomplete evidence fails
 the check. Explicit untested cells are coverage gaps, never support proof.
 
 Code receipts bind all four packages and require `clean_install`,
-`configured_python`, `prompt_delivery`, `upgrade`, and `uninstall`. Windows
+`configured_python`, `prompt_delivery`, `upgrade`, `uninstall`, and
+`invalid_python_advisory_then_recovery`. Windows
 additionally requires its own `git_bash_absent` or `git_bash_present` proof.
 Chat receipts bind only Accuracy and Deterministic Data and require
 `clean_install`, `skills_available`, `skill_invocation`, `no_local_hooks`,
@@ -97,7 +102,8 @@ READMEs, catalogs, receipts, scripts, workflows, unknown paths, symlinks, and
 deleted or moved protected source remain guarded. Missing, invalid or
 non-ancestor base commits fail closed.
 
-Package hashes cover sorted relative paths and exact source bytes, excluding
+Package hashes cover POSIX relative paths sorted as case-sensitive strings and
+exact source bytes, excluding
 Python caches. Use a clean LF checkout (`core.autocrlf=false`) for installed
 QA, including Windows, so bindings match the published source. Changing a root
 guide does not change a package binding; changing its packaged README does.

@@ -21,6 +21,7 @@ def test_candidate_requires_current_installed_smoke_before_release():
 def test_wsl_smoke_cannot_certify_native_windows_or_macos():
     receipt = guard.candidate(ROOT)
     receipt['targets']['code-wsl'] = {'outcome': 'pass', 'host_version': '2.1.287',
+                                    'platform': 'Linux/WSL', 'host_kind': 'code',
                                     'python_version': '3.12.3', 'packages': receipt['packages'],
                                     'checks': dict.fromkeys(guard.CHECKS, True)}
     errors = guard.validate(ROOT, receipt, release=True)
@@ -60,7 +61,9 @@ def test_each_pass_keeps_its_original_source_binding_and_python_version():
 
 
 def passing_row(receipt, target):
+    platform, kind = guard.target_identity(target)
     return {'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.12.3',
+            'platform': platform, 'host_kind': kind,
             'packages': guard.target_packages(receipt['packages'], target),
             'checks': dict.fromkeys(guard.target_checks(target), True)}
 
@@ -192,3 +195,46 @@ def test_metadata_only_catalog_edit_keeps_fixed_routes(distribution):
     value['description'] = value['plugins'][0]['description'] = 'Synthetic metadata'
     path.write_text(json.dumps(value))
     assert guard.validate(distribution, guard.candidate(distribution)) == []
+
+
+def test_host_identity_cannot_be_copied_between_os_or_modes():
+    receipt = guard.candidate(ROOT)
+    for target, donor in (('code-macos', 'code-wsl'), ('code-linux', 'code-wsl'),
+                          ('cowork-windows', 'desktop-chat-windows'),
+                          ('desktop-chat-linux', 'cowork-linux')):
+        row = passing_row(receipt, target)
+        row['platform'], row['host_kind'] = guard.target_identity(donor)
+        receipt['targets'][target] = row
+        assert 'invalid_host_identity_' + target in guard.validate(ROOT, receipt)
+    receipt['targets']['code-wsl'] = passing_row(receipt, 'code-wsl')
+    del receipt['targets']['code-wsl']['platform']
+    assert 'invalid_host_identity_code-wsl' in guard.validate(ROOT, receipt)
+
+
+@pytest.mark.parametrize('value', [None, 1, 'true', False])
+def test_code_pass_requires_actual_invalid_python_recovery(value):
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-wsl'] = passing_row(receipt, 'code-wsl')
+    checks = receipt['targets']['code-wsl']['checks']
+    if value is None:
+        del checks['invalid_python_advisory_then_recovery']
+    else:
+        checks['invalid_python_advisory_then_recovery'] = value
+    assert 'missing_checks_code-wsl' in guard.validate(ROOT, receipt)
+
+
+def test_package_hash_order_is_independent_of_native_path_comparison(tmp_path):
+    directory = tmp_path / 'plugins/llm-accuracy'
+    (directory / '.claude-plugin').mkdir(parents=True)
+    (directory / '.claude-plugin/plugin.json').write_text('{"version":"1.0.0"}')
+    for filename in ('B.py', 'a.py', 'a.b', 'a/nested.py'):
+        path = directory / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('synthetic source')
+    class FoldedPath(type(Path())):
+        def __lt__(self, other):
+            return str(self).lower() < str(other).lower()
+    original = sorted(directory.rglob('*'))
+    folded = sorted(FoldedPath(directory).rglob('*'))
+    assert [str(p) for p in original] != [str(p) for p in folded]
+    assert guard.package_binding(tmp_path, 'llm-accuracy') == guard.package_binding(FoldedPath(tmp_path), 'llm-accuracy')

@@ -39,14 +39,14 @@ Those need their own tests. The marketplace source is local, not a fresh hosted
 GitHub download.
 
 Before recording a Code pass, confirm the invalid-Python recovery field passes
-alongside all five Code checks. Review the raw-free receipts locally. Transfer only the
-actual version, current package bindings and required true checks into the
+alongside all six Code checks. Review the raw-free receipts locally. Transfer only the
+actual version, platform and host mode, current package bindings and required true checks into the
 matching candidate target; do not edit old receipt hashes.
 
 Native Windows requires two distinct runs: without accessible Git Bash and with
 Git Bash available. Inspect the effective child PATH and executable resolution
 for each run. Record `git_bash_absent` or `git_bash_present` only after proving
-that environment, alongside the five Code checks. WSL is a separate target and
+that environment, alongside the six Code checks. WSL is a separate target and
 does not certify either Windows scenario. Native Linux is also separate from WSL.
 
 ## Desktop skills QA
