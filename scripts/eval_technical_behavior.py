@@ -102,6 +102,21 @@ def footer_present(answer: str) -> bool:
     )
 
 
+def divider_precedes_footer(answer: str) -> bool:
+    """Require the footer to sit after a blank line, `---` and a blank line."""
+    if not footer_present(answer):
+        return False
+    lines = answer.rstrip().splitlines()
+    nonblank = [index for index, line in enumerate(lines) if line.strip()]
+    if len(nonblank) < 4 or lines[nonblank[-4]].strip() != "---":
+        return False
+    divider = nonblank[-4]
+    # Text directly above `---` would turn it into a setext heading.
+    return (divider == 0 or not lines[divider - 1].strip()) and not lines[
+        divider + 1
+    ].strip()
+
+
 def factual_value(values: list[str]) -> str | Decimal | None:
     if len(values) != 1:
         return None

@@ -34,6 +34,10 @@ Keep each plugin generic and safe to share publicly.
   out of source.
 - Keep the public-facing claim bounded: the plugin improves evidence hygiene;
   it does not guarantee factual correctness.
+- Before a release, commit the change, run the clean Claude installation smoke
+  (`python3 scripts/claude_install_smoke.py --receipt
+  docs/validation/claude-code-smoke-<version>.json`), and link that raw-free
+  receipt from the release note.
 
 ## Required checks
 

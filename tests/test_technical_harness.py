@@ -463,6 +463,22 @@ def test_footer_accepts_divider_then_bullets(modules):
     )
 
 
+@pytest.mark.parametrize(
+    ("answer", "expected"),
+    [
+        ("Body.\n\n---\n\n- **Checked:** a\n- **Gap:** b\n- **Next:** c\n", True),
+        ("---\n\n- **Checked:** a\n- **Gap:** b\n- **Next:** c", True),
+        # Text directly above the divider renders as a setext heading.
+        ("Body.\n---\n\n- **Checked:** a\n- **Gap:** b\n- **Next:** c", False),
+        ("Body.\n\n---\n- **Checked:** a\n- **Gap:** b\n- **Next:** c", False),
+        ("Body.\n\nChecked: a\nGap: b\nNext: c", False),
+        ("Body.\n\n---\n\n- **Checked:** a\n- **Gap:** b", False),
+    ],
+)
+def test_divider_precedes_footer(modules, answer, expected):
+    assert modules[2].divider_precedes_footer(answer) is expected
+
+
 def test_empty_answer_label_does_not_consume_next_line(modules):
     assert modules[2].labelled_values("Answer:\nno", "Answer") == [""]
 
