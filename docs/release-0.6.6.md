@@ -14,9 +14,13 @@ after) followed by three bold-labelled bullets:
 
 The blank line before `---` matters: without it, Markdown renders the previous
 line as a heading instead of drawing a divider. The `claim-fidelity`,
-`verify-technical` and `accuracy-doctor` skills describe the same layout. The
-footer's three fields, when it applies and what each field means are unchanged.
-Detection, bypasses and the other hooks are unchanged.
+`verify-technical` and `accuracy-doctor` skills describe the same layout, as
+does the bundled evidence-discipline reference. That reference also applies it
+to the labels it asks for at the end of other consequential factual answers
+(Source, Time window, Scope or denominator, Caveat or data gap, Direct evidence
+versus inference, Next step). The footer's fields, when it applies and what each
+field means are unchanged. Detection, bypasses and the other hooks are
+unchanged.
 
 ## Update
 
