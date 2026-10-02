@@ -4,7 +4,15 @@ description: Start a clean Session Ledger plan boundary for unrelated work in th
 disable-model-invocation: true
 ---
 
-!`if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; "$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" begin-plan --session-id "${CLAUDE_SESSION_ID}" --plugin-data "${CLAUDE_PLUGIN_DATA}"`
+Run the configured Python executable (`${user_config.python_executable}`)
+with `${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py`, the begin-plan action,
+`--plugin-data` and `${CLAUDE_PLUGIN_DATA}`. For `begin-plan`, also pass
+`--session-id` and `${CLAUDE_SESSION_ID}`. Use an argument vector when available;
+otherwise quote each value as a literal for the active shell (PowerShell: single
+quotes with embedded apostrophes doubled; POSIX: shell-escaped single arguments).
+Never execute the substituted text as a complete shell command. If local
+execution or any placeholder is unavailable, report that the operation could
+not be confirmed. This skill does not run a shell during preprocessing.
 
 Use this only when you deliberately begin unrelated work in the current session.
 Starting a plan boundary discards the stored ledger record and excludes earlier

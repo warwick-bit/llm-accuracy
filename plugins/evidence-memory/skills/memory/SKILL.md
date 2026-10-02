@@ -15,10 +15,15 @@ counted in `status`. After compaction, the injected packet lists recent external
 result IDs and a resolved `command_prefix`; use that prefix when the placeholders
 below are not substituted.
 
-```bash
-if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_PYTHON=python; fi
-"$MEMORY_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_DATA}" --session-id "${CLAUDE_SESSION_ID}" status
-```
+In Claude Code, run the configured executable `${user_config.python_executable}`
+with `${CLAUDE_PLUGIN_ROOT}/hooks/memory.py`, `--plugin-data`,
+`${CLAUDE_PLUGIN_DATA}`, `--session-id`, `${CLAUDE_SESSION_ID}`, then `status`.
+Use an argument vector when available. Otherwise quote each value as a literal
+for the active shell: PowerShell uses `&` before the executable and single quotes
+with embedded apostrophes doubled; POSIX uses shell-escaped single arguments.
+Never evaluate substituted text as a complete shell command. If local execution
+or any required placeholder is unavailable (including Claude Desktop Chat),
+say memory capture is unavailable; do not claim retrieval or persistence.
 
 If the placeholders above are not filled in (as in Codex), use the
 `command_prefix` from the post-compaction memory packet. Before the first
@@ -26,7 +31,11 @@ compaction, Codex's POSIX shell can build the same prefix from its own
 environment:
 
 ```bash
-if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_PYTHON=python; fi
+MEMORY_PYTHON=
+for candidate in python3 python; do
+  if "$candidate" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then MEMORY_PYTHON=$candidate; break; fi
+done
+test -n "$MEMORY_PYTHON" || exit 1
 MEMORY_HOME="${CODEX_HOME:-$HOME/.codex}"
 MEMORY_PY="$(ls -td "$MEMORY_HOME"/plugins/cache/llm-accuracy/evidence-memory/*/hooks/memory.py | head -n 1)"
 "$MEMORY_PYTHON" "$MEMORY_PY" --plugin-data "$MEMORY_HOME/plugins/data/evidence-memory-llm-accuracy" --session-id "$CODEX_THREAD_ID" status

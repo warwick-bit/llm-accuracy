@@ -13,20 +13,20 @@ from pathlib import Path
 
 import pytest
 
-from conftest import HOOK_SHELL
+from conftest import HOOK_SHELL, hook_argv
 
 ROOT = Path(__file__).resolve().parents[1] / "plugins" / "evidence-memory"
 HOOKS = json.loads((ROOT / "hooks" / "hooks.json").read_text())["hooks"]
 
 
-@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
+@pytest.mark.skipif(not HOOK_SHELL, reason="Codex POSIX shell unavailable")
 def test_codex_skill_command_works_before_the_first_compaction(tmp_path: Path) -> None:
     # Codex leaves the skill's ${CLAUDE_...} placeholders unfilled, so the skill ships a Codex command.
     skill = (ROOT / "skills" / "memory" / "SKILL.md").read_text(encoding="utf-8")
     blocks = [block for block in re.findall(r"```bash\n(.*?)```", skill, re.S) if "CODEX_THREAD_ID" in block]
     assert len(blocks) == 1 and "${CLAUDE_" not in blocks[0]
     home = tmp_path / "codex home"
-    shutil.copytree(ROOT / "hooks", home / "plugins" / "cache" / "llm-accuracy" / "evidence-memory" / "0.3.0" / "hooks")
+    shutil.copytree(ROOT / "hooks", home / "plugins" / "cache" / "llm-accuracy" / "evidence-memory" / "0.4.0" / "hooks")
     data = home / "plugins" / "data" / "evidence-memory-llm-accuracy"
     session = "0199aaaa-bbbb-7ccc-8ddd-eeeeffff0000"
     enabled = subprocess.run([sys.executable, str(ROOT / "hooks" / "memory.py"), "--plugin-data", str(data),
@@ -47,8 +47,8 @@ def test_enabled_plugin_hooks_allow_cold_start_time() -> None:
 
 def invoke(event: str, payload: object, data: Path) -> subprocess.CompletedProcess[str]:
     environment = dict(os.environ, CLAUDE_PLUGIN_ROOT=str(ROOT), CLAUDE_PLUGIN_DATA=str(data))
-    command = HOOKS[event][0]["hooks"][0]["command"]
-    return subprocess.run([HOOK_SHELL, "-c", command], input=json.dumps(payload),
+    command = hook_argv(HOOKS[event][0]["hooks"][0], ROOT, data)
+    return subprocess.run(command, input=json.dumps(payload),
                           capture_output=True, text=True, env=environment, timeout=10)
 
 
@@ -58,7 +58,6 @@ def cli(data: Path, action: str) -> subprocess.CompletedProcess[str]:
                           capture_output=True, text=True, timeout=10)
 
 
-@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
 @pytest.mark.parametrize("action", ["disable", "clear", "begin-plan"])
 def test_plugin_autostarts_without_backfill_and_stop_stays_off(tmp_path: Path, action: str) -> None:
     data = tmp_path / "data"
@@ -118,7 +117,6 @@ def test_plugin_autostarts_without_backfill_and_stop_stays_off(tmp_path: Path, a
     assert len(list(data.rglob("memory.sqlite3"))) == 2
 
 
-@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
 def test_legacy_stop_marker_does_not_autostart_on_upgrade(tmp_path: Path) -> None:
     data = tmp_path / "data"
     payload = {"session_id": "synthetic-session", "cwd": str(tmp_path),
@@ -136,7 +134,6 @@ def test_legacy_stop_marker_does_not_autostart_on_upgrade(tmp_path: Path) -> Non
     assert len(list(data.rglob("memory.sqlite3"))) == 1
 
 
-@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
 def test_independent_hook_capture_restore_and_clear(tmp_path: Path) -> None:
     data = tmp_path / "data"
     transcript = tmp_path / "synthetic.jsonl"
@@ -166,18 +163,16 @@ def test_independent_hook_capture_restore_and_clear(tmp_path: Path) -> None:
     assert not list(data.rglob("memory.sqlite3"))
 
 
-@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
 def test_malformed_hook_input_fails_open(tmp_path: Path) -> None:
     environment = dict(os.environ, CLAUDE_PLUGIN_ROOT=str(ROOT),
                        CLAUDE_PLUGIN_DATA=str(tmp_path / "data"))
-    command = HOOKS["PostToolUse"][0]["hooks"][0]["command"]
-    result = subprocess.run([HOOK_SHELL, "-c", command], input="{invalid",
+    command = hook_argv(HOOKS["PostToolUse"][0]["hooks"][0], ROOT, tmp_path / "data")
+    result = subprocess.run(command, input="{invalid",
                             capture_output=True, text=True, env=environment, timeout=10)
     assert result.returncode == 0
     assert result.stdout == ""
 
 
-@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
 @pytest.mark.parametrize("initial", ["missing", "empty"])
 def test_prompt_before_transcript_is_quiet_and_later_capture_catches_up(
         tmp_path: Path, initial: str) -> None:
@@ -221,7 +216,7 @@ def test_prompt_before_transcript_is_quiet_and_later_capture_catches_up(
     assert invoke("PostToolUse", payload, data).stdout == ""
 
 
-@pytest.mark.skipif(os.name != "posix" or not HOOK_SHELL, reason="POSIX lock probe unavailable")
+@pytest.mark.skipif(os.name != "posix" , reason="POSIX lock probe unavailable")
 def test_busy_session_lock_reports_safe_code_and_later_capture_catches_up(tmp_path: Path) -> None:
     import fcntl
 
@@ -241,7 +236,7 @@ def test_busy_session_lock_reports_safe_code_and_later_capture_catches_up(tmp_pa
         fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         blocked = invoke("PostToolUse", payload, data)
         assert blocked.returncode == 0
-        assert "BlockingIOError" in json.loads(blocked.stdout)["systemMessage"]
+        assert blocked.stdout == blocked.stderr == ""
         fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
 
     later = invoke("PostToolUse", payload, data)
@@ -250,7 +245,6 @@ def test_busy_session_lock_reports_safe_code_and_later_capture_catches_up(tmp_pa
     assert json.loads(cli(data, "status").stdout)["events"] == 1
 
 
-@pytest.mark.skipif(not HOOK_SHELL, reason="POSIX hook shell unavailable")
 def test_persistent_scope_error_reports_safe_code(tmp_path: Path) -> None:
     data = tmp_path / "data"
     transcript = tmp_path / "wrong-session.jsonl"
@@ -266,7 +260,7 @@ def test_persistent_scope_error_reports_safe_code(tmp_path: Path) -> None:
     assert "other-session" not in message
 
 
-@pytest.mark.skipif(not HOOK_SHELL or os.name != "posix", reason="symlink probe unavailable")
+@pytest.mark.skipif(os.name != "posix", reason="symlink probe unavailable")
 def test_symlinked_transcript_is_not_treated_as_host_delay(tmp_path: Path) -> None:
     data = tmp_path / "data"
     transcript = tmp_path / "synthetic.jsonl"
@@ -278,7 +272,7 @@ def test_symlinked_transcript_is_not_treated_as_host_delay(tmp_path: Path) -> No
     assert "transcript_unavailable" in json.loads(result.stdout)["systemMessage"]
 
 
-@pytest.mark.skipif(not HOOK_SHELL or not hasattr(os, "mkfifo"), reason="FIFO probe unavailable")
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="FIFO probe unavailable")
 def test_special_file_is_not_treated_as_host_delay(tmp_path: Path) -> None:
     data = tmp_path / "data"
     transcript = tmp_path / "synthetic.pipe"

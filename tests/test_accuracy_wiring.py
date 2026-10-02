@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import HOOK_SHELL
+from conftest import hook_argv
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,9 +40,6 @@ EXPECTED_HANDLERS = {
     ),
 }
 
-posix_only = pytest.mark.skipif(
-    not HOOK_SHELL, reason="requires a configured POSIX hook shell"
-)
 
 
 def hook_handler(event: str, index: int) -> dict[str, object]:
@@ -81,7 +78,7 @@ def run_hook(
     command = hook_handler(event, index)["command"]
     assert isinstance(command, str)
     return subprocess.run(
-        [HOOK_SHELL, "-c", command],
+        hook_argv(hook_handler(event, index), plugin_root) ,
         input=stdin_text,
         capture_output=True,
         text=True,
@@ -102,15 +99,15 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
 
     for key, (filename, status_message) in EXPECTED_HANDLERS.items():
         handler = hook_handler(*key)
-        assert set(handler) == {"type", "command", "timeout", "statusMessage"}
+        assert set(handler) == {"type", "command", "args", "timeout", "statusMessage"}
         assert handler["type"] == "command"
         assert handler["timeout"] == 10
         assert handler["statusMessage"] == status_message
-        assert filename in handler["command"]
+        assert handler["command"] == "${user_config.python_executable}"
+        assert filename in handler["args"]
         assert (PLUGIN_ROOT / "hooks" / filename).is_file()
 
 
-@posix_only
 def test_commands_support_plugin_paths_with_spaces_and_apostrophes(
     tmp_path: Path,
 ) -> None:
@@ -131,7 +128,6 @@ def test_commands_support_plugin_paths_with_spaces_and_apostrophes(
     assert "analysis contract" in result.stdout
 
 
-@posix_only
 @pytest.mark.parametrize(("event", "index"), EXPECTED_HANDLERS)
 def test_commands_fail_open_when_plugin_root_is_missing(
     event: str,
@@ -150,7 +146,6 @@ def test_commands_fail_open_when_plugin_root_is_missing(
     assert result.stderr == ""
 
 
-@posix_only
 @pytest.mark.parametrize(
     ("event", "index", "prompt", "expected_context"),
     [
@@ -193,7 +188,6 @@ def test_user_prompt_commands_emit_context_without_echoing_the_prompt(
     assert expected_context in output["additionalContext"]
 
 
-@posix_only
 @pytest.mark.parametrize("index", [0, 1, 2])
 @pytest.mark.parametrize("stdin_text", ["", "{not json", '["not", "an", "object"]'])
 def test_user_prompt_commands_fail_open_on_malformed_stdin(
@@ -206,7 +200,6 @@ def test_user_prompt_commands_fail_open_on_malformed_stdin(
     assert result.stdout == ""
 
 
-@posix_only
 @pytest.mark.parametrize(
     "prompt",
     [
@@ -244,7 +237,6 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
     assert len(context) <= 1500
 
 
-@posix_only
 @pytest.mark.parametrize(
     ("prompt", "controls", "fires"),
     [
@@ -282,7 +274,6 @@ def test_fidelity_modes_and_bypasses(
         assert result.stdout == ""
 
 
-@posix_only
 @pytest.mark.parametrize(
     "payload",
     [{}, {"prompt": None}, {"prompt": 42}, {"prompt": []}, {"prompt": "  "},
@@ -295,7 +286,6 @@ def test_fidelity_is_silent_without_a_valid_documented_prompt(payload: dict) -> 
     assert result.stdout == result.stderr == ""
 
 
-@posix_only
 def test_fidelity_input_budget_fails_open() -> None:
     result = run_hook("UserPromptSubmit", 2, json.dumps({"prompt": "x" * 1_000_001}))
 
@@ -303,7 +293,6 @@ def test_fidelity_input_budget_fails_open() -> None:
     assert result.stdout == result.stderr == ""
 
 
-@posix_only
 def test_session_start_compact_command_emits_the_freshness_nudge() -> None:
     result = run_hook("SessionStart", 0, json.dumps({"source": "compact"}))
 
@@ -314,7 +303,6 @@ def test_session_start_compact_command_emits_the_freshness_nudge() -> None:
     assert "re-read exact values" in output["additionalContext"]
 
 
-@posix_only
 def test_session_start_command_is_silent_for_non_compact_sources() -> None:
     result = run_hook("SessionStart", 0, json.dumps({"source": "startup"}))
 
@@ -414,7 +402,6 @@ SENTINEL_END_TO_END_CASES = [
 ]
 
 
-@posix_only
 def test_partial_result_sentinel_end_to_end_through_shipped_command() -> None:
     """Drive the exact hooks.json command through a shell, as the host does."""
     for payload, expected_code, label in SENTINEL_END_TO_END_CASES:
@@ -431,7 +418,6 @@ def test_partial_result_sentinel_end_to_end_through_shipped_command() -> None:
             assert result.stdout == "", label
 
 
-@posix_only
 def test_partial_result_sentinel_completes_within_its_declared_timeout() -> None:
     """Run the shipped command under the timeout the manifest actually declares.
 
@@ -467,7 +453,7 @@ def test_partial_result_sentinel_completes_within_its_declared_timeout() -> None
         command = hook_handler("PostToolUse", 0)["command"]
         assert isinstance(command, str)
         result = subprocess.run(
-            [HOOK_SHELL, "-c", command],
+            hook_argv(hook_handler("PostToolUse", 0), PLUGIN_ROOT),
             input=payload,
             capture_output=True,
             text=True,
@@ -478,7 +464,6 @@ def test_partial_result_sentinel_completes_within_its_declared_timeout() -> None
         assert result.stderr == ""
 
 
-@posix_only
 def test_partial_result_sentinel_fails_safe_on_malformed_stdin() -> None:
     """A non-JSON payload must exit clean and silent rather than erroring."""
     result = run_hook("PostToolUse", 0, "not json at all")

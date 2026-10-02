@@ -14,9 +14,36 @@ body:
       label: Runtime
       options:
         - Claude Code
+        - Claude Desktop Code
+        - Claude Desktop Chat
+        - Cowork
+        - Codex Evidence Memory
         - Installation / marketplace
     validations:
       required: true
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating system
+      options:
+        - WSL
+        - Linux
+        - Windows (native)
+        - macOS
+    validations:
+      required: true
+  - type: input
+    id: host-version
+    attributes:
+      label: Host version
+      description: Claude Code, Desktop or Codex version; no logs or private paths.
+    validations:
+      required: true
+  - type: input
+    id: interpreter-shell
+    attributes:
+      label: Python version and shell
+      description: Version and names only; say whether Git Bash is installed. Do not include personal paths.
   - type: input
     id: version
     attributes:

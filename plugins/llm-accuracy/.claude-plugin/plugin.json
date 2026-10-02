@@ -1,11 +1,20 @@
 {
   "name": "llm-accuracy",
   "description": "Advisory evidence reminders for technical and data work, targeted ambiguity checks, claim fidelity, and self-audit.",
-  "version": "0.6.6",
+  "version": "0.7.0",
   "author": {
     "name": "Warwick"
   },
   "homepage": "https://github.com/warwick-bit/llm-accuracy",
   "repository": "https://github.com/warwick-bit/llm-accuracy",
-  "license": "MIT"
+  "license": "MIT",
+  "userConfig": {
+    "python_executable": {
+      "type": "string",
+      "title": "Python executable",
+      "description": "A working Python 3.9+ executable name or absolute path, with no arguments. Linux/macOS: python3. Windows: python or the full python.exe path. Git Bash is optional.",
+      "required": true,
+      "default": "python3"
+    }
+  }
 }

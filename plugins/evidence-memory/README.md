@@ -133,7 +133,10 @@ python3 ~/.claude/plugins/cache/llm-accuracy/evidence-memory/<version>/hooks/mem
   --session-id <session-id> enable
 ```
 
-Use `python` if `python3` is unavailable. The CLI also accepts explicit paths and
+Use the configured Python 3.9+ executable; verify it runs rather than relying
+on its name being present. Native Windows Claude hooks use direct execution
+with no Git Bash dependency. The separate experimental Codex package retains
+its POSIX-shell requirement. See the repository compatibility contract. The CLI also accepts explicit paths and
 session IDs for manual Codex transcript ingestion. This does not install Codex
 hooks. `status`, `sync /exact/transcript.jsonl`, `lookup KEY`, `search "keywords"`,
 `fetch ID`, `state`, `remember` and `disable` are subcommands; see the memory skill for paging
@@ -230,3 +233,14 @@ macOS host behaviour remain unmeasured. See the
 [standalone validation receipt](../../docs/validation/evidence-memory-standalone-2026-09-25.json).
 The 0.3.0 scope choices and restore-packet comparison are in the
 [0.3.0 receipt](../../docs/validation/evidence-memory-0.3.0-2026-09-30.json).
+
+## Overlapping hooks
+
+Ordinary capture quietly defers when the session lock is busy; it does not
+advance the cursor. A later hook or `sync TRANSCRIPT_PATH` catches up without
+duplicating indexed events. Restore, Stop and PreCompact wait at most 0.5
+seconds, then report persistent contention with a fixed advisory. A final
+deferred capture needs a later sync; a busy restore may omit context.
+`status`/`sync` return `memory_session_lock_busy` when the lock remains held.
+Other capture/restore failures still report diagnostics. Do not delete locks
+or bypass them. No local capture or CLI execution is available in Desktop Chat.

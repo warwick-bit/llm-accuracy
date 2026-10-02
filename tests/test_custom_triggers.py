@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from test_accuracy_wiring import posix_only, run_hook
+from test_accuracy_wiring import run_hook
 
 
 def config_file(tmp_path: Path, payload: object) -> Path:
@@ -19,7 +19,6 @@ def config_file(tmp_path: Path, payload: object) -> Path:
     return path
 
 
-@posix_only
 @pytest.mark.parametrize(
     ("index", "family", "prompt", "expected"),
     [
@@ -46,7 +45,6 @@ def test_custom_phrases_override_builtin_suppressors(
     assert str(path) not in result.stdout
 
 
-@posix_only
 @pytest.mark.parametrize(
     ("phrase", "prompt", "fires"),
     [
@@ -73,7 +71,6 @@ def test_literal_casefolded_phrase_boundaries(tmp_path, phrase, prompt, fires):
     assert bool(result.stdout) is fires
 
 
-@posix_only
 @pytest.mark.parametrize(
     ("index", "family", "marker", "skip"),
     [
@@ -99,7 +96,6 @@ def test_custom_triggers_never_override_bypasses(tmp_path, index, family, marker
         assert result.stdout == result.stderr == ""
 
 
-@posix_only
 @pytest.mark.parametrize("index", [0, 1, 2])
 def test_invalid_config_preserves_builtin_checks_without_echoing_contents(
     tmp_path, index
@@ -129,7 +125,6 @@ def test_invalid_config_preserves_builtin_checks_without_echoing_contents(
     assert str(path) not in result.stdout + result.stderr
 
 
-@posix_only
 def test_default_config_path_and_additive_family_isolation(tmp_path, monkeypatch):
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path))
     path = tmp_path / "llm-accuracy.json"
@@ -209,7 +204,6 @@ def test_config_rereads_changes_and_accepts_windows_utf8_bom(tmp_path, monkeypat
     assert not custom_trigger_matches("claim_fidelity", "Check socket pressure")
 
 
-@posix_only
 def test_empty_custom_list_does_not_remove_builtins(tmp_path):
     path = config_file(tmp_path, {"extra_triggers": {"claim_fidelity": []}})
     result = run_hook(
@@ -221,7 +215,6 @@ def test_empty_custom_list_does_not_remove_builtins(tmp_path):
     assert "equal membership" in result.stdout
 
 
-@posix_only
 def test_general_mode_custom_phrase_adds_detailed_guidance(tmp_path):
     path = config_file(tmp_path, {"extra_triggers": {"claim_fidelity": ["socket pressure"]}})
     result = run_hook(

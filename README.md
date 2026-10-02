@@ -438,11 +438,19 @@ LLM Accuracy asks the model to recheck current evidence, distinguish evidence
 from inference, and mark an unavailable source as unknown rather than fill the
 gap from memory.
 
+## Compatibility
+
+Read [the OS and host contract](docs/COMPATIBILITY.md) for the source candidate.
+Claude hooks require a configured Python 3.9+ executable and Claude Code 2.1.287+;
+Git Bash is optional on native Windows. Desktop Chat is skills-only. Cowork
+support and experimental Codex support have separate boundaries and evidence.
+
 ## Development
 
 Run the lightweight distribution checks:
 
 ```bash
 python3 -m pytest -q
+python3 scripts/check_compatibility.py
 python3 -m py_compile $(find plugins -path '*/hooks/*.py' -print)
 ```

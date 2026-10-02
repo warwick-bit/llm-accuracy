@@ -93,10 +93,19 @@ def capture_config(engine: Any, root: Path) -> tuple[Any, dict[str, Any]]:
         return engine.CaptureScope(), {"mode": "external", "config": "invalid_using_default"}
 
 
+def command_argv(root: Path, session_id: str) -> tuple[str, ...]:
+    return (sys.executable or "python3", str(Path(__file__).resolve()), "--plugin-data", str(root),
+            "--session-id", session_id)
+
+
 def command_prefix(root: Path, session_id: str) -> str:
-    """A resolved CLI prefix for the restore packet; hosts differ in skill placeholder support."""
-    parts = (sys.executable or "python3", str(Path(__file__).resolve()), "--plugin-data", str(root),
-             "--session-id", session_id)
+    """A resolved CLI prefix for the restore packet; use command_argv for direct spawning."""
+    return shell_prefix(command_argv(root, session_id), windows=os.name == "nt")
+
+
+def shell_prefix(parts: tuple[str, ...], *, windows: bool) -> str:
+    if windows:
+        return "& " + " ".join("'" + part.replace("'", "''") + "'" for part in parts)
     return " ".join(shlex.quote(part) for part in parts)
 
 
@@ -188,7 +197,9 @@ def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str 
     if not path.exists() and not may_start:
         return None
     engine = sibling("session_memory")
-    with ledger.session_hash_lock(root, ledger.digest(session_id), wait=False):
+    terminal = restore or payload.get("hook_event_name") in ("Stop", "PreCompact", "SessionEnd")
+    with ledger.session_hash_lock(root, ledger.digest(session_id), wait=False,
+                                  timeout=0.5 if terminal else 0):
         if not path.exists() and not auto_start(ledger, engine, root, payload):
             return None
         now = ledger.utc_now()
@@ -257,7 +268,8 @@ def hook(ledger: Any, payload: dict[str, Any], *, restore: bool = False) -> str 
                     "failed or stale, so re-run the source when current data matters. Cite the id in notes "
                     "that rely on the result. Record corrections with explicit supersession. This packet is "
                     "a bounded subset, newest first; absence here is not absence from memory.\n"
-                    + ledger.escaped_for_context({"command_prefix": prefix, "recent_external_results": recent,
+                    + ledger.escaped_for_context({"command_prefix": prefix, "command_argv": command_argv(root, session_id),
+                                                  "recent_external_results": recent,
                                                   "current_state_subset": items, "events": status["events"]})
                     + "\n</session-evidence-memory>"
                 )
@@ -391,6 +403,8 @@ def main(arguments: list[str] | None = None) -> int:
                  "invalid_pointer", "pointer_not_found", "invalid_page", "invalid_state",
                  "state_revision_conflict", "state_evidence_not_found", "state_input_too_large"}
         code = str(exc) if type(exc) is ValueError and str(exc) in known else "memory_operation_failed"
+        if isinstance(exc, ledger.SessionLockBusy):
+            code = "memory_session_lock_busy"
         if isinstance(exc, sqlite3.Error) and "database or disk is full" in str(exc):
             code = "memory_storage_limit"
         print(json.dumps({"error": code, "exception_class": type(exc).__name__, "action": args.action,
@@ -410,6 +424,7 @@ def hook_main(arguments: list[str]) -> int:
         return 0
     if not isinstance(payload, dict):
         return 0
+    runtime = None
     try:
         os.environ["CLAUDE_PLUGIN_DATA"] = arguments[2]
         runtime = sibling("memory_runtime")
@@ -421,6 +436,13 @@ def hook_main(arguments: list[str]) -> int:
             else:
                 print(json.dumps({"systemMessage": packet}))
     except Exception as exc:
+        if runtime is not None and isinstance(exc, runtime.SessionLockBusy):
+            terminal = arguments[0] == "hook-restore" or payload.get("hook_event_name") in (
+                "Stop", "PreCompact", "SessionEnd")
+            if terminal:
+                print(json.dumps({"systemMessage": "Evidence Memory: session lock still busy after a bounded wait; "
+                                                   "capture or restore deferred. Use memory status/sync to retry."}))
+            return 0
         # Only fixed codes or exception class names are safe to expose here.
         known = {"transcript_unavailable", "transcript_identity_unavailable",
                  "transcript_session_mismatch", "invalid_cursor", "invalid_plan_cutoff",

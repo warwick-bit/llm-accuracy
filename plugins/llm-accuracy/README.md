@@ -162,10 +162,13 @@ Inventory rows identify **LLM Accuracy**, not every plugin from its marketplace;
 an unknown version must not be guessed to belong to Session Ledger.
 
 The underlying script is `scripts/accuracy_doctor.py` in the installed plugin.
-Use Python 3; on Windows install Git Bash or pass its path using `--shell`.
+Use Python 3.9+ and `--python-executable` to probe the configured executable.
+The candidate uses Claude Code 2.1.287+ exec hooks; native Windows needs no
+Git Bash. A local doctor probe does not verify the installed option. See the
+repository compatibility contract for current host coverage.
 `emitted` means the command returned hook context; `disabled` identifies a
 bypass; `no_context`, `invalid_response`, `execution_failed`, `timeout` and
-`shell_unavailable` need investigation. `missing_default` is normal;
+`unusable` and `unsupported_version` need investigation. `missing_default` is normal;
 `config_unavailable` or `invalid_config` leaves only built-in triggers active.
 Unknown reminder modes are reported and fall back to general mode.
 

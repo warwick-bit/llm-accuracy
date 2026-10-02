@@ -5,7 +5,9 @@ products. Use the path below that matches where you work.
 
 ## Validation status
 
-Platform capability and runtime evidence are separate.
+Platform capability and runtime evidence are separate. The source candidate uses
+shell-independent hooks; read [compatibility and current release evidence](COMPATIBILITY.md)
+before relying on an OS or Desktop mode. Published-release receipts below are historical.
 
 **Current plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
 [Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
@@ -47,10 +49,11 @@ and the general and targeted advisory hooks.
 
 ### Before you start
 
-- Use a current Claude Code installation. If `/plugin` is unavailable, update
-  Claude Code first.
-- Have Python 3.9 or later available as `python3` or `python` and a
-  POSIX-compatible hook shell. CI exercises launchers on Linux and native Windows with Git Bash.
+- Use Claude Code 2.1.287 or later for this source candidate.
+- Configure a working Python 3.9+ executable in the plugin option before
+  starting a session. Linux/WSL/macOS normally use `python3`; native Windows
+  uses `python` or an absolute `python.exe` path. Git Bash is optional.
+  An installed Windows Store alias alone is not a working Python runtime.
 - Install only if you trust the plugin source. It runs local advisory hook
   commands in Claude Code.
 
@@ -134,12 +137,10 @@ record and Claude's compact summary may contain sensitive local content. It is
 unsupported in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude
 Code on the web.
 
-Session Ledger requires Python 3.9 or later (CI-tested 3.9-3.13) on the machine
-running Claude Code. Check it with `python3 --version`, or `python --version`
-when `python3` is unavailable (for example, a Windows python.org installation).
-The Claude Code hooks select `python3` when present and otherwise use `python`; the
-selected command must run Python 3.9 or later. Windows hooks still require a
-POSIX-compatible shell such as Git Bash. No `python3.exe` copy or alias is needed.
+Session Ledger requires Claude Code 2.1.287+ and a configured Python 3.9+
+executable (CI covers 3.9–3.14). The candidate launches hooks directly with
+argument vectors on Linux/WSL, native Windows and macOS; Git Bash is optional.
+See [configuration and current evidence](COMPATIBILITY.md).
 
 Install it after adding the marketplace:
 

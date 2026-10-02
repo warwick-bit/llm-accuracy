@@ -397,6 +397,16 @@ def run_probe(
         ]
         if plugin is not None:
             command.extend(["--plugin-dir", str(plugin.resolve())])
+            try:
+                manifest = json.loads((plugin / ".claude-plugin/plugin.json").read_text())
+                if "python_executable" in manifest.get("userConfig", {}):
+                    # Explicit local probe option; --plugin-dir does not save defaults.
+                    import sys
+                    command.extend(["--settings", json.dumps({"pluginConfigs": {
+                        manifest["name"]: {"options": {"python_executable": sys.executable}}
+                    }})])
+            except (OSError, ValueError, KeyError):
+                return {"status": "invalid_plugin_manifest", "answers": []}
         if effort is not None:
             command.extend(["--effort", effort])
         stdin = (

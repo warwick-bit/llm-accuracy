@@ -3,6 +3,11 @@
 Open a draft pull request for a scoped change, or use the feedback issue form
 for a sanitized, reproducible problem.
 
+Runtime and packaging changes must follow [the compatibility contract](docs/COMPATIBILITY.md).
+Run `python3 scripts/check_compatibility.py`, keep all OS/host cells explicit,
+and record current installed-host QA before a release (`--release`). Tests on
+Windows with Git Bash do not establish support without it; Chat is skills-only.
+
 Never include credentials, customer data, raw prompts, provider responses, logs,
 or private transcripts. Replace names, IDs, amounts, dates, and examples with
 synthetic equivalents.

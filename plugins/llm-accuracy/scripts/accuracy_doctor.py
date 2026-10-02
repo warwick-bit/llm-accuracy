@@ -85,31 +85,30 @@ def installation_inventory() -> dict:
     }
 
 
-def find_shell() -> str | None:
-    if os.name == "nt":
-        return find_windows_shell()
-    return shutil.which("sh")
+def python_status(executable: str) -> dict:
+    try:
+        result = subprocess.run([executable, "-c", "import sys,json; print(json.dumps(list(sys.version_info[:3])))"],
+                                capture_output=True, text=True, timeout=5)
+        version = json.loads(result.stdout) if result.returncode == 0 else None
+        if not isinstance(version, list) or len(version) != 3 or not all(type(v) is int for v in version):
+            return {"status": "unusable"}
+        return {"status": "ok" if tuple(version) >= (3, 9) else "unsupported_version",
+                "version": ".".join(map(str, version))}
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        return {"status": "unusable"}
 
 
-def find_windows_shell() -> str | None:
-    candidate = (
-        Path(os.environ.get("ProgramFiles", "C:/Program Files")) / "Git/bin/bash.exe"
-    )
-    if candidate.is_file():
-        return str(candidate)
-    discovered = shutil.which("bash")
-    if discovered:
-        normalized = discovered.replace("\\", "/").lower()
-        if normalized.endswith(("/system32/bash.exe", "/sysnative/bash.exe")):
-            return None  # Windows' WSL launcher is not a native hook shell.
-    return discovered
+def command_argv(handler: dict, root: Path, executable: str) -> list[str]:
+    if handler.get("command") != "${user_config.python_executable}" or not isinstance(handler.get("args"), list):
+        raise ValueError("registration")
+    return [executable, *[value.replace("${CLAUDE_PLUGIN_ROOT}", str(root)) for value in handler["args"]]]
 
 
-def probe_command(command: str, prompt: str, root: Path, shell: str) -> str:
+def probe_command(command: dict, prompt: str, root: Path, executable: str) -> str:
     env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(root)}
     try:
         result = subprocess.run(
-            [shell, "-c", command],
+            command_argv(command, root, executable),
             input=json.dumps({"prompt": prompt}),
             capture_output=True,
             text=True,
@@ -120,7 +119,7 @@ def probe_command(command: str, prompt: str, root: Path, shell: str) -> str:
         )
     except subprocess.TimeoutExpired:
         return "timeout"
-    except OSError:
+    except (OSError, ValueError):
         return "execution_failed"
     if result.returncode != 0:
         return "execution_failed"
@@ -137,14 +136,14 @@ def probe_command(command: str, prompt: str, root: Path, shell: str) -> str:
         return "no_context" if not result.stdout.strip() else "invalid_response"
 
 
-def check_hooks(root: Path, shell: str | None) -> dict[str, str]:
+def check_hooks(root: Path, executable: str) -> dict[str, str]:
     try:
         groups = json.loads((root / "hooks/hooks.json").read_text())["hooks"][
             "UserPromptSubmit"
         ]
-        commands = [h["command"] for group in groups for h in group["hooks"]]
+        commands = [h for group in groups for h in group["hooks"]]
         if len(commands) != len(PROMPTS) or not all(
-            isinstance(command, str) for command in commands
+            isinstance(command, dict) and command.get("args") for command in commands
         ):
             raise ValueError("registration")
     except (OSError, ValueError, KeyError, TypeError):
@@ -159,14 +158,12 @@ def check_hooks(root: Path, shell: str | None) -> dict[str, str]:
         outcomes[family] = (
             "disabled"
             if disabled
-            else probe_command(command, prompt, root, shell)
-            if shell
-            else "shell_unavailable"
+            else probe_command(command, prompt, root, executable)
         )
     return outcomes
 
 
-def diagnose(root: Path = ROOT, shell: str | None = None) -> dict:
+def diagnose(root: Path = ROOT, python_executable: str | None = None) -> dict:
     phrases, config_status = read_configuration()
     try:
         manifest = json.loads((root / ".claude-plugin/plugin.json").read_text())
@@ -176,7 +173,9 @@ def diagnose(root: Path = ROOT, shell: str | None = None) -> dict:
     except (OSError, ValueError, KeyError, TypeError):
         version = "invalid_manifest"
     mode = os.environ.get("CC_CLAIM_FIDELITY_MODE", "general").strip().lower()
-    hooks = check_hooks(root, shell or find_shell())
+    executable = python_executable or os.environ.get("CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE") or sys.executable
+    interpreter = python_status(executable)
+    hooks = check_hooks(root, executable) if interpreter["status"] == "ok" else {"interpreter": interpreter["status"]}
     healthy = (
         config_status in {"ok", "missing_default"}
         and mode in {"general", "targeted"}
@@ -192,6 +191,9 @@ def diagnose(root: Path = ROOT, shell: str | None = None) -> dict:
             family: len(phrases.get(family, [])) for family, _, _ in PROMPTS
         },
         "hook_commands": hooks,
+        "python": interpreter,
+        "python_selection": "explicit" if python_executable else "hook_option" if os.environ.get("CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE") else "doctor_process",
+        "installed_python_option": "unverified",
         "current_session_activation": "unverified",
         "scope": "local_package_commands_and_user_controls",
     }
@@ -267,10 +269,10 @@ def main() -> int:
     )
     parser.add_argument("--model", default="sonnet")
     parser.add_argument(
-        "--shell", help="Explicit POSIX shell executable, such as native Git Bash"
+        "--python-executable", help="Working Python executable name or path; no shell or arguments"
     )
     args = parser.parse_args()
-    report = diagnose(shell=args.shell)
+    report = diagnose(python_executable=args.python_executable)
     report["host_registration"] = installation_inventory()
     if args.live:
         live = run_probe(

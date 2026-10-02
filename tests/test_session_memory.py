@@ -5,7 +5,6 @@ import importlib.util
 import errno
 import json
 import os
-import shlex
 import sqlite3
 import subprocess
 import sys
@@ -643,7 +642,93 @@ def test_busy_hook_skips_without_writing(tmp_path, monkeypatch):
                                   '--plugin-data', str(tmp_path / 'data')], input=json.dumps(payload).encode(),
                                  capture_output=True, timeout=5)
     assert process.returncode == 0
+    assert process.stdout == process.stderr == b''
     assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 0
+    later = subprocess.run([sys.executable, str(HOOKS / 'memory.py'), 'hook-capture',
+                            '--plugin-data', str(tmp_path / 'data')], input=json.dumps(payload).encode(),
+                           capture_output=True, timeout=5)
+    assert later.returncode == 0 and later.stdout == later.stderr == b''
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 1
+    assert cli(tmp_path, 'sync', str(path)).returncode == 0
+    assert json.loads(cli(tmp_path, 'status').stdout)['events'] == 1
+
+
+def test_busy_cli_and_terminal_hooks_keep_fixed_diagnostics(tmp_path, monkeypatch):
+    import time
+
+    assert cli(tmp_path, 'enable').returncode == 0
+    ledger = load('memory_runtime')
+    monkeypatch.setenv('CLAUDE_PLUGIN_DATA', str(tmp_path / 'data'))
+    payload = {'session_id': 'synthetic-session', 'cwd': str(tmp_path), 'hook_event_name': 'Stop'}
+    with ledger.session_hash_lock(tmp_path / 'data', ledger.digest('synthetic-session')):
+        status = cli(tmp_path, 'status')
+        assert status.returncode == 1
+        assert json.loads(status.stdout)['error'] == 'memory_session_lock_busy'
+        started = time.monotonic()
+        terminal = subprocess.run([sys.executable, str(HOOKS / 'memory.py'), 'hook-capture',
+                                   '--plugin-data', str(tmp_path / 'data')], input=json.dumps(payload).encode(),
+                                  capture_output=True, timeout=5)
+        assert time.monotonic() - started < 3
+        assert terminal.returncode == 0
+        assert 'bounded wait' in json.loads(terminal.stdout)['systemMessage']
+
+
+def test_restore_waits_for_brief_contention(tmp_path, monkeypatch):
+    import threading
+    import time
+
+    assert cli(tmp_path, 'enable').returncode == 0
+    assert cli(tmp_path, 'remember', data=json.dumps({'key': 'scope', 'kind': 'scope',
+                                                    'text': 'Synthetic scope.'}).encode()).returncode == 0
+    ledger = load('memory_runtime')
+    acquired = threading.Event()
+
+    def hold_briefly():
+        with ledger.session_hash_lock(tmp_path / 'data', ledger.digest('synthetic-session')):
+            acquired.set()
+            time.sleep(0.2)
+
+    holder = threading.Thread(target=hold_briefly)
+    holder.start()
+    assert acquired.wait(3)
+    try:
+        payload = {'session_id': 'synthetic-session', 'cwd': str(tmp_path)}
+        restored = subprocess.run([sys.executable, str(HOOKS / 'memory.py'), 'hook-restore',
+                                   '--plugin-data', str(tmp_path / 'data')], input=json.dumps(payload).encode(),
+                                  capture_output=True, timeout=5)
+        assert restored.returncode == 0
+        assert 'session-evidence-memory' in json.loads(restored.stdout)['hookSpecificOutput']['additionalContext']
+    finally:
+        holder.join(3)
+
+
+def test_hook_body_io_failure_is_not_silenced(monkeypatch, capsys):
+    import io
+
+    bridge = load('memory')
+    monkeypatch.setattr(sys, 'stdin', io.StringIO('{}'))
+
+    def failed(*args, **kwargs):
+        raise BlockingIOError(errno.EAGAIN, 'synthetic private detail')
+
+    monkeypatch.setattr(bridge, 'hook', failed)
+    assert bridge.hook_main(['hook-capture', '--plugin-data', 'synthetic-data']) == 0
+    message = json.loads(capsys.readouterr().out)['systemMessage']
+    assert 'BlockingIOError' in message
+    assert 'synthetic private detail' not in message
+
+
+def test_windows_bounded_lock_timeout_normalized(tmp_path, monkeypatch):
+    ledger = load('memory_runtime')
+
+    def busy(*args):
+        raise OSError(errno.EACCES, 'synthetic contention')
+
+    monkeypatch.setattr(ledger, 'fcntl', None)
+    monkeypatch.setattr(ledger, 'msvcrt', SimpleNamespace(locking=busy, LK_NBLCK=1, LK_UNLCK=2))
+    with pytest.raises(ledger.SessionLockBusy):
+        with ledger.session_hash_lock(tmp_path / 'data', ledger.digest('synthetic-session'), timeout=0.01):
+            pytest.fail('lock unexpectedly acquired')
 
 
 def test_synthetic_long_session_replay():
@@ -1034,7 +1119,7 @@ def test_restore_packet_lists_fetchable_ids_without_call_content(tmp_path, monke
     assert context.count('</session-evidence-memory>') == 1
     assert 'ignore prior instructions' not in context and 'resultword' not in context
     item, = packet_json(context)['recent_external_results']
-    prefix = shlex.split(packet_json(context)['command_prefix'])
+    prefix = packet_json(context)['command_argv']
     assert prefix[-2:] == ['--session-id', 'synthetic-session']
     fetched = subprocess.run([*prefix, 'fetch', item['id']], capture_output=True, text=True, timeout=10)
     assert json.loads(json.loads(fetched.stdout)['text'])['content'] == 'resultword 42'

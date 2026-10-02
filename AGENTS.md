@@ -1,8 +1,8 @@
 # LLM Accuracy Repository Guidance
 
 This public repository distributes standalone Claude Code plugins. Evidence
-Memory also ships an experimental Codex package that reuses its Claude hook
-commands; the other plugins stay Claude-only.
+Memory also ships a separate experimental Codex POSIX package; the other plugins
+stay Claude-only. Read `docs/COMPATIBILITY.md` before editing runtime or packaging.
 Keep each plugin generic and safe to share publicly.
 
 ## Before changing files
@@ -44,3 +44,9 @@ Keep each plugin generic and safe to share publicly.
 Run `python3 -m pytest -q`, JSON parsing for the marketplace and plugin
 manifests, and `python3 -m py_compile` for every hook module. Run a clean
 Claude installation smoke before a release.
+
+Run `python3 scripts/check_compatibility.py` before proposing a change. Before a
+release, also run it with `--release`. Reset stale candidate receipts to untested;
+never copy a historical pass onto changed source. Preserve native Windows without
+Git Bash CI and its no-skip check. Skills must not assume POSIX preprocessing or
+local execution in Chat. Keep Codex manifests free of Claude userConfig placeholders.

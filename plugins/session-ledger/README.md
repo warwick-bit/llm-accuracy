@@ -8,10 +8,11 @@ and `${CLAUDE_PLUGIN_DATA}` in 2.1.78. Use a current Claude Code release;
 the live Windows smoke test for this release used 2.1.281. See the
 [Claude Code changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
 
-It also requires Python 3.9 or later, available as `python3` or `python`, on the machine running Claude Code
-(CI-tested on 3.9-3.13). Hooks and ledger commands prefer `python3` and fall back
-to `python` when that command is absent. Windows requires a POSIX-compatible
-hook shell such as Git Bash.
+The source candidate requires Claude Code 2.1.287+ and a configured Python
+3.9+ executable (CI covers 3.9–3.14). Hooks launch directly without a shell;
+native Windows works with or without Git Bash. The Python option must name
+one working executable, with no arguments. See the repository compatibility
+contract for current installed-host coverage and Desktop mode boundaries.
 
 ## Install and enable
 

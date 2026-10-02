@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "minimum_claude_code": "2.1.287",
+  "python_minimum": "3.9",
+  "packages": {
+    "llm-accuracy": {
+      "version": "0.7.0",
+      "sha256": "5bf292d9799a2ac8c64ef06dcebc9b1a2e4f0e91eb8c981d360dc83e908f3e4a"
+    },
+    "deterministic-data": {
+      "version": "0.1.0",
+      "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+    },
+    "session-ledger": {
+      "version": "0.3.0",
+      "sha256": "1c877a0e61e193bd9c49b0444cda4fbf750731efdc5e82504b5ae8f263d2a9ac"
+    },
+    "evidence-memory": {
+      "version": "0.4.0",
+      "sha256": "36e70b8eb6a7ecd6866c045d54c28656070916a85fb7b0fe6b8cf7df7316ca6d"
+    }
+  },
+  "targets": {
+    "code-linux": {
+      "outcome": "untested"
+    },
+    "code-wsl": {
+      "outcome": "pass",
+      "host_version": "2.1.287",
+      "python_version": "3.12.3",
+      "checks": {
+        "clean_install": true,
+        "configured_python": true,
+        "prompt_delivery": true,
+        "upgrade": true,
+        "uninstall": true
+      }
+    },
+    "code-windows": {
+      "outcome": "untested"
+    },
+    "code-macos": {
+      "outcome": "untested"
+    },
+    "desktop-chat-windows": {
+      "outcome": "untested"
+    },
+    "desktop-chat-macos": {
+      "outcome": "untested"
+    },
+    "cowork-windows": {
+      "outcome": "untested"
+    },
+    "cowork-macos": {
+      "outcome": "untested"
+    }
+  },
+  "capabilities": {
+    "code": "configured_exec_hooks",
+    "desktop_chat": "skills_only",
+    "cowork": "stateless_plugins_only",
+    "codex_memory": "experimental_posix_only"
+  }
+}

@@ -75,23 +75,6 @@ def test_numeric_value_difference_is_not_rounded_away(modules, value):
     ]
 
 
-@pytest.mark.parametrize(
-    "discovered,expected",
-    [
-        (r"C:\Windows\System32\bash.exe", None),
-        (r"C:\Windows\Sysnative\bash.exe", None),
-        (r"D:\Git\bin\bash.exe", r"D:\Git\bin\bash.exe"),
-        (None, None),
-    ],
-)
-def test_windows_shell_discovery_rejects_wsl_launcher(
-    modules, tmp_path, monkeypatch, discovered, expected
-):
-    monkeypatch.setenv("ProgramFiles", str(tmp_path))
-    monkeypatch.setattr(modules[0].shutil, "which", lambda name: discovered)
-    assert modules[0].find_windows_shell() == expected
-
-
 @pytest.mark.parametrize("exception", [KeyboardInterrupt, RuntimeError])
 def test_probe_cleans_up_on_interruption_and_unexpected_errors(
     modules, tmp_path, monkeypatch, exception
@@ -310,7 +293,7 @@ def test_disabled_hook_and_invalid_mode_visible(modules, monkeypatch):
     monkeypatch.setenv("CC_SKIP_CLAIM_FIDELITY", "1")
     monkeypatch.setenv("CC_CLAIM_FIDELITY_MODE", "unknown-value")
     monkeypatch.setattr(doctor, "probe_command", lambda *a: "emitted")
-    report = doctor.diagnose(shell="synthetic-shell")
+    report = doctor.diagnose(python_executable=sys.executable)
     assert report["hook_commands"]["claim_fidelity"] == "disabled"
     assert not report["mode_recognized"]
     assert report["status"] == "attention"
