@@ -13,8 +13,7 @@
       "type": "string",
       "title": "Python executable",
       "description": "A working Python 3.9+ executable name or absolute path, with no arguments. Linux/macOS: python3. Windows: python or the full python.exe path. Git Bash is optional.",
-      "required": true,
-      "default": "python3"
+      "required": true
     }
   }
 }

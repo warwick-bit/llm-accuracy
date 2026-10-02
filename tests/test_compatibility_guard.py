@@ -10,7 +10,18 @@ spec.loader.exec_module(guard)
 def test_candidate_requires_current_installed_smoke_before_release():
     receipt = guard.candidate(ROOT)
     assert guard.validate(ROOT, receipt) == []
-    assert guard.validate(ROOT, receipt, release=True) == ['clean_installed_claude_code_smoke_required']
+    assert guard.validate(ROOT, receipt, release=True) == [
+        'clean_installed_smoke_required_' + target for target in guard.TARGETS[:4]]
+
+
+def test_wsl_smoke_cannot_certify_native_windows_or_macos():
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-wsl'] = {'outcome': 'pass', 'host_version': '2.1.287',
+                                    'checks': dict.fromkeys(guard.CHECKS, True)}
+    errors = guard.validate(ROOT, receipt, release=True)
+    assert 'clean_installed_smoke_required_code-wsl' not in errors
+    assert 'clean_installed_smoke_required_code-windows' in errors
+    assert 'clean_installed_smoke_required_code-macos' in errors
 
 
 def test_old_package_hash_cannot_claim_current_smoke():

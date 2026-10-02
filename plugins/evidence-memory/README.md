@@ -93,7 +93,8 @@ it**: capture starts at a fresh cutoff in each new session. Remove it with
   cached `memory.py` under `$CODEX_HOME` (default `~/.codex`) and passes that
   data folder and `$CODEX_THREAD_ID`, the session ID Codex 0.158 exports to
   shell commands. After the first compaction the restore packet's
-  `command_prefix` gives the same command already resolved.
+  `command_argv` gives the same command already resolved. Use it directly or
+  quote each element for the active shell; Windows `command_prefix` is PowerShell.
 - **Sandbox:** read actions work in Codex's read-only sandbox. `remember`,
   `sync`, `enable` and `disable` need a writable plugin data directory, which
   the default Codex sandboxes do not grant.
@@ -179,7 +180,7 @@ results, newest first, as a short ID, tool name(s), time, logged size and host
 error flag. It carries no call arguments or result content, because call input
 can hold secrets or instruction-like text; the model fetches the ID to see both.
 The packet also carries a bounded subset of current state and a resolved
-`command_prefix` for the CLI. It stays within the host output budget, dropping
+`command_argv` for the CLI and a legacy shell-specific `command_prefix`. It stays within the host output budget, dropping
 the oldest listed results before any state, and is omitted when there is no
 listed result or state. The model must still choose to retrieve; storage alone
 does not guarantee it will. An ID is provenance for a logged historical result,

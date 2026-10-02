@@ -5,7 +5,7 @@
   "packages": {
     "llm-accuracy": {
       "version": "0.7.0",
-      "sha256": "5bf292d9799a2ac8c64ef06dcebc9b1a2e4f0e91eb8c981d360dc83e908f3e4a"
+      "sha256": "2a9a38804e274aa09d9d65a5e8a339a19c2c3a25632a442f2cf5ce03f55621cc"
     },
     "deterministic-data": {
       "version": "0.1.0",
@@ -13,11 +13,11 @@
     },
     "session-ledger": {
       "version": "0.3.0",
-      "sha256": "1c877a0e61e193bd9c49b0444cda4fbf750731efdc5e82504b5ae8f263d2a9ac"
+      "sha256": "88dfd1afdd9b10cfee443e2351e2c1115b3e386d966ca450671acff91e550bf3"
     },
     "evidence-memory": {
       "version": "0.4.0",
-      "sha256": "36e70b8eb6a7ecd6866c045d54c28656070916a85fb7b0fe6b8cf7df7316ca6d"
+      "sha256": "d9cb0873ef298e97f6d33f013d4ca20b4a438da050d99de7783febea15a1e054"
     }
   },
   "targets": {

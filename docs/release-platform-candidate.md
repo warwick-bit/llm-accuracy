@@ -3,12 +3,14 @@
 Accuracy 0.7.0, Session Ledger 0.3.0 and Evidence Memory 0.4.0 change Claude hook
 launching to direct executable/argument vectors. Use Claude Code 2.1.287+ and
 configure each plugin's Python executable before restarting or reloading. Native
-Windows no longer needs Git Bash. This adds an explicit setup step on upgrade;
+Windows command execution no longer needs Git Bash; installed Windows/macOS
+delivery remains unverified. This adds an explicit setup step on upgrade;
 the previous automatic command-name selection is not retained for Claude.
 
 The doctor probes executable usability/version and shipped exec registrations.
 Ledger skills avoid POSIX-only automatic preprocessing. Windows memory restore
-prefixes use PowerShell literal quoting. Codex keeps a separate experimental
+packets expose shell-independent argument vectors and label legacy PowerShell
+prefixes. Codex keeps a separate experimental
 POSIX manifest and now checks interpreter usability before running a hook once.
 
 Evidence Memory distinguishes lock contention from capture I/O failures. Ordinary
@@ -21,5 +23,6 @@ mandatory cases. Current candidate source hashes bind installed-host receipts;
 Linux/WSL, Windows, macOS and Desktop modes must remain explicit. Historical
 receipts are not reused. Read [the compatibility contract](COMPATIBILITY.md)
 and [current outcomes](validation/compatibility-candidate.json) before claiming
-installed-host support. Desktop Chat remains skills-only; Cowork supports only
+installed-host support. Tag releases require installed Code smokes on all four
+OS targets. Desktop Chat remains skills-only; Cowork supports only
 the stateless packages here. Native Codex without a POSIX hook shell is unsupported.

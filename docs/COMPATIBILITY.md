@@ -4,7 +4,10 @@ The source candidate uses shell-independent Claude hooks. Each hook plugin
 requires Claude Code **2.1.287 or later** and a configured, working **Python
 3.9 or later** executable. This is a conservative host floor verified by the
 maintainer, not a claim about the first version that introduced exec hooks.
-Git Bash is optional on native Windows. WSL uses its Linux Python installation;
+The native Windows implementation does not require Git Bash. Installed Windows
+and macOS delivery remain unverified until their current smoke receipts pass;
+these are candidate support targets, not certified installations.
+WSL uses its Linux Python installation;
 native Windows uses Windows Python. Do not point one runtime at the other's
 launcher. A `.cmd`/`.bat` shim or `py -3` is not an executable name: configure
 the actual Python executable, with no arguments.
@@ -35,7 +38,8 @@ the actual Python executable, with no arguments.
 
 ## Configure Python before starting a session
 
-Each installed hook plugin has a **Python executable** option. Set it when
+Each installed hook plugin has a required **Python executable** option with no
+platform-dependent default. Set it when
 enabling the plugin or in `/config`. On Linux/WSL/macOS use a verified `python3`;
 on native Windows use a verified `python` or the absolute `python.exe` path.
 Windows Store aliases can exist without a working installation. Execute the
@@ -46,7 +50,7 @@ turn. An older Python produces a fixed advisory rather than loading hooks.
 For headless installation, use `claude plugin configure PLUGIN@llm-accuracy
 --values-stdin` and supply a JSON object containing `python_executable` through
 stdin. Use shell-appropriate quoting for paths. `--plugin-dir` alone does not
-populate saved options; a manifest default is not proof of configuration.
+populate saved options; enabling requires explicit interpreter configuration.
 
 The Accuracy doctor accepts `--python-executable NAME_OR_PATH` and runs the
 shipped exec registrations without a shell. Its default is its own running
@@ -65,7 +69,8 @@ After changing any package file, run `python3 scripts/check_compatibility.py
 --write-candidate` to reset all installed-host outcomes to `untested`. Perform
 the actual QA before replacing an outcome. Do not carry forward a pass or edit
 its hash to fit new source. Run the checker in every PR; before a release run
-it with `--release`, which additionally requires a clean installed Code smoke.
+it with `--release`, which additionally requires clean installed Code smokes on
+Linux, WSL, native Windows and macOS. A WSL pass cannot certify Windows or macOS.
 Tag builds run the release check. Missing, stale or incomplete evidence fails
 the check. Explicit untested cells are coverage gaps, never support proof.
 

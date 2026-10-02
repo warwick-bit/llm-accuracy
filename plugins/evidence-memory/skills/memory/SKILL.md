@@ -12,8 +12,12 @@ Codex cells that call an MCP or web tool. Local shell, file and edit output is
 not stored; re-read the file or re-run the local command instead. Tools whose
 names suggest HR, payroll, bank, tax, identity or secret data are withheld and
 counted in `status`. After compaction, the injected packet lists recent external
-result IDs and a resolved `command_prefix`; use that prefix when the placeholders
-below are not substituted.
+result IDs and a resolved `command_argv`. Append the action and its arguments
+to that vector and execute directly when the placeholders below are not
+substituted. If only a shell tool is available, quote each vector element for
+that actual shell. The legacy `command_prefix` is POSIX on Linux/macOS and
+PowerShell on Windows; it is not a universal Windows shell command. Never send
+the PowerShell prefix to Git Bash or cmd.exe.
 
 In Claude Code, run the configured executable `${user_config.python_executable}`
 with `${CLAUDE_PLUGIN_ROOT}/hooks/memory.py`, `--plugin-data`,
@@ -26,7 +30,7 @@ or any required placeholder is unavailable (including Claude Desktop Chat),
 say memory capture is unavailable; do not claim retrieval or persistence.
 
 If the placeholders above are not filled in (as in Codex), use the
-`command_prefix` from the post-compaction memory packet. Before the first
+`command_argv` from the post-compaction memory packet. Before the first
 compaction, Codex's POSIX shell can build the same prefix from its own
 environment:
 

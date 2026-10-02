@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; test -z \"$PLUGIN_PYTHON\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
+            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; if test -n \"$PLUGIN_PYTHON\"; then \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"; else printf '%s\\n' '{\"systemMessage\":\"Evidence Memory: capture unavailable; configure a working Python 3.9 or later executable.\"}'; fi",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; test -z \"$PLUGIN_PYTHON\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
+            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; if test -n \"$PLUGIN_PYTHON\"; then \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"; else printf '%s\\n' '{\"systemMessage\":\"Evidence Memory: capture unavailable; configure a working Python 3.9 or later executable.\"}'; fi",
             "timeout": 10
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; test -z \"$PLUGIN_PYTHON\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
+            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; if test -n \"$PLUGIN_PYTHON\"; then \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"; else printf '%s\\n' '{\"systemMessage\":\"Evidence Memory: capture unavailable; configure a working Python 3.9 or later executable.\"}'; fi",
             "timeout": 10
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; test -z \"$PLUGIN_PYTHON\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
+            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; if test -n \"$PLUGIN_PYTHON\"; then \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"; else printf '%s\\n' '{\"systemMessage\":\"Evidence Memory: capture unavailable; configure a working Python 3.9 or later executable.\"}'; fi",
             "timeout": 10
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; test -z \"$PLUGIN_PYTHON\" || \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-restore --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
+            "command": "PLUGIN_PYTHON=; for candidate in python3 python; do if \"$candidate\" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then PLUGIN_PYTHON=$candidate; break; fi; done; if test -n \"$PLUGIN_PYTHON\"; then \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory.py\" hook-restore --plugin-data \"${CLAUDE_PLUGIN_DATA}\"; else printf '%s\\n' '{\"systemMessage\":\"Evidence Memory: capture unavailable; configure a working Python 3.9 or later executable.\"}'; fi",
             "timeout": 10
           }
         ]

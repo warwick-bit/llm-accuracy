@@ -3,9 +3,9 @@
 The behaviour tests in test_session_ledger.py import the module and call
 functions directly, which leaves CLI parsing, stdin handling, interpreter
 invocation, and the hooks.json contract uncovered. These tests execute the
-exact command strings shipped in hooks.json — and the inline commands embedded
-in the begin-plan and clear SKILL.md files — through a POSIX shell, the same
-way Claude Code runs them.
+exact argument vectors shipped in hooks.json and the begin-plan and clear skill
+instructions. This checks their CLI contract; model adherence to skill prose
+still requires installed-host QA.
 """
 
 from __future__ import annotations
@@ -85,12 +85,16 @@ def run_hook(
 def run_skill(name, *, data_root, session_id):
     source = (PLUGIN_ROOT / "skills" / name / "SKILL.md").read_text()
     assert "!`" not in source
-    assert "session-ledger.py" in source and name in source
-    command = [sys.executable, str(PLUGIN_ROOT / "hooks/session-ledger.py"), name]
-    if data_root is not None:
-        command += ["--plugin-data", str(data_root)]
-    if session_id is not None:
-        command += ["--session-id", session_id]
+    vector = json.loads(source.split('```json\n', 1)[1].split('\n```', 1)[0])
+    replacements = {'${user_config.python_executable}': sys.executable,
+                    '${CLAUDE_PLUGIN_ROOT}': str(PLUGIN_ROOT),
+                    '${CLAUDE_PLUGIN_DATA}': str(data_root) if data_root is not None else '',
+                    '${CLAUDE_SESSION_ID}': session_id or ''}
+    command = []
+    for argument in vector:
+        for token, value in replacements.items():
+            argument = argument.replace(token, value)
+        command.append(argument)
     return subprocess.run(command, capture_output=True, text=True, env=clean_environment(), timeout=30)
 
 

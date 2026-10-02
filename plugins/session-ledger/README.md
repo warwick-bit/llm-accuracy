@@ -10,7 +10,8 @@ the live Windows smoke test for this release used 2.1.281. See the
 
 The source candidate requires Claude Code 2.1.287+ and a configured Python
 3.9+ executable (CI covers 3.9–3.14). Hooks launch directly without a shell;
-native Windows works with or without Git Bash. The Python option must name
+native Windows targets operation with or without Git Bash. Installed-host
+Windows/macOS verification is still required before release. The Python option must name
 one working executable, with no arguments. See the repository compatibility
 contract for current installed-host coverage and Desktop mode boundaries.
 

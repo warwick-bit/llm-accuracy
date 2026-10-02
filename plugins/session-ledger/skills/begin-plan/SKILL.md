@@ -4,15 +4,26 @@ description: Start a clean Session Ledger plan boundary for unrelated work in th
 disable-model-invocation: true
 ---
 
-Run the configured Python executable (`${user_config.python_executable}`)
-with `${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py`, the begin-plan action,
-`--plugin-data` and `${CLAUDE_PLUGIN_DATA}`. For `begin-plan`, also pass
-`--session-id` and `${CLAUDE_SESSION_ID}`. Use an argument vector when available;
-otherwise quote each value as a literal for the active shell (PowerShell: single
-quotes with embedded apostrophes doubled; POSIX: shell-escaped single arguments).
-Never execute the substituted text as a complete shell command. If local
-execution or any placeholder is unavailable, report that the operation could
-not be confirmed. This skill does not run a shell during preprocessing.
+Execute this argument vector after substituting the host placeholders:
+
+```json
+[
+  "${user_config.python_executable}",
+  "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+  "begin-plan",
+  "--plugin-data",
+  "${CLAUDE_PLUGIN_DATA}",
+  "--session-id",
+  "${CLAUDE_SESSION_ID}"
+]
+```
+
+Use direct execution when available. With a shell tool, quote every element
+as a literal for the active shell (PowerShell: `&` before the executable and
+single quotes with embedded apostrophes doubled; POSIX: shell-escaped single
+arguments). Never evaluate substituted text as a complete shell command.
+If local execution or a required placeholder is unavailable, report that the
+operation could not be confirmed. This skill has no shell preprocessing.
 
 Use this only when you deliberately begin unrelated work in the current session.
 Starting a plan boundary discards the stored ledger record and excludes earlier

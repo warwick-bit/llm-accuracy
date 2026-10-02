@@ -51,3 +51,21 @@ def test_codex_skill_validates_interpreter_before_status():
     skill = (ROOT / "plugins/evidence-memory/skills/memory/SKILL.md").read_text()
     assert 'sys.version_info < (3, 9)' in skill
     assert 'test -n "$MEMORY_PYTHON" || exit 1' in skill
+
+
+@pytest.mark.skipif(not HOOK_SHELL, reason="Codex POSIX launcher needs a POSIX shell")
+@pytest.mark.parametrize('mode', ['absent', 'unusable', 'old'])
+def test_codex_no_usable_interpreter_reports_nonblocking_advisory(tmp_path, mode):
+    bin_dir = tmp_path / 'bin'
+    bin_dir.mkdir()
+    if mode != 'absent':
+        for name in ('python3', 'python'):
+            (bin_dir / name).write_text('#!/bin/sh\nexit ' + ('1' if mode == 'old' else '49') + '\n')
+            (bin_dir / name).chmod(0o755)
+    config = json.loads((ROOT / 'plugins/evidence-memory/hooks/codex-hooks.json').read_text())['hooks']
+    for groups in config.values():
+        result = subprocess.run([HOOK_SHELL, '-c', 'PATH=' + shlex.quote(shell_path(bin_dir)) + '; '
+                                + groups[0]['hooks'][0]['command']],
+                                input='synthetic stdin', capture_output=True, text=True, timeout=5)
+        assert result.returncode == 0 and result.stderr == ''
+        assert 'configure a working Python 3.9' in json.loads(result.stdout)['systemMessage']

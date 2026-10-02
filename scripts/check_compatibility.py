@@ -53,10 +53,15 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
                 errors.append('missing_host_version_' + target)
             if not isinstance(checks, dict) or set(checks) != set(CHECKS) or any(v is not True for v in checks.values()):
                 errors.append('missing_checks_' + target)
-    if release and not any(targets[t].get('outcome') == 'pass' for t in TARGETS[:4]):
-        errors.append('clean_installed_claude_code_smoke_required')
+    if release:
+        for target in TARGETS[:4]:
+            if targets[target].get('outcome') != 'pass':
+                errors.append('clean_installed_smoke_required_' + target)
     for name in ('llm-accuracy', 'session-ledger', 'evidence-memory'):
         directory = root / 'plugins' / name
+        option = json.loads((directory / '.claude-plugin/plugin.json').read_text())['userConfig']['python_executable']
+        if option.get('required') is not True or 'default' in option:
+            errors.append('explicit_python_configuration_required_' + name)
         hooks = json.loads((directory / 'hooks/hooks.json').read_text())['hooks']
         for groups in hooks.values():
             for group in groups:
