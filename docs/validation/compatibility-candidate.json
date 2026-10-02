@@ -25,13 +25,74 @@
       "outcome": "untested"
     },
     "code-wsl": {
-      "outcome": "untested"
+      "outcome": "pass",
+      "host_version": "2.1.287",
+      "python_version": "3.12.3",
+      "platform": "Linux/WSL",
+      "host_kind": "code",
+      "packages": {
+        "llm-accuracy": {
+          "version": "0.7.0",
+          "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
+        },
+        "deterministic-data": {
+          "version": "0.1.0",
+          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+        },
+        "session-ledger": {
+          "version": "0.3.0",
+          "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
+        },
+        "evidence-memory": {
+          "version": "0.4.0",
+          "sha256": "5bc1433c253b1532657e057d88158e42ed99f620782df0fa501a60a7632aedd4"
+        }
+      },
+      "checks": {
+        "clean_install": true,
+        "configured_python": true,
+        "upgrade": true,
+        "prompt_delivery": true,
+        "invalid_python_advisory_then_recovery": true,
+        "uninstall": true
+      }
     },
     "code-windows-no-bash": {
       "outcome": "untested"
     },
     "code-windows-git-bash": {
-      "outcome": "untested"
+      "outcome": "pass",
+      "host_version": "2.1.287",
+      "python_version": "3.13.1",
+      "platform": "Windows",
+      "host_kind": "code",
+      "packages": {
+        "llm-accuracy": {
+          "version": "0.7.0",
+          "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
+        },
+        "deterministic-data": {
+          "version": "0.1.0",
+          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+        },
+        "session-ledger": {
+          "version": "0.3.0",
+          "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
+        },
+        "evidence-memory": {
+          "version": "0.4.0",
+          "sha256": "5bc1433c253b1532657e057d88158e42ed99f620782df0fa501a60a7632aedd4"
+        }
+      },
+      "checks": {
+        "clean_install": true,
+        "configured_python": true,
+        "upgrade": true,
+        "prompt_delivery": true,
+        "invalid_python_advisory_then_recovery": true,
+        "uninstall": true,
+        "git_bash_present": true
+      }
     },
     "code-macos": {
       "outcome": "untested"

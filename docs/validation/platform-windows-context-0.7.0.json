@@ -1,0 +1,7 @@
+{
+  "source_commit": "b9ec98dc293580a3201d8a4f1a33ad096586d872",
+  "signature_valid": true,
+  "git_bash_present": true,
+  "platform": "Windows",
+  "isolated_cleanup": true
+}

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scope": "fresh_profile_local_marketplace_and_archive",
-  "source_commit": "a2af7eddb486bf5055eb6c0541c777c522de3c74",
+  "source_commit": "b9ec98dc293580a3201d8a4f1a33ad096586d872",
   "plugin_tree": "4c7140184c0a810754c47de756b60db4cdb2827a",
   "plugin_version": "0.7.0",
   "host_version": "2.1.287 (Claude Code)",
