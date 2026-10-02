@@ -7,7 +7,7 @@ products. Use the path below that matches where you work.
 
 Platform capability and runtime evidence are separate.
 
-**Current plugin notes:** [LLM Accuracy 0.6.5](release-0.6.5.md),
+**Current plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
 [Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
 [Evidence Memory 0.3.0](release-evidence-memory-0.3.0.md). The records below
 describe historical builds.

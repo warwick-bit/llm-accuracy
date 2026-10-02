@@ -456,6 +456,13 @@ def test_footer_accepts_markdown_and_blank_line_separators(modules):
     )
 
 
+def test_footer_accepts_divider_then_bullets(modules):
+    assert modules[2].footer_present(
+        "Conclusion.\n\n---\n\n- **Checked:** supplied data\n"
+        "- **Gap:** unknown\n- **Next:** test\n"
+    )
+
+
 def test_empty_answer_label_does_not_consume_next_line(modules):
     assert modules[2].labelled_values("Answer:\nno", "Answer") == [""]
 

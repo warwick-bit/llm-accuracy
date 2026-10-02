@@ -39,10 +39,11 @@ MAX_INPUT_CHARS = 1_000_000
 
 TECHNICAL_FOOTER = (
     "End substantive technical diagnoses, verification claims and evidence-sufficiency "
-    "answers (including rejecting or withholding a claim) with this three-line Checked / Gap / Next footer:\n"
-    "Checked: actual checks or supplied evidence, with scope\n"
-    "Gap: remaining unknowns (or none)\n"
-    "Next: smallest useful check or action (or none)\n"
+    "answers (including rejecting or withholding a claim) with this Checked / Gap / Next footer:\n"
+    "\n---\n\n"
+    "- **Checked:** actual checks or supplied evidence, with scope\n"
+    "- **Gap:** remaining unknowns (or none)\n"
+    "- **Next:** smallest useful check or action (or none)\n"
     "Supplied evidence is not a check you performed. Keep headline, body and footer "
     "consistent; a Gap cannot excuse a stronger claim above. Skip this footer for "
     "routine replies and creative requests."
