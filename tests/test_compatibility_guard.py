@@ -216,6 +216,27 @@ def test_receipt_too_deep_to_check_fails_with_a_fixed_label(tmp_path, monkeypatc
     assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['invalid_compatibility_receipt']}
 
 
+def test_receipt_nested_past_any_parser_limit_fails_with_a_fixed_label(tmp_path, monkeypatch, capsys):
+    text = '[' * 200000 + ']' * 200000
+    with pytest.raises(RecursionError):
+        json.loads(text)
+    path = tmp_path / 'docs/validation/compatibility-candidate.json'
+    path.parent.mkdir(parents=True)
+    path.write_text(text)
+    monkeypatch.setattr(sys, 'argv', ['check_compatibility.py', '--root', str(tmp_path)])
+    assert guard.main() == 1
+    assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['invalid_compatibility_receipt']}
+
+
+def test_write_candidate_failure_reports_a_fixed_label(monkeypatch, capsys):
+    def fail(path, receipt):
+        raise PermissionError('synthetic read-only candidate')
+    monkeypatch.setattr(guard, 'write_receipt', fail)
+    monkeypatch.setattr(sys, 'argv', ['check_compatibility.py', '--root', str(ROOT), '--write-candidate'])
+    assert guard.main() == 1
+    assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['candidate_write_failed']}
+
+
 def test_malformed_receipt_and_target_fail_closed():
     assert guard.validate(ROOT, [], release=True) == ['invalid_compatibility_receipt']
     receipt = guard.candidate(ROOT)

@@ -287,7 +287,11 @@ def main() -> int:
     args = parser.parse_args()
     path = args.root / 'docs/validation/compatibility-candidate.json'
     if args.write_candidate:
-        write_receipt(path, candidate(args.root))
+        try:
+            write_receipt(path, candidate(args.root))
+        except (OSError, ValueError, KeyError, TypeError):
+            print(json.dumps({'status': 'fail', 'errors': ['candidate_write_failed']}))
+            return 1
         return 0
     try:
         receipt = json.loads(path.read_text())
