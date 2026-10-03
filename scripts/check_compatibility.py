@@ -70,8 +70,50 @@ def package_binding(root: Path, name: str) -> dict:
     return {'version': manifest['version'], 'sha256': digest.hexdigest()}
 
 
+def row_digest(row: dict) -> str:
+    """SHA-256 of every field except the seal, as canonical JSON."""
+    body = {key: value for key, value in row.items() if key != 'row_sha256'}
+    return hashlib.sha256(json.dumps(body, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def seal_row(row: dict, source_commit) -> dict:
+    """Bind one QA run's row to the commit it tested; any later field change breaks the seal."""
+    sealed = {key: value for key, value in row.items() if key not in ('source_commit', 'row_sha256')}
+    sealed['source_commit'] = source_commit
+    sealed['row_sha256'] = row_digest(sealed)
+    return sealed
+
+
+def code_pass_row(report: dict, target: str, proof: dict) -> dict:
+    """Seal a Code pass from one live claude_bundle_smoke report; raise ValueError otherwise."""
+    if (not isinstance(report, dict) or not target.startswith('code-') or report.get('status') != 'pass'
+            or report.get('partial') is not False or report.get('isolated_cleanup') is not True
+            or report.get('scope') != 'code_bundle_registration_accuracy_delivery'
+            or report.get('platform') != target_identity(target)[0]):
+        raise ValueError('live_smoke_not_passed')
+    platform, kind = target_identity(target)
+    checks = report.get('checks', {})
+    row = {'outcome': 'pass', 'platform': platform, 'host_kind': kind,
+           'host_version': report.get('host_version'), 'python_version': report.get('python_version'),
+           'packages': report.get('packages'),
+           'checks': {**{key: checks.get(key) for key in target_checks(target)
+                         if not key.startswith('git_bash_')}, **proof}}
+    return seal_row(row, report.get('source_commit'))
+
+
+def write_receipt(path: Path, receipt: dict) -> None:
+    """Replace the receipt atomically with LF line endings on every OS."""
+    temporary = path.with_name(path.name + '.tmp')
+    try:
+        temporary.write_bytes((json.dumps(receipt, indent=2) + '\n').encode('utf-8'))
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
 def candidate(root: Path) -> dict:
-    return {'schema_version': 4, 'minimum_claude_code': '2.1.287',
+    return {'schema_version': 5, 'minimum_claude_code': '2.1.287',
             'python_minimum': '3.9', 'packages': {name: package_binding(root, name) for name in PACKAGES},
             'support_policy': SUPPORT_POLICY.copy(),
             'targets': {target: {'outcome': 'untested'} for target in TARGETS},
@@ -109,18 +151,21 @@ def marketplace_errors(root: Path) -> list[str]:
     return errors
 
 
+VERSION_PATTERN = r'[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}'
+
+
 def host_row_errors(row: dict, target: str, packages: dict, checks: tuple) -> list[str]:
     errors = []
     if (row.get('platform'), row.get('host_kind')) != target_identity(target):
         errors.append('invalid_host_identity_' + target)
     version = row.get('host_version', '')
-    if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):
+    if not isinstance(version, str) or not re.fullmatch(VERSION_PATTERN, version):
         errors.append('missing_host_version_' + target)
     elif tuple(map(int, version.split('.'))) < (2, 1, 287) and target.startswith('code-'):
         errors.append('unsupported_host_version_' + target)
     python = row.get('python_version', '')
     if target.startswith('code-') and (not isinstance(python, str)
-            or not re.fullmatch(r'\d+\.\d+\.\d+', python)
+            or not re.fullmatch(VERSION_PATTERN, python)
             or tuple(map(int, python.split('.'))) < (3, 9, 0)):
         errors.append('missing_or_unsupported_python_version_' + target)
     if row.get('packages') != target_packages(packages, target):
@@ -129,6 +174,24 @@ def host_row_errors(row: dict, target: str, packages: dict, checks: tuple) -> li
     if not isinstance(actual, dict) or set(actual) != set(checks) or any(v is not True for v in actual.values()):
         errors.append('missing_checks_' + target)
     return errors
+
+
+def pass_fields(target: str) -> set:
+    fields = {'outcome', 'platform', 'host_kind', 'host_version', 'packages', 'checks', 'source_commit', 'row_sha256'}
+    return fields | {'python_version'} if target.startswith('code-') else fields
+
+
+def seal_errors(row: dict, target: str) -> list[str]:
+    commit = row.get('source_commit')
+    if not isinstance(commit, str) or not re.fullmatch(r'[0-9a-f]{40}', commit):
+        return ['missing_source_commit_' + target]
+    try:
+        digest = row_digest(row)
+    except RecursionError:
+        return ['row_seal_mismatch_' + target]
+    if row.get('row_sha256') != digest:
+        return ['row_seal_mismatch_' + target]
+    return []
 
 
 def installation_errors(row: dict, target: str, packages: dict) -> list[str]:
@@ -156,7 +219,10 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
             errors.append('invalid_outcome_' + target)
             continue
         if row['outcome'] == 'pass':
+            if set(row) != pass_fields(target):
+                errors.append('invalid_pass_fields_' + target)
             errors.extend(host_row_errors(row, target, expected['packages'], target_checks(target)))
+            errors.extend(seal_errors(row, target))
     installations = receipt.get('native_installations')
     if not isinstance(installations, dict) or set(installations) != set(CI_TARGETS):
         return errors + ['missing_or_unknown_native_installation']
@@ -221,14 +287,15 @@ def main() -> int:
     args = parser.parse_args()
     path = args.root / 'docs/validation/compatibility-candidate.json'
     if args.write_candidate:
-        path.write_text(json.dumps(candidate(args.root), indent=2) + '\n')
+        write_receipt(path, candidate(args.root))
         return 0
     try:
         receipt = json.loads(path.read_text())
         if args.ci_receipts is not None:
             receipt = overlay_ci_receipts(args.root, receipt, args.ci_receipts)
         errors = validate(args.root, receipt, release=args.release)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError,
+            subprocess.SubprocessError):
         errors = ['invalid_compatibility_receipt']
     print(json.dumps({'status': 'fail' if errors else 'pass', 'errors': errors}))
     return int(bool(errors))

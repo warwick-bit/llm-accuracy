@@ -69,7 +69,9 @@ def evidence(tmp_path, monkeypatch):
     git("-c", "commit.gpgsign=false", "commit", "-qm", "synthetic fixture")
     sha = git("rev-parse", "HEAD")
     candidate = contract.candidate(root)
-    candidate["targets"]["code-wsl"] = passing_row("code-wsl", candidate["packages"])
+    candidate["targets"]["code-wsl"] = contract.seal_row(
+        passing_row("code-wsl", candidate["packages"]), sha
+    )
     for target in contract.CI_TARGETS:
         value = {
             "schema_version": 2,
@@ -235,6 +237,20 @@ def test_partial_or_unclean_live_report_never_becomes_a_pass():
     ):
         with pytest.raises(ValueError, match="ci_live_smoke_failed"):
             ci.live_receipt(report, "code-linux", {})
+
+
+def test_ci_live_pass_is_sealed_to_the_commit_it_tested():
+    report = {
+        "status": "pass", "partial": False, "isolated_cleanup": True,
+        "scope": "code_bundle_registration_accuracy_delivery", "platform": "Linux",
+        "source_commit": "b" * 40, "host_version": "2.1.288", "python_version": "3.12.3",
+        "packages": contract.candidate(ROOT)["packages"],
+        "checks": dict.fromkeys(contract.CHECKS + ("installed_hook_execution",), True),
+    }
+    receipt = ci.live_receipt(report, "code-linux", {})
+    assert receipt["source_commit"] == receipt["row"]["source_commit"] == "b" * 40
+    assert contract.seal_errors(receipt["row"], "code-linux") == []
+    assert "installed_hook_execution" not in receipt["row"]["checks"]
 
 
 def test_cli_output_cannot_echo_provider_exception(tmp_path, monkeypatch, capsys):

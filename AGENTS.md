@@ -47,7 +47,9 @@ Claude installation smoke before a release.
 
 Run `python3 scripts/check_compatibility.py` before proposing a change. Before a
 release, also run it with `--release`. Reset stale candidate receipts to untested;
-never copy a historical pass onto changed source. Preserve native Windows without
+never copy a historical pass onto changed source. Record passes only with
+`scripts/record_compatibility_pass.py`, which seals each row to its tested commit;
+after a merge conflict on a seal, reset and re-run QA instead of picking a side. Preserve native Windows without
 Git Bash CI and its no-skip check. Skills must not assume POSIX preprocessing or
 local execution in Chat. Keep Codex manifests free of Claude userConfig placeholders.
 
