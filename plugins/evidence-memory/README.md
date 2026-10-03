@@ -174,7 +174,10 @@ Claude Code `AskUserQuestion` answers are also recorded as `decision` state
 during capture, from the host's structured result: one item per answered
 question, keyed by the question text, with any note the user added. Asking the
 same question again supersedes the earlier answer; re-reading the transcript adds
-nothing. The tool call and its result are not stored as evidence. Codex is not
+nothing. A transcript that is rewritten rather than appended is reconciled best
+effort: a corrected answer replaces the stale one unless a later answer to the
+same question is already recorded, and a row rewritten back to an earlier answer,
+or two answers with the same timestamp, can leave the previous answer current. The tool call and its result are not stored as evidence. Codex is not
 covered yet: its asynchronous question tool returns only an acknowledgement, and
 the answer arrives in a separate message.
 They do not expire merely because the rolling conversation reaches 64 KiB.
