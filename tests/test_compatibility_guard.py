@@ -1,6 +1,7 @@
 import importlib.util
 import shutil
 import json
+import subprocess
 
 import pytest
 from pathlib import Path
@@ -77,12 +78,19 @@ def test_each_pass_keeps_its_original_source_binding_and_python_version():
     assert 'stale_target_packages_code-windows-no-bash' in errors
 
 
-def passing_row(receipt, target):
+TESTED_COMMIT = '1' * 40
+
+
+def host_row(receipt, target):
     platform, kind = guard.target_identity(target)
     return {'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.12.3',
             'platform': platform, 'host_kind': kind,
             'packages': guard.target_packages(receipt['packages'], target),
             'checks': dict.fromkeys(guard.target_checks(target), True)}
+
+
+def passing_row(receipt, target):
+    return guard.seal_row(host_row(receipt, target), TESTED_COMMIT)
 
 
 def test_code_checks_cannot_certify_chat_or_cowork():
@@ -96,7 +104,7 @@ def test_code_checks_cannot_certify_chat_or_cowork():
 
 
 def installed_row(receipt, target):
-    row = passing_row(receipt, target)
+    row = host_row(receipt, target)
     row.update(outcome='installed', live_delivery='not_tested', isolated_cleanup=True)
     row['checks'] = dict.fromkeys(guard.installation_checks(target), True)
     return row
@@ -126,9 +134,9 @@ def test_offline_rows_cannot_be_used_as_live_passes_or_drop_native_targets():
     assert 'missing_or_unknown_native_installation' in guard.validate(ROOT, receipt)
 
 
-def test_schema3_cannot_silently_pass_schema4_policy():
+def test_schema4_cannot_silently_pass_schema5_policy():
     receipt = guard.candidate(ROOT)
-    receipt['schema_version'] = 3
+    receipt['schema_version'] = 4
     assert 'invalid_or_stale_schema_version' in guard.validate(ROOT, receipt)
 
 
@@ -157,8 +165,9 @@ def test_desktop_pass_cannot_claim_local_persistence_or_hook_capture():
 def test_desktop_skills_do_not_require_python_but_do_require_invocation():
     receipt = guard.candidate(ROOT)
     target = 'desktop-chat-windows'
-    receipt['targets'][target] = passing_row(receipt, target)
-    del receipt['targets'][target]['python_version']
+    row = host_row(receipt, target)
+    del row['python_version']
+    receipt['targets'][target] = guard.seal_row(row, TESTED_COMMIT)
     assert guard.validate(ROOT, receipt) == []
     receipt['targets'][target]['checks']['skill_invocation'] = False
     assert 'missing_checks_' + target in guard.validate(ROOT, receipt)
@@ -290,3 +299,101 @@ def test_package_hash_order_is_independent_of_native_path_comparison(tmp_path):
     folded = sorted(FoldedPath(directory).rglob('*'))
     assert [str(p) for p in original] != [str(p) for p in folded]
     assert guard.package_binding(tmp_path, 'llm-accuracy') == guard.package_binding(FoldedPath(tmp_path), 'llm-accuracy')
+
+
+def three_runs_and_their_splice(receipt):
+    """Base pass, then one re-run per branch, each updating a different package (PR #63)."""
+    current = guard.target_packages(receipt['packages'], 'code-wsl')
+
+    def run(commit, host, **stale):
+        row = host_row(receipt, 'code-wsl')
+        row['host_version'] = host
+        row['packages'] = {name: dict(binding, sha256='f' * 64) if name in stale else binding
+                           for name, binding in current.items()}
+        return guard.seal_row(row, commit)
+
+    base = run('2' * 40, '2.1.287', **{'llm-accuracy': 1, 'deterministic-data': 1})
+    feature = run('3' * 40, '2.1.287', **{'llm-accuracy': 1})
+    main = run('4' * 40, '2.1.288', **{'deterministic-data': 1})
+    splice = dict(main, packages=current)
+    return base, feature, main, splice
+
+
+def test_spliced_pass_row_fails_its_seal_even_when_packages_look_current():
+    receipt = guard.candidate(ROOT)
+    _, feature, main, splice = three_runs_and_their_splice(receipt)
+    for run in (feature, main):
+        receipt['targets']['code-wsl'] = run
+        assert 'stale_target_packages_code-wsl' in guard.validate(ROOT, receipt)
+    receipt['targets']['code-wsl'] = splice
+    assert guard.validate(ROOT, receipt) == ['row_seal_mismatch_code-wsl']
+
+
+@pytest.mark.parametrize('field', ['host_version', 'python_version', 'check', 'package', 'platform'])
+def test_any_edit_after_recording_breaks_the_seal(field):
+    receipt = guard.candidate(ROOT)
+    row = passing_row(receipt, 'code-wsl')
+    if field == 'check':
+        row['checks']['upgrade'] = True
+        row['checks']['synthetic_extra'] = True
+    elif field == 'package':
+        row['packages']['llm-accuracy'] = dict(row['packages']['llm-accuracy'], sha256='0' * 64)
+    elif field == 'platform':
+        row['host_kind'] = 'code '
+    else:
+        row[field] = '2.1.999' if field == 'host_version' else '3.13.0'
+    receipt['targets']['code-wsl'] = row
+    assert 'row_seal_mismatch_code-wsl' in guard.validate(ROOT, receipt)
+
+
+@pytest.mark.parametrize('commit', [None, '', 'abc123', 'A' * 40, '1' * 39, '1' * 41, 40])
+def test_pass_row_must_name_the_full_commit_it_tested(commit):
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-wsl'] = guard.seal_row(host_row(receipt, 'code-wsl'), commit)
+    assert guard.validate(ROOT, receipt) == ['missing_source_commit_code-wsl']
+
+
+def test_unsealed_pass_row_is_rejected():
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-wsl'] = dict(host_row(receipt, 'code-wsl'), source_commit=TESTED_COMMIT)
+    assert guard.validate(ROOT, receipt) == ['row_seal_mismatch_code-wsl']
+
+
+def merge_two_recordings(directory, base, feature, main):
+    def git(*arguments):
+        return subprocess.run(['git', '-C', str(directory), *arguments], capture_output=True, text=True)
+
+    def record(row, message):
+        receipt['targets']['code-wsl'] = row
+        path.write_text(json.dumps(receipt, indent=2) + '\n')
+        git('add', '.')
+        git('-c', 'commit.gpgsign=false', 'commit', '-qm', message)
+
+    receipt = guard.candidate(ROOT)
+    path = directory / 'compatibility-candidate.json'
+    directory.mkdir()
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.name', 'Synthetic QA')
+    git('config', 'user.email', 'qa@example.invalid')
+    record(base, 'earlier pass')
+    git('switch', '-q', '-c', 'feature')
+    record(feature, 'feature re-run')
+    git('switch', '-q', 'main')
+    record(main, 'main re-run')
+    merge = git('-c', 'commit.gpgsign=false', 'merge', '--no-edit', 'feature')
+    return merge, json.loads(path.read_text()) if merge.returncode == 0 else None
+
+
+def test_two_branches_recording_one_target_cannot_merge_silently(tmp_path):
+    receipt = guard.candidate(ROOT)
+    base, feature, main, splice = three_runs_and_their_splice(receipt)
+    unsealed = [{key: value for key, value in row.items() if key not in ('source_commit', 'row_sha256')}
+                for row in (base, feature, main, splice)]
+    # Without a seal, Git combines the two re-runs into a row neither run produced.
+    merge, merged = merge_two_recordings(tmp_path / 'unsealed', *unsealed[:3])
+    assert merge.returncode == 0
+    assert merged['targets']['code-wsl'] == unsealed[3]
+    # With a seal, both branches change the same lines, so the merge stops.
+    merge, _ = merge_two_recordings(tmp_path / 'sealed', base, feature, main)
+    assert merge.returncode != 0
+    assert 'CONFLICT' in merge.stdout + merge.stderr

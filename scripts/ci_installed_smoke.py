@@ -14,6 +14,7 @@ from check_compatibility import (
     CI_TARGETS,
     ROOT,
     INSTALL_CHECKS,
+    code_pass_row,
     installation_errors,
     target_checks,
     target_identity,
@@ -70,25 +71,10 @@ def host_checks(target):
 
 
 def live_receipt(report, target, proof):
-    if (
-        report.get("status") != "pass"
-        or report.get("partial") is not False
-        or report.get("isolated_cleanup") is not True
-        or report.get("scope") != "code_bundle_registration_accuracy_delivery"
-        or report.get("platform") != target_identity(target)[0]
-    ):
-        raise ValueError("ci_live_smoke_failed")
-    platform, kind = target_identity(target)
-    row = {
-        "outcome": "pass",
-        "platform": platform,
-        "host_kind": kind,
-        "host_version": report.get("host_version"),
-        "python_version": report.get("python_version"),
-        "packages": report.get("packages"),
-        "checks": {**{key: report.get('checks', {}).get(key) for key in target_checks(target)
-                      if not key.startswith('git_bash_')}, **proof},
-    }
+    try:
+        row = code_pass_row(report, target, proof)
+    except ValueError:
+        raise ValueError("ci_live_smoke_failed") from None
     candidate = json.loads(
         (ROOT / "docs/validation/compatibility-candidate.json").read_text()
     )

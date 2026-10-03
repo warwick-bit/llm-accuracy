@@ -105,14 +105,24 @@ model-driven capture, data retention, UI and Bash proof need their own evidence.
 GitHub download.
 
 Before recording a Code pass, confirm the invalid-Python recovery field passes
-alongside all six Code checks. Review the raw-free receipts locally. Transfer only the
-actual version, platform and host mode, current package bindings and required true checks into the
-matching candidate target; do not edit old receipt hashes.
+alongside all six Code checks. Review the raw-free receipts locally, then record
+the bundle receipt on the matching target:
+
+```text
+python scripts/record_compatibility_pass.py --target code-wsl --bundle-receipt bundle-smoke.json
+```
+
+The recorder accepts only a passing, non-partial, cleaned-up live receipt from
+that platform. It copies the host version, Python version, package bindings and
+required checks, seals the row to the receipt's `source_commit`, and writes
+nothing if the candidate would then fail the checker. Do not edit old receipt
+hashes or seals.
 
 Native Windows requires two distinct runs: without accessible Git Bash and with
 Git Bash available. Inspect the effective child PATH and executable resolution
 for each run. Record `git_bash_absent` or `git_bash_present` only after proving
-that environment, alongside the six Code checks. WSL is a separate target and
+that environment, alongside the six Code checks: pass `--git-bash absent` or
+`--git-bash present` to the recorder for that run. WSL is a separate target and
 does not certify either Windows scenario. Native Linux is also separate from WSL.
 
 ## Desktop skills QA
@@ -127,9 +137,11 @@ Chat and Cowork separately, with only Accuracy and Deterministic Data:
 4. Upgrade from the previous packages, then verify the candidate skills again.
 5. Remove both packages and confirm their registrations/skills are gone.
 
-Record the actual app version, the two package bindings and the exact
-[host-specific checks](COMPATIBILITY.md#release-guardrails). No Python version
-is required for stateless UI QA. Code-only checks cannot certify these targets.
+Record the actual app version, the two package bindings, the exact
+[host-specific checks](COMPATIBILITY.md#release-guardrails) and the full commit
+you installed from in a row file, then seal it with
+`python scripts/record_compatibility_pass.py --target <target> --row row.json`.
+No Python version is required for stateless UI QA. Code-only checks cannot certify these targets.
 Desktop Code UI and Cowork hook execution remain explicitly unverified even
 after these stateless checks pass.
 

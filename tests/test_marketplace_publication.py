@@ -154,13 +154,14 @@ def test_actual_all_pass_receipt_cannot_certify_redirected_catalog(repository):
     receipt = contract.candidate(root)
     for target in contract.TARGETS:
         platform, kind = contract.target_identity(target)
-        receipt['targets'][target] = {
+        receipt['targets'][target] = contract.seal_row({
             'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.12.3',
             'platform': platform, 'host_kind': kind,
             'packages': contract.target_packages(receipt['packages'], target),
-            'checks': dict.fromkeys(contract.target_checks(target), True)}
+            'checks': dict.fromkeys(contract.target_checks(target), True)}, '1' * 40)
     for target in contract.CI_TARGETS:
-        row = dict(receipt['targets'][target])
+        row = {key: value for key, value in receipt['targets'][target].items()
+               if key not in ('source_commit', 'row_sha256')}
         row.update(outcome='installed', live_delivery='not_tested', isolated_cleanup=True)
         row['checks'] = dict.fromkeys(contract.installation_checks(target), True)
         receipt['native_installations'][target] = row

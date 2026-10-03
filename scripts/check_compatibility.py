@@ -70,8 +70,39 @@ def package_binding(root: Path, name: str) -> dict:
     return {'version': manifest['version'], 'sha256': digest.hexdigest()}
 
 
+def row_digest(row: dict) -> str:
+    """SHA-256 of every field except the seal, as canonical JSON."""
+    body = {key: value for key, value in row.items() if key != 'row_sha256'}
+    return hashlib.sha256(json.dumps(body, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+
+
+def seal_row(row: dict, source_commit) -> dict:
+    """Bind one QA run's row to the commit it tested; any later field change breaks the seal."""
+    sealed = {key: value for key, value in row.items() if key not in ('source_commit', 'row_sha256')}
+    sealed['source_commit'] = source_commit
+    sealed['row_sha256'] = row_digest(sealed)
+    return sealed
+
+
+def code_pass_row(report: dict, target: str, proof: dict) -> dict:
+    """Seal a Code pass from one live claude_bundle_smoke report; raise ValueError otherwise."""
+    if (not isinstance(report, dict) or not target.startswith('code-') or report.get('status') != 'pass'
+            or report.get('partial') is not False or report.get('isolated_cleanup') is not True
+            or report.get('scope') != 'code_bundle_registration_accuracy_delivery'
+            or report.get('platform') != target_identity(target)[0]):
+        raise ValueError('live_smoke_not_passed')
+    platform, kind = target_identity(target)
+    checks = report.get('checks', {})
+    row = {'outcome': 'pass', 'platform': platform, 'host_kind': kind,
+           'host_version': report.get('host_version'), 'python_version': report.get('python_version'),
+           'packages': report.get('packages'),
+           'checks': {**{key: checks.get(key) for key in target_checks(target)
+                         if not key.startswith('git_bash_')}, **proof}}
+    return seal_row(row, report.get('source_commit'))
+
+
 def candidate(root: Path) -> dict:
-    return {'schema_version': 4, 'minimum_claude_code': '2.1.287',
+    return {'schema_version': 5, 'minimum_claude_code': '2.1.287',
             'python_minimum': '3.9', 'packages': {name: package_binding(root, name) for name in PACKAGES},
             'support_policy': SUPPORT_POLICY.copy(),
             'targets': {target: {'outcome': 'untested'} for target in TARGETS},
@@ -131,6 +162,15 @@ def host_row_errors(row: dict, target: str, packages: dict, checks: tuple) -> li
     return errors
 
 
+def seal_errors(row: dict, target: str) -> list[str]:
+    commit = row.get('source_commit')
+    if not isinstance(commit, str) or not re.fullmatch(r'[0-9a-f]{40}', commit):
+        return ['missing_source_commit_' + target]
+    if row.get('row_sha256') != row_digest(row):
+        return ['row_seal_mismatch_' + target]
+    return []
+
+
 def installation_errors(row: dict, target: str, packages: dict) -> list[str]:
     fields = {'outcome', 'platform', 'host_kind', 'host_version', 'python_version',
               'packages', 'checks', 'live_delivery', 'isolated_cleanup'}
@@ -157,6 +197,7 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
             continue
         if row['outcome'] == 'pass':
             errors.extend(host_row_errors(row, target, expected['packages'], target_checks(target)))
+            errors.extend(seal_errors(row, target))
     installations = receipt.get('native_installations')
     if not isinstance(installations, dict) or set(installations) != set(CI_TARGETS):
         return errors + ['missing_or_unknown_native_installation']

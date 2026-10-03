@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "minimum_claude_code": "2.1.287",
   "python_minimum": "3.9",
   "packages": {
@@ -63,7 +63,9 @@
         "upgrade": true,
         "uninstall": true,
         "invalid_python_advisory_then_recovery": true
-      }
+      },
+      "source_commit": "2bd1c8b745bde875fade12fbb14a373d7b806366",
+      "row_sha256": "43927bd92fe514bfe97755cf7a8120e610413c1654ac0885cc2ee2fda187ce97"
     },
     "code-windows-no-bash": {
       "outcome": "untested"
