@@ -41,7 +41,8 @@
   },
   "hook_sha256": {
     "0.7.1": "59cd448ee77941311f4071af144c69042c41bd31363cdaa60a121b802fba25aa",
-    "0.7.2": "b310817bc40631dcda69edf3dc4ee8f8c77f43a2b66b2b33ff0ef7320b6bf0eb"
+    "0.7.2_screened": "b310817bc40631dcda69edf3dc4ee8f8c77f43a2b66b2b33ff0ef7320b6bf0eb",
+    "0.7.2_released": "73f8af166dead5eb2cbcac874f0d9265cc0159ec1518b8ee7ff73b33956661a6"
   },
   "vague_question": {
     "runs_per_model_and_version": 3,
@@ -81,6 +82,7 @@
     "existing_reminders_growth": 152
   },
   "known_limits": [
+    "The screens ran on hook b310817. The released hook differs only in its silence patterns (a capitalised zone name before 'time'; development and code-file counts); the reminder text is unchanged, and both screened prompts fire or stay silent the same way, which unit tests check.",
     "Screens only: one synthetic fixture, one vague and one precise wording, n=1-3 per cell; no powered comparison.",
     "Slip counts are too small to compare versions; the screen does not show that answers become more accurate.",
     "The new-count pattern needs a 'How many new ...' opening with a verb such as 'did we get' or 'were there'; other wordings are not recognised yet.",
