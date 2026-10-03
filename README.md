@@ -41,6 +41,9 @@ unverified. See [platform capabilities and current QA](docs/COMPATIBILITY.md).
 The general reminder asks Claude to verify measurements and coverage, test
 competing causes, and revisit dependent conclusions when correcting a diagnosis.
 Additional business-ambiguity and source-conflict reminders remain targeted.
+When the data is available, the ambiguity reminder asks Claude to inspect it
+first and show how each reading changes the figure before asking which one you
+mean.
 Use `/llm-accuracy:claim-fidelity` for an explicit check. See
 [reminder modes](plugins/llm-accuracy/README.md#reminder-modes) to restore the
 previous targeted-only behaviour or mute the fidelity reminder.
@@ -63,6 +66,9 @@ Checked / Gap / Next footer. These are advisory workflows, not accuracy guarante
   means leads, conversion, revenue, retention or payback.
 - **Did the new onboarding flow improve activation?** The answer depends on the
   activation event, cohort, measurement window and comparison group.
+- **How many new customers did we get in July?** "New" could mean a first
+  payment, a sign-up or a trial, and the count also moves with test or merged
+  accounts, returning customers, the time zone and duplicate rows.
 - **Sales increased after our pricing change. Does that prove the pricing
   change caused the increase?** Timing alone does not rule out seasonality,
   mix changes, campaigns or other causes.

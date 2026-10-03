@@ -58,6 +58,74 @@ AMBIGUOUS_CUSTOMER_RANKING = re.compile(
     r"^\s*who\s+are\s+our\s+(?:best|top)\s+customers\s*[?.!]*\s*$",
     re.I,
 )
+# "How many new customers did we get in July?" A period or a named file may
+# follow; only the opening is fixed.
+AMBIGUOUS_NEW_COUNT = re.compile(
+    r"^\s*how\s+many\s+new\s+(?:paying\s+|paid\s+)?"
+    r"(?:customers|users|accounts|clients|subscribers|sign[\s-]?ups)\s+"
+    r"(?:did\s+we\s+(?:get|have|add|gain|acquire|win|sign(?:\s+up)?)|"
+    r"have\s+we\s+(?:got|gotten|had|added|gained|acquired|won|signed(?:\s+up)?)|"
+    r"were\s+there|do\s+we\s+have)\b",
+    re.I,
+)
+# A count whose definition the prompt already supplies is not ambiguous.
+DEFINED_COUNT = re.compile(
+    r"\b(?:defined\s+as|definition|distinct|de-?dup\w*|exclud\w*|except|"
+    # "unique users", not "unique promo codes"
+    r"unique\s+(?:by|per|on|(?:customer|user|account|client|email|id|people|person|"
+    r"subscriber|sign[\s-]?up|payer|buyer|visitor)\w*)|"
+    r"not\s+counting|only\s+count\w*|counting\s+only|count(?:ing)?\s+(?:each|every|one)|"
+    # a first-payment rule, not "the first-order discount code"
+    r"first[\s-]+(?:paid|paying|payment|purchase|invoice|order|subscription)"
+    r"(?![\s-]+(?:discount|promo|offer|code|coupon|sale|deal|campaign|bonus)s?\b)|"
+    r"time[\s-]?zone|utc|gmt|local\s+time(?!-)|"
+    # a named zone ("Sydney time", "Pacific Standard Time"), not "peak time" or
+    # "the NZ time-limited sale"
+    r"(?:pacific|mountain|central|eastern|western|atlantic|alaska|hawaii|australian|"
+    r"european|sydney|melbourne|brisbane|queensland|adelaide|perth|darwin|hobart|"
+    r"auckland|wellington|nz|new\s+zealand|london|dublin|paris|berlin|new\s+york|"
+    r"chicago|denver|los\s+angeles|toronto|vancouver|singapore|hong\s+kong|tokyo|"
+    r"india|indian)\s+(?:(?:eastern|central|western)\s+)?(?:standard\s+|daylight\s+)?time(?!-)|"
+    # upper-case zone abbreviations; CST, EST, IST and BST often mean something else
+    r"(?-i:AEST|AEDT|ACST|ACDT|AWST|NZST|NZDT|PST|PDT|EDT|CDT|MDT|CEST|JST|HKT|SGT)|"
+    # an IANA zone such as Australia/Sydney, not a region pair such as Australia/NZ
+    # or North America/Europe
+    r"(?-i:(?<!Latin\s)(?<!North\s)(?<!South\s)(?<!Central\s)"
+    r"(?:Africa|America|Asia|Australia|Europe|Pacific)/(?!(?:Africa|Americas?|"
+    r"Asia|Australia|Europe|Latin|Middle|New|North|Oceania|Pacific|South)\b)"
+    r"[A-Z][a-z]+(?:_[A-Z][a-z]+)*))\b",
+    re.I,
+)
+# New rows in test fixtures, seed data, a test, dev, sandbox or local database, or
+# Redis are a development count. A deploy, a migration, a cached report, test
+# data, "fixture ads" or "home staging" can date or describe a business event,
+# so those words alone do not silence the reminder: a missed reminder costs
+# more than an extra one.
+DEV_COUNT = re.compile(
+    r"\b(?:(?:test|seed|db|database|data|json|ya?ml|sql)\s+fixtures?|"
+    r"fixtures?\s+(?:data|files?|rows?|db|database)|fixtures/\w+|"
+    r"seed(?:ed|ing)?\s+(?:script|data|file|rows?|db|database)s?|"
+    r"seed(?:ed|ing)?\s+the\s+(?:db|database)|db:seed|"
+    r"\w*seeds?\.(?:sql|rb|py|ts|js|ya?ml)|"
+    r"(?:test|dev|development|sandbox|staging|local|ci|qa|preview)\s+"
+    r"(?:db|database|env(?:ironment)?)|test\s+suite|(?:in|from)\s+(?:the\s+)?mock\s+data|"
+    r"(?:in|from)\s+the\s+cache(?!\s+of\b)|sqlite|"
+    r"redis\s+(?:cache|db|database|instance|keys?|server)|in\s+redis|"
+    r"(?:in|on|to)\s+staging|staging\s+(?:server|site|instance)|unit\s+tests?|"
+    r"(?:db|database|schema)\s+migrations?|migration\s+(?:files?|scripts?)|migrations/\w+)\b",
+    re.I,
+)
+# A named code file or PR makes a count a code question. Unlike CONCRETE, a data
+# file (.csv, .json, .sql) or ~/ path does not: exploring it first is the point.
+# A .js name needs a path and a lower-case file name ("Next.js" and
+# "React/Next.js" are products), and "PR 2026" is a year but "PR #2026" is not.
+CODE_REFERENCE = re.compile(
+    r"[\w/.\-]+\.(?:py|tsx?|rb|go|rs|java|kt|sh|ya?ml|toml)\b|"
+    r"[\w.\-]*/(?:[\w.\-]*/)*(?-i:[a-z_])[\w\-]*\.jsx?\b|"
+    r"(?-i:\bPR)(?:\s*#\s*\d+|\s*(?!(?:19|20)\d\d\b)\d+)",
+    re.I,
+)
+SILENCE_SCAN_CHARS = 2000
 EXEC = re.compile(
     r"\b(fix|add|implement|deploy|refactor|merge|push|commit|edit|rename)\b",
     re.I,
@@ -87,8 +155,10 @@ CONTRACT = (
 AMBIGUITY_CONTRACT = (
     "This is a broad business question with more than one reasonable interpretation. "
     "Do not silently choose the definition, population, success measure, time window, "
-    "comparison, currency, or source. Ask one short clarification with concrete options, "
-    "limited to the choices that would change the answer. {question_guidance} If an "
+    "comparison, currency, or source. If the data is available, inspect it first and "
+    "quantify how each choice moves the answer. Then ask one short clarification with "
+    "concrete options, limited to the choices that would change the answer, giving the "
+    "figure each option produces when you have it. {question_guidance} If an "
     "approved metric catalogue is available, use it. If the user asks to proceed without "
     "clarifying, state the assumptions and label the result exploratory. This reminder is "
     "advisory: it does not verify a source or make a value canonical. Mute with "
@@ -96,8 +166,23 @@ AMBIGUITY_CONTRACT = (
 )
 
 
+def is_ambiguous_new_count(prompt: str) -> bool:
+    # The question and any definition come first. Signals past the opening are
+    # ignored, so the later rows of a pasted file cannot silence the reminder and
+    # regex time stays bounded. A word split by the limit is dropped, so the cut
+    # cannot create a signal ("PSTN" cut to "PST"); a whole word is kept.
+    head = prompt[:SILENCE_SCAN_CHARS]
+    if len(prompt) > SILENCE_SCAN_CHARS and not prompt[SILENCE_SCAN_CHARS].isspace():
+        head = re.sub(r"\S*\Z", "", head)
+    return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not (
+        DEFINED_COUNT.search(head)
+        or DEV_COUNT.search(head)
+        or CODE_REFERENCE.search(head)
+    )
+
+
 def is_ambiguous_business_question(prompt: str) -> bool:
-    return any(
+    return is_ambiguous_new_count(prompt) or any(
         pattern.match(prompt)
         for pattern in (
             AMBIGUOUS_REVENUE,
@@ -123,6 +208,14 @@ def ambiguity_context(prompt: str) -> str:
         guidance = (
             "For onboarding impact, clarify the activation definition, cohort, measurement "
             "window, and comparison or control group."
+        )
+    elif is_ambiguous_new_count(prompt):
+        guidance = (
+            "For new-customer counts, clarify what makes a customer new (first payment, "
+            "sign-up or trial; whether returning or reactivated customers count), which "
+            "test, internal, trial and merged accounts to exclude, the time zone and "
+            "window edges, and whether to count accounts, people or rows (duplicates, "
+            "blank dates)."
         )
     else:
         guidance = (

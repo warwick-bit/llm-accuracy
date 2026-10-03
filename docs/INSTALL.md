@@ -16,6 +16,8 @@ describe historical builds.
 
 The current [automatic Python patch](release-python-default.md) removes required
 interpreter setup. Saved interpreter choices remain in effect.
+[LLM Accuracy 0.7.2](release-0.7.2.md) inspects the data before asking which
+definition a vague business question means, and covers new-customer counts.
 [Deterministic Data 0.1.1](release-deterministic-data-0.1.1.md) steps aside when
 no catalogue exists.
 
@@ -243,7 +245,7 @@ claude plugin update session-ledger@llm-accuracy --scope user
 claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
-Run the optional plugin updates only for plugins you installed. Accuracy 0.7.1,
+Run the optional plugin updates only for plugins you installed. Accuracy 0.7.2,
 Ledger 0.3.1 and Memory 0.5.1 automatically find Python when no executable is
 saved. Upgrades normally need no setting change. Saved choices survive updates;
 if discovery or a saved executable fails, correct or clear each installed hook

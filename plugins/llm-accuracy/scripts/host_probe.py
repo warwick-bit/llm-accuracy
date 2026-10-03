@@ -17,6 +17,8 @@ import time
 from pathlib import Path
 
 
+# A model name the CLI accepts, safe to reuse in a file name.
+MODEL_NAME = re.compile(r"[A-Za-z0-9_.:\[\]-]{1,100}")
 CONTROL_VARS = (
     "CLAUDECODE",
     "LLM_ACCURACY_CONFIG",
@@ -349,7 +351,7 @@ def run_probe(
     effort: str | None = None,
 ) -> dict:
     """Run an auth-only temporary profile with no tools, MCPs or saved session."""
-    if not re.fullmatch(r"[A-Za-z0-9_.:\[\]-]{1,100}", model):
+    if not MODEL_NAME.fullmatch(model):
         return {"status": "invalid_model", "answers": []}
     if effort is not None and effort not in {"low", "medium", "high", "xhigh", "max"}:
         return {"status": "invalid_effort", "answers": []}

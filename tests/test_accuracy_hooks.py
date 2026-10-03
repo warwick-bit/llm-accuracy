@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import time
 from types import ModuleType
 
 
@@ -28,6 +29,71 @@ ANALYSIS_FIRE_PROMPTS = [
     "Did onboarding improve activation?",
     "Who are our best customers?",
     "Who are our top customers?",
+    "How many new customers did we get in July?",
+    "how many new paying customers have we added this quarter",
+    "How many new sign-ups were there last week? Use signups.csv.",
+    "How many new users did we get?",
+    "How many new clients do we have this month?",
+    "How many new customers did we get in July? Take your time.",
+    "How many new customers did we get during peak time?",
+    "How many new customers did we get during Peak time?",
+    "How many new customers did we get over Christmas time?",
+    "How many new customers did we get in Apr 2026?",
+    "How many new customers have we added since Apr 1?",
+    "How many new customers did we get since the pricing page deploy?",
+    "How many new customers did we get after the billing migration?",
+    "How many new customers have we gained since we deployed the new onboarding flow?",
+    "How many new customers did we get from the seed round campaign?",
+    "How many new customers did we get in July? The cached dashboard says 40.",
+    "How many new customers did we get in July? The export is ~/exports/july.csv",
+    "How many new customers did we get in July? Use customers.json",
+    "How many new customers did we get from the pr 3 media placement?",
+    "How many new customers did we get in Australia/NZ last month?",
+    "How many new customers did we get across Asia/Pacific in Q3?",
+    "How many new customers did we get from the Next.js Conf sponsorship?",
+    "How many new users did we get after the Node.js SDK launch?",
+    "How many new customers did we get from the BFCM campaign?",
+    "How many new customers did we get in Sept?",
+    "How many new customers did we get in JAN?",
+    "How many new customers did we get in MAY 2026?",
+    "How many new customers did we get from the Black Friday launch?",
+    "How many new customers have we added since the EOFY sale?",
+    "How many new customers did we get after the ANZ launch?",
+    "How many new customers did we get from the influencer seeding campaign?",
+    "How many new customers did we get after we migrated to the new pricing?",
+    "How many new customers did we get after the CRM migration?",
+    "How many new customers did we get from the Sandbox VR partnership?",
+    "How many new customers did we get from the pricing A/B test data?",
+    "How many new customers did we get from CST referrals?",
+    "How many new customers did we get in Q3? The HubSpot export is deals_export.csv",
+    "How many new customers did we get in Q3? See leads.sql for the query",
+    "How many new sign-ups did we get from the Product Hunt launch?",
+    "How many new customers did we get from the Go conference booth?",
+    "How many new customers did we get in July? Data is in ~/data/stripe.json",
+    "How many new customers did we get since the v2 release went live?",
+    "How many new customers did we get from the Indian market launch?",
+    "How many new customers did we get from the PR 2026 campaign?",
+    "How many new customers did we get at Dreamforce in Sep?",
+    "How many new customers did we get in July? This time, check the data first.",
+    "How many new customers did we get in North America/Europe in Q3?",
+    "How many new customers did we get across Europe/Africa last quarter?",
+    "How many new customers did we get in Australia/Asia this year?",
+    "How many new customers did we get in Europe/Middle East?",
+    "How many new customers did we get in Latin America/Caribbean?",
+    "How many new customers did we get from the European time-limited offer?",
+    "How many new customers did we get from the NZ time-limited sale?",
+    "How many new customers did we get from the first-order discount code?",
+    "How many new customers did we get from the unique promo codes campaign?",
+    "How many new customers did we get from the light fixtures promo?",
+    "How many new customers did we get from the State of Origin fixture ads?",
+    "How many new clients did we get for home staging in July?",
+    "How many new clients did we get from staging services in July?",
+    "How many new users did we get from the React/Next.js course?",
+    "How many new customers did we get from the Redis Day sponsorship?",
+    "How many new customers did we get from the local suite of services bundle?",
+    "How many new customers did we get from the cache of trade-show leads?",
+    "How many new customers did we get after demoing with mock data?",
+    "How many new customers did we get in July? Data: grass_seeds.csv",
 ]
 
 ANALYSIS_SILENT_PROMPTS = [
@@ -44,6 +110,66 @@ ANALYSIS_SILENT_PROMPTS = [
     "Which channel is best?",
     "Which support channel performed best?",
     "What's our MRR growth?",
+    "How many new customers did we get in July, counting first paid invoices in UTC?",
+    "How many new customers did we get in July excluding test accounts?",
+    "How many new customers did we get in July (Sydney time)?",
+    "How many new customers did we get in July, defined as first payment?",
+    (
+        "How many new customers did we get in July 2026? Count distinct accounts whose "
+        "first payment falls in July in Australia/Sydney time."
+    ),
+    "How many new tickets did we get?",
+    "How many new customers are in invoices.csv?",
+    "How many new customers did we get in July? # analysis-ok",
+    "How many new customers did we get in July, Pacific time?",
+    "How many new customers did we get in July, sydney time?",
+    "How many new customers did we get in July (AEST)?",
+    "How many new customers did we get in July in Australia/Sydney?",
+    "How many new users were there after the schema migration?",
+    "How many new users were there in the dev database?",
+    "How many new users did we get in the sandbox environment?",
+    "How many new users were there in the local sqlite db after the script?",
+    "How many new users were there in seed.sql?",
+    "How many new users were there after I seeded the database?",
+    "How many new users were there after running rails db:seed?",
+    "How many new users do we have in the cache?",
+    "How many new users were there after migrations/0012_add_users.sql ran?",
+    "How many new customers did we get in July, America/New_York?",
+    "How many new customers did we get in July (PDT)?",
+    "How many new customers did we get in July, Eastern Standard Time?",
+    "How many new customers did we get in July, Australian Eastern Daylight Time?",
+    "How many new customers did we get in July, AEDT?",
+    "How many new customers did we get in July in Brisbane time?",
+    "How many new customers did we get in July in Queensland time?",
+    "How many new customers did we get in July, Central European Time?",
+    "How many new customers did we get in July, NZ time?",
+    "How many new users were there in the test db?",
+    "How many new users did we get in the development environment?",
+    "How many new users were there in the staging database?",
+    "How many new users were there after the migration script ran?",
+    "How many new customers were there in PR#88?",
+    "How many new users did we get in the e2e test suite?",
+    "How many new users were there in users_factory.rb?",
+    "How many new customers did we get in July in GMT+10?",
+    "How many new customers did we get in July, Asia/Kolkata?",
+    "How many new customers were there in PR #412?",
+    "How many new users did we get from the test fixture in tests/test_users.py?",
+    "How many new accounts were there after running the seed script?",
+    "How many new users were there in the Redis cache after the deploy?",
+    "How many new users did we get in tests/test_users.py?",
+    "How many new users were there after PR #2026 merged?",
+    "How many new users were there in the CI database?",
+    "How many new users were there in the QA environment?",
+    "How many new users were there in the preview environment?",
+    "How many new users were there in the mock data?",
+    "How many new users were there in users_seed.sql?",
+    "How many new users were there in fixtures/users.json?",
+    "How many new users were there in the test fixtures?",
+    "How many new users were there in the redis db?",
+    "How many new customers did we get in July, counting unique emails?",
+    "How many new customers did we get in July, by first order date?",
+    "How many new customers did we get in July in Sydney time-zone?",
+    "How many new customers did we get in July, America/North_Dakota/Center?",
 ]
 
 FUSION_FIRE_PROMPTS = [
@@ -141,6 +267,33 @@ def test_analysis_hook_precision_battery() -> None:
         assert not hook.should_fire(prompt), prompt
 
 
+def test_new_count_reads_only_the_opening_for_silence_signals() -> None:
+    hook = load_hook("analysis-contract-injector.py")
+    question = "How many new customers did we get in July?"
+    assert not hook.is_ambiguous_new_count(question + " Use UTC.")
+    pasted = question + " Here is the export:\n" + "a," * 1500 + "\nAll times are UTC."
+    assert hook.is_ambiguous_new_count(pasted)
+    padded = question + " " + "x" * (hook.SILENCE_SCAN_CHARS - len(question) - 5)
+    assert (padded + " PSTN")[: hook.SILENCE_SCAN_CHARS].endswith(" PST")
+    assert hook.is_ambiguous_new_count(padded + " PSTN rollout notes")
+    offer = " from the first-order discount"
+    whole = question + " " + "x" * (hook.SILENCE_SCAN_CHARS - len(question) - 1 - len(offer))
+    assert len(whole + offer) == hook.SILENCE_SCAN_CHARS
+    assert hook.is_ambiguous_new_count(whole + offer + " code")
+    started = time.perf_counter()
+    hook.is_ambiguous_new_count(question + " " + "a." * 50000)
+    assert time.perf_counter() - started < 2
+
+
+def test_new_count_fire_prompts_take_the_new_count_path() -> None:
+    hook = load_hook("analysis-contract-injector.py")
+    counts = [p for p in ANALYSIS_FIRE_PROMPTS if p.lower().startswith("how many new")]
+
+    assert len(counts) >= 15
+    for prompt in counts:
+        assert hook.is_ambiguous_new_count(prompt), prompt
+
+
 def test_analysis_hook_emits_advisory_context(monkeypatch, capsys) -> None:
     hook = load_hook("analysis-contract-injector.py")
     monkeypatch.delenv("CC_SKIP_ANALYSIS", raising=False)
@@ -174,6 +327,8 @@ def test_analysis_hook_emits_ambiguity_context(monkeypatch, capsys) -> None:
     context = output["hookSpecificOutput"]["additionalContext"]
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
     assert "more than one reasonable interpretation" in context
+    assert "inspect it first and quantify how each choice moves the answer" in context
+    assert "giving the figure each option produces" in context
     assert "MRR, ARR, recognised revenue" in context
     assert "period, currency, and source" in context
     assert "advisory" in context
@@ -194,6 +349,29 @@ def test_analysis_hook_tailors_ambiguity_context() -> None:
     assert "comparison or control group" in onboarding_context
     assert "revenue, margin, retention" in customer_context
     assert "period and population" in customer_context
+
+    count_context = hook.ambiguity_context("How many new customers did we get in July?")
+    assert "what makes a customer new" in count_context
+    assert "returning or reactivated customers" in count_context
+    assert "test, internal, trial and merged accounts" in count_context
+    assert "time zone and window edges" in count_context
+    assert "accounts, people or rows" in count_context
+    assert "revenue, margin, retention" not in count_context
+
+
+def test_new_count_question_gets_the_ambiguity_context(monkeypatch, capsys) -> None:
+    hook = load_hook("analysis-contract-injector.py")
+    monkeypatch.delenv("CC_SKIP_ANALYSIS", raising=False)
+    prompt = "How many new customers did we get in July? Use invoices.csv."
+    monkeypatch.setattr(hook.sys, "stdin", io.StringIO(json.dumps({"prompt": prompt})))
+
+    assert hook.main() == 0
+
+    context = json.loads(capsys.readouterr().out)["hookSpecificOutput"]["additionalContext"]
+    assert "more than one reasonable interpretation" in context
+    assert "what makes a customer new" in context
+    assert "analysis contract" not in context.lower()
+    assert len(context) <= 1500
 
 
 def test_fusion_hook_precision_battery() -> None:

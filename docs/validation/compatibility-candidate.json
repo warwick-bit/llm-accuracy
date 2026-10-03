@@ -4,8 +4,8 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.7.1",
-      "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
+      "version": "0.7.2",
+      "sha256": "5b43b887d942da8989beca32c563bae885b2847a58168e53311b378fc62c8b0d"
     },
     "deterministic-data": {
       "version": "0.1.1",
@@ -37,8 +37,8 @@
       "python_version": "3.12.3",
       "packages": {
         "llm-accuracy": {
-          "version": "0.7.1",
-          "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
+          "version": "0.7.2",
+          "sha256": "5b43b887d942da8989beca32c563bae885b2847a58168e53311b378fc62c8b0d"
         },
         "deterministic-data": {
           "version": "0.1.1",
@@ -64,8 +64,8 @@
         "uninstall": true,
         "invalid_python_advisory_then_recovery": true
       },
-      "source_commit": "84276aa88fd14eab41fbaeed5e8e07dcce84da0d",
-      "row_sha256": "fbe4af20a0e74bfa4d394b259424de34e076748230dfaa3d43000b0aa2184446"
+      "source_commit": "6cc0cc1f51b80aeadd4662486f2a194ff4d04613",
+      "row_sha256": "346d5841e3c6835ea065fce8eed5c4ce875983b4ca3632d16f80267cbd2cddb7"
     },
     "code-windows-no-bash": {
       "outcome": "untested"
