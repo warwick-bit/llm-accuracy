@@ -19,12 +19,12 @@ more kind of question it recognises.
   time zone (UTC, a named zone such as "Sydney time", an abbreviation such as
   AEST, or an IANA name such as Australia/Sydney), says "defined as",
   "distinct" or "excluding", or gives a first-payment rule gets no reminder. So
-  do development counts (test fixtures, seed or mock data, a test, dev, QA, CI,
-  staging or local database, Redis, a schema migration, or a named code file or
-  PR), other
-  subjects such as new tickets, and prompts with the `# analysis-ok` bypass.
-  Only the first 2,000 characters are read for these signals, so a file pasted
-  after the question does not silence the reminder.
+  do development counts (test fixtures, seed data, the mock data, a test, dev,
+  QA, CI, staging or local database, Redis, a schema migration, or a named code
+  file or PR), other subjects such as new tickets, and prompts with the
+  `# analysis-ok` bypass.
+  Signals more than 2,000 characters into the prompt are ignored, so the later
+  rows of a long pasted file cannot silence the reminder.
 - **Fires when a silence signal is ambiguous:** a missed reminder costs more
   than an extra one. A named data file such as `signups.csv` still gets the
   reminder, and so do business events ("since the pricing page deploy", "after
