@@ -2,6 +2,7 @@
 
 import os
 import sys
+import shlex
 from pathlib import Path
 
 import pytest
@@ -10,18 +11,23 @@ HOOK_SHELL = os.environ.get("HOOK_TEST_SHELL", "/bin/sh" if os.name == "posix" e
 
 
 def hook_argv(handler, root, data="", executable=None):
-    """Apply the documented exec-form substitutions without involving a shell."""
+    """Export synthetic host values, preserving the shipped shell command."""
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+    from hook_command import shell_argv
     values = {"CLAUDE_PLUGIN_ROOT": str(root), "CLAUDE_PLUGIN_DATA": str(data),
-              "user_config.python_executable": executable or sys.executable}
-
-    def expand(value):
-        for key, replacement in values.items():
-            value = value.replace("${" + key + "}", replacement)
-        assert "${" not in value
-        return value
-
-    assert isinstance(handler["args"], list)
-    return [expand(handler["command"]), *map(expand, handler["args"])]
+              "CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE": executable or sys.executable}
+    command = handler['command']
+    env = dict(os.environ, HOOK_TEST_SHELL=HOOK_SHELL)
+    powershell = os.name == 'nt' and not HOOK_SHELL
+    if powershell:
+        def quote(value):
+            for character in ("'", '\u2018', '\u2019', '\u201a', '\u201b'):
+                value = value.replace(character, character * 2)
+            return "'" + value + "'"
+        prefix = '; '.join('$env:' + key + '=' + quote(value) for key, value in values.items())
+    else:
+        prefix = '; '.join('export ' + key + '=' + shlex.quote(value) for key, value in values.items())
+    return shell_argv(prefix + '; ' + command, env, test_shell=True)
 
 
 @pytest.fixture(autouse=True)

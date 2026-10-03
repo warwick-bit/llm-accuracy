@@ -41,6 +41,16 @@ def test_installed_vectors_emit_accuracy_restore_ledger_and_capture_memory_once(
     )
 
 
+def test_unconfigured_launchers_execute_all_hook_plugins(installed, tmp_path):
+    assert probe.run(installed, tmp_path, dict.fromkeys(installed, ''), environment())
+
+
+def test_repeated_probes_do_not_reuse_disabled_memory_session(installed, tmp_path):
+    for executable in ('', '', sys.executable):
+        assert probe.run(installed, tmp_path, dict.fromkeys(installed, executable), environment())
+        assert not list(tmp_path.glob('installed-probe-*'))
+
+
 @pytest.mark.parametrize("name", ["llm-accuracy", "session-ledger"])
 def test_missing_runner_cannot_silently_certify_installed_hook_execution(
     installed, tmp_path, name

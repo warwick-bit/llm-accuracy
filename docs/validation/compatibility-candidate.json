@@ -4,20 +4,20 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.7.0",
-      "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
+      "version": "0.7.1",
+      "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
     },
     "deterministic-data": {
       "version": "0.1.1",
       "sha256": "6687ecc0fa47e96cca47c64c5541357d7a3eaef999b20594fc0c031a311bdf11"
     },
     "session-ledger": {
-      "version": "0.3.0",
-      "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
+      "version": "0.3.1",
+      "sha256": "78086777ea2f85d844fe7243369108f4c9d1e2e6c4a537e01f53d1e9d3093d3d"
     },
     "evidence-memory": {
-      "version": "0.5.0",
-      "sha256": "1adb6cb9793a9e9433405a0dd9c900b442b092f083c4e3400859f93facded45a"
+      "version": "0.5.1",
+      "sha256": "43cd1b2d2565594be6ba2510782d0773f5faf507766a16d490f8976ab83c3e85"
     }
   },
   "support_policy": {
@@ -30,37 +30,7 @@
       "outcome": "untested"
     },
     "code-wsl": {
-      "outcome": "pass",
-      "platform": "Linux/WSL",
-      "host_kind": "code",
-      "host_version": "2.1.288",
-      "python_version": "3.12.3",
-      "packages": {
-        "llm-accuracy": {
-          "version": "0.7.0",
-          "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
-        },
-        "deterministic-data": {
-          "version": "0.1.1",
-          "sha256": "6687ecc0fa47e96cca47c64c5541357d7a3eaef999b20594fc0c031a311bdf11"
-        },
-        "session-ledger": {
-          "version": "0.3.0",
-          "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
-        },
-        "evidence-memory": {
-          "version": "0.5.0",
-          "sha256": "1adb6cb9793a9e9433405a0dd9c900b442b092f083c4e3400859f93facded45a"
-        }
-      },
-      "checks": {
-        "clean_install": true,
-        "configured_python": true,
-        "prompt_delivery": true,
-        "upgrade": true,
-        "uninstall": true,
-        "invalid_python_advisory_then_recovery": true
-      }
+      "outcome": "untested"
     },
     "code-windows-no-bash": {
       "outcome": "untested"
@@ -105,7 +75,7 @@
     }
   },
   "capabilities": {
-    "code": "configured_exec_hooks",
+    "code": "automatic_python_hooks",
     "desktop_chat": "skills_only",
     "cowork": "stateless_skills_only_unverified_hooks",
     "desktop_code": "unverified_ui",

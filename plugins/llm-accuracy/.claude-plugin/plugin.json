@@ -1,7 +1,7 @@
 {
   "name": "llm-accuracy",
   "description": "Advisory evidence reminders for technical and data work, targeted ambiguity checks, claim fidelity, and self-audit.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": {
     "name": "Warwick"
   },
@@ -11,9 +11,9 @@
   "userConfig": {
     "python_executable": {
       "type": "string",
-      "title": "Python executable",
-      "description": "A working Python 3.9+ executable name or absolute path, with no arguments. Linux/macOS: python3. Windows: python or the full python.exe path. Git Bash is optional.",
-      "required": true
+      "title": "Python executable (optional)",
+      "description": "Leave empty for automatic Python 3.9+ discovery. Set an executable name or absolute path, without arguments, only to override discovery. No Git Bash required on Windows.",
+      "required": false
     }
   }
 }

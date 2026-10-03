@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from host_probe import run_probe
+from hook_shell import shell_argv
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,13 +100,14 @@ def python_status(executable: str) -> dict:
 
 
 def command_argv(handler: dict, root: Path, executable: str) -> list[str]:
-    if handler.get("command") != "${user_config.python_executable}" or not isinstance(handler.get("args"), list):
+    if not isinstance(handler.get("command"), str) or 'python-launcher.cmd' not in handler['command']:
         raise ValueError("registration")
-    return [executable, *[value.replace("${CLAUDE_PLUGIN_ROOT}", str(root)) for value in handler["args"]]]
+    return shell_argv(handler['command'], os.environ)
+
 
 
 def probe_command(command: dict, prompt: str, root: Path, executable: str) -> str:
-    env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(root)}
+    env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(root), "CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE": executable}
     try:
         result = subprocess.run(
             command_argv(command, root, executable),
@@ -115,7 +117,7 @@ def probe_command(command: dict, prompt: str, root: Path, executable: str) -> st
             encoding="utf-8",
             errors="replace",
             env=env,
-            timeout=5,
+            timeout=15,
         )
     except subprocess.TimeoutExpired:
         return "timeout"
@@ -143,7 +145,7 @@ def check_hooks(root: Path, executable: str) -> dict[str, str]:
         ]
         commands = [h for group in groups for h in group["hooks"]]
         if len(commands) != len(PROMPTS) or not all(
-            isinstance(command, dict) and command.get("args") for command in commands
+            isinstance(command, dict) and "python-launcher.cmd" in command.get("command", "") for command in commands
         ):
             raise ValueError("registration")
     except (OSError, ValueError, KeyError, TypeError):

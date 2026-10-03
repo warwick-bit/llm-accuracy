@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 ALLOWED_SUFFIXES = frozenset({".json", ".md", ".py", ".yaml", ".yml"})
+TEXT_LAUNCHER = "hooks/python-launcher.cmd"
 COMMON_FORBIDDEN_PATH_PREFIXES = ("verify-number",)
 ACCURACY_CORE_FORBIDDEN_PATH_PREFIXES = COMMON_FORBIDDEN_PATH_PREFIXES + (
     "session_ledger",
@@ -70,7 +71,7 @@ def artifact_violations(
         return [f"excluded artifact: {display_path}"]
     if path.is_dir():
         return []
-    if path.suffix.lower() not in ALLOWED_SUFFIXES:
+    if path.suffix.lower() not in ALLOWED_SUFFIXES and display_path != TEXT_LAUNCHER:
         return [f"unexpected non-text artifact: {display_path}"]
     try:
         text = path.read_text(encoding="utf-8")

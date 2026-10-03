@@ -6,7 +6,7 @@ products. Use the path below that matches where you work.
 ## Validation status
 
 Platform capability and runtime evidence are separate. The source candidate uses
-shell-independent hooks; read [compatibility and current release evidence](COMPATIBILITY.md)
+automatic Python discovery; read [compatibility and current release evidence](COMPATIBILITY.md)
 before relying on an OS or Desktop mode. Published-release receipts below are historical.
 
 **Earlier plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
@@ -14,11 +14,10 @@ before relying on an OS or Desktop mode. Published-release receipts below are hi
 [Evidence Memory 0.4.0](release-evidence-memory-0.4.0.md). The records below
 describe historical builds.
 
-The current [compatibility release](release-platform-candidate.md) includes
-[Evidence Memory 0.5.0](release-evidence-memory-0.5.0.md), which preserves the
-question-answer capture from 0.4.0 and requires explicit Python configuration,
-and [Deterministic Data 0.1.1](release-deterministic-data-0.1.1.md), which
-steps aside when no catalogue exists.
+The current [automatic Python patch](release-python-default.md) removes required
+interpreter setup. Saved interpreter choices remain in effect.
+[Deterministic Data 0.1.1](release-deterministic-data-0.1.1.md) steps aside when
+no catalogue exists.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
 
@@ -56,10 +55,9 @@ and the general and targeted advisory hooks.
 ### Before you start
 
 - Use Claude Code 2.1.287 or later for this source candidate.
-- Configure a working Python 3.9+ executable in the plugin option before
-  starting a session. Linux/WSL/macOS normally use `python3`; native Windows
-  uses `python` or an absolute `python.exe` path. Git Bash is optional.
-  An installed Windows Store alias alone is not a working Python runtime.
+- Install Python 3.9+ if it is not already available. The plugin automatically
+  finds a working `python3`, `python` or Windows `py -3`; no setting is normally
+  needed. Git Bash is optional. A Windows Store alias alone is not a runtime.
 - Install only if you trust the plugin source. It runs local advisory hook
   commands in Claude Code.
 
@@ -72,8 +70,8 @@ claude plugin marketplace add warwick-bit/llm-accuracy --scope user
 claude plugin install llm-accuracy@llm-accuracy --scope user
 ```
 
-Start or return to Claude Code. Open `/config` and set LLM Accuracy's **Python
-executable** option to the verified executable from the prerequisites. Then run:
+Start or return to Claude Code. Leave **Python executable** empty for automatic
+discovery; `/config` provides an optional override. Then run:
 
 ```text
 /reload-plugins
@@ -144,9 +142,9 @@ record and Claude's compact summary may contain sensitive local content. It is
 unsupported in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude
 Code on the web.
 
-Session Ledger requires Claude Code 2.1.287+ and a configured Python 3.9+
-executable (CI covers 3.9–3.14). The candidate launches hooks directly with
-argument vectors on Linux/WSL, native Windows and macOS; Git Bash is optional.
+Session Ledger requires Claude Code 2.1.287+ and working Python 3.9+
+executable (CI covers 3.9–3.14). The candidate discovers Python and launches hooks
+through the platform shell on Linux/WSL, native Windows and macOS; Git Bash is optional.
 See [configuration and current evidence](COMPATIBILITY.md).
 
 Install it after adding the marketplace:
@@ -156,8 +154,8 @@ claude plugin install session-ledger@llm-accuracy --scope user
 claude plugin enable session-ledger@llm-accuracy --scope user
 ```
 
-Before reloading, open `/config` and set Session Ledger's **Python executable**
-option; each hook plugin has its own option. Then run `/reload-plugins` in an
+If discovery fails, set Session Ledger's optional **Python executable** option
+in `/config`; each hook plugin has its own option. Then run `/reload-plugins` in an
 active Claude Code session, or start a new one. After that, use Claude normally: the ledger starts automatically with the
 session, captures a bounded rolling user/assistant session record on user-prompt
 and turn-complete hooks, flushes it before context compaction, and restores it
@@ -216,8 +214,8 @@ claude plugin install evidence-memory@llm-accuracy --scope user
 claude plugin enable evidence-memory@llm-accuracy --scope user
 ```
 
-Open `/config` and set Evidence Memory's **Python executable** option before
-reloading. Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
+If discovery fails, set Evidence Memory's optional **Python executable** option
+in `/config`. Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
 start or prompt, with a fresh cutoff that excludes earlier transcript rows.
 The `/evidence-memory:memory` skill provides search, lookup, correction,
 `disable`, `begin-plan`, and `clear`. Those deletion commands stop capture for
@@ -245,9 +243,11 @@ claude plugin update session-ledger@llm-accuracy --scope user
 claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
-Run the optional plugin updates only for plugins you installed. On upgrade to
-Accuracy 0.7.0, Ledger 0.3.0 or Memory 0.5.0, open `/config` and set each installed
-hook plugin's **Python executable** option before reloading. Then run
+Run the optional plugin updates only for plugins you installed. Accuracy 0.7.1,
+Ledger 0.3.1 and Memory 0.5.1 automatically find Python when no executable is
+saved. Upgrades normally need no setting change. Saved choices survive updates;
+if discovery or a saved executable fails, correct or clear each installed hook
+plugin's optional **Python executable** option in `/config`. Then run
 `/reload-plugins` in an active Claude Code session. The read-only command
 `claude plugin configure PLUGIN@llm-accuracy` shows options and which are unset;
 it does not save values without `--values-stdin`. For headless configuration,
