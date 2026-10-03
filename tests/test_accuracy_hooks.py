@@ -276,6 +276,10 @@ def test_new_count_reads_only_the_opening_for_silence_signals() -> None:
     padded = question + " " + "x" * (hook.SILENCE_SCAN_CHARS - len(question) - 5)
     assert (padded + " PSTN")[: hook.SILENCE_SCAN_CHARS].endswith(" PST")
     assert hook.is_ambiguous_new_count(padded + " PSTN rollout notes")
+    offer = " from the first-order discount"
+    whole = question + " " + "x" * (hook.SILENCE_SCAN_CHARS - len(question) - 1 - len(offer))
+    assert len(whole + offer) == hook.SILENCE_SCAN_CHARS
+    assert hook.is_ambiguous_new_count(whole + offer + " code")
     started = time.perf_counter()
     hook.is_ambiguous_new_count(question + " " + "a." * 50000)
     assert time.perf_counter() - started < 2

@@ -169,10 +169,10 @@ AMBIGUITY_CONTRACT = (
 def is_ambiguous_new_count(prompt: str) -> bool:
     # The question and any definition come first. Signals past the opening are
     # ignored, so the later rows of a pasted file cannot silence the reminder and
-    # regex time stays bounded. A token cut at the limit is dropped, so the cut
-    # cannot create a signal ("PSTN" cut to "PST").
+    # regex time stays bounded. A word split by the limit is dropped, so the cut
+    # cannot create a signal ("PSTN" cut to "PST"); a whole word is kept.
     head = prompt[:SILENCE_SCAN_CHARS]
-    if len(prompt) > SILENCE_SCAN_CHARS:
+    if len(prompt) > SILENCE_SCAN_CHARS and not prompt[SILENCE_SCAN_CHARS].isspace():
         head = re.sub(r"\S*\Z", "", head)
     return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not (
         DEFINED_COUNT.search(head)
