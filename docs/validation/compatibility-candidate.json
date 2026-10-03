@@ -64,8 +64,8 @@
         "uninstall": true,
         "invalid_python_advisory_then_recovery": true
       },
-      "source_commit": "2bd1c8b745bde875fade12fbb14a373d7b806366",
-      "row_sha256": "43927bd92fe514bfe97755cf7a8120e610413c1654ac0885cc2ee2fda187ce97"
+      "source_commit": "84276aa88fd14eab41fbaeed5e8e07dcce84da0d",
+      "row_sha256": "fbe4af20a0e74bfa4d394b259424de34e076748230dfaa3d43000b0aa2184446"
     },
     "code-windows-no-bash": {
       "outcome": "untested"
