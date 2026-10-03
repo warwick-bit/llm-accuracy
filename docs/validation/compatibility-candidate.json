@@ -5,7 +5,7 @@
   "packages": {
     "llm-accuracy": {
       "version": "0.7.2",
-      "sha256": "b117096b4f6da78822850fdd2a91696c1932e08f6c60f5fe7c4abec5ae68ec96"
+      "sha256": "5b43b887d942da8989beca32c563bae885b2847a58168e53311b378fc62c8b0d"
     },
     "deterministic-data": {
       "version": "0.1.1",
@@ -30,42 +30,7 @@
       "outcome": "untested"
     },
     "code-wsl": {
-      "outcome": "pass",
-      "platform": "Linux/WSL",
-      "host_kind": "code",
-      "host_version": "2.1.288",
-      "python_version": "3.12.3",
-      "packages": {
-        "llm-accuracy": {
-          "version": "0.7.2",
-          "sha256": "b117096b4f6da78822850fdd2a91696c1932e08f6c60f5fe7c4abec5ae68ec96"
-        },
-        "deterministic-data": {
-          "version": "0.1.1",
-          "sha256": "a242107c1432529b5675b8506017d918c9d26a2ade7524b5ddfd5638fcfd5331"
-        },
-        "session-ledger": {
-          "version": "0.3.1",
-          "sha256": "78086777ea2f85d844fe7243369108f4c9d1e2e6c4a537e01f53d1e9d3093d3d"
-        },
-        "evidence-memory": {
-          "version": "0.5.1",
-          "sha256": "43cd1b2d2565594be6ba2510782d0773f5faf507766a16d490f8976ab83c3e85"
-        }
-      },
-      "checks": {
-        "clean_install": true,
-        "configured_python": true,
-        "automatic_python_upgrade": true,
-        "automatic_python_fresh": true,
-        "unconfigured_prompt_delivery": true,
-        "prompt_delivery": true,
-        "upgrade": true,
-        "uninstall": true,
-        "invalid_python_advisory_then_recovery": true
-      },
-      "source_commit": "ed703d2a650300be07f3352d43ad4545e6c49f0e",
-      "row_sha256": "41cff8363a5b34f2500d0f1de1925552d82ccfbff8b35b34e9994e83434e72fa"
+      "outcome": "untested"
     },
     "code-windows-no-bash": {
       "outcome": "untested"
