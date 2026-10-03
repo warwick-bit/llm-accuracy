@@ -17,14 +17,14 @@ model-written state, so capture is automatic once the plugin is enabled.
 to Claude's questions locally, alongside external tool results. Re-reading a
 transcript adds nothing. Disable, clear and the 30-day expiry apply as before.
 
-**Evidence and limits.** In live screens with the restore packet, Claude
-reused stored choices when asked (6/6, against 0/6 without), applied them
-unprompted (6/6), followed a new instruction over a stored one (4/4), and did
-not carry them into a question about an unrelated file (0/8). In three
-sessions with real compactions, the plugin stored every answer and restored it
-after each compaction; at that session size the summaries also kept the
-choices without the plugin, so live benefit in long sessions remains
-unmeasured. A clean-profile marketplace install matched the committed files and
+**Evidence and limits.** In live screens with an earlier prototype's restore
+packet, Claude reused stored choices when asked (6/6, against 0/6 without),
+applied them unprompted (6/6), followed a new instruction over a stored one
+(4/4), and did not carry them into a question about an unrelated file (0/8).
+In one session with three real compactions, on code from before the final
+capture fixes, the plugin stored all 4 answers and restored them after each
+compaction; in two sessions without the plugin the summaries also kept the
+choices at that size, so live benefit in long sessions remains unmeasured. A clean-profile marketplace install matched the committed files and
 recorded a decision through a real compaction. See the
 [validation receipt](validation/evidence-memory-0.4.0-2026-10-03.json).
 
@@ -33,3 +33,7 @@ rewritten in place (see the
 [plugin guide](../plugins/evidence-memory/README.md)), and Codex, whose question
 tool returns only an acknowledgement. An index from an earlier version that is
 too full to add the answer tables keeps capturing evidence without answers.
+
+To update, run `claude plugin marketplace update llm-accuracy` and
+`claude plugin update evidence-memory@llm-accuracy`, then restart Claude Code or
+run `/reload-plugins`.

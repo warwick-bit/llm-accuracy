@@ -196,7 +196,9 @@ experimental because a small synthetic test supports retrieval, but no live
 long-session accuracy or token-saving improvement has been measured. Exact
 results may contain credentials or other sensitive data, so the plugin is off
 by default. Enabling it in Claude settings starts capture automatically in each
-session; disable the plugin to stop it in future sessions.
+session; disable the plugin to stop it in future sessions. Since 0.4.0 it also
+stores your answers to Claude's `AskUserQuestion` prompts, with any note you
+add, as `decision` state, so they can be restored after compaction.
 
 After adding the marketplace, install and enable the plugin:
 

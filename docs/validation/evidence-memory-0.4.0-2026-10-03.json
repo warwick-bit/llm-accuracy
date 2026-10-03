@@ -66,6 +66,7 @@
   "clean_install_smoke": {
     "claude_code": "2.1.288",
     "source": "local-path marketplace at the release commit, rerun after the capture fixes, clean tree",
+    "source_commit": "1815b55",
     "marketplace_add_rc": 0,
     "install_rc": 0,
     "enable_rc": 0,
