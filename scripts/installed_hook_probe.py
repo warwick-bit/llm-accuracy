@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+
+from hook_command import shell_argv
 
 SESSION = "synthetic-installed-qa"
 SUMMARY = "Synthetic installed ledger summary."
@@ -25,15 +29,9 @@ def invoke(
     hook = json.loads((plugin / "hooks/hooks.json").read_text())["hooks"][event][index][
         "hooks"
     ][0]
-    replacements = {
-        "${CLAUDE_PLUGIN_ROOT}": str(plugin),
-        "${CLAUDE_PLUGIN_DATA}": str(data),
-        "${user_config.python_executable}": python,
-    }
-    arguments = [hook["command"], *hook["args"]]
-    for token, value in replacements.items():
-        arguments = [argument.replace(token, value) for argument in arguments]
-    child = {**env, "CLAUDE_PLUGIN_ROOT": str(plugin), "CLAUDE_PLUGIN_DATA": str(data)}
+    child = {**env, "CLAUDE_PLUGIN_ROOT": str(plugin), "CLAUDE_PLUGIN_DATA": str(data),
+             "CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE": python}
+    arguments = shell_argv(hook["command"], child)
     result = subprocess.run(
         arguments,
         input=json.dumps(payload).encode(),
@@ -49,7 +47,7 @@ def invoke(
 def memory_cli(plugin: Path, data: Path, python: str, env: dict, *arguments) -> dict:
     result = subprocess.run(
         [
-            python,
+            python or sys.executable,
             str(plugin / "hooks/memory.py"),
             "--plugin-data",
             str(data),
@@ -119,6 +117,15 @@ def memory_probe(plugin: Path, root: Path, python: str, env: dict) -> bool:
 
 
 def run(
+    installed: dict[str, Path], root: Path, options: dict[str, str], env: dict
+) -> bool:
+    # A completed probe disables its Memory session. Each invocation needs fresh
+    # synthetic storage so that upgrade/fresh/configured probes cannot share it.
+    with tempfile.TemporaryDirectory(prefix="installed-probe-", dir=root) as directory:
+        return _run(installed, Path(directory), options, env)
+
+
+def _run(
     installed: dict[str, Path], root: Path, options: dict[str, str], env: dict
 ) -> bool:
     payload = {

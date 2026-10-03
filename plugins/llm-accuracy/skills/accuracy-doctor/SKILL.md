@@ -4,6 +4,14 @@ description: Check LLM Accuracy version, trigger configuration, bypasses and hoo
 argument-hint: "[optional: live]"
 ---
 
+The Python setting is optional. If `${user_config.python_executable}` is empty
+or unresolved, probe `python3`, `python`, then `py -3` with
+`-c "import sys; print(sys.executable); sys.exit(sys.version_info < (3, 9))"`.
+Use the executable path from the first successful probe in the vector below.
+A saved nonempty override takes precedence; do not replace an invalid override
+silently. If none works, report that Python 3.9+ is needed. Never pass an empty
+or unresolved executable placeholder to a tool.
+
 # Accuracy doctor
 
 Execute this vector with the configured Python executable after substituting
@@ -19,7 +27,7 @@ the host placeholders:
 ```
 
 The command probe uses direct execution and requires a working Python 3.9+
-executable. It does not require Git Bash or another shell. Use an argument
+executable. The hooks use the platform shell; native Windows does not require Git Bash. Use an argument
 vector when available; with a shell tool, quote each element for that shell
 (PowerShell: `&` before the executable and doubled ASCII/smart single quotes;
 POSIX: shell-escaped literal arguments). Never evaluate substituted text as a

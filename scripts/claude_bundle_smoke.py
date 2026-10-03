@@ -98,7 +98,15 @@ def delivery_passed(result):
             and inventory.get('tool_count') == 0 and inventory.get('mcp_count') == 0)
 
 
-def lifecycle(claude, root, source, env):
+def probe_installed(claude, root, env, options):
+    profile = Path(env['CLAUDE_CONFIG_DIR'])
+    listing = installed_listing(claude, env, root)
+    installed = {name: smoke.path_inside(smoke.installed_entry(listing, name + '@llm-accuracy').get('installPath'),
+                                         profile) for name in PACKAGES}
+    return installed_hook_probe.run(installed, root, options, env)
+
+
+def lifecycle(claude, root, source, env, *, live=False, timeout=60):
     profile = Path(env['CLAUDE_CONFIG_DIR'])
     action(claude, env, root, 'marketplace', 'add', str(source))
     for name in PACKAGES:
@@ -110,6 +118,14 @@ def lifecycle(claude, root, source, env):
                     ignore=shutil.ignore_patterns('__pycache__'))
     shutil.copytree(ROOT / '.claude-plugin', source / '.claude-plugin', dirs_exist_ok=True)
     refresh_bundle(claude, env, root)
+    unset = all(value is None for value in python_options(profile).values())
+    automatic_upgrade = unset and probe_installed(claude, root, env, dict.fromkeys(python_options(profile), ''))
+    unconfigured_delivery = False
+    if live:
+        command = smoke.session_command(claude, 'sonnet') + ['--setting-sources', 'user', '--effort', 'low']
+        result = smoke.communicate(command, root, env,
+                                   smoke.stream_input('Reply exactly OK. Do not use tools.'), timeout)
+        unconfigured_delivery = unset and delivery_passed(result)
     configure_bundle(claude, env, root)
     upgrade = installation_matches(installed_listing(claude, env, root), ROOT, profile)
     before = python_options(profile)
@@ -121,11 +137,14 @@ def lifecycle(claude, root, source, env):
         raise ValueError('bundle_upgrade_uninstall_failed')
     for name in PACKAGES:
         action(claude, env, root, 'install', name + '@llm-accuracy')
+    fresh_unset = all(value is None for value in python_options(profile).values())
+    automatic_fresh = fresh_unset and probe_installed(claude, root, env, dict.fromkeys(python_options(profile), ''))
     configure_bundle(claude, env, root)
     clean = installation_matches(installed_listing(claude, env, root), ROOT, profile)
     configured = all(v == sys.executable for v in python_options(profile).values())
     return {'clean_install': clean, 'configured_python': configured,
-            'upgrade': upgrade and preserved}
+            'upgrade': upgrade and preserved, 'automatic_python_upgrade': automatic_upgrade,
+            'automatic_python_fresh': automatic_fresh, 'unconfigured_prompt_delivery': unconfigured_delivery}
 
 
 def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
@@ -154,7 +173,7 @@ def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
                                             capture_output=True, check=True, timeout=30).stdout)
         report['baseline_packages'] = {name: package_binding(source, name) for name in PACKAGES}
         env = smoke.auth_profile(root, ci=True, live=live) if ci_auth else smoke.auth_profile(root)
-        checks = lifecycle(claude, root, source, env)
+        checks = lifecycle(claude, root, source, env, live=live, timeout=timeout)
         listing = installed_listing(claude, env, root)
         installed = {name: smoke.path_inside(smoke.installed_entry(listing, name + '@llm-accuracy').get('installPath'),
                                              Path(env['CLAUDE_CONFIG_DIR'])) for name in PACKAGES}

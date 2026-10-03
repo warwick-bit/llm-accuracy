@@ -20,9 +20,13 @@ CI_TARGETS = tuple(target for target in CODE_TARGETS if target != 'code-wsl')
 SUPPORT_POLICY = {'code': 'native_installation_and_local_live_qa',
                   'desktop_chat': 'experimental_stateless_skills',
                   'cowork': 'experimental_stateless_skills'}
-CHECKS = ('clean_install', 'configured_python', 'prompt_delivery', 'upgrade', 'uninstall',
+LAUNCHER_COMMAND = (r'set -- "([a-z][a-z_-]*\.py(?::[a-z-]+)?)"; '
+                    r'\(\. "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/python-launcher\.cmd" "\1"\); exit 0')
+CHECKS = ('clean_install', 'configured_python', 'automatic_python_upgrade', 'automatic_python_fresh',
+          'unconfigured_prompt_delivery', 'prompt_delivery', 'upgrade', 'uninstall',
           'invalid_python_advisory_then_recovery')
-INSTALL_CHECKS = ('clean_install', 'configured_python', 'upgrade', 'uninstall', 'installed_hook_execution')
+INSTALL_CHECKS = ('clean_install', 'configured_python', 'automatic_python_upgrade', 'automatic_python_fresh',
+                 'upgrade', 'uninstall', 'installed_hook_execution')
 CHAT_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'no_local_hooks', 'upgrade', 'uninstall')
 COWORK_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'stateless_boundary', 'upgrade', 'uninstall')
 
@@ -72,7 +76,7 @@ def candidate(root: Path) -> dict:
             'support_policy': SUPPORT_POLICY.copy(),
             'targets': {target: {'outcome': 'untested'} for target in TARGETS},
             'native_installations': {target: {'outcome': 'untested'} for target in CI_TARGETS},
-            'capabilities': {'code': 'configured_exec_hooks', 'desktop_chat': 'skills_only',
+            'capabilities': {'code': 'automatic_python_hooks', 'desktop_chat': 'skills_only',
                              'cowork': 'stateless_skills_only_unverified_hooks',
                              'desktop_code': 'unverified_ui', 'codex_memory': 'experimental_posix_only'}}
 
@@ -168,16 +172,21 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
     for name in ('llm-accuracy', 'session-ledger', 'evidence-memory'):
         directory = root / 'plugins' / name
         option = json.loads((directory / '.claude-plugin/plugin.json').read_text())['userConfig']['python_executable']
-        if option.get('required') is not True or 'default' in option:
-            errors.append('explicit_python_configuration_required_' + name)
+        if option.get('type') != 'string' or option.get('required') is not False or 'default' in option:
+            errors.append('python_override_optional_' + name)
         hooks = json.loads((directory / 'hooks/hooks.json').read_text())['hooks']
         for groups in hooks.values():
             for group in groups:
                 for hook in group['hooks']:
-                    if hook.get('command') != '${user_config.python_executable}' or not isinstance(hook.get('args'), list):
-                        errors.append('shell_launcher_' + name)
-        if (directory / 'hooks/hook_runner.py').read_bytes() != (root / 'plugins/llm-accuracy/hooks/hook_runner.py').read_bytes():
-            errors.append('runner_drift_' + name)
+                    command = hook.get('command')
+                    match = re.fullmatch(LAUNCHER_COMMAND, command) if isinstance(command, str) else None
+                    if not match or 'args' in hook:
+                        errors.append('automatic_launcher_required_' + name)
+                    elif not (directory / 'hooks' / match.group(1).partition(':')[0]).is_file():
+                        errors.append('missing_hook_target_' + name)
+        for filename in ('hook_runner.py', 'python-launcher.cmd'):
+            if (directory / 'hooks' / filename).read_bytes() != (root / 'plugins/llm-accuracy/hooks' / filename).read_bytes():
+                errors.append('runner_drift_' + name)
     return errors
 
 

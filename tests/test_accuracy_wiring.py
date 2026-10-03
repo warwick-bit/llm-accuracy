@@ -99,12 +99,13 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
 
     for key, (filename, status_message) in EXPECTED_HANDLERS.items():
         handler = hook_handler(*key)
-        assert set(handler) == {"type", "command", "args", "timeout", "statusMessage"}
+        assert set(handler) == {"type", "command", "timeout", "statusMessage"}
         assert handler["type"] == "command"
         assert handler["timeout"] == 10
         assert handler["statusMessage"] == status_message
-        assert handler["command"] == "${user_config.python_executable}"
-        assert filename in handler["args"]
+        assert "python-launcher.cmd" in handler["command"]
+        assert "user_config" not in handler["command"]
+        assert filename in handler["command"]
         assert (PLUGIN_ROOT / "hooks" / filename).is_file()
 
 
@@ -143,7 +144,8 @@ def test_commands_fail_open_when_plugin_root_is_missing(
 
     assert result.returncode == 0
     assert result.stdout == ""
-    assert result.stderr == ""
+    # A missing package can emit a shell diagnostic, but must never exit 2.
+    assert "python-launcher.cmd" in result.stderr
 
 
 @pytest.mark.parametrize(

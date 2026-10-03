@@ -115,12 +115,11 @@ def test_hooks_json_shape_matches_the_documented_contract() -> None:
     assert set(config["hooks"]) == set(EVENT_ACTIONS)
     for event, action in EVENT_ACTIONS.items():
         hook = config["hooks"][event][0]["hooks"][0]
-        assert set(hook) == {"type", "command", "args", "timeout"}
+        assert set(hook) == {"type", "command", "timeout"}
         assert hook["type"] == "command"
-        assert hook["timeout"] == 5
-        assert hook["command"] == "${user_config.python_executable}"
-        assert hook["args"][2:] == ["${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py", "session-ledger.py",
-                                action, "--plugin-data", "${CLAUDE_PLUGIN_DATA}"]
+        assert hook["timeout"] == 10
+        assert "python-launcher.cmd" in hook["command"]
+        assert "session-ledger.py:" + action in hook["command"]
 
 
 def test_user_prompt_submit_command_captures_the_prompt(tmp_path: Path) -> None:
