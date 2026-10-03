@@ -89,6 +89,13 @@ def test_catalogue_cli_does_not_echo_values(tmp_path: Path) -> None:
     assert secret not in result.stdout
 
 
+def test_plugin_ships_only_the_synthetic_example_catalogue() -> None:
+    # The skill counts any other file under catalogues/ as a user-owned
+    # catalogue, so shipping one would make it engage for every installer.
+    shipped = sorted(path.name for path in (PLUGIN / "catalogues").iterdir())
+    assert shipped == ["example.catalogue.json"]
+
+
 def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     readme = (PLUGIN / "README.md").read_text(encoding="utf-8")
     skill = (PLUGIN / "skills" / "data-routing" / "SKILL.md").read_text(

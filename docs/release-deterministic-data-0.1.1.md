@@ -32,6 +32,9 @@ not powered comparisons; see the
 - **Catalogue present:** across 12 runs on the original and fixed skill, with a
   synthetic catalogue lacking the asked-for definition, the skill engaged and
   withheld at the gap 12/12, with 0 leaks.
+- **Screened wording:** these screens ran before the final catalogue-lookup
+  wording, which also counts a customised catalogue shipped in the plugin.
+  That change is covered by a docs regression test, not a rerun screen.
 
 To update, run `claude plugin marketplace update llm-accuracy` and
 `claude plugin update deterministic-data@llm-accuracy`, then restart Claude

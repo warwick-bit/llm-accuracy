@@ -42,7 +42,7 @@
     "Screens only: one synthetic fixture and n=1-3 per cell; no powered comparison.",
     "Desktop Chat and Cowork were not rerun for this patch.",
     "The live pass covers WSL only; native Linux, macOS and both Windows modes rely on the hosted installation rows, and live delivery there remains untested.",
-    "The catalogue-present screen ran before the plugin-bundled catalogue fix; that fix is covered by a docs regression test and the live install pass, not a rerun screen."
+    "Both live screens (no-catalogue and catalogue-present) ran before 2bd1c8b, which rewrote the catalogue-lookup paragraph to count a plugin-bundled catalogue. That change is covered only by the docs regression test; the live install pass checks installation and prompt delivery, not routing."
   ],
   "local_live_code_pass": {
     "target": "code-wsl",
