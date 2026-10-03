@@ -1,0 +1,3 @@
+# These dispatchers are sourced by POSIX shells and executed by native cmd.exe.
+# Keep the tested LF bytes even on Windows checkouts with core.autocrlf=true.
+plugins/*/hooks/python-launcher.cmd text eol=lf
