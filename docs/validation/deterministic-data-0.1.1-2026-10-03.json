@@ -41,30 +41,59 @@
   "known_limits": [
     "Screens only: one synthetic fixture and n=1-3 per cell; no powered comparison.",
     "Desktop Chat and Cowork were not rerun for this patch.",
-    "The live pass covers WSL only; native Linux, macOS and both Windows modes rely on the hosted installation rows, and live delivery there remains untested."
+    "The live pass covers WSL only; native Linux, macOS and both Windows modes rely on the hosted installation rows, and live delivery there remains untested.",
+    "The catalogue-present screen ran before the plugin-bundled catalogue fix; that fix is covered by a docs regression test and the live install pass, not a rerun screen."
   ],
   "local_live_code_pass": {
     "target": "code-wsl",
     "claude_code": "2.1.288",
-    "source_commit": "1364717",
-    "baseline_ref": "3cb5a8e",
+    "source_commit": "2bd1c8b",
+    "baseline_ref": "16a3e63",
     "harnesses": [
-      "scripts/claude_bundle_smoke.py",
-      "scripts/claude_install_smoke.py"
+      "scripts/claude_bundle_smoke.py"
     ],
     "bundle_status": "pass",
     "bundle_checks_true": [
+      "automatic_python_fresh",
+      "automatic_python_upgrade",
       "clean_install",
       "configured_python",
-      "upgrade",
       "installed_hook_execution",
-      "prompt_delivery",
       "invalid_python_advisory_then_recovery",
-      "uninstall"
+      "prompt_delivery",
+      "unconfigured_prompt_delivery",
+      "uninstall",
+      "upgrade"
     ],
-    "deterministic_data_sha256": "6687ecc0fa47e96cca47c64c5541357d7a3eaef999b20594fc0c031a311bdf11",
-    "accuracy_install_smoke_passed": true,
-    "installed_byte_mismatches": 0,
-    "isolated_cleanup": true
+    "deterministic_data_sha256": "a242107c1432529b5675b8506017d918c9d26a2ade7524b5ddfd5638fcfd5331",
+    "isolated_cleanup": true,
+    "earlier_runs": [
+      {
+        "source_commit": "1364717",
+        "baseline_ref": "3cb5a8e",
+        "bundle_status": "pass",
+        "bundle_checks_true": [
+          "clean_install",
+          "configured_python",
+          "upgrade",
+          "installed_hook_execution",
+          "prompt_delivery",
+          "invalid_python_advisory_then_recovery",
+          "uninstall"
+        ],
+        "deterministic_data_sha256": "6687ecc0fa47e96cca47c64c5541357d7a3eaef999b20594fc0c031a311bdf11",
+        "accuracy_install_smoke_passed": true,
+        "installed_byte_mismatches": 0,
+        "superseded_by": "main #64 merged in and the plugin-bundled catalogue fix changed the package bytes"
+      },
+      {
+        "source_commit": "8ccb3c6",
+        "baseline_ref": "16a3e63",
+        "bundle_status": "pass",
+        "bundle_checks_true_count": 10,
+        "deterministic_data_sha256": "6687ecc0fa47e96cca47c64c5541357d7a3eaef999b20594fc0c031a311bdf11",
+        "superseded_by": "the plugin-bundled catalogue fix changed the package bytes"
+      }
+    ]
   }
 }
