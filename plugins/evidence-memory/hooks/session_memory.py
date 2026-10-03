@@ -25,7 +25,8 @@ CAPTURE_MODES = ("external", "all")
 CAPTURE_COUNTERS = ("calls_out_of_scope", "calls_withheld_restricted", "results_without_stored_call",
                     "results_withheld_by_scope")
 RECENT_RESULTS = 10
-# Answered-question identities kept so a re-read transcript does not record an answer twice.
+# AskUserQuestion call ids, and answered-question identities kept so a re-read
+# transcript does not record an answer twice.
 MAX_DECISION_ROWS = 2000
 WEB_TOOLS = ("WebFetch", "WebSearch")
 # Codex logs one outer JavaScript call; these references suggest, but do not prove, which inner tools ran.
@@ -266,6 +267,18 @@ class Store:
             self.db.execute("INSERT INTO search(rowid, name, body) VALUES (?, ?, ?)",
                             (result.lastrowid, event["name"], body))
 
+    def _meta_list(self, key: str) -> list[str]:
+        row = self.db.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        return json.loads(row["value"]) if row else []
+
+    def _note_question_call(self, call_id: str) -> None:
+        """Remember an AskUserQuestion call; its answer usually arrives in a later sync."""
+        calls = self._meta_list("question_calls")
+        if call_id not in calls:
+            calls.append(call_id)
+            self.db.execute("INSERT OR REPLACE INTO meta VALUES ('question_calls', ?)",
+                            (encoded(calls[-MAX_DECISION_ROWS:]),))
+
     def _record_answers(self, call_id: str, body: dict[str, Any]) -> int:
         """Store each answered AskUserQuestion choice as a decision state item.
 
@@ -274,15 +287,14 @@ class Store:
         same answer after a cursor reset adds nothing.
         """
         result = body.get("host_tool_result")
-        if not isinstance(result, dict):
+        if not isinstance(result, dict) or call_id not in self._meta_list("question_calls"):
             return 0
         answers, questions = result.get("answers"), result.get("questions")
         if not isinstance(answers, dict) or not isinstance(questions, list) or not all(
                 isinstance(item, dict) and isinstance(item.get("question"), str) for item in questions):
             return 0
         notes = result.get("annotations") if isinstance(result.get("annotations"), dict) else {}
-        row = self.db.execute("SELECT value FROM meta WHERE key='decision_rows'").fetchone()
-        seen = json.loads(row["value"]) if row else []
+        seen = self._meta_list("decision_rows")
         recorded = 0
         for question, answer in answers.items():
             if not isinstance(question, str) or not isinstance(answer, str) or not question or not answer:
@@ -357,6 +369,8 @@ class Store:
                     status = "invalid_tool_identity"
                     break
                 for event in events:
+                    if event["kind"] == "call" and event["name"] == "AskUserQuestion":
+                        self._note_question_call(event["call_id"])
                     if event["kind"] == "result":
                         decisions += self._record_answers(event["call_id"], event["body"])
                     if event["kind"] == "call":

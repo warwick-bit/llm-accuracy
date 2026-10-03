@@ -1221,3 +1221,18 @@ def test_restore_packet_lists_recorded_decisions(tmp_path, monkeypatch):
     context = bridge.hook(runtime, {**payload, 'source': 'compact'}, restore=True)
     item, = packet_json(context)['current_state_subset']
     assert item['kind'] == 'decision' and 'Sydney time' in item['text_excerpt']
+
+
+@pytest.mark.parametrize('name', ['mcp__synthetic__survey', 'mcp__hr__survey_answers', 'Bash'])
+def test_only_ask_user_question_results_become_decisions(store, tmp_path, name):
+    path = write_log(tmp_path / 'log', tool_call('tool-1', name),
+                     answered('tool-1', {'Which timezone defines July?': 'Sydney time'}))
+    assert store.sync(path)['decisions_recorded'] == 0
+    assert store.state()['items'] == []
+
+
+def test_an_answer_synced_after_its_question_is_recorded(store, tmp_path):
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'))
+    assert store.sync(path)['decisions_recorded'] == 0
+    write_log(path, tool_call('ask-1', 'AskUserQuestion'), answered('ask-1', {'Which timezone defines July?': 'UTC'}))
+    assert store.sync(path)['decisions_recorded'] == 1
