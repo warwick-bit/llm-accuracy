@@ -101,6 +101,17 @@ def code_pass_row(report: dict, target: str, proof: dict) -> dict:
     return seal_row(row, report.get('source_commit'))
 
 
+def write_receipt(path: Path, receipt: dict) -> None:
+    """Replace the receipt atomically with LF line endings on every OS."""
+    temporary = path.with_name(path.name + '.tmp')
+    try:
+        temporary.write_bytes((json.dumps(receipt, indent=2) + '\n').encode('utf-8'))
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+
 def candidate(root: Path) -> dict:
     return {'schema_version': 5, 'minimum_claude_code': '2.1.287',
             'python_minimum': '3.9', 'packages': {name: package_binding(root, name) for name in PACKAGES},
@@ -262,7 +273,7 @@ def main() -> int:
     args = parser.parse_args()
     path = args.root / 'docs/validation/compatibility-candidate.json'
     if args.write_candidate:
-        path.write_text(json.dumps(candidate(args.root), indent=2) + '\n')
+        write_receipt(path, candidate(args.root))
         return 0
     try:
         receipt = json.loads(path.read_text())

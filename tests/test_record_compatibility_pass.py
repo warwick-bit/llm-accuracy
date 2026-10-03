@@ -71,6 +71,7 @@ def test_records_one_sealed_code_pass_from_a_live_bundle_receipt(distribution, c
     assert row == contract.code_pass_row(report, "code-wsl", {})
     assert set(row["checks"]) == set(contract.CHECKS)
     assert contract.validate(root, receipt) == []
+    assert b'\r' not in path.read_bytes()
 
 
 @pytest.mark.parametrize(
@@ -197,3 +198,42 @@ def test_malformed_input_reports_a_fixed_label_without_echoing_it(distribution, 
     assert (code, output["errors"]) == (1, ["invalid_pass_input"])
     assert "SYNTHETIC_SECRET_NEEDLE" not in json.dumps(output)
     assert path.read_bytes() == before
+
+
+def test_desktop_row_must_record_a_pass(distribution, capsys):
+    root, path = distribution
+    before = path.read_bytes()
+    row = {'outcome': 'untested', 'platform': 'Darwin', 'source_commit': TESTED, 'note': 'synthetic'}
+    code, output = record(root, capsys, 'desktop-chat-macos', '--row', write(root, 'ui.json', row))
+    assert (code, output['errors']) == (1, ['desktop_pass_requires_row'])
+    assert path.read_bytes() == before
+
+
+def test_failed_write_leaves_the_candidate_intact(distribution, capsys, monkeypatch):
+    root, path = distribution
+    before = path.read_bytes()
+    def fail(source, target):
+        raise PermissionError('synthetic read-only candidate')
+    monkeypatch.setattr(contract.os, 'replace', fail)
+    code, output = record(root, capsys, 'code-wsl', '--bundle-receipt', write(root, 'run.json', bundle_report(root)))
+    assert (code, output['errors']) == (1, ['candidate_write_failed'])
+    assert path.read_bytes() == before
+    assert sorted(item.name for item in path.parent.iterdir()) == [path.name]
+
+
+def test_deeply_nested_input_gets_a_fixed_label(distribution, capsys):
+    root, path = distribution
+    before = path.read_bytes()
+    source = root / 'run.json'
+    source.write_text('[' * 200000 + ']' * 200000)
+    code, output = record(root, capsys, 'code-wsl', '--bundle-receipt', str(source))
+    assert (code, output['errors']) == (1, ['invalid_pass_input'])
+    assert path.read_bytes() == before
+
+
+def test_receipt_writer_replaces_atomically_with_lf_endings(tmp_path):
+    path = tmp_path / 'candidate.json'
+    path.write_bytes(b'{"old": true}\r\n')
+    contract.write_receipt(path, {'schema_version': 5, 'nested': {'value': 'synthetic'}})
+    assert path.read_bytes() == b'{\n  "schema_version": 5,\n  "nested": {\n    "value": "synthetic"\n  }\n}\n'
+    assert [item.name for item in tmp_path.iterdir()] == ['candidate.json']

@@ -80,15 +80,16 @@ These are maintainer QA records, not an independently authenticated test oracle.
 Historical receipts cannot establish a current candidate's support.
 
 Every pass row is sealed to one QA run. `source_commit` names the full commit
-the run tested, and `row_sha256` is the SHA-256 of the row's other fields as
-canonical JSON (sorted keys, no whitespace). The checker recomputes the seal, so
-a field edited after recording fails. So does a row that Git merged from two
-runs: if two branches each record the same target, they both change the seal
-lines and the merge stops. Resolve that conflict with `--write-candidate` and a
-fresh run on the merged source, never by picking a side. Record passes with
-`scripts/record_compatibility_pass.py`; never write or edit a seal by hand. The
-seal detects accidental splices and edits; like the rest of this record, it is
-not an authentication mechanism.
+the run tested; after a squash merge that commit may be reachable only from the
+pull request, not from `main`. `row_sha256` is the SHA-256 of the row's other
+fields as canonical JSON (sorted keys, no whitespace). The checker recomputes
+the seal, so a field edited after recording fails. So does a row that Git merged
+from two runs: if two branches each record the same target, they both change
+the seal lines and the merge stops. Resolve that conflict with
+`--write-candidate` and a fresh run on the merged source, never by picking a
+side. Record passes with `scripts/record_compatibility_pass.py`; never write or
+edit a seal by hand. The seal detects accidental splices and edits; like the
+rest of this record, it is not an authentication mechanism.
 
 After changing any package file, run `python3 scripts/check_compatibility.py
 --write-candidate` to reset all installed-host outcomes to `untested`. Perform

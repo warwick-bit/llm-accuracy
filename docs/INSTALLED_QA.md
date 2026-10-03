@@ -105,7 +105,7 @@ model-driven capture, data retention, UI and Bash proof need their own evidence.
 GitHub download.
 
 Before recording a Code pass, confirm the invalid-Python recovery field passes
-alongside all six Code checks. Review the raw-free receipts locally, then record
+alongside every other required Code check. Review the raw-free receipts locally, then record
 the bundle receipt on the matching target:
 
 ```text
@@ -121,7 +121,7 @@ hashes or seals.
 Native Windows requires two distinct runs: without accessible Git Bash and with
 Git Bash available. Inspect the effective child PATH and executable resolution
 for each run. Record `git_bash_absent` or `git_bash_present` only after proving
-that environment, alongside the six Code checks: pass `--git-bash absent` or
+that environment, alongside the required Code checks: pass `--git-bash absent` or
 `--git-bash present` to the recorder for that run. WSL is a separate target and
 does not certify either Windows scenario. Native Linux is also separate from WSL.
 
@@ -137,9 +137,11 @@ Chat and Cowork separately, with only Accuracy and Deterministic Data:
 4. Upgrade from the previous packages, then verify the candidate skills again.
 5. Remove both packages and confirm their registrations/skills are gone.
 
-Record the actual app version, the two package bindings, the exact
-[host-specific checks](COMPATIBILITY.md#release-guardrails) and the full commit
-you installed from in a row file, then seal it with
+Write the result as a row file with `outcome` `pass`, the target's `platform`
+and `host_kind`, the actual app version as `host_version`, the two package
+bindings as `packages`, the exact
+[host-specific checks](COMPATIBILITY.md#release-guardrails) as `checks`, and the
+full commit you installed from as `source_commit`. Then seal it with
 `python scripts/record_compatibility_pass.py --target <target> --row row.json`.
 No Python version is required for stateless UI QA. Code-only checks cannot certify these targets.
 Desktop Code UI and Cowork hook execution remain explicitly unverified even

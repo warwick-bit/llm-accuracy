@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-from check_compatibility import ROOT, TARGETS, code_pass_row, seal_row, validate
+from check_compatibility import ROOT, TARGETS, code_pass_row, seal_row, validate, write_receipt
 
 BASH_PROOF = {"code-windows-no-bash": "absent", "code-windows-git-bash": "present"}
 
@@ -24,7 +24,7 @@ def sealed_row(options) -> dict:
     if options.row is None:
         raise ValueError("desktop_pass_requires_row")
     row = json.loads(options.row.read_text(encoding="utf-8"))
-    if isinstance(row, dict):
+    if isinstance(row, dict) and row.get("outcome") == "pass":
         return seal_row(row, row.get("source_commit"))
     raise ValueError("desktop_pass_requires_row")
 
@@ -54,16 +54,19 @@ def main(arguments=None) -> int:
         receipt = json.loads(path.read_text(encoding="utf-8"))
         receipt["targets"][options.target] = row
         errors = validate(options.root, receipt)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError) as error:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError) as error:
         label = (
             str(error)
             if isinstance(error, ValueError) and str(error).isidentifier()
             else "invalid_pass_input"
         )
         errors = [label]
+    if errors == []:
+        try:
+            write_receipt(path, receipt)
+        except OSError:
+            errors = ["candidate_write_failed"]
     status = "fail" if errors else "pass"
-    if status == "pass":
-        path.write_text(json.dumps(receipt, indent=2) + "\n")
     print(json.dumps({"status": status, "target": options.target, "errors": errors}))
     return int(status == "fail")
 
