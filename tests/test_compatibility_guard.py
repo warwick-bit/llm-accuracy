@@ -237,6 +237,34 @@ def test_write_candidate_failure_reports_a_fixed_label(monkeypatch, capsys):
     assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['candidate_write_failed']}
 
 
+@pytest.mark.parametrize('manifest', [
+    None,
+    '{}',
+    '[]',
+    '{',
+    '[' * 200000 + ']' * 200000,
+], ids=['missing', 'no_version', 'list', 'invalid_json', 'nested_past_parser_limit'])
+def test_write_candidate_bad_manifest_reports_a_build_label_and_writes_nothing(tmp_path, monkeypatch, capsys,
+                                                                               manifest):
+    if manifest is not None and manifest.startswith('[['):
+        with pytest.raises(RecursionError):
+            json.loads(manifest)
+    for index, name in enumerate(guard.PACKAGES):
+        directory = tmp_path / 'plugins' / name / '.claude-plugin'
+        directory.mkdir(parents=True)
+        if index:
+            (directory / 'plugin.json').write_text('{"version": "1.0.0"}')
+        elif manifest is not None:
+            (directory / 'plugin.json').write_text(manifest)
+    path = tmp_path / 'docs/validation/compatibility-candidate.json'
+    path.parent.mkdir(parents=True)
+    path.write_text('unchanged')
+    monkeypatch.setattr(sys, 'argv', ['check_compatibility.py', '--root', str(tmp_path), '--write-candidate'])
+    assert guard.main() == 1
+    assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['candidate_build_failed']}
+    assert path.read_text() == 'unchanged'
+
+
 def test_malformed_receipt_and_target_fail_closed():
     assert guard.validate(ROOT, [], release=True) == ['invalid_compatibility_receipt']
     receipt = guard.candidate(ROOT)

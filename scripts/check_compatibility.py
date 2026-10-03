@@ -288,8 +288,13 @@ def main() -> int:
     path = args.root / 'docs/validation/compatibility-candidate.json'
     if args.write_candidate:
         try:
-            write_receipt(path, candidate(args.root))
-        except (OSError, ValueError, KeyError, TypeError):
+            receipt = candidate(args.root)
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
+            print(json.dumps({'status': 'fail', 'errors': ['candidate_build_failed']}))
+            return 1
+        try:
+            write_receipt(path, receipt)
+        except OSError:
             print(json.dumps({'status': 'fail', 'errors': ['candidate_write_failed']}))
             return 1
         return 0
