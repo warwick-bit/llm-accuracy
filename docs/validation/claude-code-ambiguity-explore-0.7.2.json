@@ -42,7 +42,7 @@
   "hook_sha256": {
     "0.7.1": "59cd448ee77941311f4071af144c69042c41bd31363cdaa60a121b802fba25aa",
     "0.7.2_screened": "b310817bc40631dcda69edf3dc4ee8f8c77f43a2b66b2b33ff0ef7320b6bf0eb",
-    "0.7.2_released": "54c888d98728df2455461e935f9588278d23801112d399d244faae4b8f6fda55"
+    "0.7.2_released": "f2ef6332ee10a735c0258bc26b79c33e2c50bad33bcf12b643ab3e684998bb80"
   },
   "vague_question": {
     "runs_per_model_and_version": 3,
@@ -82,7 +82,7 @@
     "existing_reminders_growth": 152
   },
   "known_limits": [
-    "The screens ran on hook b310817. The released hook differs only in its silence patterns (named time zones, zone abbreviations and IANA names; development counts; a named code file or PR); the reminder text is unchanged. Both screened prompts give byte-identical hook output on the two hooks (checked by diffing their output), and unit tests check that the vague prompt fires and the precise one stays silent.",
+    "The screens ran on hook b310817. The released hook differs only in its silence patterns (named time zones, zone abbreviations and IANA names; development counts; a named code file or PR) and reads only a prompt's first 2,000 characters for them; the reminder text is unchanged. Both screened prompts give byte-identical hook output on the two hooks (checked by diffing their output), and unit tests check that the vague prompt fires and the precise one stays silent.",
     "Screens only: one synthetic fixture, one vague and one precise wording, n=1-3 per cell; no powered comparison.",
     "Slip counts are too small to compare versions; the screen does not show that answers become more accurate.",
     "The new-count pattern needs a 'How many new ...' opening with a verb such as 'did we get' or 'were there'; other wordings are not recognised yet.",

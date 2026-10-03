@@ -19,15 +19,20 @@ more kind of question it recognises.
   time zone (UTC, a named zone such as "Sydney time", an abbreviation such as
   AEST, or an IANA name such as Australia/Sydney), says "defined as",
   "distinct" or "excluding", or gives a first-payment rule gets no reminder. So
-  do development counts (a fixture, seed data, a test, dev, staging or local
-  database, Redis, a schema migration, or a named code file or PR), other
+  do development counts (test fixtures, seed or mock data, a test, dev, QA, CI,
+  staging or local database, Redis, a schema migration, or a named code file or
+  PR), other
   subjects such as new tickets, and prompts with the `# analysis-ok` bypass.
+  Only the first 2,000 characters are read for these signals, so a file pasted
+  after the question does not silence the reminder.
 - **Fires when a silence signal is ambiguous:** a missed reminder costs more
   than an extra one. A named data file such as `signups.csv` still gets the
   reminder, and so do business events ("since the pricing page deploy", "after
   the CRM migration", "the Next.js Conf sponsorship"), region pairs such as
-  Australia/NZ, and abbreviations that also name other things (CST, EST, IST,
-  BST).
+  Australia/NZ or North America/Europe, words with a business meaning ("unique
+  promo codes", "light fixtures", "home staging", "the first-order discount",
+  "time-limited"), and abbreviations that also name other things (CST, EST,
+  IST, BST).
 
 The four existing reminders (revenue, best customers, marketing channel and
 onboarding activation) keep their own guidance and are each 152 characters
