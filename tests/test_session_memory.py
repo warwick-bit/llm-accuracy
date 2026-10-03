@@ -1284,3 +1284,45 @@ def test_a_rewritten_earlier_answer_does_not_displace_a_later_one(store, tmp_pat
     assert replay['cursor_reset'] and replay['decisions_recorded'] == 0
     item, = store.state()['items']
     assert item['text'].endswith('"B"')
+
+
+def test_capture_all_also_stores_the_question_call_and_result(store, tmp_path, engine):
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                     answered('ask-1', {'Which timezone defines July?': 'UTC'}))
+    assert store.sync(path, scope=engine.CaptureScope('all'))['decisions_recorded'] == 1
+    assert store.status()['events'] == 2
+
+
+def test_a_full_legacy_index_keeps_capturing_without_decision_tables(tmp_path, engine, monkeypatch):
+    path = tmp_path / 'memory.sqlite3'
+    legacy = engine.Store(path, 'synthetic-session', 'default', create=True)
+    # An index from an earlier version has neither table, and a full one cannot add them.
+    legacy.db.execute('DROP TABLE question_calls')
+    legacy.db.execute('DROP TABLE decision_rows')
+    legacy.db.execute('VACUUM')
+    pages, size = (legacy.db.execute(f'PRAGMA {name}').fetchone()[0] for name in ('page_count', 'page_size'))
+    legacy.close()
+    monkeypatch.setattr(engine, 'MAX_DATABASE_BYTES', pages * size)
+    store = engine.Store(path, 'synthetic-session', 'default')
+    try:
+        assert not store.decisions_available
+        log = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                        answered('ask-1', {'Which timezone defines July?': 'UTC'}))
+        outcome = store.sync(log)
+        assert (outcome['status'], outcome['decisions_recorded']) == ('caught_up', 0)
+        assert store.state()['items'] == []
+    finally:
+        store.close()
+
+
+def test_an_unpaired_surrogate_in_an_answer_does_not_stall_capture(store, tmp_path):
+    question = 'Which marker \ud83d means paid?'
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'))
+    # A truncated emoji leaves an unpaired surrogate escape: valid JSON that UTF-8 cannot encode.
+    with path.open('ab') as stream:
+        stream.write(json.dumps(answered('ask-1', {question: 'Sun \ud83d'}, {question: 'cut \ud83d'})).encode()
+                     + b'\n')
+    outcome = store.sync(path)
+    assert (outcome['status'], outcome['decisions_recorded']) == ('caught_up', 1)
+    item, = store.state()['items']
+    assert item['text'] == 'User answered "Which marker \ufffd means paid?": "Sun \ufffd"; note: "cut \ufffd"'

@@ -28,6 +28,7 @@ RECENT_RESULTS = 10
 WEB_TOOLS = ("WebFetch", "WebSearch")
 # Codex logs one outer JavaScript call; these references suggest, but do not prove, which inner tools ran.
 CODEX_EXTERNAL_REFERENCE = re.compile(r"\btools\s*\.\s*(mcp__[\w-]+__[\w-]+|web__run)\s*\(")
+UNPAIRED_SURROGATE = re.compile("[\ud800-\udfff]")
 MCP_TOOL_NAME = re.compile(r"mcp__[\w-]+__[\w-]+")
 RESTRICTED_TOKENS = frozenset((
     "bank", "credential", "credentials", "employee", "employees", "hr", "leave", "passport", "password",
@@ -247,6 +248,9 @@ class Store:
                     pass
         self.counts_available = bool(self.db.execute(
             "SELECT 1 FROM sqlite_master WHERE name='retrieval_counts'").fetchone())
+        # A full legacy index keeps capturing evidence without recording decisions.
+        self.decisions_available = self.db.execute(
+            "SELECT count(*) FROM sqlite_master WHERE name IN ('question_calls','decision_rows')").fetchone()[0] == 2
         self.fts = bool(self.db.execute("SELECT 1 FROM sqlite_master WHERE name='search'").fetchone())
 
     def close(self) -> None:
@@ -285,6 +289,8 @@ class Store:
 
     def _note_question_call(self, call_id: str) -> None:
         """Remember an AskUserQuestion call; its answer usually arrives in a later sync."""
+        if not self.decisions_available:
+            return
         self.db.execute("INSERT OR IGNORE INTO question_calls VALUES (?)", (call_id,))
 
     def _record_answers(self, call_id: str, body: dict[str, Any], moment: float | None) -> int:
@@ -296,7 +302,7 @@ class Store:
         answer does not displace a later one already recorded.
         """
         result = body.get("host_tool_result")
-        if not isinstance(result, dict) or not self.db.execute(
+        if not self.decisions_available or not isinstance(result, dict) or not self.db.execute(
                 "SELECT 1 FROM question_calls WHERE call_id=?", (call_id,)).fetchone():
             return 0
         answers, questions = result.get("answers"), result.get("questions")
@@ -312,7 +318,9 @@ class Store:
             note = notes.get(question)
             if isinstance(note, dict) and isinstance(note.get("notes"), str) and note.get("notes"):
                 text += f"; note: {json.dumps(note.get('notes'), ensure_ascii=False)}"
-            text = text[:4096]
+            # A truncated emoji can leave an unpaired surrogate, which UTF-8 cannot store.
+            question = UNPAIRED_SURROGATE.sub("\ufffd", question)
+            text = UNPAIRED_SURROGATE.sub("\ufffd", text[:4096])
             # The answer text is part of the identity: a rewritten row with a corrected
             # answer is recorded again and supersedes the stale one.
             identity = sha(encoded([call_id, question, text]).encode())
