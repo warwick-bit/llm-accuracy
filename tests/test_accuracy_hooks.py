@@ -28,6 +28,11 @@ ANALYSIS_FIRE_PROMPTS = [
     "Did onboarding improve activation?",
     "Who are our best customers?",
     "Who are our top customers?",
+    "How many new customers did we get in July?",
+    "how many new paying customers have we added this quarter",
+    "How many new sign-ups were there last week? Use signups.csv.",
+    "How many new users did we get?",
+    "How many new clients do we have this month?",
 ]
 
 ANALYSIS_SILENT_PROMPTS = [
@@ -44,6 +49,17 @@ ANALYSIS_SILENT_PROMPTS = [
     "Which channel is best?",
     "Which support channel performed best?",
     "What's our MRR growth?",
+    "How many new customers did we get in July, counting first paid invoices in UTC?",
+    "How many new customers did we get in July excluding test accounts?",
+    "How many new customers did we get in July (Sydney time)?",
+    "How many new customers did we get in July, defined as first payment?",
+    (
+        "How many new customers did we get in July 2026? Count distinct accounts whose "
+        "first payment falls in July in Australia/Sydney time."
+    ),
+    "How many new tickets did we get?",
+    "How many new customers are in invoices.csv?",
+    "How many new customers did we get in July? # analysis-ok",
 ]
 
 FUSION_FIRE_PROMPTS = [
@@ -174,6 +190,8 @@ def test_analysis_hook_emits_ambiguity_context(monkeypatch, capsys) -> None:
     context = output["hookSpecificOutput"]["additionalContext"]
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
     assert "more than one reasonable interpretation" in context
+    assert "inspect it first and quantify how each choice moves the answer" in context
+    assert "giving the figure each option produces" in context
     assert "MRR, ARR, recognised revenue" in context
     assert "period, currency, and source" in context
     assert "advisory" in context
@@ -194,6 +212,29 @@ def test_analysis_hook_tailors_ambiguity_context() -> None:
     assert "comparison or control group" in onboarding_context
     assert "revenue, margin, retention" in customer_context
     assert "period and population" in customer_context
+
+    count_context = hook.ambiguity_context("How many new customers did we get in July?")
+    assert "what makes a customer new" in count_context
+    assert "returning or reactivated customers" in count_context
+    assert "test, internal, trial and merged accounts" in count_context
+    assert "time zone and window edges" in count_context
+    assert "accounts, people or rows" in count_context
+    assert "revenue, margin, retention" not in count_context
+
+
+def test_new_count_question_gets_the_ambiguity_context(monkeypatch, capsys) -> None:
+    hook = load_hook("analysis-contract-injector.py")
+    monkeypatch.delenv("CC_SKIP_ANALYSIS", raising=False)
+    prompt = "How many new customers did we get in July? Use invoices.csv."
+    monkeypatch.setattr(hook.sys, "stdin", io.StringIO(json.dumps({"prompt": prompt})))
+
+    assert hook.main() == 0
+
+    context = json.loads(capsys.readouterr().out)["hookSpecificOutput"]["additionalContext"]
+    assert "more than one reasonable interpretation" in context
+    assert "what makes a customer new" in context
+    assert "analysis contract" not in context.lower()
+    assert len(context) <= 1500
 
 
 def test_fusion_hook_precision_battery() -> None:

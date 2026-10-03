@@ -58,6 +58,26 @@ AMBIGUOUS_CUSTOMER_RANKING = re.compile(
     r"^\s*who\s+are\s+our\s+(?:best|top)\s+customers\s*[?.!]*\s*$",
     re.I,
 )
+# "How many new customers did we get in July?" A period or a named file may
+# follow; only the opening is fixed.
+AMBIGUOUS_NEW_COUNT = re.compile(
+    r"^\s*how\s+many\s+new\s+(?:paying\s+|paid\s+)?"
+    r"(?:customers|users|accounts|clients|subscribers|sign[\s-]?ups)\s+"
+    r"(?:did\s+we\s+(?:get|have|add|gain|acquire|win|sign(?:\s+up)?)|"
+    r"have\s+we\s+(?:got|gotten|had|added|gained|acquired|won|signed(?:\s+up)?)|"
+    r"were\s+there|do\s+we\s+have)\b",
+    re.I,
+)
+# A count whose definition the prompt already supplies is not ambiguous.
+DEFINED_COUNT = re.compile(
+    r"\b(?:defined\s+as|definition|distinct|unique|de-?dup\w*|exclud\w*|except|"
+    r"not\s+counting|only\s+count\w*|counting\s+only|count(?:ing)?\s+(?:each|every|one)|"
+    r"first[\s-]+(?:paid|paying|payment|purchase|invoice|order|subscription)|"
+    r"time\s?zone|utc|gmt|local\s+time|"
+    r"(?!(?:this|that|any|the|a|first|last|next|same|each|every|some|what|which|"
+    r"long|real|lead|run|over|part|full|on|in|at|by|for)\b)[a-z]+\s+time)\b",
+    re.I,
+)
 EXEC = re.compile(
     r"\b(fix|add|implement|deploy|refactor|merge|push|commit|edit|rename)\b",
     re.I,
@@ -87,8 +107,10 @@ CONTRACT = (
 AMBIGUITY_CONTRACT = (
     "This is a broad business question with more than one reasonable interpretation. "
     "Do not silently choose the definition, population, success measure, time window, "
-    "comparison, currency, or source. Ask one short clarification with concrete options, "
-    "limited to the choices that would change the answer. {question_guidance} If an "
+    "comparison, currency, or source. If the data is available, inspect it first and "
+    "quantify how each choice moves the answer. Then ask one short clarification with "
+    "concrete options, limited to the choices that would change the answer, giving the "
+    "figure each option produces when you have it. {question_guidance} If an "
     "approved metric catalogue is available, use it. If the user asks to proceed without "
     "clarifying, state the assumptions and label the result exploratory. This reminder is "
     "advisory: it does not verify a source or make a value canonical. Mute with "
@@ -96,8 +118,12 @@ AMBIGUITY_CONTRACT = (
 )
 
 
+def is_ambiguous_new_count(prompt: str) -> bool:
+    return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not DEFINED_COUNT.search(prompt)
+
+
 def is_ambiguous_business_question(prompt: str) -> bool:
-    return any(
+    return is_ambiguous_new_count(prompt) or any(
         pattern.match(prompt)
         for pattern in (
             AMBIGUOUS_REVENUE,
@@ -123,6 +149,14 @@ def ambiguity_context(prompt: str) -> str:
         guidance = (
             "For onboarding impact, clarify the activation definition, cohort, measurement "
             "window, and comparison or control group."
+        )
+    elif is_ambiguous_new_count(prompt):
+        guidance = (
+            "For new-customer counts, clarify what makes a customer new (first payment, "
+            "sign-up or trial; whether returning or reactivated customers count), which "
+            "test, internal, trial and merged accounts to exclude, the time zone and "
+            "window edges, and whether to count accounts, people or rows (duplicates, "
+            "blank dates)."
         )
     else:
         guidance = (
