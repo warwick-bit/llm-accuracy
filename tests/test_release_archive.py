@@ -62,7 +62,7 @@ def test_deterministic_data_archive_is_independent(tmp_path: Path) -> None:
         manifest = json.loads(archive.read(".claude-plugin/plugin.json"))
 
     assert manifest["name"] == "deterministic-data"
-    assert manifest["version"] == "0.1.0"
+    assert manifest["version"] == "0.1.1"
     assert "catalogues/example.catalogue.json" in names
     assert "skills/data-routing/SKILL.md" in names
     assert "references/evidence-receipt.schema.json" in names
@@ -82,7 +82,7 @@ def test_deterministic_data_cli_uses_manifest_version(
 
     assert builder.main() == 0
     output = Path(capsys.readouterr().out.strip())
-    assert output == tmp_path / "dist" / "deterministic-data-0.1.0.zip"
+    assert output == tmp_path / "dist" / "deterministic-data-0.1.1.zip"
     assert output.is_file()
 
 

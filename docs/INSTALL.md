@@ -16,6 +16,8 @@ describe historical builds.
 
 The current [automatic Python patch](release-python-default.md) removes required
 interpreter setup. Saved interpreter choices remain in effect.
+[Deterministic Data 0.1.1](release-deterministic-data-0.1.1.md) steps aside when
+no catalogue exists.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
 

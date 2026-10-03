@@ -24,6 +24,8 @@ catalogue or test fixture.
 
 ## Routing boundary
 
+- With no user-owned catalogue, routing does not engage. Answers are ordinary
+  analysis and carry no canonical status.
 - Exact aliases may identify one definition.
 - Multiple matches require an explicit user choice.
 - `approved` means the catalogue owner approved the definition; it does not

@@ -8,8 +8,8 @@
       "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
     },
     "deterministic-data": {
-      "version": "0.1.0",
-      "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+      "version": "0.1.1",
+      "sha256": "a242107c1432529b5675b8506017d918c9d26a2ade7524b5ddfd5638fcfd5331"
     },
     "session-ledger": {
       "version": "0.3.1",
@@ -41,8 +41,8 @@
           "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
         },
         "deterministic-data": {
-          "version": "0.1.0",
-          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+          "version": "0.1.1",
+          "sha256": "a242107c1432529b5675b8506017d918c9d26a2ade7524b5ddfd5638fcfd5331"
         },
         "session-ledger": {
           "version": "0.3.1",

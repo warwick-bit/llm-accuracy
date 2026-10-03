@@ -42,7 +42,7 @@ def test_deterministic_data_manifest_is_separate_and_claude_only() -> None:
     manifest = load_json("plugins/deterministic-data/.claude-plugin/plugin.json")
 
     assert manifest["name"] == "deterministic-data"
-    assert manifest["version"] == "0.1.0"
+    assert manifest["version"] == "0.1.1"
     assert manifest["license"] == "MIT"
     assert not (DETERMINISTIC / ".codex-plugin").exists()
 
