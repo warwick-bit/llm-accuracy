@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,11 @@ PACKAGES = ('llm-accuracy', 'deterministic-data', 'session-ledger', 'evidence-me
 TARGETS = ('code-linux', 'code-wsl', 'code-windows-no-bash', 'code-windows-git-bash', 'code-macos',
            'desktop-chat-windows', 'desktop-chat-macos', 'cowork-windows', 'cowork-macos',
            'desktop-chat-linux', 'cowork-linux')
+CODE_TARGETS = TARGETS[:5]
+CI_TARGETS = tuple(target for target in CODE_TARGETS if target != 'code-wsl')
+SUPPORT_POLICY = {'code': 'required_installed_qa',
+                  'desktop_chat': 'experimental_stateless_skills',
+                  'cowork': 'experimental_stateless_skills'}
 CHECKS = ('clean_install', 'configured_python', 'prompt_delivery', 'upgrade', 'uninstall',
           'invalid_python_advisory_then_recovery')
 CHAT_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'no_local_hooks', 'upgrade', 'uninstall')
@@ -55,8 +61,9 @@ def package_binding(root: Path, name: str) -> dict:
 
 
 def candidate(root: Path) -> dict:
-    return {'schema_version': 2, 'minimum_claude_code': '2.1.287',
+    return {'schema_version': 3, 'minimum_claude_code': '2.1.287',
             'python_minimum': '3.9', 'packages': {name: package_binding(root, name) for name in PACKAGES},
+            'support_policy': SUPPORT_POLICY.copy(),
             'targets': {target: {'outcome': 'untested'} for target in TARGETS},
             'capabilities': {'code': 'configured_exec_hooks', 'desktop_chat': 'skills_only',
                              'cowork': 'stateless_skills_only_unverified_hooks',
@@ -96,7 +103,7 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
     if not isinstance(receipt, dict):
         return ['invalid_compatibility_receipt']
     expected = candidate(root)
-    for key in ('schema_version', 'minimum_claude_code', 'python_minimum', 'packages', 'capabilities'):
+    for key in ('schema_version', 'minimum_claude_code', 'python_minimum', 'packages', 'capabilities', 'support_policy'):
         if receipt.get(key) != expected[key]:
             errors.append('invalid_or_stale_' + key)
     targets = receipt.get('targets', {})
@@ -125,7 +132,7 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
             if not isinstance(checks, dict) or set(checks) != set(target_checks(target)) or any(v is not True for v in checks.values()):
                 errors.append('missing_checks_' + target)
     if release:
-        for target in TARGETS:
+        for target in CODE_TARGETS:
             if not isinstance(targets[target], dict) or targets[target].get('outcome') != 'pass':
                 errors.append('clean_installed_smoke_required_' + target)
     for name in ('llm-accuracy', 'session-ledger', 'evidence-memory'):
@@ -144,10 +151,30 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
     return errors
 
 
+def overlay_ci_receipts(root: Path, receipt: dict, directory: Path) -> dict:
+    """Accept only this checkout's complete native CI receipts; never persist them."""
+    commit = subprocess.run(['git', '-C', str(root), 'rev-parse', 'HEAD'],
+                            capture_output=True, text=True, check=True, timeout=30).stdout.strip()
+    expected = {target + '.json' for target in CI_TARGETS}
+    if {path.name for path in directory.iterdir()} != expected:
+        raise ValueError('ci_receipts_missing_or_unknown')
+    result = json.loads(json.dumps(receipt))
+    for target in CI_TARGETS:
+        report = json.loads((directory / (target + '.json')).read_text(encoding='utf-8'))
+        if (not isinstance(report, dict) or set(report) != {'schema_version', 'target', 'source_commit', 'row'}
+                or report['schema_version'] != 1 or report['target'] != target
+                or report['source_commit'] != commit or not isinstance(report['row'], dict)
+                or report['row'].get('outcome') != 'pass'):
+            raise ValueError('ci_receipt_invalid_or_stale')
+        result['targets'][target] = report['row']
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=ROOT)
     parser.add_argument('--release', action='store_true')
+    parser.add_argument('--ci-receipts', type=Path, help='Current-run native evidence; never changes committed receipts')
     parser.add_argument('--write-candidate', action='store_true', help='Reset every installed-host result to untested')
     args = parser.parse_args()
     path = args.root / 'docs/validation/compatibility-candidate.json'
@@ -156,8 +183,10 @@ def main() -> int:
         return 0
     try:
         receipt = json.loads(path.read_text())
+        if args.ci_receipts is not None:
+            receipt = overlay_ci_receipts(args.root, receipt, args.ci_receipts)
         errors = validate(args.root, receipt, release=args.release)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
         errors = ['invalid_compatibility_receipt']
     print(json.dumps({'status': 'fail' if errors else 'pass', 'errors': errors}))
     return int(bool(errors))

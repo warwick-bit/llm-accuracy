@@ -120,15 +120,25 @@ def test_invalid_base_cli_emits_fixed_failure(repository, capsys):
     assert report == {'status': 'fail', 'errors': ['publication_base_unavailable']}
 
 
+def test_missing_ci_artifacts_emit_fixed_diagnostic(tmp_path, capsys):
+    assert guard.main(['--root', str(ROOT), '--release', '--ci-receipts',
+                       str(tmp_path / 'private-missing-directory')]) == 1
+    assert json.loads(capsys.readouterr().out) == {
+        'status': 'fail', 'errors': ['publication_evidence_unavailable']}
+
+
 def test_required_aggregate_cannot_ignore_publication_failure_or_skip():
     source = (ROOT / '.github/workflows/release-gates.yml').read_text(encoding='utf-8')
     publication, aggregate = source.split('\n  publication:\n', 1)[1].split('\n  release-gates:\n', 1)
     assert 'fetch-depth: 0' in publication
     assert 'github.event.pull_request.base.sha' in publication
-    assert not any(line.strip().startswith('if:') for line in publication.splitlines())
-    assert 'needs: [gates, windows, windows-native, macos, publication]' in aggregate
+    assert 'needs: installed-code' in publication
+    assert 'if: always()' in publication
+    assert '--ci-receipts' in publication
+    assert 'needs: [gates, windows, windows-native, macos, installed-code, publication]' in aggregate
     assert 'if: always()' in aggregate
     assert 'test "${{ needs.publication.result }}" = "success"' in aggregate
+    assert 'test "${{ needs.installed-code.result }}" = "success"' in aggregate
 
 
 def test_actual_all_pass_receipt_cannot_certify_redirected_catalog(repository):

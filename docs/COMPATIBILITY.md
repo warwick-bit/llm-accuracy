@@ -21,12 +21,12 @@ the actual Python executable, with no arguments.
   Claude session. See the current candidate receipt for installed-host results.
 - **Desktop's local Code mode:** candidate only; UI delivery is unverified.
   A terminal Code receipt does not certify this UI.
-- **Claude Desktop Chat / web chat:** skills-only. No hooks, doctor execution,
+- **Claude Desktop Chat / web chat:** experimental skills-only. No hooks, doctor execution,
   local ledger or evidence capture. Accuracy and Deterministic Data provide
   instructions; executing a local validator requires a separate capable host.
   Desktop exists on Windows/macOS and Linux beta; each UI needs its own receipt.
   On WSL, use the Windows Desktop application for Desktop sessions.
-- **Cowork on Windows/macOS/Linux beta:** stateless Accuracy and Deterministic Data only.
+- **Cowork on Windows/macOS/Linux beta:** experimental stateless Accuracy and Deterministic Data only.
   Candidate hook delivery remains unverified. A stateless skills receipt does
   not certify hooks or Python execution. Do not assume a configured
   desktop Python exists inside Cowork's execution environment. Session Ledger
@@ -78,9 +78,12 @@ After changing any package file, run `python3 scripts/check_compatibility.py
 --write-candidate` to reset all installed-host outcomes to `untested`. Perform
 the actual QA before replacing an outcome. Do not carry forward a pass or edit
 its hash to fit new source. Run the checker in every PR; before a release run
-it with `--release`, which requires all eleven installed-host targets: Code on
-Linux, WSL, Windows without Git Bash, Windows with Git Bash, and macOS; Desktop
-Chat and Cowork on Windows, macOS and Linux beta. A WSL pass cannot certify another OS.
+it with `--release`, which requires the five Code installed-host targets: Linux,
+WSL, Windows without Git Bash, Windows with Git Bash, and macOS. Schema 3 has a
+fixed support policy: Code requires installed QA; Desktop Chat/Cowork are
+experimental stateless skills. All six Desktop rows remain explicit; their
+untested outcomes do not block Code publication. Any Desktop pass still needs
+its actual host, source bindings and full skills checks. A WSL pass cannot certify another OS.
 Missing, stale or incomplete evidence fails
 the check. Explicit untested cells are coverage gaps, never support proof.
 
@@ -118,6 +121,15 @@ The required combined `release-gates` check includes Linux Python 3.9–3.14,
 native Windows Python 3.9/3.14, Git Bash Windows controls, and macOS. The native
 gate verifies mandatory hook cases were present and not skipped. Keep that
 combined check required in branch protection when editing workflow names.
+The native installed-Code matrix also installs the actual pinned CLI and runs
+the bundle lifecycle plus authenticated hook-delivery/recovery checks. A partial
+installation check cannot certify delivery; missing credentials fail. Publication
+may overlay successful native receipts from that same run, checking their exact
+tested checkout commit and source bindings. The overlay never rewrites committed
+receipts. PR builds test the synthetic merge commit; main/tag builds rerun on
+their own checkout. The merge guard separately checks the PR head.
+The committed WSL pass expires when any package byte changes and must be rerun
+locally; hosted Linux cannot replace it. See [hosted Code QA](INSTALLED_QA.md#hosted-code-qa).
 The publication job is also a mandatory dependency: failure, cancellation or
 skipping must fail the aggregate. Keep strict, up-to-date branch protection.
 

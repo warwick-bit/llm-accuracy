@@ -15,7 +15,7 @@ def test_candidate_requires_current_installed_smoke_before_release():
     receipt = guard.candidate(ROOT)
     assert guard.validate(ROOT, receipt) == []
     assert guard.validate(ROOT, receipt, release=True) == [
-        'clean_installed_smoke_required_' + target for target in guard.TARGETS]
+        'clean_installed_smoke_required_' + target for target in guard.CODE_TARGETS]
 
 
 def test_wsl_smoke_cannot_certify_native_windows_or_macos():
@@ -78,15 +78,25 @@ def test_code_checks_cannot_certify_chat_or_cowork():
     assert all('missing_checks_' + target in errors for target in guard.TARGETS[5:])
 
 
-def test_full_release_requires_both_windows_scenarios_and_desktop_skills():
+def test_code_release_requires_all_code_targets_but_keeps_desktop_experimental():
     receipt = guard.candidate(ROOT)
-    receipt['targets'] = {target: passing_row(receipt, target) for target in guard.TARGETS}
+    for target in guard.CODE_TARGETS:
+        receipt['targets'][target] = passing_row(receipt, target)
     assert guard.validate(ROOT, receipt, release=True) == []
-    for target in ('code-windows-git-bash', 'desktop-chat-macos', 'cowork-windows'):
+    for target in guard.CODE_TARGETS:
         saved = receipt['targets'][target]
         receipt['targets'][target] = {'outcome': 'untested'}
         assert 'clean_installed_smoke_required_' + target in guard.validate(ROOT, receipt, release=True)
         receipt['targets'][target] = saved
+
+
+def test_support_policy_cannot_silently_promote_desktop_or_relax_code():
+    receipt = guard.candidate(ROOT)
+    receipt['support_policy']['code'] = 'experimental'
+    assert 'invalid_or_stale_support_policy' in guard.validate(ROOT, receipt)
+    receipt = guard.candidate(ROOT)
+    receipt['support_policy']['desktop_chat'] = 'verified'
+    assert 'invalid_or_stale_support_policy' in guard.validate(ROOT, receipt)
 
 
 def test_desktop_pass_cannot_claim_local_persistence_or_hook_capture():

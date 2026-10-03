@@ -1,9 +1,47 @@
 # Installed-host QA handoff
 
-Publication stays on hold until every required target in
+Code publication stays on hold until all five required Code targets in
 [the current candidate](validation/compatibility-candidate.json) passes. CI
 Python tests prove runtime behavior; they do not prove installed Claude delivery.
 Never replace missing machine or UI evidence with a synthetic pass.
+Desktop Chat/Cowork are experimental stateless skills. Keep their six untested
+rows visible; those gaps do not block Code publication. A recorded experimental
+pass still requires actual host-specific QA.
+
+## Hosted Code QA
+
+The required `installed-code` matrix uses actual GitHub Linux/macOS/Windows VMs.
+It downloads Claude 2.1.287 using committed checksums; both the official manifest
+and binary must match. Updating the pin needs independent review. It checks the
+bundle against the fixed `v0.6.5` upgrade baseline in a clean LF checkout.
+Installation-only checks run without credentials and remain explicitly partial.
+Live checks require exactly one dedicated secret: `CLAUDE_CODE_OAUTH_TOKEN` or
+`ANTHROPIC_API_KEY`. Missing/both credentials fail with a fixed diagnostic.
+
+Configure the dedicated credential through GitHub Actions secrets UI, preferably
+with an approved environment/branch restriction; never paste it into chat, logs,
+source, or a receipt. Current workflow uses repository secrets; same-repository
+workflow editors are trusted and can access them. Review workflow changes before
+running with credentials. Fork PRs receive no secrets and cannot pass the live
+gate; a maintainer must review and test an exact candidate on a trusted branch.
+Do not copy your local login file into CI. API authentication bills the API
+account; OAuth uses its associated account. The smoke runs two bounded no-tool
+turns per native target, each with a $1 maximum budget and finite timeout.
+
+Only successful fixed-field live receipts are uploaded, retained for seven days.
+Temporary profiles, raw outputs, prompts, answers and credentials are never
+uploaded. Publication checks all four native receipt filenames, source commit,
+OS/mode, versions, source bindings and six Code checks plus each Windows Bash
+proof. PR receipts bind the tested synthetic merge checkout; main reruns QA after
+merge. Receipts are attestations from reviewed workflow code, not tamper-resistant
+proof against a maintainer. WSL remains separately tested on actual WSL and its
+committed receipt must be regenerated when package bytes change.
+
+The no-Bash scenario removes Bash executables only on disposable hosted Windows,
+retains Git, clears its PATH/override and enables native PowerShell. The checker
+probes PATH and known Git roots to reject remaining usable Bash. Never perform
+that removal on your own machine. A host failure keeps the target unverified;
+do not weaken the receipt definition to clear it.
 
 ## Code terminal QA
 
@@ -80,7 +118,7 @@ python scripts/check_compatibility.py --release
 python scripts/check_marketplace_publication.py --base-ref ACTUAL_PR_BASE_SHA
 ```
 
-Only a current-source installed pass counts. All required targets must pass
+Only a current-source installed pass counts. All five required Code targets must pass
 before the marketplace publication job and required aggregate can succeed.
 Checker/workflow/receipt edits need independent review. The receipts guard
 accidental omissions; they are maintainer attestations, not tamper-resistant

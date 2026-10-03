@@ -34,8 +34,9 @@ independently verify the source or guarantee the final answer. **Deterministic
 Data** is the separate plugin for applying your own reviewed definitions and
 declared source routes to repeat data questions.
 
-For this source candidate, Cowork hook delivery remains unverified. Desktop Chat
-uses skills only. See [platform capabilities and current QA](docs/COMPATIBILITY.md).
+For this source candidate, Desktop Chat/Cowork support is **experimental**, using
+only stateless Accuracy/Deterministic Data skills. Cowork hook delivery remains
+unverified. See [platform capabilities and current QA](docs/COMPATIBILITY.md).
 
 The general reminder asks Claude to verify measurements and coverage, test
 competing causes, and revisit dependent conclusions when correcting a diagnosis.
@@ -451,8 +452,10 @@ gap from memory.
 
 Read [the OS and host contract](docs/COMPATIBILITY.md) for the source candidate.
 Claude hooks require a configured Python 3.9+ executable and Claude Code 2.1.287+;
-Git Bash is optional on native Windows. Desktop Chat is skills-only. Cowork
-support and experimental Codex support have separate boundaries and evidence.
+The hook implementation does not require Git Bash; installed support is certified
+only by current receipts. Desktop Chat/Cowork are experimental stateless skills.
+Code publication requires installed QA on Linux, WSL, macOS and both Windows Bash
+scenarios. Experimental Desktop gaps stay visible. Codex has a separate boundary.
 
 ## Development
 

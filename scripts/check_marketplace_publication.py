@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_compatibility import ROOT, validate  # noqa: E402
+from check_compatibility import ROOT, overlay_ci_receipts, validate  # noqa: E402
 
 
 def exempt_path(path: str, *, symlink: bool = False) -> bool:
@@ -52,25 +52,30 @@ def changed_paths(root: Path, base: str) -> list:
     return rows
 
 
-def publication_errors(root: Path, *, base: str | None = None, release: bool = False) -> list:
+def publication_errors(root: Path, *, base: str | None = None, release: bool = False,
+                       ci_receipts: Path | None = None) -> list:
     """Validate all host contracts whenever the diff could affect publication."""
     if not release:
         paths = changed_paths(root, base or '')
         if all(exempt_path(name, symlink=symlink) for name, symlink in paths):
             return []
     receipt = json.loads((root / 'docs/validation/compatibility-candidate.json').read_text(encoding='utf-8'))
+    if ci_receipts is not None:
+        receipt = overlay_ci_receipts(root, receipt, ci_receipts)
     return validate(root, receipt, release=True)
 
 
 def main(arguments=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=ROOT)
+    parser.add_argument('--ci-receipts', type=Path, help='Native installed QA from this CI run only')
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--base-ref', help='Exact PR base commit; must be available and an ancestor.')
     mode.add_argument('--release', action='store_true', help='Always enforce publication QA on main/tags.')
     options = parser.parse_args(arguments)
     try:
-        errors = publication_errors(options.root, base=options.base_ref, release=options.release)
+        errors = publication_errors(options.root, base=options.base_ref, release=options.release,
+                                    ci_receipts=options.ci_receipts)
     except ValueError as error:
         label = str(error)
         errors = [label if label.startswith('publication_') else 'invalid_publication_evidence']

@@ -127,7 +127,7 @@ def lifecycle(claude, root, source, env):
             'upgrade': upgrade and preserved}
 
 
-def run_smoke(claude, baseline, *, live=True, timeout=60):
+def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
     commit = require_committed_source()
     changed_paths(ROOT, baseline)  # Prove a real, available ancestor; never fall back.
     if subprocess.run(['git', '-C', str(ROOT), 'diff', '--quiet', baseline, 'HEAD', '--', 'plugins'],
@@ -152,7 +152,7 @@ def run_smoke(claude, baseline, *, live=True, timeout=60):
             path.write_bytes(subprocess.run(['git', '-C', str(ROOT), 'show', baseline + ':' + name],
                                             capture_output=True, check=True, timeout=30).stdout)
         report['baseline_packages'] = {name: package_binding(source, name) for name in PACKAGES}
-        env = smoke.auth_profile(root)
+        env = smoke.auth_profile(root, ci=True, live=live) if ci_auth else smoke.auth_profile(root)
         checks = lifecycle(claude, root, source, env)
         checks['prompt_delivery'] = False
         checks['invalid_python_advisory_then_recovery'] = False

@@ -119,7 +119,7 @@ def platform_label() -> str:
     return system
 
 
-def auth_profile(root: Path) -> dict[str, str]:
+def auth_profile(root: Path, *, ci: bool = False, live: bool = True) -> dict[str, str]:
     """Create a profile holding only the login, with accuracy controls removed."""
     source = (
         Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
@@ -127,10 +127,16 @@ def auth_profile(root: Path) -> dict[str, str]:
     )
     profile = root / "profile"
     profile.mkdir(mode=0o700)
-    if source.is_file():
+    if not ci and source.is_file():
         shutil.copyfile(source, profile / source.name)
         (profile / source.name).chmod(0o600)
     env = {key: value for key, value in os.environ.items() if key not in CONTROL_VARS}
+    if ci and live:
+        names = ('ANTHROPIC_API_KEY', 'CLAUDE_CODE_OAUTH_TOKEN')
+        present = [name for name in names if os.environ.get(name, '').strip()]
+        if len(present) != 1:
+            raise ValueError('ci_authentication_required')
+        env[present[0]] = os.environ[present[0]]
     env["CLAUDE_CONFIG_DIR"] = str(profile)
     return env
 

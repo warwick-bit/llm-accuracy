@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "minimum_claude_code": "2.1.287",
   "python_minimum": "3.9",
   "packages": {
@@ -122,5 +122,10 @@
     "cowork": "stateless_skills_only_unverified_hooks",
     "desktop_code": "unverified_ui",
     "codex_memory": "experimental_posix_only"
+  },
+  "support_policy": {
+    "code": "required_installed_qa",
+    "desktop_chat": "experimental_stateless_skills",
+    "cowork": "experimental_stateless_skills"
   }
 }

@@ -271,6 +271,10 @@ If installation fails, first confirm the repository contains
 
 ## Claude Desktop and Cowork — release ZIP
 
+Current Desktop Chat/Cowork support is **experimental**, limited to stateless
+Accuracy and Deterministic Data skills. Current UI QA remains untested; Code
+terminal certification does not establish Desktop behavior.
+
 Download the latest `llm-accuracy-<version>.zip` asset from the
 [latest GitHub release](https://github.com/warwick-bit/llm-accuracy/releases/latest).
 In Claude Desktop or Cowork, open **Customize**, then **Plugins**, and upload
@@ -288,7 +292,7 @@ In the **Chat** tab, LLM Accuracy's skills are available, including self-audit.
 The automatic advisory hooks do not run in chat, so use the skill when you want
 an explicit check of an earlier answer.
 
-### Claude Cowork — stateless plugin candidate
+### Claude Cowork — experimental stateless skills
 
 In **Cowork**, use only stateless LLM Accuracy or Deterministic Data. The current
 candidate's configured Python hook delivery is unverified in Cowork's execution

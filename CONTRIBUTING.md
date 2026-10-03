@@ -9,12 +9,16 @@ and record current installed-host QA before a release (`--release`). Tests on
 Windows with Git Bash do not establish support without it; Chat is skills-only.
 
 Main is the marketplace delivery branch. Protected changes require installed
-QA for every target before merging, not just before tagging. Run
+QA for all five Code targets before merging, not just before tagging. Desktop
+Chat/Cowork remain experimental stateless skills with explicit untested rows;
+Desktop gaps do not block Code publication. Run
 `python3 scripts/check_marketplace_publication.py --base-ref BASE_SHA` using
 the actual PR base commit. Main/tag builds use `--release`. Keep publication
 in the required CI aggregate; independently review checker/workflow/receipt
-changes. Chat/Cowork use their own skills checks, and Windows requires separate
-with/without Git Bash receipts. Leave unavailable targets untested.
+changes. Chat/Cowork passes still need their own skills checks, and Windows
+requires separate with/without Git Bash receipts. Leave unavailable targets
+untested. Hosted installed-Code CI requires dedicated authentication and fails
+when it is missing; see [CI QA setup](docs/INSTALLED_QA.md#hosted-code-qa).
 
 Never include credentials, customer data, raw prompts, provider responses, logs,
 or private transcripts. Replace names, IDs, amounts, dates, and examples with
