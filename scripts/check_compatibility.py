@@ -151,18 +151,21 @@ def marketplace_errors(root: Path) -> list[str]:
     return errors
 
 
+VERSION_PATTERN = r'[0-9]{1,9}\.[0-9]{1,9}\.[0-9]{1,9}'
+
+
 def host_row_errors(row: dict, target: str, packages: dict, checks: tuple) -> list[str]:
     errors = []
     if (row.get('platform'), row.get('host_kind')) != target_identity(target):
         errors.append('invalid_host_identity_' + target)
     version = row.get('host_version', '')
-    if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):
+    if not isinstance(version, str) or not re.fullmatch(VERSION_PATTERN, version):
         errors.append('missing_host_version_' + target)
     elif tuple(map(int, version.split('.'))) < (2, 1, 287) and target.startswith('code-'):
         errors.append('unsupported_host_version_' + target)
     python = row.get('python_version', '')
     if target.startswith('code-') and (not isinstance(python, str)
-            or not re.fullmatch(r'\d+\.\d+\.\d+', python)
+            or not re.fullmatch(VERSION_PATTERN, python)
             or tuple(map(int, python.split('.'))) < (3, 9, 0)):
         errors.append('missing_or_unsupported_python_version_' + target)
     if row.get('packages') != target_packages(packages, target):
@@ -182,7 +185,11 @@ def seal_errors(row: dict, target: str) -> list[str]:
     commit = row.get('source_commit')
     if not isinstance(commit, str) or not re.fullmatch(r'[0-9a-f]{40}', commit):
         return ['missing_source_commit_' + target]
-    if row.get('row_sha256') != row_digest(row):
+    try:
+        digest = row_digest(row)
+    except RecursionError:
+        return ['row_seal_mismatch_' + target]
+    if row.get('row_sha256') != digest:
         return ['row_seal_mismatch_' + target]
     return []
 

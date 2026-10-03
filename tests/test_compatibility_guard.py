@@ -178,6 +178,30 @@ def test_desktop_skills_do_not_require_python_but_do_require_invocation():
     assert 'missing_checks_' + target in guard.validate(ROOT, receipt)
 
 
+@pytest.mark.parametrize('field, value, label', [
+    ('host_version', '\u0662.\u0661.\u0662\u0669\u0660', 'missing_host_version_code-wsl'),
+    ('host_version', '2.' + '9' * 30 + '.0', 'missing_host_version_code-wsl'),
+    ('python_version', '\u0663.\u0661\u0662.\u0663', 'missing_or_unsupported_python_version_code-wsl'),
+    ('python_version', '3.' + '9' * 30 + '.0', 'missing_or_unsupported_python_version_code-wsl'),
+])
+def test_versions_are_short_ascii_numbers(field, value, label):
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-wsl'] = guard.seal_row(dict(host_row(receipt, 'code-wsl'), **{field: value}),
+                                                    TESTED_COMMIT)
+    assert guard.validate(ROOT, receipt) == [label]
+
+
+def test_row_too_deep_to_hash_fails_its_seal(monkeypatch):
+    # The depth at which hashing recurses out differs by Python version, so force it here.
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-wsl'] = passing_row(receipt, 'code-wsl')
+
+    def too_deep(row):
+        raise RecursionError('synthetic maximum recursion depth')
+    monkeypatch.setattr(guard, 'row_digest', too_deep)
+    assert guard.validate(ROOT, receipt) == ['row_seal_mismatch_code-wsl']
+
+
 def test_receipt_too_deep_to_check_fails_with_a_fixed_label(tmp_path, monkeypatch, capsys):
     # The depth at which hashing recurses out differs by Python version, so force it here.
     path = tmp_path / 'docs/validation/compatibility-candidate.json'
