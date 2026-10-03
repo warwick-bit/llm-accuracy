@@ -8,8 +8,9 @@ correctness.
 
 - prompts for provenance, scope, freshness, and caveats on consequential
   factual answers;
-- asks for a short clarification on selected common business prompts with
-  multiple reasonable definitions, windows, comparisons or sources;
+- on selected common business prompts with multiple reasonable definitions,
+  windows, comparisons or sources, asks Claude to inspect available data first,
+  show how each choice moves the answer, then ask one short clarification;
 - checks whether claims remain within their source, population, definition,
   window, freshness and completeness boundaries;
 - nudges a model to recheck stale details after long sessions; and

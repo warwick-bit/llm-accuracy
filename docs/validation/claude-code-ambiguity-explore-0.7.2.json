@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-03",
+  "kind": "LLM Accuracy 0.7.2 explore-first ambiguity reminder: paired live screens against 0.7.1; raw-free aggregates",
+  "evidence_level": "screen",
+  "fixture": "One synthetic signups.csv generated deterministically by scripts/eval_ambiguity_explore.py; no customer or company data. No prompt, answer or file content is recorded here.",
+  "fixture_july_counts": {
+    "reference": 43,
+    "utc": 41,
+    "include_test": 48,
+    "keep_merged": 46,
+    "trials_count": 47,
+    "signups": 34,
+    "any_july_start": 49,
+    "rows_not_accounts": 54,
+    "blanks_in_july": 45
+  },
+  "host": {
+    "product": "Claude Code",
+    "version": "2.1.288",
+    "models": [
+      "claude-sonnet-5-5",
+      "claude-opus-5-5"
+    ],
+    "effort": "high"
+  },
+  "method": {
+    "harness": "scripts/eval_ambiguity_explore.py",
+    "fresh_session_per_run": true,
+    "temporary_credential_only_profile": true,
+    "mcp_servers": 0,
+    "built_in_tools": [
+      "Bash",
+      "Read",
+      "Grep",
+      "Glob"
+    ],
+    "arm_order": "alternating",
+    "scoring": "Every reply was read in full and each figure it stated was recomputed from the fixture.",
+    "raw_responses_committed": false
+  },
+  "hook_sha256": {
+    "0.7.1": "59cd448ee77941311f4071af144c69042c41bd31363cdaa60a121b802fba25aa",
+    "0.7.2": "b310817bc40631dcda69edf3dc4ee8f8c77f43a2b66b2b33ff0ef7320b6bf0eb"
+  },
+  "vague_question": {
+    "runs_per_model_and_version": 3,
+    "sessions_completed": "12/12",
+    "reminder_fired": {
+      "0.7.1": "0/6",
+      "0.7.2": "6/6"
+    },
+    "opened_with_conditional_answer_and_definition_question": {
+      "0.7.1": "0/6",
+      "0.7.2": "6/6"
+    },
+    "opened_with_committed_figure": {
+      "0.7.1": "6/6",
+      "0.7.2": "0/6"
+    },
+    "gave_reference_figure_under_stated_definition": {
+      "0.7.1": "6/6",
+      "0.7.2": "6/6"
+    },
+    "replies_with_a_factual_slip": {
+      "0.7.1": "1/6",
+      "0.7.2": "2/6"
+    },
+    "inspected_fixture_before_answering": "12/12"
+  },
+  "precise_question": {
+    "runs_per_model_and_version": 1,
+    "sessions_completed": "4/4",
+    "reminder_fired": "0/4",
+    "gave_reference_figure": "4/4",
+    "replies_with_a_factual_slip": "1/4"
+  },
+  "context_characters": {
+    "new_count_reminder": 1049,
+    "new_count_cap": 1500,
+    "existing_reminders_growth": 152
+  },
+  "known_limits": [
+    "Screens only: one synthetic fixture, one vague and one precise wording, n=1-3 per cell; no powered comparison.",
+    "Slip counts are too small to compare versions; the screen does not show that answers become more accurate.",
+    "Opening with a question is the intended behaviour change, not a measured user benefit.",
+    "The fixture has an unseeded quirk: 18 accounts subscribe before they sign up. It does not change any count; some replies flagged it.",
+    "Desktop Chat and Cowork were not rerun for this patch."
+  ]
+}
