@@ -16,14 +16,18 @@ more kind of question it recognises.
   count), which test, internal, trial and merged accounts to exclude, the time
   zone and window edges, and whether to count accounts, people or rows.
 - **Stays quiet when the question is already defined:** a count that names a
-  time zone (UTC, an abbreviation such as AEST, a named zone such as "Sydney
-  time", or an IANA name such as Australia/Sydney), says "defined as",
+  time zone (UTC, a named zone such as "Sydney time", an abbreviation such as
+  AEST, or an IANA name such as Australia/Sydney), says "defined as",
   "distinct" or "excluding", or gives a first-payment rule gets no reminder. So
-  do development counts (a fixture, seed data, a test, dev or sandbox database,
-  Redis, staging, a schema migration, or a named code file or PR), other
-  subjects such as new tickets, and prompts with the `# analysis-ok` bypass. A
-  named data file such as `signups.csv` still gets the reminder, and so does a
-  business event such as "since the pricing page deploy".
+  do development counts (a fixture, seed data, a test, dev, staging or local
+  database, Redis, a schema migration, or a named code file or PR), other
+  subjects such as new tickets, and prompts with the `# analysis-ok` bypass.
+- **Fires when a silence signal is ambiguous:** a missed reminder costs more
+  than an extra one. A named data file such as `signups.csv` still gets the
+  reminder, and so do business events ("since the pricing page deploy", "after
+  the CRM migration", "the Next.js Conf sponsorship"), region pairs such as
+  Australia/NZ, and abbreviations that also name other things (CST, EST, IST,
+  BST).
 
 The four existing reminders (revenue, best customers, marketing channel and
 onboarding activation) keep their own guidance and are each 152 characters
