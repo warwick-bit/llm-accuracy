@@ -1270,3 +1270,17 @@ def test_replay_deduplication_does_not_evict_old_answers(store, tmp_path):
         if outcome['status'] != 'more_pending':
             break
     assert (total, replayed) == (2001, 0)
+
+
+def test_a_rewritten_earlier_answer_does_not_displace_a_later_one(store, tmp_path):
+    question = 'Which timezone defines July?'
+    later = [tool_call('ask-2', 'AskUserQuestion'), answered('ask-2', {question: 'B'}, timestamp='2026-09-01T02:00:00Z')]
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                     answered('ask-1', {question: 'A'}), *later)
+    store.sync(path)
+    write_log(path, tool_call('read-0', 'Read'), tool_call('ask-1', 'AskUserQuestion'),
+              answered('ask-1', {question: 'C'}), *later)
+    replay = store.sync(path)
+    assert replay['cursor_reset'] and replay['decisions_recorded'] == 0
+    item, = store.state()['items']
+    assert item['text'].endswith('"B"')

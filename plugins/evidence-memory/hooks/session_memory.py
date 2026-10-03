@@ -89,6 +89,15 @@ def after_cutoff(stamp: Any, cutoff: str) -> bool:
         return False
 
 
+def row_moment(stamp: Any) -> float | None:
+    """A row's timezone-aware timestamp as epoch seconds, or None."""
+    try:
+        moment = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return moment.timestamp() if moment.tzinfo else None
+
+
 def row_session(row: dict[str, Any]) -> str | None:
     """Return explicit host identity; never infer it from text or tool data."""
     for key in ("sessionId", "session_id"):
@@ -219,7 +228,8 @@ class Store:
                     # AskUserQuestion call ids, and the answers already recorded, so a
                     # re-read transcript neither misses nor repeats a decision.
                     self.db.execute("CREATE TABLE IF NOT EXISTS question_calls(call_id TEXT PRIMARY KEY)")
-                    self.db.execute("CREATE TABLE IF NOT EXISTS decision_rows(identity TEXT PRIMARY KEY)")
+                    self.db.execute("CREATE TABLE IF NOT EXISTS decision_rows("
+                                    "identity TEXT PRIMARY KEY, key TEXT, moment REAL)")
         except sqlite3.Error:
             pass
         # Indexes created before capture scoping keep their unscoped rows until cleared.
@@ -277,12 +287,13 @@ class Store:
         """Remember an AskUserQuestion call; its answer usually arrives in a later sync."""
         self.db.execute("INSERT OR IGNORE INTO question_calls VALUES (?)", (call_id,))
 
-    def _record_answers(self, call_id: str, body: dict[str, Any]) -> int:
+    def _record_answers(self, call_id: str, body: dict[str, Any], moment: float | None) -> int:
         """Store each answered AskUserQuestion choice as a decision state item.
 
         The host's structured result holds the questions and the user's chosen
         answers. A repeated question supersedes its earlier answer; re-reading the
-        same answer after a cursor reset adds nothing.
+        same answer after a cursor reset adds nothing, and a rewritten earlier
+        answer does not displace a later one already recorded.
         """
         result = body.get("host_tool_result")
         if not isinstance(result, dict) or not self.db.execute(
@@ -308,10 +319,14 @@ class Store:
             if self.db.execute("SELECT 1 FROM decision_rows WHERE identity=?", (identity,)).fetchone():
                 continue
             key = "decision:" + sha(question.encode("utf-8"))[:16]
+            later = moment is not None and self.db.execute(
+                "SELECT 1 FROM decision_rows WHERE key=? AND moment>?", (key, moment)).fetchone()
+            self.db.execute("INSERT INTO decision_rows VALUES (?, ?, ?)", (identity, key, moment))
+            if later:
+                continue
             previous = self.db.execute("SELECT max(revision) FROM states WHERE key=?", (key,)).fetchone()[0] or 0
             self.db.execute("INSERT INTO states(key,kind,text,evidence,previous,timestamp) VALUES (?,?,?,?,?,?)",
                             (key, "decision", text, encoded([]), previous, time.time()))
-            self.db.execute("INSERT INTO decision_rows VALUES (?)", (identity,))
             recorded += 1
         return recorded
 
@@ -369,7 +384,7 @@ class Store:
                     if event["kind"] == "call" and event["name"] == "AskUserQuestion":
                         self._note_question_call(event["call_id"])
                     if event["kind"] == "result":
-                        decisions += self._record_answers(event["call_id"], event["body"])
+                        decisions += self._record_answers(event["call_id"], event["body"], row_moment(stamp))
                     if event["kind"] == "call":
                         decision, _ = scope.classify(event)
                         if decision != "capture":
