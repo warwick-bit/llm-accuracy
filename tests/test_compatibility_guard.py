@@ -1,7 +1,9 @@
 import importlib.util
 import shutil
 import json
+import os
 import subprocess
+import sys
 
 import pytest
 from pathlib import Path
@@ -83,10 +85,13 @@ TESTED_COMMIT = '1' * 40
 
 def host_row(receipt, target):
     platform, kind = guard.target_identity(target)
-    return {'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.12.3',
-            'platform': platform, 'host_kind': kind,
-            'packages': guard.target_packages(receipt['packages'], target),
-            'checks': dict.fromkeys(guard.target_checks(target), True)}
+    row = {'outcome': 'pass', 'host_version': '2.1.287', 'python_version': '3.12.3',
+           'platform': platform, 'host_kind': kind,
+           'packages': guard.target_packages(receipt['packages'], target),
+           'checks': dict.fromkeys(guard.target_checks(target), True)}
+    if not target.startswith('code-'):
+        del row['python_version']
+    return row
 
 
 def passing_row(receipt, target):
@@ -166,11 +171,25 @@ def test_desktop_skills_do_not_require_python_but_do_require_invocation():
     receipt = guard.candidate(ROOT)
     target = 'desktop-chat-windows'
     row = host_row(receipt, target)
-    del row['python_version']
+    assert 'python_version' not in row
     receipt['targets'][target] = guard.seal_row(row, TESTED_COMMIT)
     assert guard.validate(ROOT, receipt) == []
     receipt['targets'][target]['checks']['skill_invocation'] = False
     assert 'missing_checks_' + target in guard.validate(ROOT, receipt)
+
+
+def test_receipt_too_deep_to_check_fails_with_a_fixed_label(tmp_path, monkeypatch, capsys):
+    # The depth at which hashing recurses out differs by Python version, so force it here.
+    path = tmp_path / 'docs/validation/compatibility-candidate.json'
+    path.parent.mkdir(parents=True)
+    path.write_text('{}')
+
+    def too_deep(*arguments, **options):
+        raise RecursionError('synthetic maximum recursion depth')
+    monkeypatch.setattr(guard, 'validate', too_deep)
+    monkeypatch.setattr(sys, 'argv', ['check_compatibility.py', '--root', str(tmp_path)])
+    assert guard.main() == 1
+    assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['invalid_compatibility_receipt']}
 
 
 def test_malformed_receipt_and_target_fail_closed():
@@ -329,17 +348,19 @@ def test_spliced_pass_row_fails_its_seal_even_when_packages_look_current():
     assert guard.validate(ROOT, receipt) == ['row_seal_mismatch_code-wsl']
 
 
-@pytest.mark.parametrize('field', ['host_version', 'python_version', 'check', 'package', 'platform'])
+@pytest.mark.parametrize('field', ['host_version', 'python_version', 'check', 'package', 'host_kind',
+                                   'source_commit'])
 def test_any_edit_after_recording_breaks_the_seal(field):
     receipt = guard.candidate(ROOT)
     row = passing_row(receipt, 'code-wsl')
     if field == 'check':
-        row['checks']['upgrade'] = True
-        row['checks']['synthetic_extra'] = True
+        row['checks']['upgrade'] = False
     elif field == 'package':
         row['packages']['llm-accuracy'] = dict(row['packages']['llm-accuracy'], sha256='0' * 64)
-    elif field == 'platform':
+    elif field == 'host_kind':
         row['host_kind'] = 'code '
+    elif field == 'source_commit':
+        row['source_commit'] = '5' * 40
     else:
         row[field] = '2.1.999' if field == 'host_version' else '3.13.0'
     receipt['targets']['code-wsl'] = row
@@ -356,12 +377,29 @@ def test_pass_row_must_name_the_full_commit_it_tested(commit):
 def test_unsealed_pass_row_is_rejected():
     receipt = guard.candidate(ROOT)
     receipt['targets']['code-wsl'] = dict(host_row(receipt, 'code-wsl'), source_commit=TESTED_COMMIT)
-    assert guard.validate(ROOT, receipt) == ['row_seal_mismatch_code-wsl']
+    assert guard.validate(ROOT, receipt) == ['invalid_pass_fields_code-wsl', 'row_seal_mismatch_code-wsl']
+
+
+@pytest.mark.parametrize('target, change', [
+    ('code-wsl', {'notes': 'synthetic free text'}),
+    ('desktop-chat-macos', {'notes': 'synthetic free text'}),
+    ('desktop-chat-macos', {'python_version': '/synthetic/path'}),
+])
+def test_pass_row_holds_only_its_recorded_fields(target, change):
+    # The seal is valid here, so only the field rule can refuse the row.
+    receipt = guard.candidate(ROOT)
+    receipt['targets'][target] = guard.seal_row({**host_row(receipt, target), **change}, TESTED_COMMIT)
+    assert guard.validate(ROOT, receipt) == ['invalid_pass_fields_' + target]
+    receipt['targets'][target] = passing_row(receipt, target)
+    assert guard.validate(ROOT, receipt) == []
 
 
 def merge_two_recordings(directory, base, feature, main):
-    def git(*arguments):
-        return subprocess.run(['git', '-C', str(directory), *arguments], capture_output=True, text=True)
+    environment = {key: value for key, value in os.environ.items() if not key.startswith('GIT_')}
+
+    def git(*arguments, check=True):
+        return subprocess.run(['git', '-C', str(directory), *arguments], capture_output=True, text=True,
+                              check=check, env=environment)
 
     def record(row, message):
         receipt['targets']['code-wsl'] = row
@@ -372,16 +410,18 @@ def merge_two_recordings(directory, base, feature, main):
     receipt = guard.candidate(ROOT)
     path = directory / 'compatibility-candidate.json'
     directory.mkdir()
-    git('init', '-q', '-b', 'main')
+    git('init', '-q')
+    git('symbolic-ref', 'HEAD', 'refs/heads/main')
     git('config', 'user.name', 'Synthetic QA')
     git('config', 'user.email', 'qa@example.invalid')
     record(base, 'earlier pass')
-    git('switch', '-q', '-c', 'feature')
+    git('checkout', '-q', '-b', 'feature')
     record(feature, 'feature re-run')
-    git('switch', '-q', 'main')
+    git('checkout', '-q', 'main')
     record(main, 'main re-run')
-    merge = git('-c', 'commit.gpgsign=false', 'merge', '--no-edit', 'feature')
-    return merge, json.loads(path.read_text()) if merge.returncode == 0 else None
+    merge = git('-c', 'commit.gpgsign=false', 'merge', '--no-edit', 'feature', check=False)
+    conflicted = git('ls-files', '--unmerged').stdout != ''
+    return merge.returncode, conflicted, json.loads(path.read_text()) if merge.returncode == 0 else None
 
 
 def test_two_branches_recording_one_target_cannot_merge_silently(tmp_path):
@@ -390,10 +430,9 @@ def test_two_branches_recording_one_target_cannot_merge_silently(tmp_path):
     unsealed = [{key: value for key, value in row.items() if key not in ('source_commit', 'row_sha256')}
                 for row in (base, feature, main, splice)]
     # Without a seal, Git combines the two re-runs into a row neither run produced.
-    merge, merged = merge_two_recordings(tmp_path / 'unsealed', *unsealed[:3])
-    assert merge.returncode == 0
+    code, conflicted, merged = merge_two_recordings(tmp_path / 'unsealed', *unsealed[:3])
+    assert (code, conflicted) == (0, False)
     assert merged['targets']['code-wsl'] == unsealed[3]
     # With a seal, both branches change the same lines, so the merge stops.
-    merge, _ = merge_two_recordings(tmp_path / 'sealed', base, feature, main)
-    assert merge.returncode != 0
-    assert 'CONFLICT' in merge.stdout + merge.stderr
+    code, conflicted, _ = merge_two_recordings(tmp_path / 'sealed', base, feature, main)
+    assert code != 0 and conflicted

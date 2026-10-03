@@ -143,7 +143,8 @@ bindings as `packages`, the exact
 [host-specific checks](COMPATIBILITY.md#release-guardrails) as `checks`, and the
 full commit you installed from as `source_commit`. Then seal it with
 `python scripts/record_compatibility_pass.py --target <target> --row row.json`.
-No Python version is required for stateless UI QA. Code-only checks cannot certify these targets.
+Add no other field: stateless UI QA has no `python_version`, and the checker
+refuses a pass row with any field it does not record. Code-only checks cannot certify these targets.
 Desktop Code UI and Cowork hook execution remain explicitly unverified even
 after these stateless checks pass.
 

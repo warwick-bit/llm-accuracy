@@ -200,6 +200,29 @@ def test_malformed_input_reports_a_fixed_label_without_echoing_it(distribution, 
     assert path.read_bytes() == before
 
 
+@pytest.mark.parametrize(
+    "extra", [{"notes": "SYNTHETIC_NOTE_NEEDLE"}, {"python_version": "/synthetic/path"}]
+)
+def test_desktop_row_with_unrecorded_fields_is_never_written(distribution, capsys, extra):
+    root, path = distribution
+    before = path.read_bytes()
+    target = "desktop-chat-macos"
+    platform, kind = contract.target_identity(target)
+    row = {
+        "outcome": "pass",
+        "platform": platform,
+        "host_kind": kind,
+        "host_version": "1.2.3",
+        "packages": contract.target_packages(contract.candidate(root)["packages"], target),
+        "checks": dict.fromkeys(contract.CHAT_CHECKS, True),
+        "source_commit": TESTED,
+        **extra,
+    }
+    code, output = record(root, capsys, target, "--row", write(root, "ui.json", row))
+    assert (code, output["errors"]) == (1, ["invalid_pass_fields_" + target])
+    assert path.read_bytes() == before
+
+
 def test_desktop_row_must_record_a_pass(distribution, capsys):
     root, path = distribution
     before = path.read_bytes()

@@ -173,6 +173,11 @@ def host_row_errors(row: dict, target: str, packages: dict, checks: tuple) -> li
     return errors
 
 
+def pass_fields(target: str) -> set:
+    fields = {'outcome', 'platform', 'host_kind', 'host_version', 'packages', 'checks', 'source_commit', 'row_sha256'}
+    return fields | {'python_version'} if target.startswith('code-') else fields
+
+
 def seal_errors(row: dict, target: str) -> list[str]:
     commit = row.get('source_commit')
     if not isinstance(commit, str) or not re.fullmatch(r'[0-9a-f]{40}', commit):
@@ -207,6 +212,8 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
             errors.append('invalid_outcome_' + target)
             continue
         if row['outcome'] == 'pass':
+            if set(row) != pass_fields(target):
+                errors.append('invalid_pass_fields_' + target)
             errors.extend(host_row_errors(row, target, expected['packages'], target_checks(target)))
             errors.extend(seal_errors(row, target))
     installations = receipt.get('native_installations')
@@ -280,7 +287,8 @@ def main() -> int:
         if args.ci_receipts is not None:
             receipt = overlay_ci_receipts(args.root, receipt, args.ci_receipts)
         errors = validate(args.root, receipt, release=args.release)
-    except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError,
+            subprocess.SubprocessError):
         errors = ['invalid_compatibility_receipt']
     print(json.dumps({'status': 'fail' if errors else 'pass', 'errors': errors}))
     return int(bool(errors))

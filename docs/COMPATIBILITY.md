@@ -82,8 +82,9 @@ Historical receipts cannot establish a current candidate's support.
 Every pass row is sealed to one QA run. `source_commit` names the full commit
 the run tested; after a squash merge that commit may be reachable only from the
 pull request, not from `main`. `row_sha256` is the SHA-256 of the row's other
-fields as canonical JSON (sorted keys, no whitespace). The checker recomputes
-the seal, so a field edited after recording fails. So does a row that Git merged
+fields as canonical JSON (sorted keys, no whitespace). A pass row holds exactly
+its recorded fields; any other field, such as a free-text note, fails the
+check. The checker recomputes the seal, so a field edited after recording fails. So does a row that Git merged
 from two runs: if two branches each record the same target, they both change
 the seal lines and the merge stops. Resolve that conflict with
 `--write-candidate` and a fresh run on the merged source, never by picking a
