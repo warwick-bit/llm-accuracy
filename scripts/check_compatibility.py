@@ -68,7 +68,7 @@ def package_binding(root: Path, name: str) -> dict:
             digest.update(path.relative_to(directory).as_posix().encode() + b'\0' + path.read_bytes() + b'\0')
     manifest = json.loads((directory / '.claude-plugin/plugin.json').read_text())
     version = manifest.get('version') if isinstance(manifest, dict) else None
-    if not isinstance(version, str):
+    if not isinstance(version, str) or not version:
         raise ValueError('invalid_package_manifest')
     return {'version': version, 'sha256': digest.hexdigest()}
 

@@ -245,8 +245,9 @@ def test_write_candidate_failure_reports_a_fixed_label(monkeypatch, capsys):
     '[' * 200000 + ']' * 200000,
     '{"version": 5}',
     '{"version": ' + '[' * 1200 + ']' * 1200 + '}',
+    '{"version": ""}',
 ], ids=['missing', 'no_version', 'list', 'invalid_json', 'nested_past_parser_limit', 'number_version',
-        'deep_version'])
+        'deep_version', 'empty_version'])
 def test_write_candidate_bad_manifest_reports_a_build_label_and_writes_nothing(tmp_path, monkeypatch, capsys,
                                                                                manifest):
     if manifest is not None and manifest.startswith('[['):
