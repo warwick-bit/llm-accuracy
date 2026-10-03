@@ -85,12 +85,13 @@ DEFINED_COUNT = re.compile(
     r"(?:africa|america|asia|australia|europe|pacific)/[a-z_]+)\b",
     re.I,
 )
-# New rows in a fixture, seed data, test database or cache store are a
-# development count. A deploy, migration or cached report can date a business
+# New rows in a fixture, seed data, a test, dev or sandbox database, or a cache
+# store are a development count. A deploy, migration or cached report can date a business
 # event, so those words alone do not silence the reminder.
 DEV_COUNT = re.compile(
     r"\b(?:fixtures?|seed(?:ed|ing)?\s+(?:script|data|file|rows?|db|database)s?|"
-    r"test\s+(?:db|database|data|suite|env(?:ironment)?)|redis|staging|unit\s+tests?|"
+    r"(?:test|dev|development|sandbox)\s+(?:db|database|data|suite|env(?:ironment)?)|"
+    r"local\s+(?:db|database|sqlite)|sandbox|sqlite|redis|staging|unit\s+tests?|"
     r"(?:db|database|schema)\s+migrations?|migration\s+(?:files?|scripts?))\b",
     re.I,
 )
