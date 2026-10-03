@@ -67,7 +67,10 @@ def package_binding(root: Path, name: str) -> dict:
         if path.is_file() and '__pycache__' not in path.parts:
             digest.update(path.relative_to(directory).as_posix().encode() + b'\0' + path.read_bytes() + b'\0')
     manifest = json.loads((directory / '.claude-plugin/plugin.json').read_text())
-    return {'version': manifest['version'], 'sha256': digest.hexdigest()}
+    version = manifest.get('version') if isinstance(manifest, dict) else None
+    if not isinstance(version, str) or not version:
+        raise ValueError('invalid_package_manifest')
+    return {'version': version, 'sha256': digest.hexdigest()}
 
 
 def row_digest(row: dict) -> str:
@@ -287,7 +290,16 @@ def main() -> int:
     args = parser.parse_args()
     path = args.root / 'docs/validation/compatibility-candidate.json'
     if args.write_candidate:
-        write_receipt(path, candidate(args.root))
+        try:
+            receipt = candidate(args.root)
+        except (OSError, ValueError, RecursionError):
+            print(json.dumps({'status': 'fail', 'errors': ['candidate_build_failed']}))
+            return 1
+        try:
+            write_receipt(path, receipt)
+        except OSError:
+            print(json.dumps({'status': 'fail', 'errors': ['candidate_write_failed']}))
+            return 1
         return 0
     try:
         receipt = json.loads(path.read_text())

@@ -129,6 +129,17 @@ def test_receipt_too_deep_to_publish_emits_fixed_failure(capsys, monkeypatch):
     assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['invalid_publication_evidence']}
 
 
+def test_receipt_nested_past_any_parser_limit_emits_fixed_failure(tmp_path, capsys):
+    text = '[' * 200000 + ']' * 200000
+    with pytest.raises(RecursionError):
+        json.loads(text)
+    path = tmp_path / 'docs/validation/compatibility-candidate.json'
+    path.parent.mkdir(parents=True)
+    path.write_text(text)
+    assert guard.main(['--root', str(tmp_path), '--release']) == 1
+    assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['invalid_publication_evidence']}
+
+
 def test_missing_ci_artifacts_emit_fixed_diagnostic(tmp_path, capsys, monkeypatch):
     monkeypatch.setenv("GITHUB_RUN_ID", "12345")
     assert guard.main(['--root', str(ROOT), '--release', '--ci-receipts',
