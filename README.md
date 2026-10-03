@@ -79,10 +79,11 @@ Checked / Gap / Next footer. These are advisory workflows, not accuracy guarante
   context must survive compaction within the same long session. It stores a
   bounded local record, so review its data boundary before installing it.
 - **Evidence Memory** — independent experimental Claude Code plugin for exact
-  earlier tool results and revisioned corrections in the current session. It
-  stores potentially sensitive tool data locally after the plugin is explicitly
-  enabled in Claude settings; each session then starts automatically. Session
-  Ledger is not required.
+  earlier tool results, revisioned corrections and your answers to Claude's
+  questions in the current session. It stores potentially sensitive tool data
+  and those answers locally after the plugin is explicitly enabled in Claude
+  settings; each session then starts automatically. Session Ledger is not
+  required.
 
 ### Try LLM Accuracy in five minutes
 

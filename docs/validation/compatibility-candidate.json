@@ -16,83 +16,27 @@
       "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
     },
     "evidence-memory": {
-      "version": "0.4.0",
-      "sha256": "5bc1433c253b1532657e057d88158e42ed99f620782df0fa501a60a7632aedd4"
+      "version": "0.5.0",
+      "sha256": "1adb6cb9793a9e9433405a0dd9c900b442b092f083c4e3400859f93facded45a"
     }
+  },
+  "support_policy": {
+    "code": "native_installation_and_local_live_qa",
+    "desktop_chat": "experimental_stateless_skills",
+    "cowork": "experimental_stateless_skills"
   },
   "targets": {
     "code-linux": {
       "outcome": "untested"
     },
     "code-wsl": {
-      "outcome": "pass",
-      "host_version": "2.1.287",
-      "python_version": "3.12.3",
-      "platform": "Linux/WSL",
-      "host_kind": "code",
-      "packages": {
-        "llm-accuracy": {
-          "version": "0.7.0",
-          "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
-        },
-        "deterministic-data": {
-          "version": "0.1.0",
-          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
-        },
-        "session-ledger": {
-          "version": "0.3.0",
-          "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
-        },
-        "evidence-memory": {
-          "version": "0.4.0",
-          "sha256": "5bc1433c253b1532657e057d88158e42ed99f620782df0fa501a60a7632aedd4"
-        }
-      },
-      "checks": {
-        "clean_install": true,
-        "configured_python": true,
-        "upgrade": true,
-        "prompt_delivery": true,
-        "invalid_python_advisory_then_recovery": true,
-        "uninstall": true
-      }
+      "outcome": "untested"
     },
     "code-windows-no-bash": {
       "outcome": "untested"
     },
     "code-windows-git-bash": {
-      "outcome": "pass",
-      "host_version": "2.1.287",
-      "python_version": "3.13.1",
-      "platform": "Windows",
-      "host_kind": "code",
-      "packages": {
-        "llm-accuracy": {
-          "version": "0.7.0",
-          "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
-        },
-        "deterministic-data": {
-          "version": "0.1.0",
-          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
-        },
-        "session-ledger": {
-          "version": "0.3.0",
-          "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
-        },
-        "evidence-memory": {
-          "version": "0.4.0",
-          "sha256": "5bc1433c253b1532657e057d88158e42ed99f620782df0fa501a60a7632aedd4"
-        }
-      },
-      "checks": {
-        "clean_install": true,
-        "configured_python": true,
-        "upgrade": true,
-        "prompt_delivery": true,
-        "invalid_python_advisory_then_recovery": true,
-        "uninstall": true,
-        "git_bash_present": true
-      }
+      "outcome": "untested"
     },
     "code-macos": {
       "outcome": "untested"
@@ -116,18 +60,6 @@
       "outcome": "untested"
     }
   },
-  "capabilities": {
-    "code": "configured_exec_hooks",
-    "desktop_chat": "skills_only",
-    "cowork": "stateless_skills_only_unverified_hooks",
-    "desktop_code": "unverified_ui",
-    "codex_memory": "experimental_posix_only"
-  },
-  "support_policy": {
-    "code": "native_installation_and_local_live_qa",
-    "desktop_chat": "experimental_stateless_skills",
-    "cowork": "experimental_stateless_skills"
-  },
   "native_installations": {
     "code-linux": {
       "outcome": "untested"
@@ -141,5 +73,12 @@
     "code-macos": {
       "outcome": "untested"
     }
+  },
+  "capabilities": {
+    "code": "configured_exec_hooks",
+    "desktop_chat": "skills_only",
+    "cowork": "stateless_skills_only_unverified_hooks",
+    "desktop_code": "unverified_ui",
+    "codex_memory": "experimental_posix_only"
   }
 }

@@ -9,10 +9,14 @@ Platform capability and runtime evidence are separate. The source candidate uses
 shell-independent hooks; read [compatibility and current release evidence](COMPATIBILITY.md)
 before relying on an OS or Desktop mode. Published-release receipts below are historical.
 
-**Current plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
+**Earlier plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
 [Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
-[Evidence Memory 0.3.0](release-evidence-memory-0.3.0.md). The records below
+[Evidence Memory 0.4.0](release-evidence-memory-0.4.0.md). The records below
 describe historical builds.
+
+The current [compatibility release](release-platform-candidate.md) includes
+[Evidence Memory 0.5.0](release-evidence-memory-0.5.0.md), which preserves the
+question-answer capture from 0.4.0 and requires explicit Python configuration.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
 
@@ -199,7 +203,9 @@ experimental because a small synthetic test supports retrieval, but no live
 long-session accuracy or token-saving improvement has been measured. Exact
 results may contain credentials or other sensitive data, so the plugin is off
 by default. Enabling it in Claude settings starts capture automatically in each
-session; disable the plugin to stop it in future sessions.
+session; disable the plugin to stop it in future sessions. Since 0.4.0 it also
+stores your answers to Claude's `AskUserQuestion` prompts, with any note you
+add, as `decision` state, so they can be restored after compaction.
 
 After adding the marketplace, install and enable the plugin:
 
@@ -238,7 +244,7 @@ claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
 Run the optional plugin updates only for plugins you installed. On upgrade to
-Accuracy 0.7.0, Ledger 0.3.0 or Memory 0.4.0, open `/config` and set each installed
+Accuracy 0.7.0, Ledger 0.3.0 or Memory 0.5.0, open `/config` and set each installed
 hook plugin's **Python executable** option before reloading. Then run
 `/reload-plugins` in an active Claude Code session. The read-only command
 `claude plugin configure PLUGIN@llm-accuracy` shows options and which are unset;

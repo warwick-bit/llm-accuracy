@@ -1,6 +1,6 @@
 # Platform compatibility candidate (unreleased)
 
-Accuracy 0.7.0, Session Ledger 0.3.0 and Evidence Memory 0.4.0 change Claude hook
+Accuracy 0.7.0, Session Ledger 0.3.0 and Evidence Memory 0.5.0 change Claude hook
 launching to direct executable/argument vectors. Use Claude Code 2.1.287+ and
 configure each plugin's Python executable before restarting or reloading. Native
 Windows command execution no longer needs Git Bash; installed Windows/macOS

@@ -178,6 +178,22 @@ fetch never read original logs. Neither mode guarantees semantic recall.
 Decisions and corrections are explicitly written, with revision checks and
 optional evidence IDs. Corrections supersede the same key; audit history remains.
 They do not expire merely because the rolling conversation reaches 64 KiB.
+
+Claude Code `AskUserQuestion` answers are also recorded as `decision` state
+during capture, from the host's structured result: one item per answered
+question, keyed by the question text, with any note the user added. Asking the
+same question again supersedes the earlier answer; re-reading the transcript adds
+nothing. A transcript that is rewritten rather than appended is reconciled best
+effort: a corrected answer replaces the stale one unless a later answer to the
+same question is already recorded, and a row rewritten back to an earlier answer,
+or two answers with the same timestamp, can leave the previous answer current.
+In the default `external` scope the question call and its result are not stored
+as evidence; `capture: "all"` stores them like any other tool call. An index
+created by an earlier version that is too full to add the answer tables keeps
+capturing evidence but records no answers. Codex is not covered yet: its
+asynchronous question tool returns only an acknowledgement, and the answer
+arrives in a separate message.
+
 After compaction, the injected packet lists up to ten recent paired external
 results, newest first, as a short ID, tool name(s), time, logged size and host
 error flag. It carries no call arguments or result content, because call input
@@ -233,7 +249,7 @@ memory, transcripts or real query results as fixtures.
 Synthetic replay tests establish storage/retrieval properties and measured local
 I/O, not a general improvement in model answer accuracy. A historical native
 Windows installed-host smoke passed with synthetic data on 25 Sep 2026; it does
-not certify the current 0.4.0 candidate. Live long-session benefit and macOS
+not certify the current 0.5.0 candidate. Live long-session benefit and macOS
 host behaviour remain unmeasured. See the
 [standalone validation receipt](../../docs/validation/evidence-memory-standalone-2026-09-25.json).
 The 0.3.0 scope choices and restore-packet comparison are in the
