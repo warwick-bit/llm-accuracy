@@ -12,6 +12,19 @@ bundle = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bundle)
 
 
+def test_windows_run_records_the_git_bash_state_it_proved(monkeypatch):
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Linux/WSL')
+    assert bundle.windows_bash_state() == 'not_tested'
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Windows')
+    monkeypatch.delenv('CLAUDE_CODE_GIT_BASH_PATH', raising=False)
+    monkeypatch.setattr(bundle, 'usable_bash', lambda path: bool(path))
+    assert bundle.windows_bash_state() == 'present'
+    monkeypatch.setattr(bundle, 'usable_bash', lambda path: False)
+    assert bundle.windows_bash_state() == 'absent'
+    monkeypatch.setenv('CLAUDE_CODE_GIT_BASH_PATH', 'C:/synthetic/missing/bash.exe')
+    assert bundle.windows_bash_state() == 'unclear'
+
+
 def test_installed_byte_missing_and_extra_files_are_failures(tmp_path):
     source, profile = tmp_path / 'source', tmp_path / 'profile'
     entries = []

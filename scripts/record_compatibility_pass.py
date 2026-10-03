@@ -13,13 +13,14 @@ BASH_PROOF = {"code-windows-no-bash": "absent", "code-windows-git-bash": "presen
 
 
 def sealed_row(options) -> dict:
-    if options.git_bash != BASH_PROOF.get(options.target):
-        raise ValueError("git_bash_proof_mismatch")
     if options.target.startswith("code-"):
         if options.bundle_receipt is None:
             raise ValueError("code_pass_requires_bundle_receipt")
         report = json.loads(options.bundle_receipt.read_text(encoding="utf-8"))
-        proof = {"git_bash_" + options.git_bash: True} if options.git_bash else {}
+        state = BASH_PROOF.get(options.target)
+        if state is not None and (not isinstance(report, dict) or report.get("windows_bash") != state):
+            raise ValueError("git_bash_proof_mismatch")
+        proof = {"git_bash_" + state: True} if state else {}
         return code_pass_row(report, options.target, proof)
     if options.row is None:
         raise ValueError("desktop_pass_requires_row")
@@ -41,11 +42,6 @@ def main(arguments=None) -> int:
     )
     source.add_argument(
         "--row", type=Path, help="Desktop UI QA row, including the tested source_commit"
-    )
-    parser.add_argument(
-        "--git-bash",
-        choices=("absent", "present"),
-        help="Windows Code only: the Git Bash state you proved for this run",
     )
     options = parser.parse_args(arguments)
     path = options.root / "docs/validation/compatibility-candidate.json"

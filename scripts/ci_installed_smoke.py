@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -23,49 +22,13 @@ from check_compatibility import (
 import claude_bundle_smoke as bundle
 
 
-def usable_bash(path):
-    if not path:
-        return False
-    # Windows' WSL launcher can print GNU Bash's version without being Git Bash.
-    candidate = Path(path)
-    if candidate.name.lower() == "bash.exe" and candidate.parent.name.lower() in (
-        "system32", "sysnative", "syswow64", "windowsapps"
-    ):
-        return False
-    try:
-        env = {
-            key: value
-            for key, value in os.environ.items()
-            if key not in bundle.smoke.CONTROL_VARS
-        }
-        result = subprocess.run(
-            [str(path), "--version"], env=env, capture_output=True, timeout=15
-        )
-        return result.returncode == 0 and b"GNU bash" in result.stdout
-    except (OSError, subprocess.SubprocessError):
-        return False
-
-
 def host_checks(target):
     if bundle.smoke.platform_label() != target_identity(target)[0]:
         raise ValueError("ci_host_mismatch")
     if not target.startswith("code-windows-"):
         return {}
-    git = shutil.which("git")
-    roots = [Path("C:/Program Files/Git"), Path("C:/Program Files (x86)/Git")]
-    if git:
-        roots.append(Path(git).parent.parent)
-    paths = [shutil.which("bash"), os.environ.get("CLAUDE_CODE_GIT_BASH_PATH")]
-    paths.extend(
-        root / suffix
-        for root in roots
-        for suffix in ("bin/bash.exe", "usr/bin/bash.exe")
-    )
-    present = any(usable_bash(path) for path in paths)
     expected = target == "code-windows-git-bash"
-    if present != expected or (
-        not expected and os.environ.get("CLAUDE_CODE_GIT_BASH_PATH")
-    ):
+    if bundle.windows_bash_state() != ("present" if expected else "absent"):
         raise ValueError("ci_bash_mode_mismatch")
     return {"git_bash_present" if expected else "git_bash_absent": True}
 

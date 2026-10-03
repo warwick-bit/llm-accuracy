@@ -120,9 +120,10 @@ hashes or seals.
 
 Native Windows requires two distinct runs: without accessible Git Bash and with
 Git Bash available. Inspect the effective child PATH and executable resolution
-for each run. Record `git_bash_absent` or `git_bash_present` only after proving
-that environment, alongside the required Code checks: pass `--git-bash absent` or
-`--git-bash present` to the recorder for that run. WSL is a separate target and
+for each run. The bundle smoke probes Git Bash itself and writes `windows_bash`
+(`present`, `absent`, or `unclear` when `CLAUDE_CODE_GIT_BASH_PATH` names no usable
+Bash). The recorder accepts a run only for the target its probe proved, so filling
+both Windows rows needs one run in each state. WSL is a separate target and
 does not certify either Windows scenario. Native Linux is also separate from WSL.
 
 ## Desktop skills QA

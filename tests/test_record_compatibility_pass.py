@@ -120,29 +120,24 @@ def test_failed_partial_misrouted_or_stale_run_is_never_written(
     "target, state",
     [("code-windows-no-bash", "absent"), ("code-windows-git-bash", "present")],
 )
-def test_windows_pass_needs_the_bash_state_proved_for_that_run(
+def test_windows_pass_needs_the_bash_state_its_run_proved(
     distribution, capsys, target, state
 ):
     root, path = distribution
-    receipt = write(root, "run.json", bundle_report(root, platform="Windows"))
     other = "present" if state == "absent" else "absent"
-    for arguments in ([], ["--git-bash", other]):
-        code, output = record(
-            root, capsys, target, "--bundle-receipt", receipt, *arguments
-        )
+    for proved in ("not_tested", "unclear", other):
+        report = dict(bundle_report(root, platform="Windows"), windows_bash=proved)
+        receipt = write(root, "run.json", report)
+        code, output = record(root, capsys, target, "--bundle-receipt", receipt)
         assert (code, output["errors"]) == (1, ["git_bash_proof_mismatch"])
-    code, output = record(
-        root, capsys, target, "--bundle-receipt", receipt, "--git-bash", state
-    )
+    report = dict(bundle_report(root, platform="Windows"), windows_bash=state)
+    receipt = write(root, "run.json", report)
+    code, output = record(root, capsys, target, "--bundle-receipt", receipt)
     assert code == 0, output
-    assert (
-        json.loads(path.read_text())["targets"][target]["checks"]["git_bash_" + state]
-        is True
-    )
-    code, output = record(
-        root, capsys, "code-wsl", "--bundle-receipt", receipt, "--git-bash", state
-    )
-    assert (code, output["errors"]) == (1, ["git_bash_proof_mismatch"])
+    row = json.loads(path.read_text())["targets"][target]
+    assert row["checks"]["git_bash_" + state] is True
+    code, output = record(root, capsys, "code-wsl", "--bundle-receipt", receipt)
+    assert (code, output["errors"]) == (1, ["live_smoke_not_passed"])
 
 
 def test_desktop_row_is_sealed_with_its_tested_commit(distribution, capsys):
