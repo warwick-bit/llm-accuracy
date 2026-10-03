@@ -1,6 +1,6 @@
 ---
 name: data-routing
-description: Use when answering a data or metric question through a user-owned deterministic-data catalogue, resolving definition ambiguity, checking catalogue status, or producing a source-bound evidence receipt.
+description: Use only when the user has a deterministic-data catalogue or asks to route a question through one - answering a data or metric question through that user-owned catalogue, resolving definition ambiguity, checking catalogue status, or producing a source-bound evidence receipt. Not for ordinary analysis when no catalogue exists.
 argument-hint: "[data question and catalogue path]"
 skill: data-routing
 plugin: deterministic-data
@@ -20,8 +20,12 @@ example is synthetic and cannot answer a real question.
 
 ## Before use
 
-1. Locate the user-owned catalogue. Do not treat the installed example as a
-   source of truth.
+1. Locate the user-owned catalogue in the working directory or at a path the
+   user gives. Do not treat the installed example as a source of truth. If no
+   user-owned catalogue exists, this skill does not apply: say in one sentence
+   that no deterministic-data catalogue is configured, then answer through
+   ordinary analysis and label any figure as non-canonical. Do not withhold an
+   answer, or produce an evidence receipt, only because no catalogue exists.
 2. Validate it with
    `${CLAUDE_PLUGIN_ROOT}/scripts/validate_catalogue.py <catalogue>`.
 3. Confirm the declared source adapter is available and read-only for this task.
@@ -65,7 +69,14 @@ example is synthetic and cannot answer a real question.
    `--expected-epoch "<prompt_epoch>"` as one quoted argument, invoke the
    validator without a receipt path, and pass the JSON through standard input
    with a quoted heredoc delimiter (`<<'RECEIPT_JSON'`). Never create a file
-   just to validate it. Exit code 0 means `passed`; any completed nonzero exit
+   just to validate it. Use this command shape unchanged, replacing only the
+   epoch and the JSON; other shell forms can trip host command-safety checks:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate_evidence_receipt.py" --expected-epoch "<prompt_epoch>" <<'RECEIPT_JSON'
+   { ...the receipt JSON... }
+   RECEIPT_JSON
+   ``` Exit code 0 means `passed`; any completed nonzero exit
    means `failed`, including a validator runtime error. Use `not run` only when
    the validator could not be launched because execution was denied or the tool
    or script was unavailable. Visual inspection can identify a caveat, but

@@ -104,6 +104,15 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     ).lower()
     assert "calendar, timezone and close rule" in readme
     assert "user-owned catalogue" in skill
+    assert "routing does not engage" in " ".join(readme.split())
+    head = skill.split("---", 2)[1]
+    assert "Use only when the user has a deterministic-data catalogue" in head
+    assert "Not for ordinary analysis when no catalogue exists" in head
+    assert "If no user-owned catalogue exists, this skill does not apply" in normalized_skill
+    assert "label any figure as non-canonical" in normalized_skill
+    assert "Do not withhold an answer, or produce an evidence receipt, only because no catalogue exists" in normalized_skill
+    assert "Use this command shape unchanged" in normalized_skill
+    assert 'validate_evidence_receipt.py" --expected-epoch "<prompt_epoch>" <<\'RECEIPT_JSON\'' in skill
     assert "supported window token does not define concrete dates" in normalized_skill
     assert "supply all three required rules" in normalized_skill
     assert "calendar, timezone and close rule" in normalized_skill
