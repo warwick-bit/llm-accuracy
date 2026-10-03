@@ -271,6 +271,27 @@ def test_windows_host_proof_rejects_usable_bash_in_no_bash_mode(monkeypatch):
         ci.host_checks("code-windows-git-bash")
 
 
+@pytest.mark.parametrize("directory", ["System32", "Sysnative", "SysWOW64", "WindowsApps"])
+def test_windows_wsl_launcher_is_not_git_bash(monkeypatch, directory):
+    calls = []
+    monkeypatch.setattr(ci.subprocess, "run", lambda *a, **kw: calls.append(True))
+    assert ci.usable_bash(f"C:/Windows/{directory}/bash.exe") is False
+    assert calls == []
+
+
+def test_native_git_bash_version_is_accepted(monkeypatch):
+    calls = []
+
+    def run(argv, **kwargs):
+        calls.append(argv)
+        return SimpleNamespace(returncode=0, stdout=b"GNU bash, version 5.2")
+
+    monkeypatch.setattr(ci.subprocess, "run", run)
+    path = "C:/Program Files/Git/bin/bash.exe"
+    assert ci.usable_bash(path) is True
+    assert calls == [[path, "--version"]]
+
+
 def test_native_linux_receipt_cannot_be_collected_on_wsl(monkeypatch):
     monkeypatch.setattr(ci.bundle.smoke, "platform_label", lambda: "Linux/WSL")
     with pytest.raises(ValueError, match="ci_host_mismatch"):

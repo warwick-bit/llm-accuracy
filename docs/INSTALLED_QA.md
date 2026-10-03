@@ -49,9 +49,15 @@ usable Bash. Never remove or rename Bash on your own workstation for QA.
   and run the local harness. If Bash is installed, label this supplemental proof
   as PowerShell mode with Bash present; it cannot certify Bash absence. The free
   hosted Windows no-Bash job supplies actual absence coverage for offline checks.
-  A [supplemental native Windows receipt](validation/platform-windows-powershell-bundle-0.7.0.json)
+  A [current Memory 0.5.0 native Windows receipt](validation/platform-windows-powershell-bundle-memory-0.5.0.json)
   passes live Accuracy delivery/recovery and direct synthetic installed persistence
   with that flag requested. Its no-tool sessions do not exercise the PowerShell tool.
+  The [earlier Memory 0.4.0 receipt](validation/historical-platform-windows-powershell-bundle-memory-0.4.0.json)
+  is historical and does not certify the current Memory package. Current local WSL
+  delivery is recorded [separately](validation/platform-wsl-bundle-memory-0.5.0.json).
+  An [ordinary native Windows run](validation/platform-windows-bundle-memory-0.5.0.json)
+  separately proves the candidate's Bash-present live row without requesting
+  PowerShell mode. Neither terminal run certifies shell-tool execution or Desktop UI.
 - **Desktop UI:** stateless packaging/source checks and CLI skill discovery are
   useful screens; only the real app can certify Chat/Cowork/UI. Use a fresh
   synthetic context and the UI battery below. Keep actual UI gaps untested if no

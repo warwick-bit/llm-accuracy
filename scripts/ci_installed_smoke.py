@@ -25,6 +25,12 @@ import claude_bundle_smoke as bundle
 def usable_bash(path):
     if not path:
         return False
+    # Windows' WSL launcher can print GNU Bash's version without being Git Bash.
+    candidate = Path(path)
+    if candidate.name.lower() == "bash.exe" and candidate.parent.name.lower() in (
+        "system32", "sysnative", "syswow64", "windowsapps"
+    ):
+        return False
     try:
         env = {
             key: value
