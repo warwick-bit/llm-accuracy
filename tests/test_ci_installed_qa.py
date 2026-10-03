@@ -288,22 +288,25 @@ def test_receipt_too_deep_to_check_emits_fixed_failure(tmp_path, monkeypatch, ca
 
 def test_windows_host_proof_rejects_usable_bash_in_no_bash_mode(monkeypatch):
     monkeypatch.setattr(ci.bundle.smoke, "platform_label", lambda: "Windows")
-    monkeypatch.setattr(ci, "usable_bash", lambda p: bool(p))
+    monkeypatch.setattr(ci.bundle, "usable_bash", lambda p: bool(p))
     with pytest.raises(ValueError, match="ci_bash_mode_mismatch"):
         ci.host_checks("code-windows-no-bash")
     assert ci.host_checks("code-windows-git-bash") == {"git_bash_present": True}
-    monkeypatch.setattr(ci, "usable_bash", lambda p: False)
+    monkeypatch.setattr(ci.bundle, "usable_bash", lambda p: False)
     monkeypatch.delenv("CLAUDE_CODE_GIT_BASH_PATH", raising=False)
     assert ci.host_checks("code-windows-no-bash") == {"git_bash_absent": True}
     with pytest.raises(ValueError):
         ci.host_checks("code-windows-git-bash")
+    monkeypatch.setenv("CLAUDE_CODE_GIT_BASH_PATH", "C:/synthetic/missing/bash.exe")
+    with pytest.raises(ValueError, match="ci_bash_mode_mismatch"):
+        ci.host_checks("code-windows-no-bash")
 
 
 @pytest.mark.parametrize("directory", ["System32", "Sysnative", "SysWOW64", "WindowsApps"])
 def test_windows_wsl_launcher_is_not_git_bash(monkeypatch, directory):
     calls = []
     monkeypatch.setattr(ci.subprocess, "run", lambda *a, **kw: calls.append(True))
-    assert ci.usable_bash(f"C:/Windows/{directory}/bash.exe") is False
+    assert ci.bundle.usable_bash(f"C:/Windows/{directory}/bash.exe") is False
     assert calls == []
 
 
@@ -316,7 +319,7 @@ def test_native_git_bash_version_is_accepted(monkeypatch):
 
     monkeypatch.setattr(ci.subprocess, "run", run)
     path = "C:/Program Files/Git/bin/bash.exe"
-    assert ci.usable_bash(path) is True
+    assert ci.bundle.usable_bash(path) is True
     assert calls == [[path, "--version"]]
 
 

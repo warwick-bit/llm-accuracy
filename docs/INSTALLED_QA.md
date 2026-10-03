@@ -99,9 +99,11 @@ settings, credentials or hook payloads. A setup/model failure is a failed smoke;
 
 The second harness checks installed/default, bypass and release-archive Accuracy
 delivery on committed source. Neither harness certifies live Ledger/Memory
-capture, uninstall data retention, Desktop UI, or Windows Bash availability.
-The direct installed-hook probe checks synthetic persistence separately; actual
-model-driven capture, data retention, UI and Bash proof need their own evidence. The marketplace source is local, not a fresh hosted
+capture, uninstall data retention or Desktop UI. On native Windows the bundle
+smoke records the Git Bash state it probed (`windows_bash`, below); elsewhere it
+records `not_tested`. The direct installed-hook probe checks synthetic
+persistence separately; actual model-driven capture, data retention and UI need
+their own evidence. The marketplace source is local, not a fresh hosted
 GitHub download.
 
 Before recording a Code pass, confirm the invalid-Python recovery field passes
@@ -120,9 +122,18 @@ hashes or seals.
 
 Native Windows requires two distinct runs: without accessible Git Bash and with
 Git Bash available. Inspect the effective child PATH and executable resolution
-for each run. Record `git_bash_absent` or `git_bash_present` only after proving
-that environment, alongside the required Code checks: pass `--git-bash absent` or
-`--git-bash present` to the recorder for that run. WSL is a separate target and
+for each run. The bundle smoke probes Git Bash itself: PATH `bash`, the
+`CLAUDE_CODE_GIT_BASH_PATH` override, and `bin/bash.exe` and `usr/bin/bash.exe`
+under `C:/Program Files/Git`, `C:/Program Files (x86)/Git` and the Git install
+that provides `git` on PATH. It writes `windows_bash`: `present` when any of them
+is a usable GNU Bash (the Windows WSL launcher does not count), otherwise
+`unclear` when the override is set and `absent` when it is not. An override that
+names no usable Bash still records `present` if another usable Bash exists. For
+the no-Bash run, clear PATH and the override and make sure none of those Git
+folders holds a `bash.exe`; the CI job deletes them on its disposable runner. The recorder accepts a run
+only for the target its probe proved, so filling both Windows rows needs one run
+in each state. The field is a plain receipt value: it guards against recording
+the wrong run by accident, not against a hand-edited receipt. WSL is a separate target and
 does not certify either Windows scenario. Native Linux is also separate from WSL.
 
 ## Desktop skills QA
