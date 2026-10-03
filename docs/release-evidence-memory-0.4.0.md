@@ -31,4 +31,5 @@ recorded a decision through a real compaction. See the
 **Not covered.** Decisions typed as ordinary chat messages, transcripts
 rewritten in place (see the
 [plugin guide](../plugins/evidence-memory/README.md)), and Codex, whose question
-tool returns only an acknowledgement.
+tool returns only an acknowledgement. An index from an earlier version that is
+too full to add the answer tables keeps capturing evidence without answers.
