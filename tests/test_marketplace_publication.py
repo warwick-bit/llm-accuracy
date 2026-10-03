@@ -120,7 +120,8 @@ def test_invalid_base_cli_emits_fixed_failure(repository, capsys):
     assert report == {'status': 'fail', 'errors': ['publication_base_unavailable']}
 
 
-def test_missing_ci_artifacts_emit_fixed_diagnostic(tmp_path, capsys):
+def test_missing_ci_artifacts_emit_fixed_diagnostic(tmp_path, capsys, monkeypatch):
+    monkeypatch.setenv("GITHUB_RUN_ID", "12345")
     assert guard.main(['--root', str(ROOT), '--release', '--ci-receipts',
                        str(tmp_path / 'private-missing-directory')]) == 1
     assert json.loads(capsys.readouterr().out) == {
@@ -129,6 +130,10 @@ def test_missing_ci_artifacts_emit_fixed_diagnostic(tmp_path, capsys):
 
 def test_required_aggregate_cannot_ignore_publication_failure_or_skip():
     source = (ROOT / '.github/workflows/release-gates.yml').read_text(encoding='utf-8')
+    installed = source.split('\n  installed-code:\n', 1)[1].split('\n  publication:\n', 1)[0]
+    assert '--live' not in installed
+    assert 'secrets.' not in installed
+    assert 'ci_installed_smoke.py' in installed
     publication, aggregate = source.split('\n  publication:\n', 1)[1].split('\n  release-gates:\n', 1)
     assert 'fetch-depth: 0' in publication
     assert 'github.event.pull_request.base.sha' in publication
@@ -154,6 +159,11 @@ def test_actual_all_pass_receipt_cannot_certify_redirected_catalog(repository):
             'platform': platform, 'host_kind': kind,
             'packages': contract.target_packages(receipt['packages'], target),
             'checks': dict.fromkeys(contract.target_checks(target), True)}
+    for target in contract.CI_TARGETS:
+        row = dict(receipt['targets'][target])
+        row.update(outcome='installed', live_delivery='not_tested', isolated_cleanup=True)
+        row['checks'] = dict.fromkeys(contract.installation_checks(target), True)
+        receipt['native_installations'][target] = row
     assert guard.validate(root, receipt, release=True) == []
     path = root / 'docs/validation/compatibility-candidate.json'
     path.parent.mkdir(parents=True)

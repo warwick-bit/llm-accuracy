@@ -13,6 +13,8 @@ from pathlib import Path
 from check_compatibility import (
     CI_TARGETS,
     ROOT,
+    INSTALL_CHECKS,
+    installation_errors,
     target_checks,
     target_identity,
     validate,
@@ -78,7 +80,8 @@ def live_receipt(report, target, proof):
         "host_version": report.get("host_version"),
         "python_version": report.get("python_version"),
         "packages": report.get("packages"),
-        "checks": {**report.get("checks", {}), **proof},
+        "checks": {**{key: report.get('checks', {}).get(key) for key in target_checks(target)
+                      if not key.startswith('git_bash_')}, **proof},
     }
     candidate = json.loads(
         (ROOT / "docs/validation/compatibility-candidate.json").read_text()
@@ -92,6 +95,24 @@ def live_receipt(report, target, proof):
         "source_commit": report["source_commit"],
         "row": row,
     }
+
+
+def installation_receipt(report, target, proof):
+    checks = report.get('checks', {})
+    if (report.get('status') != 'partial' or report.get('partial') is not True
+            or report.get('isolated_cleanup') is not True
+            or report.get('scope') != 'code_bundle_registration_accuracy_delivery'
+            or any(checks.get(key) is not True for key in INSTALL_CHECKS)):
+        raise ValueError('ci_installation_smoke_failed')
+    row = {'outcome': 'installed', 'platform': report.get('platform'), 'host_kind': 'code',
+           'host_version': report.get('host_version'), 'python_version': report.get('python_version'),
+           'packages': report.get('packages'), 'checks': {**{key: checks[key] for key in INSTALL_CHECKS}, **proof},
+           'live_delivery': 'not_tested', 'isolated_cleanup': report['isolated_cleanup']}
+    candidate = json.loads((ROOT / 'docs/validation/compatibility-candidate.json').read_text())
+    if installation_errors(row, target, candidate['packages']):
+        raise ValueError('ci_installation_smoke_failed')
+    return {'schema_version': 2, 'target': target, 'source_commit': report['source_commit'],
+            'run_id': os.environ.get('GITHUB_RUN_ID', 'local'), 'row': row}
 
 
 def run(options):
@@ -109,26 +130,7 @@ def run(options):
     )
     if options.live:
         return live_receipt(report, options.target, proof)
-    checks = report.get("checks", {})
-    required = ("clean_install", "configured_python", "upgrade", "uninstall")
-    if (
-        report.get("status") != "partial"
-        or report.get("partial") is not True
-        or report.get("isolated_cleanup") is not True
-        or any(checks.get(key) is not True for key in required)
-    ):
-        raise ValueError("ci_installation_smoke_failed")
-    return {
-        "status": "installation_only",
-        "target": options.target,
-        "partial": True,
-        "source_commit": report["source_commit"],
-        "packages": report["packages"],
-        "checks": {key: checks[key] for key in required},
-        "host_checks": proof,
-        "live_delivery": "not_tested",
-        "isolated_cleanup": True,
-    }
+    return installation_receipt(report, options.target, proof)
 
 
 def main(arguments=None):

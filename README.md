@@ -454,8 +454,10 @@ Read [the OS and host contract](docs/COMPATIBILITY.md) for the source candidate.
 Claude hooks require a configured Python 3.9+ executable and Claude Code 2.1.287+;
 The hook implementation does not require Git Bash; installed support is certified
 only by current receipts. Desktop Chat/Cowork are experimental stateless skills.
-Code publication requires installed QA on Linux, WSL, macOS and both Windows Bash
-scenarios. Experimental Desktop gaps stay visible. Codex has a separate boundary.
+Code publication requires credential-free native installation/hook checks on
+Linux, macOS and both Windows Bash scenarios, plus current-source local live QA.
+Offline checks do not certify live delivery on every OS. Experimental Desktop
+gaps stay visible. Codex has a separate boundary.
 
 ## Development
 

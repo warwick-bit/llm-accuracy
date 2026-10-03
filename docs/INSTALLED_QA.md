@@ -1,47 +1,65 @@
 # Installed-host QA handoff
 
-Code publication stays on hold until all five required Code targets in
-[the current candidate](validation/compatibility-candidate.json) passes. CI
-Python tests prove runtime behavior; they do not prove installed Claude delivery.
-Never replace missing machine or UI evidence with a synthetic pass.
-Desktop Chat/Cowork are experimental stateless skills. Keep their six untested
-rows visible; those gaps do not block Code publication. A recorded experimental
-pass still requires actual host-specific QA.
+Code publication requires all four native installation targets plus at least
+one genuine current-source local live Code pass. Live coverage on other hosts
+stays explicitly untested. Offline execution does not certify model-driven
+Claude scheduling or Desktop UI. Desktop Chat/Cowork remain experimental
+stateless skills; keep their six untested rows visible.
 
 ## Hosted Code QA
 
-The required `installed-code` matrix uses actual GitHub Linux/macOS/Windows VMs.
-It downloads Claude 2.1.287 using committed checksums; both the official manifest
-and binary must match. Updating the pin needs independent review. It checks the
-bundle against the fixed `v0.6.5` upgrade baseline in a clean LF checkout.
-Installation-only checks run without credentials and remain explicitly partial.
-Live checks require exactly one dedicated secret: `CLAUDE_CODE_OAUTH_TOKEN` or
-`ANTHROPIC_API_KEY`. Missing/both credentials fail with a fixed diagnostic.
+The required `installed-code` matrix uses actual Linux/macOS/Windows VMs with
+and without Git Bash. Standard runners are [free for public repositories](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+Claude 2.1.287 is pinned: official manifest and binary must match committed
+checksums. Updating pins needs independent review. A clean LF checkout and
+`v0.6.5` baseline prove installation, configured Python, upgrade and uninstall.
 
-Configure the dedicated credential through GitHub Actions secrets UI, preferably
-with an approved environment/branch restriction; never paste it into chat, logs,
-source, or a receipt. Current workflow uses repository secrets; same-repository
-workflow editors are trusted and can access them. Review workflow changes before
-running with credentials. Fork PRs receive no secrets and cannot pass the live
-gate; a maintainer must review and test an exact candidate on a trusted branch.
-Do not copy your local login file into CI. API authentication bills the API
-account; OAuth uses its associated account. The smoke runs two bounded no-tool
-turns per native target, each with a $1 maximum budget and finite timeout.
+The free installed-hook probe directly executes installed argument vectors:
+Accuracy emits its reminder, Ledger persists/restores a synthetic compact
+summary, and Memory captures/retrieves a synthetic tool result exactly once.
+This is direct execution with simulated host input, not live Claude scheduling.
+The probe uses temporary data and profiles, never personal persisted sessions.
+All five checks and cleanup must succeed; Windows also proves actual Bash
+presence/absence. No hosted job copies a login, receives a model secret or calls
+a model. Optional `--live` remains available for dedicated manual testing.
 
-Only successful fixed-field live receipts are uploaded, retained for seven days.
-Temporary profiles, raw outputs, prompts, answers and credentials are never
-uploaded. Publication checks all four native receipt filenames, source commit,
-OS/mode, versions, source bindings and six Code checks plus each Windows Bash
-proof. PR receipts bind the tested synthetic merge checkout; main reruns QA after
-merge. Receipts are attestations from reviewed workflow code, not tamper-resistant
-proof against a maintainer. WSL remains separately tested on actual WSL and its
-committed receipt must be regenerated when package bytes change.
+Upload only successful fixed-field installation receipts for seven days.
+Temporary profiles, paths, raw outputs, prompts, answers and credentials are
+never uploaded. Publication requires exactly four artifacts tied to the current
+GitHub run ID, actual checkout SHA, matching OS/mode and package bytes/versions.
+PR receipts bind the synthetic merge commit; main reruns after merge. These are
+reviewed maintainer attestations, not tamper-resistant certificates.
+Live Code receipts remain separate. At least one local live pass must match the
+current package bytes; no historical receipt is rehashed to clear the gate.
 
-The no-Bash scenario removes Bash executables only on disposable hosted Windows,
-retains Git, clears its PATH/override and enables native PowerShell. The checker
-probes PATH and known Git roots to reject remaining usable Bash. Never perform
-that removal on your own machine. A host failure keeps the target unverified;
-do not weaken the receipt definition to clear it.
+The no-Bash scenario removes Bash only on disposable hosted Windows, retains
+Git and selects PowerShell. PATH and known Git roots are probed for remaining
+usable Bash. Never remove or rename Bash on your own workstation for QA.
+
+## Free local gaps
+
+- **Local live Code:** use the existing Claude subscription login in an isolated
+  temporary profile and the terminal harness below. No extra API credential is
+  required. WSL and native Windows are separate targets. Recheck source bindings
+  after every package change.
+- **Installed persistence:** the native direct-hook probe provides free capture,
+  retrieval, exactly-once ingestion and Ledger restore checks on all four native jobs. Live
+  Memory/Ledger model-driven capture and uninstall data retention remain separate.
+- **Windows PowerShell mode:** set the child `CLAUDE_CODE_USE_POWERSHELL_TOOL=1`
+  and run the local harness. If Bash is installed, label this supplemental proof
+  as PowerShell mode with Bash present; it cannot certify Bash absence. The free
+  hosted Windows no-Bash job supplies actual absence coverage for offline checks.
+- **Desktop UI:** stateless packaging/source checks and CLI skill discovery are
+  useful screens; only the real app can certify Chat/Cowork/UI. Use a fresh
+  synthetic context and the UI battery below. Keep actual UI gaps untested if no
+  isolated app context is available; do not modify a personal conversation/profile.
+- **macOS:** the native hosted job provides free installation/runtime checks.
+  Live macOS/desktop delivery requires an actual available Mac and local login;
+  WSL, containers and Python platform mocks do not reproduce it.
+- **VM options:** Windows Sandbox is a free disposable option on eligible Windows
+  editions, but [installation may require an admin change and reboot](https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/windows-sandbox-install).
+  Do not enable OS features or install virtualization tooling just to manufacture
+  a receipt. Use existing tools or the free hosted native jobs first.
 
 ## Code terminal QA
 
@@ -73,7 +91,8 @@ settings, credentials or hook payloads. A setup/model failure is a failed smoke;
 The second harness checks installed/default, bypass and release-archive Accuracy
 delivery on committed source. Neither harness certifies live Ledger/Memory
 capture, uninstall data retention, Desktop UI, or Windows Bash availability.
-Those need their own tests. The marketplace source is local, not a fresh hosted
+The direct installed-hook probe checks synthetic persistence separately; actual
+model-driven capture, data retention, UI and Bash proof need their own evidence. The marketplace source is local, not a fresh hosted
 GitHub download.
 
 Before recording a Code pass, confirm the invalid-Python recovery field passes
@@ -118,8 +137,9 @@ python scripts/check_compatibility.py --release
 python scripts/check_marketplace_publication.py --base-ref ACTUAL_PR_BASE_SHA
 ```
 
-Only a current-source installed pass counts. All five required Code targets must pass
-before the marketplace publication job and required aggregate can succeed.
+All four current-source native installation rows and at least one live Code
+pass must be verified before publication and the required aggregate can succeed.
+Locally reproducing CI overlays also requires `GITHUB_RUN_ID` from the actual run.
 Checker/workflow/receipt edits need independent review. The receipts guard
 accidental omissions; they are maintainer attestations, not tamper-resistant
 certificates. Do not bypass the gate to publish an incomplete candidate.

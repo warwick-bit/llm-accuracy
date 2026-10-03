@@ -33,8 +33,18 @@ def passing_row(target, packages):
     }
 
 
+def installed_row(target, packages):
+    row = passing_row(target, packages)
+    row['outcome'] = 'installed'
+    row['checks'] = dict.fromkeys(contract.installation_checks(target), True)
+    row['live_delivery'] = 'not_tested'
+    row['isolated_cleanup'] = True
+    return row
+
+
 @pytest.fixture
-def evidence(tmp_path):
+def evidence(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_RUN_ID", "12345")
     root, artifacts = tmp_path / "repo", tmp_path / "artifacts"
     root.mkdir()
     artifacts.mkdir()
@@ -62,10 +72,11 @@ def evidence(tmp_path):
     candidate["targets"]["code-wsl"] = passing_row("code-wsl", candidate["packages"])
     for target in contract.CI_TARGETS:
         value = {
-            "schema_version": 1,
+            "schema_version": 2,
+            "run_id": "12345",
             "target": target,
             "source_commit": sha,
-            "row": passing_row(target, candidate["packages"]),
+            "row": installed_row(target, candidate["packages"]),
         }
         (artifacts / (target + ".json")).write_text(json.dumps(value))
     return root, artifacts, candidate
@@ -85,13 +96,13 @@ def test_same_run_code_receipts_allow_experimental_desktop_gaps_without_rewritin
     )
     # WSL cannot be provided by native Linux, even when all hosted cells pass.
     merged["targets"]["code-wsl"] = {"outcome": "untested"}
-    assert "clean_installed_smoke_required_code-wsl" in contract.validate(
+    assert "local_live_code_smoke_required" in contract.validate(
         root, merged, release=True
     )
 
 
 @pytest.mark.parametrize(
-    "change", ["stale", "wrong-target", "partial", "missing", "extra"]
+    "change", ["stale", "wrong-target", "partial", "missing", "extra", "mixed-run", "old-schema"]
 )
 def test_ci_overlay_rejects_missing_partial_misrouted_and_other_commit_receipts(
     evidence, change
@@ -103,6 +114,10 @@ def test_ci_overlay_rejects_missing_partial_misrouted_and_other_commit_receipts(
         value["source_commit"] = "0" * 40
     if change == "wrong-target":
         value["target"] = "code-linux"
+    if change == "mixed-run":
+        value["run_id"] = "67890"
+    if change == "old-schema":
+        value["schema_version"] = 1
     if change == "partial":
         value["row"]["outcome"] = "untested"
     path.write_text(json.dumps(value))
@@ -114,7 +129,7 @@ def test_ci_overlay_rejects_missing_partial_misrouted_and_other_commit_receipts(
         contract.overlay_ci_receipts(root, candidate, artifacts)
 
 
-@pytest.mark.parametrize("change", ["os", "package", "false", "recovery", "version"])
+@pytest.mark.parametrize("change", ["os", "package", "false", "hook", "version", "cleanup", "live-scope", "extra-field"])
 def test_ci_overlay_still_requires_current_source_identity_and_all_real_checks(
     evidence, change
 ):
@@ -127,9 +142,15 @@ def test_ci_overlay_still_requires_current_source_identity_and_all_real_checks(
     if change == "package":
         row["packages"]["llm-accuracy"]["sha256"] = "0" * 64
     if change == "false":
-        row["checks"]["prompt_delivery"] = False
-    if change == "recovery":
-        row["checks"].pop("invalid_python_advisory_then_recovery")
+        row["checks"]["clean_install"] = False
+    if change == "hook":
+        row["checks"].pop("installed_hook_execution")
+    if change == "cleanup":
+        row["isolated_cleanup"] = False
+    if change == "live-scope":
+        row["live_delivery"] = "pass"
+    if change == "extra-field":
+        row["raw_provider_payload"] = "synthetic"
     if change == "version":
         row["host_version"] = "2.1.286"
     path.write_text(json.dumps(value))
@@ -299,26 +320,36 @@ def test_bad_binary_cannot_replace_executable_and_partial_is_cleaned(
     assert not binary.with_name("claude.partial").exists()
 
 
-def test_offline_result_can_pass_installation_only_without_certifying_live_delivery(
-    monkeypatch,
-):
-    monkeypatch.setattr(ci, "host_checks", lambda target: {})
+def test_installation_only_cannot_claim_live_pass(monkeypatch):
+    monkeypatch.setattr(ci, 'host_checks', lambda target: {})
     report = {
-        "status": "partial",
-        "partial": True,
-        "isolated_cleanup": True,
-        "source_commit": "synthetic",
-        "packages": {},
-        "checks": dict.fromkeys(
-            ("clean_install", "configured_python", "upgrade", "uninstall"), True
-        ),
+        'status': 'partial', 'partial': True, 'isolated_cleanup': True,
+        'scope': 'code_bundle_registration_accuracy_delivery', 'platform': 'Linux',
+        'source_commit': 'synthetic', 'host_version': '2.1.287', 'python_version': '3.14.0',
+        'packages': contract.candidate(ROOT)['packages'],
+        'checks': dict.fromkeys(contract.INSTALL_CHECKS, True),
     }
-    monkeypatch.setattr(ci.bundle, "run_smoke", lambda *a, **k: report)
-    result = ci.run(
-        SimpleNamespace(
-            target="code-linux", live=False, claude="synthetic", baseline="synthetic"
-        )
-    )
-    assert result["status"] == "installation_only" and result["partial"] is True
-    assert result["live_delivery"] == "not_tested"
-    assert "row" not in result
+    monkeypatch.setattr(ci.bundle, 'run_smoke', lambda *a, **k: report)
+    result = ci.run(SimpleNamespace(target='code-linux', live=False, claude='synthetic', baseline='synthetic'))
+    assert result['row']['outcome'] == 'installed'
+    assert result['row']['live_delivery'] == 'not_tested'
+    assert 'prompt_delivery' not in result['row']['checks']
+    with pytest.raises(ValueError, match='ci_live_smoke_failed'):
+        ci.live_receipt(report, 'code-linux', {})
+
+
+def test_overlay_requires_actual_ci_run_context(evidence, monkeypatch):
+    root, artifacts, candidate = evidence
+    monkeypatch.delenv('GITHUB_RUN_ID', raising=False)
+    with pytest.raises(ValueError, match='ci_run_identity_unavailable'):
+        contract.overlay_ci_receipts(root, candidate, artifacts)
+
+
+def test_powershell_mode_with_bash_present_cannot_certify_bash_absence(evidence):
+    root, artifacts, candidate = evidence
+    path = artifacts / 'code-windows-no-bash.json'
+    value = json.loads(path.read_text())
+    value['row']['checks'].pop('git_bash_absent')
+    value['row']['checks']['powershell_mode_with_bash_present'] = True
+    path.write_text(json.dumps(value))
+    assert contract.validate(root, contract.overlay_ci_receipts(root, candidate, artifacts), release=True)

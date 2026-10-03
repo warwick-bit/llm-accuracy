@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -16,11 +17,12 @@ TARGETS = ('code-linux', 'code-wsl', 'code-windows-no-bash', 'code-windows-git-b
            'desktop-chat-linux', 'cowork-linux')
 CODE_TARGETS = TARGETS[:5]
 CI_TARGETS = tuple(target for target in CODE_TARGETS if target != 'code-wsl')
-SUPPORT_POLICY = {'code': 'required_installed_qa',
+SUPPORT_POLICY = {'code': 'native_installation_and_local_live_qa',
                   'desktop_chat': 'experimental_stateless_skills',
                   'cowork': 'experimental_stateless_skills'}
 CHECKS = ('clean_install', 'configured_python', 'prompt_delivery', 'upgrade', 'uninstall',
           'invalid_python_advisory_then_recovery')
+INSTALL_CHECKS = ('clean_install', 'configured_python', 'upgrade', 'uninstall', 'installed_hook_execution')
 CHAT_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'no_local_hooks', 'upgrade', 'uninstall')
 COWORK_CHECKS = ('clean_install', 'skills_available', 'skill_invocation', 'stateless_boundary', 'upgrade', 'uninstall')
 
@@ -42,6 +44,10 @@ def target_packages(packages: dict, target: str) -> dict:
     return {name: packages[name] for name in names}
 
 
+def installation_checks(target: str) -> tuple:
+    return INSTALL_CHECKS + tuple(check for check in target_checks(target) if check.startswith('git_bash_'))
+
+
 def target_identity(target: str) -> tuple[str, str]:
     if target not in TARGETS:
         raise ValueError('unknown_compatibility_target')
@@ -61,10 +67,11 @@ def package_binding(root: Path, name: str) -> dict:
 
 
 def candidate(root: Path) -> dict:
-    return {'schema_version': 3, 'minimum_claude_code': '2.1.287',
+    return {'schema_version': 4, 'minimum_claude_code': '2.1.287',
             'python_minimum': '3.9', 'packages': {name: package_binding(root, name) for name in PACKAGES},
             'support_policy': SUPPORT_POLICY.copy(),
             'targets': {target: {'outcome': 'untested'} for target in TARGETS},
+            'native_installations': {target: {'outcome': 'untested'} for target in CI_TARGETS},
             'capabilities': {'code': 'configured_exec_hooks', 'desktop_chat': 'skills_only',
                              'cowork': 'stateless_skills_only_unverified_hooks',
                              'desktop_code': 'unverified_ui', 'codex_memory': 'experimental_posix_only'}}
@@ -98,6 +105,37 @@ def marketplace_errors(root: Path) -> list[str]:
     return errors
 
 
+def host_row_errors(row: dict, target: str, packages: dict, checks: tuple) -> list[str]:
+    errors = []
+    if (row.get('platform'), row.get('host_kind')) != target_identity(target):
+        errors.append('invalid_host_identity_' + target)
+    version = row.get('host_version', '')
+    if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):
+        errors.append('missing_host_version_' + target)
+    elif tuple(map(int, version.split('.'))) < (2, 1, 287) and target.startswith('code-'):
+        errors.append('unsupported_host_version_' + target)
+    python = row.get('python_version', '')
+    if target.startswith('code-') and (not isinstance(python, str)
+            or not re.fullmatch(r'\d+\.\d+\.\d+', python)
+            or tuple(map(int, python.split('.'))) < (3, 9, 0)):
+        errors.append('missing_or_unsupported_python_version_' + target)
+    if row.get('packages') != target_packages(packages, target):
+        errors.append('stale_target_packages_' + target)
+    actual = row.get('checks', {})
+    if not isinstance(actual, dict) or set(actual) != set(checks) or any(v is not True for v in actual.values()):
+        errors.append('missing_checks_' + target)
+    return errors
+
+
+def installation_errors(row: dict, target: str, packages: dict) -> list[str]:
+    fields = {'outcome', 'platform', 'host_kind', 'host_version', 'python_version',
+              'packages', 'checks', 'live_delivery', 'isolated_cleanup'}
+    if (not isinstance(row, dict) or set(row) != fields or row.get('outcome') != 'installed'
+            or row.get('live_delivery') != 'not_tested' or row.get('isolated_cleanup') is not True):
+        return ['invalid_installation_scope_' + target]
+    return host_row_errors(row, target, packages, installation_checks(target))
+
+
 def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
     errors = marketplace_errors(root)
     if not isinstance(receipt, dict):
@@ -114,27 +152,19 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
             errors.append('invalid_outcome_' + target)
             continue
         if row['outcome'] == 'pass':
-            if (row.get('platform'), row.get('host_kind')) != target_identity(target):
-                errors.append('invalid_host_identity_' + target)
-            version = row.get('host_version', '')
-            checks = row.get('checks', {})
-            if not isinstance(version, str) or not re.fullmatch(r'\d+\.\d+\.\d+', version):
-                errors.append('missing_host_version_' + target)
-            elif tuple(map(int, version.split('.'))) < (2, 1, 287) and target.startswith('code-'):
-                errors.append('unsupported_host_version_' + target)
-            python = row.get('python_version', '')
-            if target.startswith('code-') and (not isinstance(python, str)
-                    or not re.fullmatch(r'\d+\.\d+\.\d+', python)
-                    or tuple(map(int, python.split('.'))) < (3, 9, 0)):
-                errors.append('missing_or_unsupported_python_version_' + target)
-            if row.get('packages') != target_packages(expected['packages'], target):
-                errors.append('stale_target_packages_' + target)
-            if not isinstance(checks, dict) or set(checks) != set(target_checks(target)) or any(v is not True for v in checks.values()):
-                errors.append('missing_checks_' + target)
+            errors.extend(host_row_errors(row, target, expected['packages'], target_checks(target)))
+    installations = receipt.get('native_installations')
+    if not isinstance(installations, dict) or set(installations) != set(CI_TARGETS):
+        return errors + ['missing_or_unknown_native_installation']
+    for target, row in installations.items():
+        if row != {'outcome': 'untested'}:
+            errors.extend(installation_errors(row, target, expected['packages']))
+        if release and (not isinstance(row, dict) or row.get('outcome') != 'installed'):
+            errors.append('native_installation_required_' + target)
     if release:
-        for target in CODE_TARGETS:
-            if not isinstance(targets[target], dict) or targets[target].get('outcome') != 'pass':
-                errors.append('clean_installed_smoke_required_' + target)
+        if not any(isinstance(targets[target], dict) and targets[target].get('outcome') == 'pass'
+                   for target in CODE_TARGETS):
+            errors.append('local_live_code_smoke_required')
     for name in ('llm-accuracy', 'session-ledger', 'evidence-memory'):
         directory = root / 'plugins' / name
         option = json.loads((directory / '.claude-plugin/plugin.json').read_text())['userConfig']['python_executable']
@@ -156,17 +186,20 @@ def overlay_ci_receipts(root: Path, receipt: dict, directory: Path) -> dict:
     commit = subprocess.run(['git', '-C', str(root), 'rev-parse', 'HEAD'],
                             capture_output=True, text=True, check=True, timeout=30).stdout.strip()
     expected = {target + '.json' for target in CI_TARGETS}
+    run_id = os.environ.get('GITHUB_RUN_ID', '')
+    if not re.fullmatch(r'[1-9][0-9]*', run_id):
+        raise ValueError('ci_run_identity_unavailable')
     if {path.name for path in directory.iterdir()} != expected:
         raise ValueError('ci_receipts_missing_or_unknown')
     result = json.loads(json.dumps(receipt))
     for target in CI_TARGETS:
         report = json.loads((directory / (target + '.json')).read_text(encoding='utf-8'))
-        if (not isinstance(report, dict) or set(report) != {'schema_version', 'target', 'source_commit', 'row'}
-                or report['schema_version'] != 1 or report['target'] != target
+        if (not isinstance(report, dict) or set(report) != {'schema_version', 'target', 'source_commit', 'run_id', 'row'}
+                or report['schema_version'] != 2 or report['target'] != target or report['run_id'] != run_id
                 or report['source_commit'] != commit or not isinstance(report['row'], dict)
-                or report['row'].get('outcome') != 'pass'):
+                or report['row'].get('outcome') != 'installed'):
             raise ValueError('ci_receipt_invalid_or_stale')
-        result['targets'][target] = report['row']
+        result['native_installations'][target] = report['row']
     return result
 
 

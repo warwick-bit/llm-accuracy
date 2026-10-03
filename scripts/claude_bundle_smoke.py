@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import claude_install_smoke as smoke  # noqa: E402
 from check_compatibility import PACKAGES, ROOT, package_binding  # noqa: E402
 from check_marketplace_publication import changed_paths  # noqa: E402
+import installed_hook_probe  # noqa: E402
 
 
 def action(claude, env, cwd, *arguments, value=None):
@@ -154,6 +155,11 @@ def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
         report['baseline_packages'] = {name: package_binding(source, name) for name in PACKAGES}
         env = smoke.auth_profile(root, ci=True, live=live) if ci_auth else smoke.auth_profile(root)
         checks = lifecycle(claude, root, source, env)
+        listing = installed_listing(claude, env, root)
+        installed = {name: smoke.path_inside(smoke.installed_entry(listing, name + '@llm-accuracy').get('installPath'),
+                                             Path(env['CLAUDE_CONFIG_DIR'])) for name in PACKAGES}
+        checks['installed_hook_execution'] = installed_hook_probe.run(
+            installed, root, python_options(Path(env['CLAUDE_CONFIG_DIR'])), env)
         checks['prompt_delivery'] = False
         checks['invalid_python_advisory_then_recovery'] = False
         if live:

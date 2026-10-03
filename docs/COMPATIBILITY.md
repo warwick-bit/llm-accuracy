@@ -78,14 +78,18 @@ After changing any package file, run `python3 scripts/check_compatibility.py
 --write-candidate` to reset all installed-host outcomes to `untested`. Perform
 the actual QA before replacing an outcome. Do not carry forward a pass or edit
 its hash to fit new source. Run the checker in every PR; before a release run
-it with `--release`, which requires the five Code installed-host targets: Linux,
-WSL, Windows without Git Bash, Windows with Git Bash, and macOS. Schema 3 has a
-fixed support policy: Code requires installed QA; Desktop Chat/Cowork are
-experimental stateless skills. All six Desktop rows remain explicit; their
-untested outcomes do not block Code publication. Any Desktop pass still needs
-its actual host, source bindings and full skills checks. A WSL pass cannot certify another OS.
-Missing, stale or incomplete evidence fails
-the check. Explicit untested cells are coverage gaps, never support proof.
+it with `--release`, which requires all four native installation targets
+(Linux/macOS/Windows with and without Bash) plus at least one genuine current-source
+live Code pass. Schema 4 fixes this support policy. Separate `native_installations`
+rows use `installed` or `untested`; they require exact OS/host, versions, package
+bindings, five checks (`clean_install`, `configured_python`, `upgrade`, `uninstall`,
+`installed_hook_execution`), Windows Bash proof, cleanup and `live_delivery=not_tested`.
+An installed row cannot populate a live/UI target. Every recorded live pass still
+needs its six Code checks below. Remaining live Code gaps do not block publication,
+but remain untested and must be disclosed. Local WSL live QA cannot certify macOS
+or native Linux/Windows live delivery. Desktop Chat/Cowork are experimental stateless
+skills; their six rows remain explicit and any pass still needs actual UI QA.
+Missing, stale or incomplete required evidence fails the check.
 
 Code receipts bind all four packages and require `clean_install`,
 `configured_python`, `prompt_delivery`, `upgrade`, `uninstall`, and
@@ -121,15 +125,22 @@ The required combined `release-gates` check includes Linux Python 3.9–3.14,
 native Windows Python 3.9/3.14, Git Bash Windows controls, and macOS. The native
 gate verifies mandatory hook cases were present and not skipped. Keep that
 combined check required in branch protection when editing workflow names.
-The native installed-Code matrix also installs the actual pinned CLI and runs
-the bundle lifecycle plus authenticated hook-delivery/recovery checks. A partial
-installation check cannot certify delivery; missing credentials fail. Publication
-may overlay successful native receipts from that same run, checking their exact
-tested checkout commit and source bindings. The overlay never rewrites committed
-receipts. PR builds test the synthetic merge commit; main/tag builds rerun on
-their own checkout. The merge guard separately checks the PR head.
-The committed WSL pass expires when any package byte changes and must be rerun
-locally; hosted Linux cannot replace it. See [hosted Code QA](INSTALLED_QA.md#hosted-code-qa).
+The native installed-Code matrix installs the pinned CLI, exercises the bundle
+lifecycle and directly invokes installed hook registrations with synthetic data.
+This checks Accuracy output, Ledger restore and Memory capture/retrieval without
+a model call. It proves direct execution, not automatic hook scheduling by Claude.
+No CI model credentials or local login copies are used. Standard hosted runners
+are [free for public repositories](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+Publication overlays exactly four installed receipts from the current `GITHUB_RUN_ID`,
+checking the actual tested checkout commit and package bindings. Old schemas,
+mixed runs, missing/unknown files and failed cleanup reject. Only fixed fields
+are uploaded; paths, raw outputs and profiles stay out of receipts. The overlay
+never rewrites committed live outcomes. PR builds test the synthetic merge commit;
+main/tag builds rerun on their own checkout. The merge guard checks the PR head.
+The local live pass expires when any package byte changes and must be rerun on
+an actual logged-in Code host; native offline QA cannot replace it. See
+[free QA options](INSTALLED_QA.md#free-local-gaps).
+
 The publication job is also a mandatory dependency: failure, cancellation or
 skipping must fail the aggregate. Keep strict, up-to-date branch protection.
 

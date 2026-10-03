@@ -15,7 +15,7 @@ def test_candidate_requires_current_installed_smoke_before_release():
     receipt = guard.candidate(ROOT)
     assert guard.validate(ROOT, receipt) == []
     assert guard.validate(ROOT, receipt, release=True) == [
-        'clean_installed_smoke_required_' + target for target in guard.CODE_TARGETS]
+        'native_installation_required_' + target for target in guard.CI_TARGETS] + ['local_live_code_smoke_required']
 
 
 def test_wsl_smoke_cannot_certify_native_windows_or_macos():
@@ -25,9 +25,9 @@ def test_wsl_smoke_cannot_certify_native_windows_or_macos():
                                     'python_version': '3.12.3', 'packages': receipt['packages'],
                                     'checks': dict.fromkeys(guard.CHECKS, True)}
     errors = guard.validate(ROOT, receipt, release=True)
-    assert 'clean_installed_smoke_required_code-wsl' not in errors
-    assert 'clean_installed_smoke_required_code-windows-no-bash' in errors
-    assert 'clean_installed_smoke_required_code-macos' in errors
+    assert 'local_live_code_smoke_required' not in errors
+    assert 'native_installation_required_code-windows-no-bash' in errors
+    assert 'native_installation_required_code-macos' in errors
 
 
 def test_old_package_hash_cannot_claim_current_smoke():
@@ -78,16 +78,41 @@ def test_code_checks_cannot_certify_chat_or_cowork():
     assert all('missing_checks_' + target in errors for target in guard.TARGETS[5:])
 
 
-def test_code_release_requires_all_code_targets_but_keeps_desktop_experimental():
+def installed_row(receipt, target):
+    row = passing_row(receipt, target)
+    row.update(outcome='installed', live_delivery='not_tested', isolated_cleanup=True)
+    row['checks'] = dict.fromkeys(guard.installation_checks(target), True)
+    return row
+
+
+def test_release_requires_native_installations_and_one_local_live_code_pass():
     receipt = guard.candidate(ROOT)
-    for target in guard.CODE_TARGETS:
-        receipt['targets'][target] = passing_row(receipt, target)
+    receipt['targets']['code-wsl'] = passing_row(receipt, 'code-wsl')
+    for target in guard.CI_TARGETS:
+        receipt['native_installations'][target] = installed_row(receipt, target)
     assert guard.validate(ROOT, receipt, release=True) == []
-    for target in guard.CODE_TARGETS:
-        saved = receipt['targets'][target]
-        receipt['targets'][target] = {'outcome': 'untested'}
-        assert 'clean_installed_smoke_required_' + target in guard.validate(ROOT, receipt, release=True)
-        receipt['targets'][target] = saved
+    assert receipt['targets']['code-macos'] == {'outcome': 'untested'}
+    for target in guard.CI_TARGETS:
+        saved = receipt['native_installations'][target]
+        receipt['native_installations'][target] = {'outcome': 'untested'}
+        assert 'native_installation_required_' + target in guard.validate(ROOT, receipt, release=True)
+        receipt['native_installations'][target] = saved
+    receipt['targets']['code-wsl'] = {'outcome': 'untested'}
+    assert 'local_live_code_smoke_required' in guard.validate(ROOT, receipt, release=True)
+
+
+def test_offline_rows_cannot_be_used_as_live_passes_or_drop_native_targets():
+    receipt = guard.candidate(ROOT)
+    receipt['targets']['code-linux'] = installed_row(receipt, 'code-linux')
+    assert 'invalid_outcome_code-linux' in guard.validate(ROOT, receipt)
+    del receipt['native_installations']['code-macos']
+    assert 'missing_or_unknown_native_installation' in guard.validate(ROOT, receipt)
+
+
+def test_schema3_cannot_silently_pass_schema4_policy():
+    receipt = guard.candidate(ROOT)
+    receipt['schema_version'] = 3
+    assert 'invalid_or_stale_schema_version' in guard.validate(ROOT, receipt)
 
 
 def test_support_policy_cannot_silently_promote_desktop_or_relax_code():
@@ -128,7 +153,7 @@ def test_malformed_receipt_and_target_fail_closed():
     receipt['targets']['code-linux'] = None
     errors = guard.validate(ROOT, receipt, release=True)
     assert 'invalid_outcome_code-linux' in errors
-    assert 'clean_installed_smoke_required_code-linux' in errors
+    assert 'native_installation_required_code-linux' in errors
 
 
 def test_each_windows_receipt_requires_its_own_bash_environment_proof():

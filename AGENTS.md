@@ -56,11 +56,12 @@ Main publishes the marketplace. Before merging protected source, run
 actual PR base commit; main/tag builds use `--release`. Keep publication in the
 required `release-gates` aggregate and fail on missing or skipped jobs. Its
 narrow docs/test exemptions do not cover package READMEs, catalogs or receipts.
-Independently review checker/workflow/receipt changes. Require all five Code
-targets, including both Windows Bash scenarios. Desktop Chat/Cowork are
-experimental stateless skills; keep their six untested rows explicit and
-validate any recorded pass, but their gaps do not block Code publication.
-Terminal receipts do not certify Desktop Code UI or Cowork hooks. Require
-the native installed-Code CI job in the aggregate; missing live authentication
-fails. Never manufacture a pass to clear a publication hold. CI credentials
-are dedicated Actions secrets; never upload a local login or profile.
+Independently review checker/workflow/receipt changes. Require credential-free
+native installation and direct installed-hook execution on Linux/macOS/Windows
+with and without Bash, plus at least one genuine current-source local live Code
+pass. Keep live coverage gaps explicit; offline results use separate installed
+rows and cannot certify live delivery on another OS. Desktop Chat/Cowork remain
+experimental stateless skills with six explicit untested rows. Terminal receipts
+do not certify Desktop UI or Cowork hooks. Keep native installed CI mandatory
+in the aggregate; missing/failed/skipped evidence fails. CI never needs a model
+credential or copies a local login/profile. Optional live tests stay local.
