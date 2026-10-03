@@ -25,6 +25,8 @@ CAPTURE_MODES = ("external", "all")
 CAPTURE_COUNTERS = ("calls_out_of_scope", "calls_withheld_restricted", "results_without_stored_call",
                     "results_withheld_by_scope")
 RECENT_RESULTS = 10
+# Answered-question identities kept so a re-read transcript does not record an answer twice.
+MAX_DECISION_ROWS = 2000
 WEB_TOOLS = ("WebFetch", "WebSearch")
 # Codex logs one outer JavaScript call; these references suggest, but do not prove, which inner tools ran.
 CODEX_EXTERNAL_REFERENCE = re.compile(r"\btools\s*\.\s*(mcp__[\w-]+__[\w-]+|web__run)\s*\(")
@@ -264,11 +266,52 @@ class Store:
             self.db.execute("INSERT INTO search(rowid, name, body) VALUES (?, ?, ?)",
                             (result.lastrowid, event["name"], body))
 
+    def _record_answers(self, call_id: str, body: dict[str, Any]) -> int:
+        """Store each answered AskUserQuestion choice as a decision state item.
+
+        The host's structured result holds the questions and the user's chosen
+        answers. A repeated question supersedes its earlier answer; re-reading the
+        same answer after a cursor reset adds nothing.
+        """
+        result = body.get("host_tool_result")
+        if not isinstance(result, dict):
+            return 0
+        answers, questions = result.get("answers"), result.get("questions")
+        if not isinstance(answers, dict) or not isinstance(questions, list) or not all(
+                isinstance(item, dict) and isinstance(item.get("question"), str) for item in questions):
+            return 0
+        notes = result.get("annotations") if isinstance(result.get("annotations"), dict) else {}
+        row = self.db.execute("SELECT value FROM meta WHERE key='decision_rows'").fetchone()
+        seen = json.loads(row["value"]) if row else []
+        recorded = 0
+        for question, answer in answers.items():
+            if not isinstance(question, str) or not isinstance(answer, str) or not question or not answer:
+                continue
+            text = f"User answered {json.dumps(question, ensure_ascii=False)}: {json.dumps(answer, ensure_ascii=False)}"
+            note = notes.get(question)
+            if isinstance(note, dict) and isinstance(note.get("notes"), str) and note.get("notes"):
+                text += f"; note: {json.dumps(note.get('notes'), ensure_ascii=False)}"
+            text = text[:4096]
+            identity = sha(encoded([call_id, question]).encode())[:24]
+            if identity in seen:
+                continue
+            key = "decision:" + sha(question.encode("utf-8"))[:16]
+            previous = self.db.execute("SELECT max(revision) FROM states WHERE key=?", (key,)).fetchone()[0] or 0
+            self.db.execute("INSERT INTO states(key,kind,text,evidence,previous,timestamp) VALUES (?,?,?,?,?,?)",
+                            (key, "decision", text, encoded([]), previous, time.time()))
+            seen.append(identity)
+            recorded += 1
+        if recorded:
+            self.db.execute("INSERT OR REPLACE INTO meta VALUES ('decision_rows', ?)",
+                            (encoded(seen[-MAX_DECISION_ROWS:]),))
+        return recorded
+
     def _read_batch(self, stream: Any, source: str, offset: int, *, cutoff: str,
                     scope: CaptureScope) -> dict[str, Any]:
         read_bytes = 0
         rows = 0
         rejected = 0
+        decisions = 0
         counts = dict.fromkeys(CAPTURE_COUNTERS, 0)
         status = "caught_up"
         deadline = time.monotonic() + 1.0
@@ -314,6 +357,8 @@ class Store:
                     status = "invalid_tool_identity"
                     break
                 for event in events:
+                    if event["kind"] == "result":
+                        decisions += self._record_answers(event["call_id"], event["body"])
                     if event["kind"] == "call":
                         decision, _ = scope.classify(event)
                         if decision != "capture":
@@ -339,7 +384,7 @@ class Store:
         else:
             status = "more_pending"
         return {"status": status, "offset": offset, "bytes_read": read_bytes,
-                "rows": rows, "rows_excluded_by_plan": rejected, **counts}
+                "rows": rows, "rows_excluded_by_plan": rejected, "decisions_recorded": decisions, **counts}
 
     def _capture_counts(self) -> dict[str, int]:
         row = self.db.execute("SELECT value FROM meta WHERE key='capture_counts'").fetchone()

@@ -170,6 +170,13 @@ fetch never read original logs. Neither mode guarantees semantic recall.
 
 Decisions and corrections are explicitly written, with revision checks and
 optional evidence IDs. Corrections supersede the same key; audit history remains.
+Claude Code `AskUserQuestion` answers are also recorded as `decision` state
+during capture, from the host's structured result: one item per answered
+question, keyed by the question text, with any note the user added. Asking the
+same question again supersedes the earlier answer; re-reading the transcript adds
+nothing. The tool call and its result are not stored as evidence. Codex is not
+covered yet: its asynchronous question tool returns only an acknowledgement, and
+the answer arrives in a separate message.
 They do not expire merely because the rolling conversation reaches 64 KiB.
 After compaction, the injected packet lists up to ten recent paired external
 results, newest first, as a short ID, tool name(s), time, logged size and host

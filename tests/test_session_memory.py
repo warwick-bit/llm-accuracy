@@ -1158,3 +1158,66 @@ def test_hook_uses_configured_capture_mode_but_lists_only_external_results(tmp_p
     assert status['events'] == 2
     assert status['capture'] == {'mode': 'all', 'config': 'custom', 'extra_restricted_tokens': 0}
     assert bridge.hook(runtime, {**payload, 'source': 'compact'}, restore=True) is None
+
+
+def answered(identity, answers, notes=None, timestamp='2026-09-01T01:02:00Z'):
+    questions = [{'question': question, 'header': 'Choice', 'multiSelect': False,
+                  'options': [{'label': answer, 'description': 'synthetic'}]} for question, answer in answers.items()]
+    row = result(identity, text='Your questions have been answered.')
+    row['timestamp'] = timestamp
+    row['toolUseResult'] = {'questions': questions, 'answers': answers,
+                            'annotations': {question: {'notes': note} for question, note in (notes or {}).items()}}
+    return row
+
+
+def test_answered_questions_become_decision_state(store, tmp_path):
+    question = 'Which timezone defines July?'
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                     answered('ask-1', {question: 'Sydney time'}, {question: 'head office is in Sydney'}))
+    assert store.sync(path)['decisions_recorded'] == 1
+    item, = store.state()['items']
+    assert item['kind'] == 'decision' and item['key'].startswith('decision:')
+    assert item['text'] == ('User answered "Which timezone defines July?": "Sydney time"; '
+                            'note: "head office is in Sydney"')
+    assert store.status()['events'] == 0
+
+
+def test_a_repeated_question_supersedes_and_a_replay_adds_nothing(store, tmp_path):
+    question = 'Count customers by email or by id?'
+    first = [tool_call('ask-1', 'AskUserQuestion'), answered('ask-1', {question: 'By email'})]
+    path = write_log(tmp_path / 'log', *first)
+    store.sync(path)
+    write_log(path, *first, tool_call('ask-2', 'AskUserQuestion'), answered('ask-2', {question: 'By id'}))
+    assert store.sync(path)['decisions_recorded'] == 1
+    # A changed first row resets the cursor, so every answer row is read again.
+    write_log(path, tool_call('ask-0', 'Read'), *first, tool_call('ask-2', 'AskUserQuestion'),
+              answered('ask-2', {question: 'By id'}))
+    replay = store.sync(path)
+    assert replay['cursor_reset'] and replay['decisions_recorded'] == 0
+    assert store.db.execute('SELECT count(*) FROM states').fetchone()[0] == 2
+    item, = store.state()['items']
+    assert item['text'].endswith('"By id"') and item['previous'] == item['revision'] - 1
+
+
+@pytest.mark.parametrize('tool_result', [
+    'The user declined to answer.',
+    {'answers': {'Which timezone?': 'Sydney'}},
+    {'questions': [{'question': 'Which timezone?'}], 'answers': ['Sydney']},
+    {'questions': ['Which timezone?'], 'answers': {'Which timezone?': 'Sydney'}},
+    {'questions': [{'question': 'Which timezone?'}], 'answers': {'Which timezone?': ''}},
+])
+def test_unanswered_or_malformed_question_results_record_nothing(store, tmp_path, tool_result):
+    row = result('ask-1', text='no answer')
+    row['toolUseResult'] = tool_result
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'), row)
+    assert store.sync(path)['decisions_recorded'] == 0
+    assert store.state()['items'] == []
+
+
+def test_restore_packet_lists_recorded_decisions(tmp_path, monkeypatch):
+    runtime, bridge, payload = enabled_hook(
+        tmp_path, monkeypatch, tool_call('ask-1', 'AskUserQuestion'),
+        answered('ask-1', {'Which timezone defines July?': 'Sydney time'}))
+    context = bridge.hook(runtime, {**payload, 'source': 'compact'}, restore=True)
+    item, = packet_json(context)['current_state_subset']
+    assert item['kind'] == 'decision' and 'Sydney time' in item['text_excerpt']
