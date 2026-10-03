@@ -1236,3 +1236,37 @@ def test_an_answer_synced_after_its_question_is_recorded(store, tmp_path):
     assert store.sync(path)['decisions_recorded'] == 0
     write_log(path, tool_call('ask-1', 'AskUserQuestion'), answered('ask-1', {'Which timezone defines July?': 'UTC'}))
     assert store.sync(path)['decisions_recorded'] == 1
+
+
+def test_a_rewritten_answer_replaces_the_stale_decision(store, tmp_path):
+    question = 'Which timezone defines July?'
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'), answered('ask-1', {question: 'Sydney'}))
+    store.sync(path)
+    # Same call id, corrected answer; the changed first row resets the cursor.
+    write_log(path, tool_call('read-0', 'Read'), tool_call('ask-1', 'AskUserQuestion'),
+              answered('ask-1', {question: 'UTC'}))
+    replay = store.sync(path)
+    assert replay['cursor_reset'] and replay['decisions_recorded'] == 1
+    item, = store.state()['items']
+    assert item['text'].endswith('"UTC"')
+
+
+def test_replay_deduplication_does_not_evict_old_answers(store, tmp_path):
+    rows = []
+    for index in range(2001):
+        rows += [tool_call(f'ask-{index}', 'AskUserQuestion'), answered(f'ask-{index}', {f'Question {index}?': 'Yes'})]
+    path = write_log(tmp_path / 'log', *rows)
+    total = 0
+    while True:
+        outcome = store.sync(path)
+        total += outcome['decisions_recorded']
+        if outcome['status'] != 'more_pending':
+            break
+    write_log(path, tool_call('read-0', 'Read'), *rows)
+    replayed = 0
+    while True:
+        outcome = store.sync(path)
+        replayed += outcome['decisions_recorded']
+        if outcome['status'] != 'more_pending':
+            break
+    assert (total, replayed) == (2001, 0)

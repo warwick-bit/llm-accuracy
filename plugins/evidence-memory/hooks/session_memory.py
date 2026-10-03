@@ -25,9 +25,6 @@ CAPTURE_MODES = ("external", "all")
 CAPTURE_COUNTERS = ("calls_out_of_scope", "calls_withheld_restricted", "results_without_stored_call",
                     "results_withheld_by_scope")
 RECENT_RESULTS = 10
-# AskUserQuestion call ids, and answered-question identities kept so a re-read
-# transcript does not record an answer twice.
-MAX_DECISION_ROWS = 2000
 WEB_TOOLS = ("WebFetch", "WebSearch")
 # Codex logs one outer JavaScript call; these references suggest, but do not prove, which inner tools ran.
 CODEX_EXTERNAL_REFERENCE = re.compile(r"\btools\s*\.\s*(mcp__[\w-]+__[\w-]+|web__run)\s*\(")
@@ -216,6 +213,15 @@ class Store:
         except sqlite3.Error:
             # A full legacy index must remain readable even if counters cannot be added.
             pass
+        try:
+            if not self.read_only:
+                with self.db:
+                    # AskUserQuestion call ids, and the answers already recorded, so a
+                    # re-read transcript neither misses nor repeats a decision.
+                    self.db.execute("CREATE TABLE IF NOT EXISTS question_calls(call_id TEXT PRIMARY KEY)")
+                    self.db.execute("CREATE TABLE IF NOT EXISTS decision_rows(identity TEXT PRIMARY KEY)")
+        except sqlite3.Error:
+            pass
         # Indexes created before capture scoping keep their unscoped rows until cleared.
         # A read-only open derives the same label without recording it.
         self.capture_policy = meta.get("capture_policy")
@@ -267,17 +273,9 @@ class Store:
             self.db.execute("INSERT INTO search(rowid, name, body) VALUES (?, ?, ?)",
                             (result.lastrowid, event["name"], body))
 
-    def _meta_list(self, key: str) -> list[str]:
-        row = self.db.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
-        return json.loads(row["value"]) if row else []
-
     def _note_question_call(self, call_id: str) -> None:
         """Remember an AskUserQuestion call; its answer usually arrives in a later sync."""
-        calls = self._meta_list("question_calls")
-        if call_id not in calls:
-            calls.append(call_id)
-            self.db.execute("INSERT OR REPLACE INTO meta VALUES ('question_calls', ?)",
-                            (encoded(calls[-MAX_DECISION_ROWS:]),))
+        self.db.execute("INSERT OR IGNORE INTO question_calls VALUES (?)", (call_id,))
 
     def _record_answers(self, call_id: str, body: dict[str, Any]) -> int:
         """Store each answered AskUserQuestion choice as a decision state item.
@@ -287,14 +285,14 @@ class Store:
         same answer after a cursor reset adds nothing.
         """
         result = body.get("host_tool_result")
-        if not isinstance(result, dict) or call_id not in self._meta_list("question_calls"):
+        if not isinstance(result, dict) or not self.db.execute(
+                "SELECT 1 FROM question_calls WHERE call_id=?", (call_id,)).fetchone():
             return 0
         answers, questions = result.get("answers"), result.get("questions")
         if not isinstance(answers, dict) or not isinstance(questions, list) or not all(
                 isinstance(item, dict) and isinstance(item.get("question"), str) for item in questions):
             return 0
         notes = result.get("annotations") if isinstance(result.get("annotations"), dict) else {}
-        seen = self._meta_list("decision_rows")
         recorded = 0
         for question, answer in answers.items():
             if not isinstance(question, str) or not isinstance(answer, str) or not question or not answer:
@@ -304,18 +302,17 @@ class Store:
             if isinstance(note, dict) and isinstance(note.get("notes"), str) and note.get("notes"):
                 text += f"; note: {json.dumps(note.get('notes'), ensure_ascii=False)}"
             text = text[:4096]
-            identity = sha(encoded([call_id, question]).encode())[:24]
-            if identity in seen:
+            # The answer text is part of the identity: a rewritten row with a corrected
+            # answer is recorded again and supersedes the stale one.
+            identity = sha(encoded([call_id, question, text]).encode())
+            if self.db.execute("SELECT 1 FROM decision_rows WHERE identity=?", (identity,)).fetchone():
                 continue
             key = "decision:" + sha(question.encode("utf-8"))[:16]
             previous = self.db.execute("SELECT max(revision) FROM states WHERE key=?", (key,)).fetchone()[0] or 0
             self.db.execute("INSERT INTO states(key,kind,text,evidence,previous,timestamp) VALUES (?,?,?,?,?,?)",
                             (key, "decision", text, encoded([]), previous, time.time()))
-            seen.append(identity)
+            self.db.execute("INSERT INTO decision_rows VALUES (?)", (identity,))
             recorded += 1
-        if recorded:
-            self.db.execute("INSERT OR REPLACE INTO meta VALUES ('decision_rows', ?)",
-                            (encoded(seen[-MAX_DECISION_ROWS:]),))
         return recorded
 
     def _read_batch(self, stream: Any, source: str, offset: int, *, cutoff: str,
