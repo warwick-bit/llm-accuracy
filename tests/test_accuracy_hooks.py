@@ -46,6 +46,7 @@ ANALYSIS_FIRE_PROMPTS = [
     "How many new customers did we get in July? The cached dashboard says 40.",
     "How many new customers did we get in July? The export is ~/exports/july.csv",
     "How many new customers did we get in July? Use customers.json",
+    "How many new customers did we get from the pr 3 media placement?",
     "How many new customers did we get in Australia/NZ last month?",
     "How many new customers did we get across Asia/Pacific in Q3?",
     "How many new customers did we get from the Next.js Conf sponsorship?",
