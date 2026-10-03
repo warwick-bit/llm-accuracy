@@ -5,7 +5,7 @@
   "packages": {
     "llm-accuracy": {
       "version": "0.7.1",
-      "sha256": "5b119c0a8c9f5f2e3e5c7cb669ba2f1ceff04b4aa88d5a955bbc82f278c06542"
+      "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
     },
     "deterministic-data": {
       "version": "0.1.0",
@@ -13,11 +13,11 @@
     },
     "session-ledger": {
       "version": "0.3.1",
-      "sha256": "2b04e9ab6c5fe4fa882c1a5cf52934c605d11f7463e341518a02754f0251ef17"
+      "sha256": "78086777ea2f85d844fe7243369108f4c9d1e2e6c4a537e01f53d1e9d3093d3d"
     },
     "evidence-memory": {
       "version": "0.5.1",
-      "sha256": "4b2ea0f2b381976d9cb1abdd0e54f4aea05323832412d1a0e7dd020b3b653b67"
+      "sha256": "43cd1b2d2565594be6ba2510782d0773f5faf507766a16d490f8976ab83c3e85"
     }
   },
   "support_policy": {
@@ -75,7 +75,7 @@
     }
   },
   "capabilities": {
-    "code": "configured_exec_hooks",
+    "code": "automatic_python_hooks",
     "desktop_chat": "skills_only",
     "cowork": "stateless_skills_only_unverified_hooks",
     "desktop_code": "unverified_ui",

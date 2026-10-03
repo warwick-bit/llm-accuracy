@@ -1,7 +1,6 @@
 """Direct installed-hook probes must prove behavior, including silent failures."""
 
 import importlib
-import json
 import os
 import shutil
 import sys
@@ -42,14 +41,8 @@ def test_installed_vectors_emit_accuracy_restore_ledger_and_capture_memory_once(
     )
 
 
-@pytest.mark.skipif(os.name == 'nt', reason='native Windows may require an explicit Python override')
-def test_unconfigured_manifest_defaults_execute_all_hook_plugins(installed, tmp_path):
-    defaults = {
-        name: json.loads((path / '.claude-plugin/plugin.json').read_text())
-        ['userConfig']['python_executable']['default']
-        for name, path in installed.items()
-    }
-    assert probe.run(installed, tmp_path, defaults, environment())
+def test_unconfigured_launchers_execute_all_hook_plugins(installed, tmp_path):
+    assert probe.run(installed, tmp_path, dict.fromkeys(installed, ''), environment())
 
 
 @pytest.mark.parametrize("name", ["llm-accuracy", "session-ledger"])

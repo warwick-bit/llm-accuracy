@@ -12,6 +12,19 @@ from scripts.check_distribution_boundary import boundary_violations
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_only_the_named_utf8_batch_launcher_is_allowed(tmp_path):
+    hooks = tmp_path / 'hooks'
+    hooks.mkdir()
+    launcher = hooks / 'python-launcher.cmd'
+    launcher.write_text('@echo off\n', encoding='utf-8')
+    assert boundary_violations(tmp_path) == []
+    launcher.write_bytes(b'\xff')
+    assert boundary_violations(tmp_path) == ['unreadable text artifact: hooks/python-launcher.cmd']
+    launcher.unlink()
+    (hooks / 'unexpected.cmd').write_text('@echo off\n')
+    assert boundary_violations(tmp_path) == ['unexpected non-text artifact: hooks/unexpected.cmd']
+
+
 def test_current_plugin_satisfies_boundary() -> None:
     assert boundary_violations(ROOT / "plugins" / "llm-accuracy") == []
 

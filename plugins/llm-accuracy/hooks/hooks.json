@@ -5,15 +5,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
+            "command": "set -- \"analysis-contract-injector.py\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"analysis-contract-injector.py\"); exit 0",
             "timeout": 10,
-            "statusMessage": "Checking llm-accuracy analysis contract",
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "analysis-contract-injector.py"
-            ]
+            "statusMessage": "Checking llm-accuracy analysis contract"
           }
         ]
       },
@@ -21,15 +15,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
+            "command": "set -- \"fusion-evidence-trigger.py\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"fusion-evidence-trigger.py\"); exit 0",
             "timeout": 10,
-            "statusMessage": "Checking llm-accuracy fusion evidence",
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "fusion-evidence-trigger.py"
-            ]
+            "statusMessage": "Checking llm-accuracy fusion evidence"
           }
         ]
       },
@@ -37,15 +25,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
+            "command": "set -- \"claim-fidelity-trigger.py\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"claim-fidelity-trigger.py\"); exit 0",
             "timeout": 10,
-            "statusMessage": "Checking llm-accuracy claim fidelity",
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "claim-fidelity-trigger.py"
-            ]
+            "statusMessage": "Checking llm-accuracy claim fidelity"
           }
         ]
       }
@@ -56,15 +38,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
+            "command": "set -- \"partial-result-sentinel.py\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"partial-result-sentinel.py\"); exit 0",
             "timeout": 10,
-            "statusMessage": "Checking llm-accuracy partial result signal",
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "partial-result-sentinel.py"
-            ]
+            "statusMessage": "Checking llm-accuracy partial result signal"
           }
         ]
       }
@@ -75,15 +51,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
+            "command": "set -- \"post-compact-accuracy.py\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"post-compact-accuracy.py\"); exit 0",
             "timeout": 10,
-            "statusMessage": "Checking llm-accuracy post-compaction accuracy",
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "post-compact-accuracy.py"
-            ]
+            "statusMessage": "Checking llm-accuracy post-compaction accuracy"
           }
         ]
       }

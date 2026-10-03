@@ -3,6 +3,14 @@ name: memory
 description: Recall earlier tool results, decisions, corrections, metric scope or source artifacts in the current long session, especially after compaction; record explicit durable state when Evidence Memory is enabled in Claude settings.
 ---
 
+The Python setting is optional. If `${user_config.python_executable}` is empty
+or unresolved, probe `python3`, `python`, then `py -3` with
+`-c "import sys; print(sys.executable); sys.exit(sys.version_info < (3, 9))"`.
+Use the executable path from the first successful probe in the vector below.
+A saved nonempty override takes precedence; do not replace an invalid override
+silently. If none works, report that Python 3.9+ is needed. Never pass an empty
+or unresolved executable placeholder to a tool.
+
 Use the local memory CLI below. It never searches another session or contacts a
 provider. Check `status` before relying on capture; a missing index means earlier
 tool evidence may exist only in the original transcript.

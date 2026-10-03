@@ -92,7 +92,7 @@ def test_codex_hooks_use_a_separate_posix_launcher() -> None:
         commands = [hook["command"] for group in groups for hook in group["hooks"]]
         action = "hook-restore" if event == "SessionStart" else "hook-capture"
         assert all(action in command and "user_config" not in command for command in commands)
-        assert all(action in hook["args"] for group in claude[event] for hook in group["hooks"])
+        assert all(action in hook["command"] for group in claude[event] for hook in group["hooks"])
         assert all(hook["timeout"] <= 10 for group in groups for hook in group["hooks"])
     assert "hook-restore" in codex["SessionStart"][0]["hooks"][0]["command"]
 

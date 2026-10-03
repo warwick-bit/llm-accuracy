@@ -4,6 +4,14 @@ description: Permanently delete all locally stored Session Ledger state.
 disable-model-invocation: true
 ---
 
+The Python setting is optional. If `${user_config.python_executable}` is empty
+or unresolved, probe `python3`, `python`, then `py -3` with
+`-c "import sys; print(sys.executable); sys.exit(sys.version_info < (3, 9))"`.
+Use the executable path from the first successful probe in the vector below.
+A saved nonempty override takes precedence; do not replace an invalid override
+silently. If none works, report that Python 3.9+ is needed. Never pass an empty
+or unresolved executable placeholder to a tool.
+
 Execute this argument vector after substituting the host placeholders:
 
 ```json

@@ -1,4 +1,4 @@
-"""Exercise shipped Claude argument vectors with no shell."""
+"""Exercise shipped launchers on the host shell, including native PowerShell."""
 import importlib.util
 import json
 import os
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLUGINS = ('llm-accuracy', 'session-ledger', 'evidence-memory')
 
 
-def test_native_windows_gate_has_no_shell_dependency():
+def test_native_windows_gate_has_no_git_bash_dependency():
     if os.environ.get('REQUIRE_NATIVE_WINDOWS') == '1':
         assert os.name == 'nt'
         assert HOOK_SHELL == ''
@@ -33,22 +33,35 @@ def handlers():
 @pytest.mark.parametrize('name,handler', list(handlers()))
 @pytest.mark.parametrize('code', [0, 2, 7])
 def test_exec_paths_argv_stdin_and_no_duplicate_execution(tmp_path, name, handler, code):
-    root = tmp_path / "plugin O'Brien é $ literal"
+    root = tmp_path / "plugin O'Brien é $ & ! % (literal)"
     hooks = root / 'hooks'
     hooks.mkdir(parents=True)
-    shutil.copyfile(ROOT / 'plugins' / name / 'hooks/hook_runner.py', hooks / 'hook_runner.py')
-    target = handler['args'][3]
+    for filename in ('hook_runner.py', 'python-launcher.cmd'):
+        shutil.copyfile(ROOT / 'plugins' / name / 'hooks' / filename, hooks / filename)
+    target, _, action = handler['command'].split(chr(34))[1].partition(':')
     (hooks / target).write_text('import json,sys\nprint(json.dumps({"args":sys.argv[1:],"stdin":sys.stdin.read()}))\n'
                                f'sys.exit({code})\n')
     data = tmp_path / "data O'Brien é $ literal"
     argv = hook_argv(handler, root, data)
     result = subprocess.run(argv, input='synthetic stdin é', capture_output=True, text=True,
-                            encoding='utf-8', timeout=5, env=dict(os.environ, PYTHONIOENCODING='utf-8'))
-    assert result.returncode == (1 if code == 2 else code)
+                            encoding='utf-8', timeout=20, env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+    assert result.returncode == 0
     assert result.stderr == ''
     observed = json.loads(result.stdout)
     assert observed['stdin'] == 'synthetic stdin é'
-    assert observed['args'] == argv[5:]
+    assert observed['args'] == ([action, '--plugin-data', str(data)] if action else [])
+
+
+def test_override_is_not_evaluated_as_shell_code(tmp_path):
+    plugin = ROOT / 'plugins/llm-accuracy'
+    handler = json.loads((plugin / 'hooks/hooks.json').read_text())['hooks']['UserPromptSubmit'][2]['hooks'][0]
+    marker = tmp_path / 'unexpected-execution'
+    invalid = 'absent" & echo injected > "' + str(marker) + '" & "'
+    result = subprocess.run(hook_argv(handler, plugin, executable=invalid), capture_output=True,
+                            text=True, encoding='utf-8', input='{}', timeout=20)
+    assert result.returncode == 0
+    assert 'need working Python 3.9+' in json.loads(result.stdout)['systemMessage']
+    assert not marker.exists()
 
 
 def doctor_module():

@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+from hook_command import shell_argv
 
 SESSION = "synthetic-installed-qa"
 SUMMARY = "Synthetic installed ledger summary."
@@ -25,15 +28,9 @@ def invoke(
     hook = json.loads((plugin / "hooks/hooks.json").read_text())["hooks"][event][index][
         "hooks"
     ][0]
-    replacements = {
-        "${CLAUDE_PLUGIN_ROOT}": str(plugin),
-        "${CLAUDE_PLUGIN_DATA}": str(data),
-        "${user_config.python_executable}": python,
-    }
-    arguments = [hook["command"], *hook["args"]]
-    for token, value in replacements.items():
-        arguments = [argument.replace(token, value) for argument in arguments]
-    child = {**env, "CLAUDE_PLUGIN_ROOT": str(plugin), "CLAUDE_PLUGIN_DATA": str(data)}
+    child = {**env, "CLAUDE_PLUGIN_ROOT": str(plugin), "CLAUDE_PLUGIN_DATA": str(data),
+             "CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE": python}
+    arguments = shell_argv(hook["command"], child)
     result = subprocess.run(
         arguments,
         input=json.dumps(payload).encode(),
@@ -49,7 +46,7 @@ def invoke(
 def memory_cli(plugin: Path, data: Path, python: str, env: dict, *arguments) -> dict:
     result = subprocess.run(
         [
-            python,
+            python or sys.executable,
             str(plugin / "hooks/memory.py"),
             "--plugin-data",
             str(data),

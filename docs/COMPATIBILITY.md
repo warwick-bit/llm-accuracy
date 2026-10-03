@@ -1,21 +1,18 @@
 # Compatibility and release evidence
 
-The source candidate uses shell-independent Claude hooks. Each hook plugin
-requires Claude Code **2.1.287 or later** and a configured, working **Python
-3.9 or later** executable. This is a conservative host floor verified by the
-maintainer, not a claim about the first version that introduced exec hooks.
-The native Windows implementation does not require Git Bash. Installed Windows
-and macOS delivery remain unverified until their current smoke receipts pass;
-these are candidate support targets, not certified installations.
-WSL uses its Linux Python installation;
-native Windows uses Windows Python. Do not point one runtime at the other's
-launcher. A `.cmd`/`.bat` shim or `py -3` is not an executable name: configure
-the actual Python executable, with no arguments.
+The source candidate requires Claude Code **2.1.287 or later** and working
+**Python 3.9 or later**. Python is discovered automatically: a saved executable
+override takes precedence; otherwise the launcher probes `python3`, `python`,
+then `py -3`. Failed probes and unsupported Python versions are skipped.
+POSIX uses `sh`; native Windows uses PowerShell when Git Bash is absent.
+No additional shell or Node installation is required. WSL uses Linux Python;
+native Windows uses Windows Python. Current installed-host evidence remains
+bound to the candidate's package bytes; historical passes do not certify it.
 
 ## OS and host boundaries
 
 - **Claude Code terminal/IDE:** Linux,
-  WSL, native Windows and macOS use the same exec-form registrations. CI checks
+  WSL, native Windows and macOS use the same shell-form registrations. CI checks
   shipped commands on Linux, Windows with and without Git Bash, and macOS.
   Automated Python tests do not establish installation or delivery in a real
   Claude session. See the current candidate receipt for installed-host results.
@@ -41,27 +38,33 @@ the actual Python executable, with no arguments.
 
 ## Configure Python before starting a session
 
-Each installed hook plugin has a required **Python executable** option defaulting
-to `python3`. On Linux/WSL/macOS with working Python 3.9+, installs and upgrades
-need no configuration. An explicitly saved executable takes precedence over
-the default. If `python3` is unavailable, set a working executable when enabling
-the plugin or in `/config`; on native Windows use a verified `python` or the
-absolute `python.exe` path. This is a default, not interpreter auto-detection.
-Windows Store aliases can exist without a working installation. Execute the
-candidate's `--version`, then configure the command that actually works.
-An unavailable interpreter produces a host diagnostic; it must not block a
-turn. An older Python produces a fixed advisory rather than loading hooks.
+Each hook plugin has an optional **Python executable** override. Leave it empty
+for automatic discovery. Set a working executable name or absolute path, without
+arguments, only when choosing a particular installation. Saved overrides survive
+updates and are honored even when Python is absent from PATH. An invalid saved
+override produces an advisory; correct or clear it rather than silently using a
+different interpreter. Windows Store aliases and Python below 3.9 fail the
+usability probe. Hooks execute once after a successful probe; hook errors never
+trigger another interpreter attempt. Launchers preserve UTF-8 stdin and paths.
 
-For headless installation, use `claude plugin configure PLUGIN@llm-accuracy
---values-stdin` and supply a JSON object containing `python_executable` through
-stdin. Use shell-appropriate quoting for paths. `--plugin-dir` alone does not
-populate saved options; absent values use the manifest default.
+Hooks use a shared batch/POSIX dispatcher. The shell command sets a fixed target,
+then sources the dispatcher inside parentheses: POSIX skips the batch section;
+Windows PowerShell invokes it through cmd.exe and runs Python directly.
+The outer command exits zero so a missing launcher cannot block a prompt.
+Option values travel only through the host-exported
+`CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE`, never through shell interpolation.
 
-The Accuracy doctor accepts `--python-executable NAME_OR_PATH` and runs the
-shipped exec registrations without a shell. Its default is its own running
-interpreter, explicitly labelled `doctor_process`. It does not infer the
-installed plugin's saved option or current-session activation. Its isolated
-`--live` probe supplies a non-secret interpreter option for the candidate.
+For headless override configuration, use `claude plugin configure
+PLUGIN@llm-accuracy --values-stdin` with a JSON object containing
+`python_executable`. Setting an empty string restores discovery. `--plugin-dir`
+requires no saved option for discovery. Skills that invoke Python directly must
+resolve a working executable before constructing their argument vector.
+
+The Accuracy doctor accepts `--python-executable NAME_OR_PATH` and probes the
+shipped shell registrations. Its default is its own running interpreter,
+explicitly labelled `doctor_process`. It does not infer the installed plugin's
+saved option or current-session activation. Its isolated `--live` probe supplies
+a non-secret interpreter override for the candidate.
 
 ## Release guardrails
 
@@ -84,7 +87,8 @@ it with `--release`, which requires all four native installation targets
 (Linux/macOS/Windows with and without Bash) plus at least one genuine current-source
 live Code pass. Schema 4 fixes this support policy. Separate `native_installations`
 rows use `installed` or `untested`; they require exact OS/host, versions, package
-bindings, five checks (`clean_install`, `configured_python`, `upgrade`, `uninstall`,
+bindings, checks (`clean_install`, `configured_python`, `automatic_python_upgrade`,
+`automatic_python_fresh`, `upgrade`, `uninstall`,
 `installed_hook_execution`), Windows Bash proof, cleanup and `live_delivery=not_tested`.
 An installed row cannot populate a live/UI target. Every recorded live pass still
 needs its six Code checks below. Remaining live Code gaps do not block publication,
@@ -94,7 +98,8 @@ skills; their six rows remain explicit and any pass still needs actual UI QA.
 Missing, stale or incomplete required evidence fails the check.
 
 Code receipts bind all four packages and require `clean_install`,
-`configured_python`, `prompt_delivery`, `upgrade`, `uninstall`, and
+`configured_python`, `automatic_python_upgrade`, `automatic_python_fresh`,
+`unconfigured_prompt_delivery`, `prompt_delivery`, `upgrade`, `uninstall`, and
 `invalid_python_advisory_then_recovery`. Windows
 additionally requires its own `git_bash_absent` or `git_bash_present` proof.
 Chat receipts bind only Accuracy and Deterministic Data and require

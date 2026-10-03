@@ -10,11 +10,12 @@ After session-level disable, clear or begin-plan, the retained cutoff prevents
 earlier rows from being indexed on an explicit resume.
 
 Install it with `/plugin install evidence-memory@llm-accuracy`, then enable the
-plugin in `/plugin`. Its **Python executable** option defaults to `python3`;
-installs and upgrades need no configuration when that command runs Python 3.9+.
-Saved overrides take precedence. If `python3` is unavailable, set a working
-executable in `/config`, with no arguments. Restart Claude Code or run
-`/reload-plugins`. Capture
+plugin in `/plugin`. Python 3.9+ is discovered automatically by probing
+`python3`, `python`, then Windows `py -3`. Installs and upgrades normally need
+no configuration. Saved overrides take precedence; the optional **Python
+executable** option in `/config` chooses one executable, without arguments.
+Clear it to restore discovery. Restart Claude Code or run `/reload-plugins`.
+Capture
 begins at the next session start or prompt. `/evidence-memory:memory disable`
 stops capture and deletes that session's evidence and state. `begin-plan` and
 `clear` do the same. Each deletion retains a fresh local cutoff marker so

@@ -13,10 +13,9 @@
   "userConfig": {
     "python_executable": {
       "type": "string",
-      "title": "Python executable",
-      "description": "A working Python 3.9+ executable name or absolute path, with no arguments. Defaults to python3 for Linux/WSL/macOS. Windows: set python or the full python.exe path if python3 is unavailable. Git Bash is optional.",
-      "required": true,
-      "default": "python3"
+      "title": "Python executable (optional)",
+      "description": "Leave empty for automatic Python 3.9+ discovery. Set an executable name or absolute path, without arguments, only to override discovery. No Git Bash required on Windows.",
+      "required": false
     }
   }
 }

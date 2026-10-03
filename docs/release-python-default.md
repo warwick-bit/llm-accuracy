@@ -1,28 +1,26 @@
-# Python executable defaults
+# Automatic Python discovery — patch candidate
 
-Patch versions: LLM Accuracy 0.7.1, Session Ledger 0.3.1 and Evidence Memory
-0.5.1. Evidence Memory's Codex manifest stays version-aligned; its separate
-POSIX launcher is unchanged.
+LLM Accuracy 0.7.1, Session Ledger 0.3.1 and Evidence Memory 0.5.1 remove the
+required Python setting introduced by the portability release. Existing users
+with no setting and new installations automatically probe `python3`, `python`,
+then Windows `py -3`, and run the hook once with the first working Python 3.9+.
+Store aliases and old interpreters are skipped. No Git Bash or Node installation
+is required on native Windows. Python itself remains a prerequisite.
 
-Each Claude hook plugin now defaults its **Python executable** option to
-`python3`. Existing installations with an unset option can upgrade without
-manual configuration when that command runs Python 3.9+. Explicit saved values
-still take precedence. This replaces the no-default policy in the previous
-portability release while preserving direct execution without a shell.
+Saved executable overrides survive upgrades and take precedence. An invalid
+saved override produces an advisory: correct or clear it in `/config`.
+Missing Python produces the same advice without blocking a turn. Option values
+are never parsed as shell commands. The batch/POSIX dispatcher uses the platform
+shell and invokes Python directly from the batch section on native Windows. Evidence Memory's
+separate experimental Codex POSIX launcher is unchanged and version-aligned.
 
-If `python3` is unavailable or unusable, set each installed plugin's option in
-`/config` to a verified `python` or absolute executable path, with no arguments,
-then reload. A Windows Store alias is not proof of a working installation.
-No interpreter discovery or fallback is added. Missing executables remain host
-diagnostics; an older Python still receives the existing advisory.
+A manifest `default: python3` alone was tested and rejected: the installed host
+did not execute hooks for unset options. This patch performs discovery inside
+the launcher and removes the dependency on host default substitution.
 
-Tests exercise all hook plugins with the shipped default and reject missing or
-changed defaults in the compatibility contract. Saved overrides and native
-Windows execution remain covered by the existing hook tests and installed QA.
-
-Current evidence: [compatibility matrix](validation/compatibility-candidate.json),
-[clean installation smoke](validation/claude-code-smoke-python-default.json),
-[unset-option upgrade smoke](validation/python-default-upgrade.json).
-Native installed QA is collected by CI. Live coverage is local WSL only;
-Desktop, Cowork and live delivery on other operating systems remain unverified.
-Hook delivery does not establish factual accuracy.
+Validation is pending. The [compatibility matrix](validation/compatibility-candidate.json)
+remains package-bound. Native installation and direct hook execution are required
+on Linux, macOS and Windows with and without Bash. Local live QA must also
+prove delivery after an unset-option upgrade. Desktop, Cowork and live delivery
+on other operating systems remain unverified. Hook delivery does not establish
+factual accuracy.

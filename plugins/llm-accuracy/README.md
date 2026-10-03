@@ -35,14 +35,15 @@ mean the underlying claim is correct.
 
 ## Day-to-day use
 
-In Claude Code, the **Python executable** option defaults to `python3`. With
-working Python 3.9+ on Linux/WSL/macOS, installs and upgrades need no setting
-change. Saved overrides take precedence. If `python3` is unavailable, configure
-a working executable in `/config`, with no arguments, before reloading.
+In Claude Code, Python 3.9+ is discovered automatically by probing `python3`,
+`python`, then Windows `py -3`. Installs and upgrades normally need no setting
+change. Saved overrides take precedence. Use the optional **Python executable**
+option in `/config` to choose a particular executable; clear it to restore
+discovery. Native Windows does not require Git Bash.
 Cowork stateless skills are a separate target; this source candidate's hook
 delivery in Cowork is unverified and Desktop Chat runs no hooks.
 
-Once installed, configured and activated in Claude Code, a general
+Once installed and activated in Claude Code, a general
 fidelity reminder covers each non-empty prompt, including technical requests,
 file paths, implementation requests and brief follow-ups. It asks Claude to
 verify the measurement, population and environment, establish coverage before

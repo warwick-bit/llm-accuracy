@@ -19,22 +19,20 @@ def test_candidate_requires_current_installed_smoke_before_release():
 
 
 @pytest.mark.parametrize('name', ['llm-accuracy', 'session-ledger', 'evidence-memory'])
-@pytest.mark.parametrize('change', ['missing', 'wrong', 'optional'])
-def test_hook_python_default_contract_rejects_regressions(tmp_path, name, change):
+@pytest.mark.parametrize('change', ['required', 'default'])
+def test_optional_python_contract_rejects_regressions(tmp_path, name, change):
     shutil.copytree(ROOT / 'plugins', tmp_path / 'plugins')
     shutil.copytree(ROOT / '.claude-plugin', tmp_path / '.claude-plugin')
     shutil.copytree(ROOT / '.agents', tmp_path / '.agents')
     path = tmp_path / 'plugins' / name / '.claude-plugin/plugin.json'
     manifest = json.loads(path.read_text())
     option = manifest['userConfig']['python_executable']
-    if change == 'missing':
-        del option['default']
-    elif change == 'wrong':
-        option['default'] = 'python'
+    if change == 'required':
+        option['required'] = True
     else:
-        option['required'] = False
+        option['default'] = 'python3'
     path.write_text(json.dumps(manifest))
-    assert 'python_default_required_' + name in guard.validate(tmp_path, guard.candidate(tmp_path))
+    assert 'python_override_optional_' + name in guard.validate(tmp_path, guard.candidate(tmp_path))
 
 
 def test_wsl_smoke_cannot_certify_native_windows_or_macos():

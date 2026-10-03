@@ -5,17 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
-            "timeout": 10,
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "memory.py",
-              "hook-capture",
-              "--plugin-data",
-              "${CLAUDE_PLUGIN_DATA}"
-            ]
+            "command": "set -- \"memory.py:hook-capture\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"memory.py:hook-capture\"); exit 0",
+            "timeout": 10
           }
         ]
       }
@@ -25,17 +16,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
-            "timeout": 10,
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "memory.py",
-              "hook-capture",
-              "--plugin-data",
-              "${CLAUDE_PLUGIN_DATA}"
-            ]
+            "command": "set -- \"memory.py:hook-capture\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"memory.py:hook-capture\"); exit 0",
+            "timeout": 10
           }
         ]
       }
@@ -45,17 +27,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
-            "timeout": 10,
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "memory.py",
-              "hook-capture",
-              "--plugin-data",
-              "${CLAUDE_PLUGIN_DATA}"
-            ]
+            "command": "set -- \"memory.py:hook-capture\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"memory.py:hook-capture\"); exit 0",
+            "timeout": 10
           }
         ]
       }
@@ -65,17 +38,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
-            "timeout": 10,
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "memory.py",
-              "hook-capture",
-              "--plugin-data",
-              "${CLAUDE_PLUGIN_DATA}"
-            ]
+            "command": "set -- \"memory.py:hook-capture\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"memory.py:hook-capture\"); exit 0",
+            "timeout": 10
           }
         ]
       }
@@ -85,17 +49,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
-            "timeout": 10,
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "memory.py",
-              "hook-capture",
-              "--plugin-data",
-              "${CLAUDE_PLUGIN_DATA}"
-            ]
+            "command": "set -- \"memory.py:hook-capture\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"memory.py:hook-capture\"); exit 0",
+            "timeout": 10
           }
         ]
       }
@@ -105,17 +60,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
-            "timeout": 10,
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "memory.py",
-              "hook-capture",
-              "--plugin-data",
-              "${CLAUDE_PLUGIN_DATA}"
-            ]
+            "command": "set -- \"memory.py:hook-capture\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"memory.py:hook-capture\"); exit 0",
+            "timeout": 10
           }
         ]
       }
@@ -125,17 +71,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${user_config.python_executable}",
-            "timeout": 10,
-            "args": [
-              "-c",
-              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
-              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
-              "memory.py",
-              "hook-restore",
-              "--plugin-data",
-              "${CLAUDE_PLUGIN_DATA}"
-            ]
+            "command": "set -- \"memory.py:hook-restore\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"memory.py:hook-restore\"); exit 0",
+            "timeout": 10
           }
         ]
       }
