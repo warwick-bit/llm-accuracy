@@ -14,9 +14,8 @@ before relying on an OS or Desktop mode. Published-release receipts below are hi
 [Evidence Memory 0.4.0](release-evidence-memory-0.4.0.md). The records below
 describe historical builds.
 
-The current [compatibility release](release-platform-candidate.md) includes
-[Evidence Memory 0.5.0](release-evidence-memory-0.5.0.md), which preserves the
-question-answer capture from 0.4.0 and requires explicit Python configuration.
+The current [Python-default patch](release-python-default.md) restores automatic
+setup when `python3` works. Saved interpreter choices remain in effect.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
 
@@ -54,9 +53,10 @@ and the general and targeted advisory hooks.
 ### Before you start
 
 - Use Claude Code 2.1.287 or later for this source candidate.
-- Configure a working Python 3.9+ executable in the plugin option before
-  starting a session. Linux/WSL/macOS normally use `python3`; native Windows
-  uses `python` or an absolute `python.exe` path. Git Bash is optional.
+- Verify that Python 3.9+ works. The plugin option defaults to `python3`, so
+  Linux/WSL/macOS normally need no configuration. If `python3` is unavailable,
+  set `python` or an absolute executable path in `/config`; native Windows
+  commonly needs this override. Git Bash is optional.
   An installed Windows Store alias alone is not a working Python runtime.
 - Install only if you trust the plugin source. It runs local advisory hook
   commands in Claude Code.
@@ -70,8 +70,8 @@ claude plugin marketplace add warwick-bit/llm-accuracy --scope user
 claude plugin install llm-accuracy@llm-accuracy --scope user
 ```
 
-Start or return to Claude Code. Open `/config` and set LLM Accuracy's **Python
-executable** option to the verified executable from the prerequisites. Then run:
+Start or return to Claude Code. If `python3` is unavailable, open `/config` and
+set LLM Accuracy's **Python executable** option to a verified executable. Then run:
 
 ```text
 /reload-plugins
@@ -154,8 +154,8 @@ claude plugin install session-ledger@llm-accuracy --scope user
 claude plugin enable session-ledger@llm-accuracy --scope user
 ```
 
-Before reloading, open `/config` and set Session Ledger's **Python executable**
-option; each hook plugin has its own option. Then run `/reload-plugins` in an
+If `python3` is unavailable, set Session Ledger's **Python executable** option
+in `/config`; each hook plugin has its own option. Then run `/reload-plugins` in an
 active Claude Code session, or start a new one. After that, use Claude normally: the ledger starts automatically with the
 session, captures a bounded rolling user/assistant session record on user-prompt
 and turn-complete hooks, flushes it before context compaction, and restores it
@@ -214,8 +214,8 @@ claude plugin install evidence-memory@llm-accuracy --scope user
 claude plugin enable evidence-memory@llm-accuracy --scope user
 ```
 
-Open `/config` and set Evidence Memory's **Python executable** option before
-reloading. Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
+If `python3` is unavailable, set Evidence Memory's **Python executable** option
+in `/config`. Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
 start or prompt, with a fresh cutoff that excludes earlier transcript rows.
 The `/evidence-memory:memory` skill provides search, lookup, correction,
 `disable`, `begin-plan`, and `clear`. Those deletion commands stop capture for
@@ -243,9 +243,11 @@ claude plugin update session-ledger@llm-accuracy --scope user
 claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
-Run the optional plugin updates only for plugins you installed. On upgrade to
-Accuracy 0.7.0, Ledger 0.3.0 or Memory 0.5.0, open `/config` and set each installed
-hook plugin's **Python executable** option before reloading. Then run
+Run the optional plugin updates only for plugins you installed. Accuracy 0.7.1,
+Ledger 0.3.1 and Memory 0.5.1 default to `python3` when no executable is saved.
+If that command works, upgrades need no setting change. Saved choices survive
+updates; if the saved executable or `python3` does not work, set each installed
+hook plugin's **Python executable** option in `/config`. Then run
 `/reload-plugins` in an active Claude Code session. The read-only command
 `claude plugin configure PLUGIN@llm-accuracy` shows options and which are unset;
 it does not save values without `--values-stdin`. For headless configuration,

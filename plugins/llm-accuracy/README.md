@@ -35,8 +35,10 @@ mean the underlying claim is correct.
 
 ## Day-to-day use
 
-In Claude Code, configure this plugin's **Python executable** option in `/config`
-before reloading. Use a working Python 3.9+ executable with no arguments.
+In Claude Code, the **Python executable** option defaults to `python3`. With
+working Python 3.9+ on Linux/WSL/macOS, installs and upgrades need no setting
+change. Saved overrides take precedence. If `python3` is unavailable, configure
+a working executable in `/config`, with no arguments, before reloading.
 Cowork stateless skills are a separate target; this source candidate's hook
 delivery in Cowork is unverified and Desktop Chat runs no hooks.
 

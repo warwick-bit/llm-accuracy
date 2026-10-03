@@ -168,8 +168,8 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
     for name in ('llm-accuracy', 'session-ledger', 'evidence-memory'):
         directory = root / 'plugins' / name
         option = json.loads((directory / '.claude-plugin/plugin.json').read_text())['userConfig']['python_executable']
-        if option.get('required') is not True or 'default' in option:
-            errors.append('explicit_python_configuration_required_' + name)
+        if option.get('required') is not True or option.get('default') != 'python3':
+            errors.append('python_default_required_' + name)
         hooks = json.loads((directory / 'hooks/hooks.json').read_text())['hooks']
         for groups in hooks.values():
             for group in groups:

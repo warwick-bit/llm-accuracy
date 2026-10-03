@@ -2,7 +2,7 @@
   "name": "session-ledger",
   "displayName": "Session Ledger",
   "description": "Optional local continuity ledger for one Claude Code session across compaction.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "defaultEnabled": false,
   "author": {
     "name": "Warwick"
@@ -14,8 +14,9 @@
     "python_executable": {
       "type": "string",
       "title": "Python executable",
-      "description": "A working Python 3.9+ executable name or absolute path, with no arguments. Linux/macOS: python3. Windows: python or the full python.exe path. Git Bash is optional.",
-      "required": true
+      "description": "A working Python 3.9+ executable name or absolute path, with no arguments. Defaults to python3 for Linux/WSL/macOS. Windows: set python or the full python.exe path if python3 is unavailable. Git Bash is optional.",
+      "required": true,
+      "default": "python3"
     }
   }
 }

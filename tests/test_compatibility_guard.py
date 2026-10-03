@@ -18,6 +18,25 @@ def test_candidate_requires_current_installed_smoke_before_release():
         'native_installation_required_' + target for target in guard.CI_TARGETS] + ['local_live_code_smoke_required']
 
 
+@pytest.mark.parametrize('name', ['llm-accuracy', 'session-ledger', 'evidence-memory'])
+@pytest.mark.parametrize('change', ['missing', 'wrong', 'optional'])
+def test_hook_python_default_contract_rejects_regressions(tmp_path, name, change):
+    shutil.copytree(ROOT / 'plugins', tmp_path / 'plugins')
+    shutil.copytree(ROOT / '.claude-plugin', tmp_path / '.claude-plugin')
+    shutil.copytree(ROOT / '.agents', tmp_path / '.agents')
+    path = tmp_path / 'plugins' / name / '.claude-plugin/plugin.json'
+    manifest = json.loads(path.read_text())
+    option = manifest['userConfig']['python_executable']
+    if change == 'missing':
+        del option['default']
+    elif change == 'wrong':
+        option['default'] = 'python'
+    else:
+        option['required'] = False
+    path.write_text(json.dumps(manifest))
+    assert 'python_default_required_' + name in guard.validate(tmp_path, guard.candidate(tmp_path))
+
+
 def test_wsl_smoke_cannot_certify_native_windows_or_macos():
     receipt = guard.candidate(ROOT)
     receipt['targets']['code-wsl'] = {'outcome': 'pass', 'host_version': '2.1.287',

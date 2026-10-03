@@ -12,7 +12,9 @@ The source candidate requires Claude Code 2.1.287+ and a configured Python
 3.9+ executable (CI covers 3.9–3.14). Hooks launch directly without a shell;
 native Windows targets operation with or without Git Bash. Installed-host
 Windows/macOS verification is still required before release. The Python option must name
-one working executable, with no arguments. See the repository compatibility
+one working executable, with no arguments. It defaults to `python3`; installs
+and upgrades need no configuration when that command works. Saved overrides
+take precedence; use `/config` if `python3` is unavailable. See the repository compatibility
 contract for current installed-host coverage and Desktop mode boundaries.
 
 ## Install and enable

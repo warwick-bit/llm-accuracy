@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.7.0"
+    assert claude["version"] == "0.7.1"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -51,7 +51,7 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
     manifest = load_json("plugins/session-ledger/.claude-plugin/plugin.json")
 
     assert manifest["name"] == "session-ledger"
-    assert manifest["version"] == "0.3.0"
+    assert manifest["version"] == "0.3.1"
     assert manifest["license"] == "MIT"
     assert manifest["defaultEnabled"] is False
     assert not (LEDGER / ".codex-plugin").exists()
@@ -65,7 +65,7 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
 def test_evidence_memory_is_independent_and_explicit() -> None:
     manifest = load_json("plugins/evidence-memory/.claude-plugin/plugin.json")
     assert manifest["name"] == "evidence-memory"
-    assert manifest["version"] == "0.5.0"
+    assert manifest["version"] == "0.5.1"
     assert manifest["defaultEnabled"] is False
     assert "dependencies" not in manifest
     assert (EVIDENCE / "hooks" / "memory.py").exists()

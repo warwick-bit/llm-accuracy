@@ -41,10 +41,12 @@ the actual Python executable, with no arguments.
 
 ## Configure Python before starting a session
 
-Each installed hook plugin has a required **Python executable** option with no
-platform-dependent default. Set it when
-enabling the plugin or in `/config`. On Linux/WSL/macOS use a verified `python3`;
-on native Windows use a verified `python` or the absolute `python.exe` path.
+Each installed hook plugin has a required **Python executable** option defaulting
+to `python3`. On Linux/WSL/macOS with working Python 3.9+, installs and upgrades
+need no configuration. An explicitly saved executable takes precedence over
+the default. If `python3` is unavailable, set a working executable when enabling
+the plugin or in `/config`; on native Windows use a verified `python` or the
+absolute `python.exe` path. This is a default, not interpreter auto-detection.
 Windows Store aliases can exist without a working installation. Execute the
 candidate's `--version`, then configure the command that actually works.
 An unavailable interpreter produces a host diagnostic; it must not block a
@@ -53,7 +55,7 @@ turn. An older Python produces a fixed advisory rather than loading hooks.
 For headless installation, use `claude plugin configure PLUGIN@llm-accuracy
 --values-stdin` and supply a JSON object containing `python_executable` through
 stdin. Use shell-appropriate quoting for paths. `--plugin-dir` alone does not
-populate saved options; enabling requires explicit interpreter configuration.
+populate saved options; absent values use the manifest default.
 
 The Accuracy doctor accepts `--python-executable NAME_OR_PATH` and runs the
 shipped exec registrations without a shell. Its default is its own running
