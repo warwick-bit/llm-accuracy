@@ -1158,3 +1158,171 @@ def test_hook_uses_configured_capture_mode_but_lists_only_external_results(tmp_p
     assert status['events'] == 2
     assert status['capture'] == {'mode': 'all', 'config': 'custom', 'extra_restricted_tokens': 0}
     assert bridge.hook(runtime, {**payload, 'source': 'compact'}, restore=True) is None
+
+
+def answered(identity, answers, notes=None, timestamp='2026-09-01T01:02:00Z'):
+    questions = [{'question': question, 'header': 'Choice', 'multiSelect': False,
+                  'options': [{'label': answer, 'description': 'synthetic'}]} for question, answer in answers.items()]
+    row = result(identity, text='Your questions have been answered.')
+    row['timestamp'] = timestamp
+    row['toolUseResult'] = {'questions': questions, 'answers': answers,
+                            'annotations': {question: {'notes': note} for question, note in (notes or {}).items()}}
+    return row
+
+
+def test_answered_questions_become_decision_state(store, tmp_path):
+    question = 'Which timezone defines July?'
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                     answered('ask-1', {question: 'Sydney time'}, {question: 'head office is in Sydney'}))
+    assert store.sync(path)['decisions_recorded'] == 1
+    item, = store.state()['items']
+    assert item['kind'] == 'decision' and item['key'].startswith('decision:')
+    assert item['text'] == ('User answered "Which timezone defines July?": "Sydney time"; '
+                            'note: "head office is in Sydney"')
+    assert store.status()['events'] == 0
+
+
+def test_a_repeated_question_supersedes_and_a_replay_adds_nothing(store, tmp_path):
+    question = 'Count customers by email or by id?'
+    first = [tool_call('ask-1', 'AskUserQuestion'), answered('ask-1', {question: 'By email'})]
+    path = write_log(tmp_path / 'log', *first)
+    store.sync(path)
+    write_log(path, *first, tool_call('ask-2', 'AskUserQuestion'), answered('ask-2', {question: 'By id'}))
+    assert store.sync(path)['decisions_recorded'] == 1
+    # A changed first row resets the cursor, so every answer row is read again.
+    write_log(path, tool_call('ask-0', 'Read'), *first, tool_call('ask-2', 'AskUserQuestion'),
+              answered('ask-2', {question: 'By id'}))
+    replay = store.sync(path)
+    assert replay['cursor_reset'] and replay['decisions_recorded'] == 0
+    assert store.db.execute('SELECT count(*) FROM states').fetchone()[0] == 2
+    item, = store.state()['items']
+    assert item['text'].endswith('"By id"') and item['previous'] == item['revision'] - 1
+
+
+@pytest.mark.parametrize('tool_result', [
+    'The user declined to answer.',
+    {'answers': {'Which timezone?': 'Sydney'}},
+    {'questions': [{'question': 'Which timezone?'}], 'answers': ['Sydney']},
+    {'questions': ['Which timezone?'], 'answers': {'Which timezone?': 'Sydney'}},
+    {'questions': [{'question': 'Which timezone?'}], 'answers': {'Which timezone?': ''}},
+])
+def test_unanswered_or_malformed_question_results_record_nothing(store, tmp_path, tool_result):
+    row = result('ask-1', text='no answer')
+    row['toolUseResult'] = tool_result
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'), row)
+    assert store.sync(path)['decisions_recorded'] == 0
+    assert store.state()['items'] == []
+
+
+def test_restore_packet_lists_recorded_decisions(tmp_path, monkeypatch):
+    runtime, bridge, payload = enabled_hook(
+        tmp_path, monkeypatch, tool_call('ask-1', 'AskUserQuestion'),
+        answered('ask-1', {'Which timezone defines July?': 'Sydney time'}))
+    context = bridge.hook(runtime, {**payload, 'source': 'compact'}, restore=True)
+    item, = packet_json(context)['current_state_subset']
+    assert item['kind'] == 'decision' and 'Sydney time' in item['text_excerpt']
+
+
+@pytest.mark.parametrize('name', ['mcp__synthetic__survey', 'mcp__hr__survey_answers', 'Bash'])
+def test_only_ask_user_question_results_become_decisions(store, tmp_path, name):
+    path = write_log(tmp_path / 'log', tool_call('tool-1', name),
+                     answered('tool-1', {'Which timezone defines July?': 'Sydney time'}))
+    assert store.sync(path)['decisions_recorded'] == 0
+    assert store.state()['items'] == []
+
+
+def test_an_answer_synced_after_its_question_is_recorded(store, tmp_path):
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'))
+    assert store.sync(path)['decisions_recorded'] == 0
+    write_log(path, tool_call('ask-1', 'AskUserQuestion'), answered('ask-1', {'Which timezone defines July?': 'UTC'}))
+    assert store.sync(path)['decisions_recorded'] == 1
+
+
+def test_a_rewritten_answer_replaces_the_stale_decision(store, tmp_path):
+    question = 'Which timezone defines July?'
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'), answered('ask-1', {question: 'Sydney'}))
+    store.sync(path)
+    # Same call id, corrected answer; the changed first row resets the cursor.
+    write_log(path, tool_call('read-0', 'Read'), tool_call('ask-1', 'AskUserQuestion'),
+              answered('ask-1', {question: 'UTC'}))
+    replay = store.sync(path)
+    assert replay['cursor_reset'] and replay['decisions_recorded'] == 1
+    item, = store.state()['items']
+    assert item['text'].endswith('"UTC"')
+
+
+def test_replay_deduplication_does_not_evict_old_answers(store, tmp_path):
+    rows = []
+    for index in range(2001):
+        rows += [tool_call(f'ask-{index}', 'AskUserQuestion'), answered(f'ask-{index}', {f'Question {index}?': 'Yes'})]
+    path = write_log(tmp_path / 'log', *rows)
+    total = 0
+    while True:
+        outcome = store.sync(path)
+        total += outcome['decisions_recorded']
+        if outcome['status'] != 'more_pending':
+            break
+    write_log(path, tool_call('read-0', 'Read'), *rows)
+    replayed = 0
+    while True:
+        outcome = store.sync(path)
+        replayed += outcome['decisions_recorded']
+        if outcome['status'] != 'more_pending':
+            break
+    assert (total, replayed) == (2001, 0)
+
+
+def test_a_rewritten_earlier_answer_does_not_displace_a_later_one(store, tmp_path):
+    question = 'Which timezone defines July?'
+    later = [tool_call('ask-2', 'AskUserQuestion'), answered('ask-2', {question: 'B'}, timestamp='2026-09-01T02:00:00Z')]
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                     answered('ask-1', {question: 'A'}), *later)
+    store.sync(path)
+    write_log(path, tool_call('read-0', 'Read'), tool_call('ask-1', 'AskUserQuestion'),
+              answered('ask-1', {question: 'C'}), *later)
+    replay = store.sync(path)
+    assert replay['cursor_reset'] and replay['decisions_recorded'] == 0
+    item, = store.state()['items']
+    assert item['text'].endswith('"B"')
+
+
+def test_capture_all_also_stores_the_question_call_and_result(store, tmp_path, engine):
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                     answered('ask-1', {'Which timezone defines July?': 'UTC'}))
+    assert store.sync(path, scope=engine.CaptureScope('all'))['decisions_recorded'] == 1
+    assert store.status()['events'] == 2
+
+
+def test_a_full_legacy_index_keeps_capturing_without_decision_tables(tmp_path, engine, monkeypatch):
+    path = tmp_path / 'memory.sqlite3'
+    legacy = engine.Store(path, 'synthetic-session', 'default', create=True)
+    # An index from an earlier version has neither table, and a full one cannot add them.
+    legacy.db.execute('DROP TABLE question_calls')
+    legacy.db.execute('DROP TABLE decision_rows')
+    legacy.db.execute('VACUUM')
+    pages, size = (legacy.db.execute(f'PRAGMA {name}').fetchone()[0] for name in ('page_count', 'page_size'))
+    legacy.close()
+    monkeypatch.setattr(engine, 'MAX_DATABASE_BYTES', pages * size)
+    store = engine.Store(path, 'synthetic-session', 'default')
+    try:
+        assert not store.decisions_available
+        log = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'),
+                        answered('ask-1', {'Which timezone defines July?': 'UTC'}))
+        outcome = store.sync(log)
+        assert (outcome['status'], outcome['decisions_recorded']) == ('caught_up', 0)
+        assert store.state()['items'] == []
+    finally:
+        store.close()
+
+
+def test_an_unpaired_surrogate_in_an_answer_does_not_stall_capture(store, tmp_path):
+    question = 'Which marker \ud83d means paid?'
+    path = write_log(tmp_path / 'log', tool_call('ask-1', 'AskUserQuestion'))
+    # A truncated emoji leaves an unpaired surrogate escape: valid JSON that UTF-8 cannot encode.
+    with path.open('ab') as stream:
+        stream.write(json.dumps(answered('ask-1', {question: 'Sun \ud83d'}, {question: 'cut \ud83d'})).encode()
+                     + b'\n')
+    outcome = store.sync(path)
+    assert (outcome['status'], outcome['decisions_recorded']) == ('caught_up', 1)
+    item, = store.state()['items']
+    assert item['text'] == 'User answered "Which marker \ufffd means paid?": "Sun \ufffd"; note: "cut \ufffd"'

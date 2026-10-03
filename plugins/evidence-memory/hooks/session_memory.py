@@ -28,6 +28,7 @@ RECENT_RESULTS = 10
 WEB_TOOLS = ("WebFetch", "WebSearch")
 # Codex logs one outer JavaScript call; these references suggest, but do not prove, which inner tools ran.
 CODEX_EXTERNAL_REFERENCE = re.compile(r"\btools\s*\.\s*(mcp__[\w-]+__[\w-]+|web__run)\s*\(")
+UNPAIRED_SURROGATE = re.compile("[\ud800-\udfff]")
 MCP_TOOL_NAME = re.compile(r"mcp__[\w-]+__[\w-]+")
 RESTRICTED_TOKENS = frozenset((
     "bank", "credential", "credentials", "employee", "employees", "hr", "leave", "passport", "password",
@@ -87,6 +88,15 @@ def after_cutoff(stamp: Any, cutoff: str) -> bool:
         return bool(moment.tzinfo and boundary.tzinfo and moment.astimezone(timezone.utc) > boundary)
     except (AttributeError, TypeError, ValueError):
         return False
+
+
+def row_moment(stamp: Any) -> float | None:
+    """A row's timezone-aware timestamp as epoch seconds, or None."""
+    try:
+        moment = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return moment.timestamp() if moment.tzinfo else None
 
 
 def row_session(row: dict[str, Any]) -> str | None:
@@ -213,6 +223,16 @@ class Store:
         except sqlite3.Error:
             # A full legacy index must remain readable even if counters cannot be added.
             pass
+        try:
+            if not self.read_only:
+                with self.db:
+                    # AskUserQuestion call ids, and the answers already recorded, so a
+                    # re-read transcript neither misses nor repeats a decision.
+                    self.db.execute("CREATE TABLE IF NOT EXISTS question_calls(call_id TEXT PRIMARY KEY)")
+                    self.db.execute("CREATE TABLE IF NOT EXISTS decision_rows("
+                                    "identity TEXT PRIMARY KEY, key TEXT, moment REAL)")
+        except sqlite3.Error:
+            pass
         # Indexes created before capture scoping keep their unscoped rows until cleared.
         # A read-only open derives the same label without recording it.
         self.capture_policy = meta.get("capture_policy")
@@ -228,6 +248,9 @@ class Store:
                     pass
         self.counts_available = bool(self.db.execute(
             "SELECT 1 FROM sqlite_master WHERE name='retrieval_counts'").fetchone())
+        # A full legacy index keeps capturing evidence without recording decisions.
+        self.decisions_available = self.db.execute(
+            "SELECT count(*) FROM sqlite_master WHERE name IN ('question_calls','decision_rows')").fetchone()[0] == 2
         self.fts = bool(self.db.execute("SELECT 1 FROM sqlite_master WHERE name='search'").fetchone())
 
     def close(self) -> None:
@@ -264,11 +287,63 @@ class Store:
             self.db.execute("INSERT INTO search(rowid, name, body) VALUES (?, ?, ?)",
                             (result.lastrowid, event["name"], body))
 
+    def _note_question_call(self, call_id: str) -> None:
+        """Remember an AskUserQuestion call; its answer usually arrives in a later sync."""
+        if not self.decisions_available:
+            return
+        self.db.execute("INSERT OR IGNORE INTO question_calls VALUES (?)", (call_id,))
+
+    def _record_answers(self, call_id: str, body: dict[str, Any], moment: float | None) -> int:
+        """Store each answered AskUserQuestion choice as a decision state item.
+
+        The host's structured result holds the questions and the user's chosen
+        answers. A repeated question supersedes its earlier answer; re-reading the
+        same answer after a cursor reset adds nothing, and a rewritten earlier
+        answer does not displace a later one already recorded.
+        """
+        result = body.get("host_tool_result")
+        if not self.decisions_available or not isinstance(result, dict) or not self.db.execute(
+                "SELECT 1 FROM question_calls WHERE call_id=?", (call_id,)).fetchone():
+            return 0
+        answers, questions = result.get("answers"), result.get("questions")
+        if not isinstance(answers, dict) or not isinstance(questions, list) or not all(
+                isinstance(item, dict) and isinstance(item.get("question"), str) for item in questions):
+            return 0
+        notes = result.get("annotations") if isinstance(result.get("annotations"), dict) else {}
+        recorded = 0
+        for question, answer in answers.items():
+            if not isinstance(question, str) or not isinstance(answer, str) or not question or not answer:
+                continue
+            text = f"User answered {json.dumps(question, ensure_ascii=False)}: {json.dumps(answer, ensure_ascii=False)}"
+            note = notes.get(question)
+            if isinstance(note, dict) and isinstance(note.get("notes"), str) and note.get("notes"):
+                text += f"; note: {json.dumps(note.get('notes'), ensure_ascii=False)}"
+            # A truncated emoji can leave an unpaired surrogate, which UTF-8 cannot store.
+            question = UNPAIRED_SURROGATE.sub("\ufffd", question)
+            text = UNPAIRED_SURROGATE.sub("\ufffd", text[:4096])
+            # The answer text is part of the identity: a rewritten row with a corrected
+            # answer is recorded again and supersedes the stale one.
+            identity = sha(encoded([call_id, question, text]).encode())
+            if self.db.execute("SELECT 1 FROM decision_rows WHERE identity=?", (identity,)).fetchone():
+                continue
+            key = "decision:" + sha(question.encode("utf-8"))[:16]
+            later = moment is not None and self.db.execute(
+                "SELECT 1 FROM decision_rows WHERE key=? AND moment>?", (key, moment)).fetchone()
+            self.db.execute("INSERT INTO decision_rows VALUES (?, ?, ?)", (identity, key, moment))
+            if later:
+                continue
+            previous = self.db.execute("SELECT max(revision) FROM states WHERE key=?", (key,)).fetchone()[0] or 0
+            self.db.execute("INSERT INTO states(key,kind,text,evidence,previous,timestamp) VALUES (?,?,?,?,?,?)",
+                            (key, "decision", text, encoded([]), previous, time.time()))
+            recorded += 1
+        return recorded
+
     def _read_batch(self, stream: Any, source: str, offset: int, *, cutoff: str,
                     scope: CaptureScope) -> dict[str, Any]:
         read_bytes = 0
         rows = 0
         rejected = 0
+        decisions = 0
         counts = dict.fromkeys(CAPTURE_COUNTERS, 0)
         status = "caught_up"
         deadline = time.monotonic() + 1.0
@@ -314,6 +389,10 @@ class Store:
                     status = "invalid_tool_identity"
                     break
                 for event in events:
+                    if event["kind"] == "call" and event["name"] == "AskUserQuestion":
+                        self._note_question_call(event["call_id"])
+                    if event["kind"] == "result":
+                        decisions += self._record_answers(event["call_id"], event["body"], row_moment(stamp))
                     if event["kind"] == "call":
                         decision, _ = scope.classify(event)
                         if decision != "capture":
@@ -339,7 +418,7 @@ class Store:
         else:
             status = "more_pending"
         return {"status": status, "offset": offset, "bytes_read": read_bytes,
-                "rows": rows, "rows_excluded_by_plan": rejected, **counts}
+                "rows": rows, "rows_excluded_by_plan": rejected, "decisions_recorded": decisions, **counts}
 
     def _capture_counts(self) -> dict[str, int]:
         row = self.db.execute("SELECT value FROM meta WHERE key='capture_counts'").fetchone()
