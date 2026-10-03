@@ -91,7 +91,7 @@ bindings, checks (`clean_install`, `configured_python`, `automatic_python_upgrad
 `automatic_python_fresh`, `upgrade`, `uninstall`,
 `installed_hook_execution`), Windows Bash proof, cleanup and `live_delivery=not_tested`.
 An installed row cannot populate a live/UI target. Every recorded live pass still
-needs its six Code checks below. Remaining live Code gaps do not block publication,
+needs its required Code checks below. Remaining live Code gaps do not block publication,
 but remain untested and must be disclosed. Local WSL live QA cannot certify macOS
 or native Linux/Windows live delivery. Desktop Chat/Cowork are experimental stateless
 skills; their six rows remain explicit and any pass still needs actual UI QA.
@@ -158,7 +158,9 @@ host version and Python version, source binding and outcome, without raw logs.
 
 1. Install through the marketplace; verify package versions and source bytes.
    Do not use `--plugin-dir` as the installed-plugin test.
-2. Configure Python, reload, and prove prompt-hook delivery in a fresh session.
+2. Leave Python unset and prove discovery on clean installation and upgrade.
+   For live QA, prove prompt-hook delivery after upgrading with the option unset.
+   Configure an override, reload, and prove delivery in a fresh session.
    Exercise a path containing spaces/apostrophes/Unicode. Check an invalid
    executable is advisory; restore configuration and prove delivery again.
 3. Upgrade from the previous package and verify versions, registrations and

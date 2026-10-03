@@ -18,9 +18,16 @@ A manifest `default: python3` alone was tested and rejected: the installed host
 did not execute hooks for unset options. This patch performs discovery inside
 the launcher and removes the dependency on host default substitution.
 
-Validation is pending. The [compatibility matrix](validation/compatibility-candidate.json)
-remains package-bound. Native installation and direct hook execution are required
-on Linux, macOS and Windows with and without Bash. Local live QA must also
-prove delivery after an unset-option upgrade. Desktop, Cowork and live delivery
+The [live WSL bundle receipt](validation/platform-wsl-bundle-python-auto.json)
+proves automatic discovery on an unset-option upgrade and a fresh install,
+real prompt delivery after the unset-option upgrade, saved override preservation,
+and advisory failure followed by recovery. The
+[clean Accuracy install/archive receipt](validation/claude-code-smoke-python-auto.json)
+also verifies installed file bytes and prompt delivery with an explicit override.
+Both use isolated temporary profiles and record no prompts or model answers.
+
+The [compatibility matrix](validation/compatibility-candidate.json) remains
+package-bound. Native installation and direct hook execution are required on
+Linux, macOS and Windows with and without Bash in CI. Desktop, Cowork and live delivery
 on other operating systems remain unverified. Hook delivery does not establish
 factual accuracy.
