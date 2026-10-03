@@ -76,29 +76,37 @@ DEFINED_COUNT = re.compile(
     r"time\s?zone|utc|gmt|local\s+time|"
     # a named zone ("Sydney time", "Pacific Standard Time"), not "peak time"
     r"(?:pacific|mountain|central|eastern|western|atlantic|alaska|hawaii|australian|"
-    r"sydney|melbourne|brisbane|adelaide|perth|darwin|hobart|auckland|wellington|"
-    r"london|dublin|paris|berlin|new\s+york|chicago|denver|los\s+angeles|toronto|"
-    r"vancouver|singapore|hong\s+kong|tokyo|india|indian)\s+"
-    r"(?:(?:eastern|central|western)\s+)?(?:standard\s+|daylight\s+)?time|"
-    r"(?-i:AEST|AEDT|ACST|ACDT|AWST|NZST|NZDT|PST|PDT|MST|MDT|CST|CDT|EST|EDT|BST|"
-    r"CEST|CET|IST|JST|SGT|HKT)|"
-    r"(?:africa|america|asia|australia|europe|pacific)/[a-z_]+)\b",
+    r"european|sydney|melbourne|brisbane|queensland|adelaide|perth|darwin|hobart|"
+    r"auckland|wellington|nz|new\s+zealand|london|dublin|paris|berlin|new\s+york|"
+    r"chicago|denver|los\s+angeles|toronto|vancouver|singapore|hong\s+kong|tokyo|"
+    r"india|indian)\s+(?:(?:eastern|central|western)\s+)?(?:standard\s+|daylight\s+)?time|"
+    # zone abbreviations that rarely mean anything else (CST, EST, IST and BST do)
+    r"(?-i:AEST|AEDT|ACST|ACDT|AWST|NZST|NZDT|PST|PDT|EDT|CDT|MDT|CEST|JST|HKT|SGT)|"
+    # an IANA zone such as Australia/Sydney, not a region pair such as Australia/NZ
+    r"(?-i:(?:Africa|America|Asia|Australia|Europe|Pacific)/(?!(?:Pacific|New)\b)"
+    r"[A-Z][a-z]+(?:_[A-Z][a-z]+)*))\b",
     re.I,
 )
-# New rows in a fixture, seed data, a test, dev or sandbox database, or a cache
-# store are a development count. A deploy, migration or cached report can date a business
-# event, so those words alone do not silence the reminder.
+# New rows in a fixture, seed data, a test, dev, sandbox or local database, or
+# Redis are a development count. A deploy, a migration, a cached report or test
+# data can date or describe a business event, so those words alone do not
+# silence the reminder: a missed reminder costs more than an extra one.
 DEV_COUNT = re.compile(
     r"\b(?:fixtures?|seed(?:ed|ing)?\s+(?:script|data|file|rows?|db|database)s?|"
-    r"(?:test|dev|development|sandbox)\s+(?:db|database|data|suite|env(?:ironment)?)|"
-    r"local\s+(?:db|database|sqlite)|sandbox|sqlite|redis|staging|unit\s+tests?|"
-    r"(?:db|database|schema)\s+migrations?|migration\s+(?:files?|scripts?))\b",
+    r"seed(?:ed|ing)?\s+the\s+(?:db|database)|db:seed|"
+    r"seeds?\.(?:sql|rb|py|ts|js|json|ya?ml|csv)|"
+    r"(?:test|dev|development|sandbox|staging|local)\s+"
+    r"(?:db|database|suite|env(?:ironment)?)|"
+    r"(?:in|from)\s+the\s+cache|sqlite|redis|staging|unit\s+tests?|"
+    r"(?:db|database|schema)\s+migrations?|migration\s+(?:files?|scripts?)|migrations/\w+)\b",
     re.I,
 )
 # A named code file or PR makes a count a code question. Unlike CONCRETE, a data
 # file (.csv, .json, .sql) or ~/ path does not: exploring it first is the point.
+# A .js name needs a path ("Next.js" is a product), and "PR 2026" is a year.
 CODE_REFERENCE = re.compile(
-    r"[\w/.\-]+\.(?:py|tsx?|jsx?|rb|go|rs|java|kt|sh|ya?ml|toml)\b|\bPR\s*#?\d+",
+    r"[\w/.\-]+\.(?:py|tsx?|rb|go|rs|java|kt|sh|ya?ml|toml)\b|[\w.\-]*/[\w/.\-]*\.jsx?\b|"
+    r"(?-i:\bPR)\s*#?(?!(?:19|20)\d\d\b)\d+",
     re.I,
 )
 EXEC = re.compile(
