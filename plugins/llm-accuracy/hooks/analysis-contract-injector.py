@@ -70,45 +70,62 @@ AMBIGUOUS_NEW_COUNT = re.compile(
 )
 # A count whose definition the prompt already supplies is not ambiguous.
 DEFINED_COUNT = re.compile(
-    r"\b(?:defined\s+as|definition|distinct|unique|de-?dup\w*|exclud\w*|except|"
+    r"\b(?:defined\s+as|definition|distinct|de-?dup\w*|exclud\w*|except|"
+    # "unique users", not "unique promo codes"
+    r"unique\s+(?:by|per|on|(?:customer|user|account|client|email|id|people|person|"
+    r"subscriber|sign[\s-]?up|payer|buyer|visitor)\w*)|"
     r"not\s+counting|only\s+count\w*|counting\s+only|count(?:ing)?\s+(?:each|every|one)|"
-    r"first[\s-]+(?:paid|paying|payment|purchase|invoice|order|subscription)|"
-    r"time\s?zone|utc|gmt|local\s+time|"
-    # a named zone ("Sydney time", "Pacific Standard Time"), not "peak time"
+    # a first-payment rule, not "the first-order discount code"
+    r"first[\s-]+(?:paid|paying|payment|purchase|invoice|order|subscription)"
+    r"(?![\s-]+(?:discount|promo|offer|code|coupon|sale|deal|campaign|bonus)s?\b)|"
+    r"time[\s-]?zone|utc|gmt|local\s+time(?!-)|"
+    # a named zone ("Sydney time", "Pacific Standard Time"), not "peak time" or
+    # "the NZ time-limited sale"
     r"(?:pacific|mountain|central|eastern|western|atlantic|alaska|hawaii|australian|"
     r"european|sydney|melbourne|brisbane|queensland|adelaide|perth|darwin|hobart|"
     r"auckland|wellington|nz|new\s+zealand|london|dublin|paris|berlin|new\s+york|"
     r"chicago|denver|los\s+angeles|toronto|vancouver|singapore|hong\s+kong|tokyo|"
-    r"india|indian)\s+(?:(?:eastern|central|western)\s+)?(?:standard\s+|daylight\s+)?time|"
-    # zone abbreviations that rarely mean anything else (CST, EST, IST and BST do)
+    r"india|indian)\s+(?:(?:eastern|central|western)\s+)?(?:standard\s+|daylight\s+)?time(?!-)|"
+    # upper-case zone abbreviations; CST, EST, IST and BST often mean something else
     r"(?-i:AEST|AEDT|ACST|ACDT|AWST|NZST|NZDT|PST|PDT|EDT|CDT|MDT|CEST|JST|HKT|SGT)|"
     # an IANA zone such as Australia/Sydney, not a region pair such as Australia/NZ
-    r"(?-i:(?:Africa|America|Asia|Australia|Europe|Pacific)/(?!(?:Pacific|New)\b)"
+    # or North America/Europe
+    r"(?-i:(?<!Latin\s)(?<!North\s)(?<!South\s)(?<!Central\s)"
+    r"(?:Africa|America|Asia|Australia|Europe|Pacific)/(?!(?:Africa|Americas?|"
+    r"Asia|Australia|Europe|Latin|Middle|New|North|Oceania|Pacific|South)\b)"
     r"[A-Z][a-z]+(?:_[A-Z][a-z]+)*))\b",
     re.I,
 )
-# New rows in a fixture, seed data, a test, dev, sandbox or local database, or
-# Redis are a development count. A deploy, a migration, a cached report or test
-# data can date or describe a business event, so those words alone do not
-# silence the reminder: a missed reminder costs more than an extra one.
+# New rows in test fixtures, seed data, a test, dev, sandbox or local database, or
+# Redis are a development count. A deploy, a migration, a cached report, test
+# data, "fixture ads" or "home staging" can date or describe a business event,
+# so those words alone do not silence the reminder: a missed reminder costs
+# more than an extra one.
 DEV_COUNT = re.compile(
-    r"\b(?:fixtures?|seed(?:ed|ing)?\s+(?:script|data|file|rows?|db|database)s?|"
+    r"\b(?:(?:test|seed|db|database|data|json|ya?ml|sql)\s+fixtures?|"
+    r"fixtures?\s+(?:data|files?|rows?|db|database)|fixtures/\w+|"
+    r"seed(?:ed|ing)?\s+(?:script|data|file|rows?|db|database)s?|"
     r"seed(?:ed|ing)?\s+the\s+(?:db|database)|db:seed|"
-    r"seeds?\.(?:sql|rb|py|ts|js|json|ya?ml|csv)|"
-    r"(?:test|dev|development|sandbox|staging|local)\s+"
-    r"(?:db|database|suite|env(?:ironment)?)|"
-    r"(?:in|from)\s+the\s+cache|sqlite|redis|staging|unit\s+tests?|"
+    r"\w*seeds?\.(?:sql|rb|py|ts|js|json|ya?ml|csv)|"
+    r"(?:test|dev|development|sandbox|staging|local|ci|qa|preview)\s+"
+    r"(?:db|database|env(?:ironment)?)|test\s+suite|mock\s+data|"
+    r"(?:in|from)\s+the\s+cache(?!\s+of\b)|sqlite|"
+    r"redis\s+(?:cache|db|database|instance|keys?|server)|in\s+redis|"
+    r"(?:in|on|to)\s+staging|staging\s+(?:server|site|instance)|unit\s+tests?|"
     r"(?:db|database|schema)\s+migrations?|migration\s+(?:files?|scripts?)|migrations/\w+)\b",
     re.I,
 )
 # A named code file or PR makes a count a code question. Unlike CONCRETE, a data
 # file (.csv, .json, .sql) or ~/ path does not: exploring it first is the point.
-# A .js name needs a path ("Next.js" is a product), and "PR 2026" is a year.
+# A .js name needs a path and a lower-case file name ("Next.js" and
+# "React/Next.js" are products), and "PR 2026" is a year but "PR #2026" is not.
 CODE_REFERENCE = re.compile(
-    r"[\w/.\-]+\.(?:py|tsx?|rb|go|rs|java|kt|sh|ya?ml|toml)\b|[\w.\-]*/[\w/.\-]*\.jsx?\b|"
-    r"(?-i:\bPR)\s*#?(?!(?:19|20)\d\d\b)\d+",
+    r"[\w/.\-]+\.(?:py|tsx?|rb|go|rs|java|kt|sh|ya?ml|toml)\b|"
+    r"[\w.\-]*/(?:[\w.\-]*/)*(?-i:[a-z_])[\w\-]*\.jsx?\b|"
+    r"(?-i:\bPR)(?:\s*#\s*\d+|\s*(?!(?:19|20)\d\d\b)\d+)",
     re.I,
 )
+SILENCE_SCAN_CHARS = 2000
 EXEC = re.compile(
     r"\b(fix|add|implement|deploy|refactor|merge|push|commit|edit|rename)\b",
     re.I,
@@ -150,10 +167,14 @@ AMBIGUITY_CONTRACT = (
 
 
 def is_ambiguous_new_count(prompt: str) -> bool:
+    # The question and any definition come first. Reading only the opening for
+    # silence signals keeps a pasted file from silencing the reminder and bounds
+    # the regex time on a long prompt.
+    head = prompt[:SILENCE_SCAN_CHARS]
     return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not (
-        DEFINED_COUNT.search(prompt)
-        or DEV_COUNT.search(prompt)
-        or CODE_REFERENCE.search(prompt)
+        DEFINED_COUNT.search(head)
+        or DEV_COUNT.search(head)
+        or CODE_REFERENCE.search(head)
     )
 
 

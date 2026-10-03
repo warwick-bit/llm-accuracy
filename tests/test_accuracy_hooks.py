@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import time
 from types import ModuleType
 
 
@@ -74,6 +75,23 @@ ANALYSIS_FIRE_PROMPTS = [
     "How many new customers did we get from the PR 2026 campaign?",
     "How many new customers did we get at Dreamforce in Sep?",
     "How many new customers did we get in July? This time, check the data first.",
+    "How many new customers did we get in North America/Europe in Q3?",
+    "How many new customers did we get across Europe/Africa last quarter?",
+    "How many new customers did we get in Australia/Asia this year?",
+    "How many new customers did we get in Europe/Middle East?",
+    "How many new customers did we get in Latin America/Caribbean?",
+    "How many new customers did we get from the European time-limited offer?",
+    "How many new customers did we get from the NZ time-limited sale?",
+    "How many new customers did we get from the first-order discount code?",
+    "How many new customers did we get from the unique promo codes campaign?",
+    "How many new customers did we get from the light fixtures promo?",
+    "How many new customers did we get from the State of Origin fixture ads?",
+    "How many new clients did we get for home staging in July?",
+    "How many new clients did we get from staging services in July?",
+    "How many new users did we get from the React/Next.js course?",
+    "How many new customers did we get from the Redis Day sponsorship?",
+    "How many new customers did we get from the local suite of services bundle?",
+    "How many new customers did we get from the cache of trade-show leads?",
 ]
 
 ANALYSIS_SILENT_PROMPTS = [
@@ -137,6 +155,19 @@ ANALYSIS_SILENT_PROMPTS = [
     "How many new accounts were there after running the seed script?",
     "How many new users were there in the Redis cache after the deploy?",
     "How many new users did we get in tests/test_users.py?",
+    "How many new users were there after PR #2026 merged?",
+    "How many new users were there in the CI database?",
+    "How many new users were there in the QA environment?",
+    "How many new users were there in the preview environment?",
+    "How many new users were there in the mock data?",
+    "How many new users were there in users_seed.sql?",
+    "How many new users were there in fixtures/users.json?",
+    "How many new users were there in the test fixtures?",
+    "How many new users were there in the redis db?",
+    "How many new customers did we get in July, counting unique emails?",
+    "How many new customers did we get in July, by first order date?",
+    "How many new customers did we get in July in Sydney time-zone?",
+    "How many new customers did we get in July, America/North_Dakota/Center?",
 ]
 
 FUSION_FIRE_PROMPTS = [
@@ -232,6 +263,17 @@ def test_analysis_hook_precision_battery() -> None:
         assert hook.should_fire(prompt), prompt
     for prompt in ANALYSIS_SILENT_PROMPTS:
         assert not hook.should_fire(prompt), prompt
+
+
+def test_new_count_reads_only_the_opening_for_silence_signals() -> None:
+    hook = load_hook("analysis-contract-injector.py")
+    question = "How many new customers did we get in July?"
+    assert not hook.is_ambiguous_new_count(question + " Use UTC.")
+    pasted = question + " Here is the export:\n" + "a," * 1500 + "\nAll times are UTC."
+    assert hook.is_ambiguous_new_count(pasted)
+    started = time.perf_counter()
+    hook.is_ambiguous_new_count(question + " " + "a." * 50000)
+    assert time.perf_counter() - started < 2
 
 
 def test_new_count_fire_prompts_take_the_new_count_path() -> None:
