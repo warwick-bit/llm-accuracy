@@ -16,11 +16,14 @@ more kind of question it recognises.
   count), which test, internal, trial and merged accounts to exclude, the time
   zone and window edges, and whether to count accounts, people or rows.
 - **Stays quiet when the question is already defined:** a count that names a
-  time zone (UTC, or a capitalised name such as "Sydney time"), says "defined
-  as", "distinct" or "excluding", or gives a first-payment rule gets no
-  reminder. So do development counts (a fixture, seed script, cache, deploy or
-  named code file), other subjects such as new tickets, and prompts with the
-  `# analysis-ok` bypass.
+  time zone (UTC, an abbreviation such as AEST, a named zone such as "Sydney
+  time", or an IANA name such as Australia/Sydney), says "defined as",
+  "distinct" or "excluding", or gives a first-payment rule gets no reminder. So
+  do development counts (a fixture, seed data, a test, dev or sandbox database,
+  Redis, staging, a schema migration, or a named code file or PR), other
+  subjects such as new tickets, and prompts with the `# analysis-ok` bypass. A
+  named data file such as `signups.csv` still gets the reminder, and so does a
+  business event such as "since the pricing page deploy".
 
 The four existing reminders (revenue, best customers, marketing channel and
 onboarding activation) keep their own guidance and are each 152 characters
