@@ -104,6 +104,8 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     ).lower()
     assert "calendar, timezone and close rule" in readme
     assert "user-owned catalogue" in skill
+    output = skill.split("## Output", 1)[1]
+    assert output.index("Evidence receipt") < output.index("Canonical value")
     assert "routing does not engage" in " ".join(readme.split())
     head = skill.split("---", 2)[1]
     assert "Use only when the user has a deterministic-data catalogue" in head
@@ -112,6 +114,9 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     assert "label any figure as non-canonical" in normalized_skill
     assert "Do not withhold an answer, or produce an evidence receipt, only because no catalogue exists" in normalized_skill
     assert "Use this command shape unchanged" in normalized_skill
+    assert "\n   ```\n\n   Exit code 0 means" in skill
+    assert skill.count("```") % 2 == 0
+    assert "When no user-owned catalogue exists, skip this section" in output
     assert 'validate_evidence_receipt.py" --expected-epoch "<prompt_epoch>" <<\'RECEIPT_JSON\'' in skill
     assert "supported window token does not define concrete dates" in normalized_skill
     assert "supply all three required rules" in normalized_skill
@@ -138,8 +143,6 @@ def test_docs_make_user_ownership_and_data_boundary_explicit() -> None:
     assert "`freshness`, `completeness`, and `conflict`" in skill
     assert "any completed nonzero" in normalized_skill
     assert "could not be launched" in normalized_skill
-    output = skill.split("## Output", 1)[1]
-    assert output.index("Evidence receipt") < output.index("Canonical value")
 
 
 @pytest.mark.parametrize("invalid", [[], {}, None, True, 1, 1.5, "invalid"])

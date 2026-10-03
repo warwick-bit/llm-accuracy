@@ -76,7 +76,9 @@ example is synthetic and cannot answer a real question.
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate_evidence_receipt.py" --expected-epoch "<prompt_epoch>" <<'RECEIPT_JSON'
    { ...the receipt JSON... }
    RECEIPT_JSON
-   ``` Exit code 0 means `passed`; any completed nonzero exit
+   ```
+
+   Exit code 0 means `passed`; any completed nonzero exit
    means `failed`, including a validator runtime error. Use `not run` only when
    the validator could not be launched because execution was denied or the tool
    or script was unavailable. Visual inspection can identify a caveat, but
@@ -106,6 +108,10 @@ freshness and completeness. This plugin must remain usable when LLM Accuracy is
 not installed.
 
 ## Output
+
+When no user-owned catalogue exists, skip this section: give the one-sentence
+no-catalogue note and an ordinary answer, as described under Before use.
+For every catalogue route:
 
 - **Matched definition:** exact definition ID, or the gap/ambiguity.
 - **Route status:** whether a declared source binding was executed.
