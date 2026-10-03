@@ -9,7 +9,7 @@ Platform capability and runtime evidence are separate.
 
 **Current plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
 [Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
-[Evidence Memory 0.3.0](release-evidence-memory-0.3.0.md). The records below
+[Evidence Memory 0.4.0](release-evidence-memory-0.4.0.md). The records below
 describe historical builds.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**

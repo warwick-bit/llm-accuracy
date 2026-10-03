@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-03",
+  "kind": "Evidence Memory 0.4.0 decision capture: transcript decay, offline replay, live screens, real compaction and clean install; raw-free aggregates",
+  "decay_in_compaction_summaries": {
+    "population": "Maintainer's local Claude Code transcripts. Only counts were computed; no question, answer or summary text is recorded here.",
+    "answers_before_a_compaction": 58,
+    "kept_by_summary": {
+      "after_1": 0.983,
+      "after_2": 0.756,
+      "after_3": 0.568,
+      "after_4_or_more": 0.521
+    },
+    "answers_lost_at_some_compaction": 23,
+    "sessions_with_a_lost_answer": 6,
+    "existing_capture": "Neither Evidence Memory 0.3.0 nor Session Ledger stored answers.",
+    "model_written_state_rows_in_35_enabled_indexes": 0
+  },
+  "offline_replay": {
+    "sessions": 40,
+    "answers_extracted": 142,
+    "answers_expected": 142,
+    "errors": 0,
+    "compaction_points": 60,
+    "answers_missing_from_summary": 62,
+    "missing_answers_in_restore_packet": 58,
+    "missing_answers_cut_by_state_budget": 4
+  },
+  "live_screens": {
+    "setup": "Clean profile, no MCP servers, synthetic invoices fixture, the prototype's real restore packet injected at session start; Sonnet and Opus.",
+    "asked_to_reuse_choices": {
+      "packet_applied": "6/6",
+      "control_had_no_record": "6/6"
+    },
+    "not_asked": {
+      "packet_applied": "6/6",
+      "control_used_own_defaults": "2/2"
+    },
+    "new_instruction_given": {
+      "followed_new_instruction": "4/4"
+    },
+    "unrelated_file": {
+      "packet_misapplied_stored_choice": "0/8",
+      "packet_led_with_control_answer": "7/8",
+      "packet_asked": "1/8",
+      "control_led_with_same_answer": "8/8"
+    }
+  },
+  "real_compaction": {
+    "setup": "Agent SDK 0.2.163 driving Claude Code 2.1.288 in an isolated profile; AskUserQuestion answered from code (the transcript records it as a user answer); 3 real /compact runs between 6 unrelated tasks; Sonnet.",
+    "with_plugin": {
+      "answers": 4,
+      "decision_rows": 4,
+      "compactions": 3,
+      "restore_packets_with_decisions_after_every_compaction": true,
+      "final_answer_matched_only_correct_value": true,
+      "re_asks": 0
+    },
+    "without_plugin": {
+      "sessions": 2,
+      "summaries_kept_all_choices": true,
+      "final_answers_matched_recompute": true,
+      "re_asks": 0
+    },
+    "limit": "At this session size the summaries kept the choices without the plugin, so live benefit is not demonstrated; the decay figures above come from longer sessions."
+  },
+  "clean_install_smoke": {
+    "claude_code": "2.1.288",
+    "source": "local-path marketplace at the release commit, clean tree",
+    "marketplace_add_rc": 0,
+    "install_rc": 0,
+    "enable_rc": 0,
+    "installed_version": "0.4.0",
+    "tracked_files": 9,
+    "byte_mismatches": 0,
+    "live_model": "haiku",
+    "compactions": 1,
+    "decision_rows": 1,
+    "restore_packets_with_decision": 2,
+    "live_config_files_named_by_session": 0,
+    "passed": true
+  },
+  "known_limits": [
+    "A transcript row rewritten from answer A to B and back to A leaves B current; two answers with identical timestamps can leave the older one current. Claude Code transcripts are append-only.",
+    "Decisions typed as ordinary chat messages are not captured.",
+    "Codex is not covered: its question tool returns only an acknowledgement.",
+    "Untested: the same file with a different question, where a generically worded choice could carry over."
+  ]
+}
