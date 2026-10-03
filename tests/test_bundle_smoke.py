@@ -12,6 +12,73 @@ bundle = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bundle)
 
 
+def test_windows_run_records_the_git_bash_state_it_proved(monkeypatch):
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Linux/WSL')
+    assert bundle.windows_bash_state() == 'not_tested'
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Windows')
+    monkeypatch.delenv('CLAUDE_CODE_GIT_BASH_PATH', raising=False)
+    monkeypatch.setattr(bundle, 'usable_bash', lambda path: bool(path))
+    assert bundle.windows_bash_state() == 'present'
+    monkeypatch.setattr(bundle, 'usable_bash', lambda path: False)
+    assert bundle.windows_bash_state() == 'absent'
+    monkeypatch.setenv('CLAUDE_CODE_GIT_BASH_PATH', 'C:/synthetic/missing/bash.exe')
+    assert bundle.windows_bash_state() == 'unclear'
+
+
+def test_windows_probe_checks_path_override_and_git_install_folders(monkeypatch):
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Windows')
+    monkeypatch.setenv('CLAUDE_CODE_GIT_BASH_PATH', 'C:/override/bash.exe')
+    found = {'git': 'D:/Tools/Git/cmd/git.exe', 'bash': 'E:/bin/bash.exe'}
+    monkeypatch.setattr(bundle.shutil, 'which', found.get)
+    probed = []
+    monkeypatch.setattr(bundle, 'usable_bash', lambda path: probed.append(str(path)) or False)
+    assert bundle.windows_bash_state() == 'unclear'
+    roots = ('C:/Program Files/Git', 'C:/Program Files (x86)/Git', 'D:/Tools/Git')
+    expected = {'E:/bin/bash.exe', 'C:/override/bash.exe'} | {
+        str(Path(root) / suffix) for root in roots for suffix in ('bin/bash.exe', 'usr/bin/bash.exe')}
+    assert set(probed) == expected
+    for source in expected:  # Each source alone proves Bash present.
+        monkeypatch.setattr(bundle, 'usable_bash', lambda path, source=source: str(path) == source)
+        assert bundle.windows_bash_state() == 'present', source
+
+
+@pytest.mark.parametrize(('stdout', 'code', 'usable'), [
+    (b'GNU bash, version 5.2.37(1)-release', 0, True),
+    (b'zsh 5.9 (x86_64-pc-msys)', 0, False),
+    (b'GNU bash, version 5.2.37(1)-release', 1, False),
+])
+def test_usable_bash_needs_a_gnu_bash_version(monkeypatch, stdout, code, usable):
+    def version(command, **kwargs):
+        return subprocess.CompletedProcess(command, code, stdout=stdout, stderr=b'')
+    monkeypatch.setattr(bundle.subprocess, 'run', version)
+    assert bundle.usable_bash('D:/Tools/Git/bin/bash.exe') is usable
+
+
+@pytest.mark.parametrize('state', ['present', 'absent', 'unclear'])
+def test_smoke_report_carries_the_probed_windows_bash_state(monkeypatch, state):
+    def git(command, **kwargs):
+        return subprocess.CompletedProcess(command, 1 if 'diff' in command else 0, stdout=b'', stderr=b'')
+    monkeypatch.setattr(bundle, 'require_committed_source', lambda: 'a' * 40)
+    monkeypatch.setattr(bundle, 'changed_paths', lambda root, baseline: [])
+    monkeypatch.setattr(bundle.subprocess, 'run', git)
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Windows')
+    monkeypatch.setattr(bundle, 'windows_bash_state', lambda: state)
+    monkeypatch.setattr(bundle.smoke, 'host_version', lambda claude: '9.9.9 (Claude Code)')
+    monkeypatch.setattr(bundle, 'package_binding', lambda root, name: {'version': '0.0.0', 'sha256': '0' * 64})
+    monkeypatch.setattr(bundle.smoke, 'auth_profile', lambda root, **k: {'CLAUDE_CONFIG_DIR': str(root / 'p')})
+    monkeypatch.setattr(bundle, 'lifecycle', lambda *a, **k: {'lifecycle': True})
+    monkeypatch.setattr(bundle, 'installed_listing', lambda claude, env, root: [])
+    monkeypatch.setattr(bundle.smoke, 'installed_entry', lambda listing, name: {})
+    monkeypatch.setattr(bundle.smoke, 'path_inside', lambda path, root: True)
+    monkeypatch.setattr(bundle.installed_hook_probe, 'run', lambda *a: True)
+    monkeypatch.setattr(bundle, 'python_options', lambda profile: {})
+    monkeypatch.setattr(bundle, 'action', lambda *a, **k: None)
+    monkeypatch.setattr(bundle, 'bundle_removed', lambda listing: True)
+    report = bundle.run_smoke('synthetic-host', 'synthetic-baseline', live=False)
+    assert report['windows_bash'] == state
+    assert report['status'] == 'partial'
+
+
 def test_installed_byte_missing_and_extra_files_are_failures(tmp_path):
     source, profile = tmp_path / 'source', tmp_path / 'profile'
     entries = []

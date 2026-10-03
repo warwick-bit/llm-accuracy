@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -147,6 +148,38 @@ def lifecycle(claude, root, source, env, *, live=False, timeout=60):
             'automatic_python_fresh': automatic_fresh, 'unconfigured_prompt_delivery': unconfigured_delivery}
 
 
+def usable_bash(path):
+    if not path:
+        return False
+    # Windows' WSL launcher can print GNU Bash's version without being Git Bash.
+    candidate = Path(path)
+    if candidate.name.lower() == 'bash.exe' and candidate.parent.name.lower() in (
+            'system32', 'sysnative', 'syswow64', 'windowsapps'):
+        return False
+    try:
+        env = {key: value for key, value in os.environ.items() if key not in smoke.CONTROL_VARS}
+        result = subprocess.run([str(path), '--version'], env=env, capture_output=True, timeout=15)
+        return result.returncode == 0 and b'GNU bash' in result.stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def windows_bash_state():
+    """The Git Bash state this Windows run proved: present, absent or unclear."""
+    if smoke.platform_label() != 'Windows':
+        return 'not_tested'
+    git = shutil.which('git')
+    roots = [Path('C:/Program Files/Git'), Path('C:/Program Files (x86)/Git')]
+    if git:
+        roots.append(Path(git).parent.parent)
+    paths = [shutil.which('bash'), os.environ.get('CLAUDE_CODE_GIT_BASH_PATH')]
+    paths.extend(root / suffix for root in roots for suffix in ('bin/bash.exe', 'usr/bin/bash.exe'))
+    if any(usable_bash(path) for path in paths):
+        return 'present'
+    # An override that points at no usable Bash proves neither Windows scenario.
+    return 'unclear' if os.environ.get('CLAUDE_CODE_GIT_BASH_PATH') else 'absent'
+
+
 def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
     commit = require_committed_source()
     changed_paths(ROOT, baseline)  # Prove a real, available ancestor; never fall back.
@@ -155,7 +188,7 @@ def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
         raise ValueError('bundle_upgrade_requires_different_baseline')
     report = {'scope': 'code_bundle_registration_accuracy_delivery', 'source_commit': commit,
               'platform': smoke.platform_label(), 'desktop_gui': 'not_tested',
-              'windows_bash': 'not_tested', 'partial': not live,
+              'windows_bash': windows_bash_state(), 'partial': not live,
               'host_version': smoke.host_version(claude).split()[0],
               'python_version': '.'.join(map(str, sys.version_info[:3])),
               'packages': {name: package_binding(ROOT, name) for name in PACKAGES}}
