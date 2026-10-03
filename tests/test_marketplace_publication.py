@@ -120,6 +120,15 @@ def test_invalid_base_cli_emits_fixed_failure(repository, capsys):
     assert report == {'status': 'fail', 'errors': ['publication_base_unavailable']}
 
 
+def test_receipt_too_deep_to_publish_emits_fixed_failure(capsys, monkeypatch):
+    # The depth at which parsing or hashing recurses out differs by Python version, so force it here.
+    def too_deep(*arguments, **options):
+        raise RecursionError('synthetic maximum recursion depth')
+    monkeypatch.setattr(guard, 'publication_errors', too_deep)
+    assert guard.main(['--root', str(ROOT), '--release']) == 1
+    assert json.loads(capsys.readouterr().out) == {'status': 'fail', 'errors': ['invalid_publication_evidence']}
+
+
 def test_missing_ci_artifacts_emit_fixed_diagnostic(tmp_path, capsys, monkeypatch):
     monkeypatch.setenv("GITHUB_RUN_ID", "12345")
     assert guard.main(['--root', str(ROOT), '--release', '--ci-receipts',

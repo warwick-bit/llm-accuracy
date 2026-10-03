@@ -145,6 +145,7 @@ def main(arguments=None):
         KeyError,
         TypeError,
         AttributeError,
+        RecursionError,
         subprocess.SubprocessError,
     ) as error:
         allowed = {

@@ -274,6 +274,18 @@ def test_cli_output_cannot_echo_provider_exception(tmp_path, monkeypatch, capsys
     assert "SYNTHETIC_PROVIDER_ERROR" not in capsys.readouterr().out
 
 
+def test_receipt_too_deep_to_check_emits_fixed_failure(tmp_path, monkeypatch, capsys):
+    # The depth at which parsing or hashing recurses out differs by Python version, so force it here.
+    def too_deep(options):
+        raise RecursionError("synthetic maximum recursion depth")
+
+    monkeypatch.setattr(ci, "run", too_deep)
+    arguments = ["--target", "code-linux", "--claude", "synthetic", "--receipt", str(tmp_path / "qa.json")]
+    assert ci.main(arguments) == 1
+    assert json.loads(capsys.readouterr().out) == {"status": "fail", "error": "ci_installed_qa_failed"}
+    assert not (tmp_path / "qa.json").exists()
+
+
 def test_windows_host_proof_rejects_usable_bash_in_no_bash_mode(monkeypatch):
     monkeypatch.setattr(ci.bundle.smoke, "platform_label", lambda: "Windows")
     monkeypatch.setattr(ci, "usable_bash", lambda p: bool(p))
