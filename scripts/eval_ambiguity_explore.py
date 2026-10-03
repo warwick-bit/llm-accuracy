@@ -382,13 +382,16 @@ def main(arguments=None) -> int:
     raw = args.raw_dir.resolve()
     if raw == ROOT or ROOT in raw.parents:
         parser.error("--raw-dir must be outside the repository")
+    models = args.models.split(",")
+    if not all(probe.MODEL_NAME.fullmatch(model) for model in models):
+        parser.error("--models takes model names only")
     prompts = [name for name in args.prompts.split(",") if name in PROMPTS]
     arms = {"current": args.baseline_plugin, "candidate": PLUGIN}
     if not prompts or not all((plugin / HOOK).is_file() for plugin in arms.values()):
         parser.error("unknown prompt set or a plugin without the ambiguity hook")
     raw.mkdir(parents=True, exist_ok=True)
     index = 0
-    for model in args.models.split(","):
+    for model in models:
         for name in prompts:
             for repeat in range(args.repeats):
                 order = (

@@ -74,8 +74,15 @@ DEFINED_COUNT = re.compile(
     r"not\s+counting|only\s+count\w*|counting\s+only|count(?:ing)?\s+(?:each|every|one)|"
     r"first[\s-]+(?:paid|paying|payment|purchase|invoice|order|subscription)|"
     r"time\s?zone|utc|gmt|local\s+time|"
+    # a capitalised place or zone name before "time", such as "Sydney time"
     r"(?!(?:this|that|any|the|a|first|last|next|same|each|every|some|what|which|"
-    r"long|real|lead|run|over|part|full|on|in|at|by|for)\b)[a-z]+\s+time)\b",
+    r"long|real|lead|run|over|part|full|on|in|at|by|for)\b)(?-i:[A-Z][a-z]+)\s+time)\b",
+    re.I,
+)
+# New rows in a fixture, seed, cache or deploy are a development count.
+DEV_COUNT = re.compile(
+    r"\b(?:migrations?|fixtures?|seed(?:ed|ing)?|test\s+(?:db|database|data|suite)|"
+    r"cache[ds]?|redis|deploy(?:ed|ment|s)?|staging|unit\s+tests?)\b",
     re.I,
 )
 EXEC = re.compile(
@@ -119,7 +126,9 @@ AMBIGUITY_CONTRACT = (
 
 
 def is_ambiguous_new_count(prompt: str) -> bool:
-    return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not DEFINED_COUNT.search(prompt)
+    return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not (
+        DEFINED_COUNT.search(prompt) or DEV_COUNT.search(prompt) or CONCRETE.search(prompt)
+    )
 
 
 def is_ambiguous_business_question(prompt: str) -> bool:

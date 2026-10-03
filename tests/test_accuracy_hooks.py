@@ -33,6 +33,9 @@ ANALYSIS_FIRE_PROMPTS = [
     "How many new sign-ups were there last week? Use signups.csv.",
     "How many new users did we get?",
     "How many new clients do we have this month?",
+    "How many new customers did we get in July? Take your time.",
+    "How many new customers did we get during peak time?",
+    "How many new customers did we get in July? This time, check the data first.",
 ]
 
 ANALYSIS_SILENT_PROMPTS = [
@@ -60,6 +63,11 @@ ANALYSIS_SILENT_PROMPTS = [
     "How many new tickets did we get?",
     "How many new customers are in invoices.csv?",
     "How many new customers did we get in July? # analysis-ok",
+    "How many new customers did we get in July, Pacific time?",
+    "How many new users did we get from the test fixture in tests/test_users.py?",
+    "How many new accounts were there after running the seed script?",
+    "How many new users were there in the Redis cache after the deploy?",
+    "How many new users did we get in tests/test_users.py?",
 ]
 
 FUSION_FIRE_PROMPTS = [

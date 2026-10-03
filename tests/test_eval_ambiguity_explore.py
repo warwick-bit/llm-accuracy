@@ -58,6 +58,15 @@ def test_live_run_refuses_a_raw_folder_inside_the_repository(capsys):
     assert not (ROOT / 'raw').exists()
 
 
+def test_live_run_refuses_a_model_name_that_is_a_path(tmp_path, capsys):
+    raw = tmp_path / 'raw'
+    with pytest.raises(SystemExit):
+        evaluation.main(['--baseline-plugin', str(ROOT / 'plugins/llm-accuracy'), '--raw-dir', str(raw),
+                         '--models', '../escaped'])
+    assert 'model names only' in capsys.readouterr().err
+    assert not raw.exists()
+
+
 def test_session_has_no_mcp_servers_and_only_read_tools(tmp_path):
     command = evaluation.session_command(tmp_path, 'claude-sonnet-5-5', 'high')
     assert command[command.index('--tools') + 1] == 'Bash,Read,Grep,Glob'

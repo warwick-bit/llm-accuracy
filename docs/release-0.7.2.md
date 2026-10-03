@@ -16,9 +16,11 @@ more kind of question it recognises.
   count), which test, internal, trial and merged accounts to exclude, the time
   zone and window edges, and whether to count accounts, people or rows.
 - **Stays quiet when the question is already defined:** a count that names a
-  time zone or UTC, says "defined as", "distinct" or "excluding", or gives a
-  first-payment rule gets no reminder. So do other subjects, such as new
-  tickets, and prompts with the `# analysis-ok` bypass.
+  time zone (UTC, or a capitalised name such as "Sydney time"), says "defined
+  as", "distinct" or "excluding", or gives a first-payment rule gets no
+  reminder. So do development counts (a fixture, seed script, cache, deploy or
+  named code file), other subjects such as new tickets, and prompts with the
+  `# analysis-ok` bypass.
 
 The four existing reminders (revenue, best customers, marketing channel and
 onboarding activation) keep their own guidance and are each 152 characters
@@ -42,10 +44,13 @@ powered comparisons; see the
   with 0.7.1, too few to compare.
 - **Precise question (definition, exclusions and time zone given; n=1 per
   model and version):** the reminder stayed silent 4/4, and all four replies
-  gave 43.
+  gave 43; one 0.7.1 reply had a factual slip.
 - **What this does not show:** that answers become more accurate, that people
   prefer a question to an answer, or how the reminder behaves on other
-  wordings, other models or real data. Every reply in both versions inspected
+  wordings, other models or real data. The pattern recognises questions that
+  open "How many new …" with a verb such as "did we get" or "were there";
+  other wordings, such as "How many new users signed up in July?", do not get
+  the reminder yet. Every reply in both versions inspected
   the file before answering, so the change is in how the answer is framed, not
   in whether Claude looks.
 

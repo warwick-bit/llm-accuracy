@@ -36,7 +36,8 @@
     ],
     "arm_order": "alternating",
     "scoring": "Every reply was read in full and each figure it stated was recomputed from the fixture.",
-    "raw_responses_committed": false
+    "raw_responses_committed": false,
+    "opening_rubric": "Conditional: the opening frames the figure as depending on a definition and the reply asks the user to choose. Committed: the first sentence states one figure as the answer."
   },
   "hook_sha256": {
     "0.7.1": "59cd448ee77941311f4071af144c69042c41bd31363cdaa60a121b802fba25aa",
@@ -82,6 +83,7 @@
   "known_limits": [
     "Screens only: one synthetic fixture, one vague and one precise wording, n=1-3 per cell; no powered comparison.",
     "Slip counts are too small to compare versions; the screen does not show that answers become more accurate.",
+    "The new-count pattern needs a 'How many new ...' opening with a verb such as 'did we get' or 'were there'; other wordings are not recognised yet.",
     "Opening with a question is the intended behaviour change, not a measured user benefit.",
     "The fixture has an unseeded quirk: 18 accounts subscribe before they sign up. It does not change any count; some replies flagged it.",
     "Desktop Chat and Cowork were not rerun for this patch."
