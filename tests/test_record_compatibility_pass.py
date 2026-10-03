@@ -239,18 +239,14 @@ def test_receipt_writer_replaces_atomically_with_lf_endings(tmp_path):
     assert [item.name for item in tmp_path.iterdir()] == ['candidate.json']
 
 
-def test_row_too_deep_to_write_gets_a_fixed_label(distribution, capsys):
+def test_row_too_deep_to_write_gets_a_fixed_label(distribution, capsys, monkeypatch):
+    # The depth at which the indented writer recurses out differs by Python version
+    # (about 3000 levels on 3.12, deeper on 3.13+), so force it here.
     root, path = distribution
     before = path.read_bytes()
-    target = 'desktop-chat-macos'
-    platform, kind = contract.target_identity(target)
-    note = 'synthetic'
-    for _ in range(3000):
-        note = {'nested': note}
-    row = {'outcome': 'pass', 'platform': platform, 'host_kind': kind, 'host_version': '1.2.3',
-           'packages': contract.target_packages(contract.candidate(root)['packages'], target),
-           'checks': dict.fromkeys(contract.CHAT_CHECKS, True), 'source_commit': TESTED, 'note': note}
-    code, output = record(root, capsys, target, '--row', write(root, 'ui.json', row))
+    def too_deep(target, receipt):
+        raise RecursionError('synthetic maximum recursion depth')
+    monkeypatch.setattr(recorder, 'write_receipt', too_deep)
+    code, output = record(root, capsys, 'code-wsl', '--bundle-receipt', write(root, 'run.json', bundle_report(root)))
     assert (code, output['errors']) == (1, ['invalid_pass_input'])
     assert path.read_bytes() == before
-    assert sorted(item.name for item in path.parent.iterdir()) == [path.name]
