@@ -26,7 +26,7 @@
     },
     {
       "name": "evidence-memory",
-      "description": "Experimental current-session search and correction memory; enabling the plugin starts automatic local capture of exact, potentially sensitive external tool results (MCP and web by default).",
+      "description": "Experimental current-session search and correction memory; enabling the plugin starts automatic local capture of exact, potentially sensitive external tool results (MCP and web by default) and of your answers to Claude's questions.",
       "category": "productivity",
       "source": "./plugins/evidence-memory"
     }
