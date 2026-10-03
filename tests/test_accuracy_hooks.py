@@ -92,6 +92,8 @@ ANALYSIS_FIRE_PROMPTS = [
     "How many new customers did we get from the Redis Day sponsorship?",
     "How many new customers did we get from the local suite of services bundle?",
     "How many new customers did we get from the cache of trade-show leads?",
+    "How many new customers did we get after demoing with mock data?",
+    "How many new customers did we get in July? Data: grass_seeds.csv",
 ]
 
 ANALYSIS_SILENT_PROMPTS = [
@@ -271,6 +273,9 @@ def test_new_count_reads_only_the_opening_for_silence_signals() -> None:
     assert not hook.is_ambiguous_new_count(question + " Use UTC.")
     pasted = question + " Here is the export:\n" + "a," * 1500 + "\nAll times are UTC."
     assert hook.is_ambiguous_new_count(pasted)
+    padded = question + " " + "x" * (hook.SILENCE_SCAN_CHARS - len(question) - 5)
+    assert (padded + " PSTN")[: hook.SILENCE_SCAN_CHARS].endswith(" PST")
+    assert hook.is_ambiguous_new_count(padded + " PSTN rollout notes")
     started = time.perf_counter()
     hook.is_ambiguous_new_count(question + " " + "a." * 50000)
     assert time.perf_counter() - started < 2

@@ -106,9 +106,9 @@ DEV_COUNT = re.compile(
     r"fixtures?\s+(?:data|files?|rows?|db|database)|fixtures/\w+|"
     r"seed(?:ed|ing)?\s+(?:script|data|file|rows?|db|database)s?|"
     r"seed(?:ed|ing)?\s+the\s+(?:db|database)|db:seed|"
-    r"\w*seeds?\.(?:sql|rb|py|ts|js|json|ya?ml|csv)|"
+    r"\w*seeds?\.(?:sql|rb|py|ts|js|ya?ml)|"
     r"(?:test|dev|development|sandbox|staging|local|ci|qa|preview)\s+"
-    r"(?:db|database|env(?:ironment)?)|test\s+suite|mock\s+data|"
+    r"(?:db|database|env(?:ironment)?)|test\s+suite|(?:in|from)\s+(?:the\s+)?mock\s+data|"
     r"(?:in|from)\s+the\s+cache(?!\s+of\b)|sqlite|"
     r"redis\s+(?:cache|db|database|instance|keys?|server)|in\s+redis|"
     r"(?:in|on|to)\s+staging|staging\s+(?:server|site|instance)|unit\s+tests?|"
@@ -167,10 +167,13 @@ AMBIGUITY_CONTRACT = (
 
 
 def is_ambiguous_new_count(prompt: str) -> bool:
-    # The question and any definition come first. Reading only the opening for
-    # silence signals keeps a pasted file from silencing the reminder and bounds
-    # the regex time on a long prompt.
+    # The question and any definition come first. Signals past the opening are
+    # ignored, so the later rows of a pasted file cannot silence the reminder and
+    # regex time stays bounded. A token cut at the limit is dropped, so the cut
+    # cannot create a signal ("PSTN" cut to "PST").
     head = prompt[:SILENCE_SCAN_CHARS]
+    if len(prompt) > SILENCE_SCAN_CHARS:
+        head = re.sub(r"\S*\Z", "", head)
     return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not (
         DEFINED_COUNT.search(head)
         or DEV_COUNT.search(head)
