@@ -74,15 +74,30 @@ DEFINED_COUNT = re.compile(
     r"not\s+counting|only\s+count\w*|counting\s+only|count(?:ing)?\s+(?:each|every|one)|"
     r"first[\s-]+(?:paid|paying|payment|purchase|invoice|order|subscription)|"
     r"time\s?zone|utc|gmt|local\s+time|"
-    # a capitalised place or zone name before "time", such as "Sydney time"
-    r"(?!(?:this|that|any|the|a|first|last|next|same|each|every|some|what|which|"
-    r"long|real|lead|run|over|part|full|on|in|at|by|for)\b)(?-i:[A-Z][a-z]+)\s+time)\b",
+    # a named zone ("Sydney time", "Pacific Standard Time"), not "peak time"
+    r"(?:pacific|mountain|central|eastern|western|atlantic|alaska|hawaii|australian|"
+    r"sydney|melbourne|brisbane|adelaide|perth|darwin|hobart|auckland|wellington|"
+    r"london|dublin|paris|berlin|new\s+york|chicago|denver|los\s+angeles|toronto|"
+    r"vancouver|singapore|hong\s+kong|tokyo|india|indian)\s+"
+    r"(?:(?:eastern|central|western)\s+)?(?:standard\s+|daylight\s+)?time|"
+    r"(?-i:AEST|AEDT|ACST|ACDT|AWST|NZST|NZDT|PST|PDT|MST|MDT|CST|CDT|EST|EDT|BST|"
+    r"CEST|CET|IST|JST|SGT|HKT)|"
+    r"(?:africa|america|asia|australia|europe|pacific)/[a-z_]+)\b",
     re.I,
 )
-# New rows in a fixture, seed, cache or deploy are a development count.
+# New rows in a fixture, seed data, test database or cache store are a
+# development count. A deploy, migration or cached report can date a business
+# event, so those words alone do not silence the reminder.
 DEV_COUNT = re.compile(
-    r"\b(?:migrations?|fixtures?|seed(?:ed|ing)?|test\s+(?:db|database|data|suite)|"
-    r"cache[ds]?|redis|deploy(?:ed|ment|s)?|staging|unit\s+tests?)\b",
+    r"\b(?:fixtures?|seed(?:ed|ing)?\s+(?:script|data|file|rows?|db|database)s?|"
+    r"test\s+(?:db|database|data|suite|env(?:ironment)?)|redis|staging|unit\s+tests?|"
+    r"(?:db|database|schema)\s+migrations?|migration\s+(?:files?|scripts?))\b",
+    re.I,
+)
+# A named code file or PR makes a count a code question. Unlike CONCRETE, a data
+# file (.csv, .json, .sql) or ~/ path does not: exploring it first is the point.
+CODE_REFERENCE = re.compile(
+    r"[\w/.\-]+\.(?:py|tsx?|jsx?|rb|go|rs|java|kt|sh|ya?ml|toml)\b|\bPR\s*#?\d+",
     re.I,
 )
 EXEC = re.compile(
@@ -127,7 +142,9 @@ AMBIGUITY_CONTRACT = (
 
 def is_ambiguous_new_count(prompt: str) -> bool:
     return bool(AMBIGUOUS_NEW_COUNT.match(prompt)) and not (
-        DEFINED_COUNT.search(prompt) or DEV_COUNT.search(prompt) or CONCRETE.search(prompt)
+        DEFINED_COUNT.search(prompt)
+        or DEV_COUNT.search(prompt)
+        or CODE_REFERENCE.search(prompt)
     )
 
 

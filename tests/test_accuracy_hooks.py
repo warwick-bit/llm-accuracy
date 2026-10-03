@@ -35,6 +35,17 @@ ANALYSIS_FIRE_PROMPTS = [
     "How many new clients do we have this month?",
     "How many new customers did we get in July? Take your time.",
     "How many new customers did we get during peak time?",
+    "How many new customers did we get during Peak time?",
+    "How many new customers did we get over Christmas time?",
+    "How many new customers did we get in Apr 2026?",
+    "How many new customers have we added since Apr 1?",
+    "How many new customers did we get since the pricing page deploy?",
+    "How many new customers did we get after the billing migration?",
+    "How many new customers have we gained since we deployed the new onboarding flow?",
+    "How many new customers did we get from the seed round campaign?",
+    "How many new customers did we get in July? The cached dashboard says 40.",
+    "How many new customers did we get in July? The export is ~/exports/july.csv",
+    "How many new customers did we get in July? Use customers.json",
     "How many new customers did we get in July? This time, check the data first.",
 ]
 
@@ -64,6 +75,11 @@ ANALYSIS_SILENT_PROMPTS = [
     "How many new customers are in invoices.csv?",
     "How many new customers did we get in July? # analysis-ok",
     "How many new customers did we get in July, Pacific time?",
+    "How many new customers did we get in July, sydney time?",
+    "How many new customers did we get in July (AEST)?",
+    "How many new customers did we get in July in Australia/Sydney?",
+    "How many new users were there after the schema migration?",
+    "How many new customers were there in PR #412?",
     "How many new users did we get from the test fixture in tests/test_users.py?",
     "How many new accounts were there after running the seed script?",
     "How many new users were there in the Redis cache after the deploy?",
@@ -163,6 +179,15 @@ def test_analysis_hook_precision_battery() -> None:
         assert hook.should_fire(prompt), prompt
     for prompt in ANALYSIS_SILENT_PROMPTS:
         assert not hook.should_fire(prompt), prompt
+
+
+def test_new_count_fire_prompts_take_the_new_count_path() -> None:
+    hook = load_hook("analysis-contract-injector.py")
+    counts = [p for p in ANALYSIS_FIRE_PROMPTS if p.lower().startswith("how many new")]
+
+    assert len(counts) >= 15
+    for prompt in counts:
+        assert hook.is_ambiguous_new_count(prompt), prompt
 
 
 def test_analysis_hook_emits_advisory_context(monkeypatch, capsys) -> None:
