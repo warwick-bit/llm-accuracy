@@ -66,6 +66,8 @@ def main(arguments=None) -> int:
             write_receipt(path, receipt)
         except OSError:
             errors = ["candidate_write_failed"]
+        except RecursionError:
+            errors = ["invalid_pass_input"]
     status = "fail" if errors else "pass"
     print(json.dumps({"status": status, "target": options.target, "errors": errors}))
     return int(status == "fail")
