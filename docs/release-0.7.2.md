@@ -49,6 +49,16 @@ powered comparisons; see the
   the file before answering, so the change is in how the answer is framed, not
   in whether Claude looks.
 
+**Installation.** A clean temporary Claude Code 2.1.288 profile on Linux/WSL
+installed 0.7.2 from a local-path marketplace; the installed files matched the
+committed package byte for byte, and the default, bypass and release-archive
+sessions each received the expected reminders. See the
+[installation smoke](validation/claude-code-smoke-0.7.2.json). The isolated
+bundle smoke on the same commit passed every required Code check and is
+recorded as the `code-wsl` live pass in the
+[compatibility record](validation/compatibility-candidate.json); the native
+Linux, macOS and Windows installation rows come from CI.
+
 ## Update
 
 ```sh
