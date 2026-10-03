@@ -10,7 +10,10 @@ After session-level disable, clear or begin-plan, the retained cutoff prevents
 earlier rows from being indexed on an explicit resume.
 
 Install it with `/plugin install evidence-memory@llm-accuracy`, then enable the
-plugin in `/plugin` and restart Claude Code or run `/reload-plugins`. Capture
+plugin in `/plugin`. Set its **Python executable** option in `/config` to a
+working Python 3.9+ executable, with no arguments, before restarting Claude Code
+or running `/reload-plugins`. This option is also required when upgrading to
+the source candidate. Capture
 begins at the next session start or prompt. `/evidence-memory:memory disable`
 stops capture and deletes that session's evidence and state. `begin-plan` and
 `clear` do the same. Each deletion retains a fresh local cutoff marker so
@@ -93,7 +96,8 @@ it**: capture starts at a fresh cutoff in each new session. Remove it with
   cached `memory.py` under `$CODEX_HOME` (default `~/.codex`) and passes that
   data folder and `$CODEX_THREAD_ID`, the session ID Codex 0.158 exports to
   shell commands. After the first compaction the restore packet's
-  `command_prefix` gives the same command already resolved.
+  `command_argv` gives the same command already resolved. Use it directly or
+  quote each element for the active shell; Windows `command_prefix` is PowerShell.
 - **Sandbox:** read actions work in Codex's read-only sandbox. `remember`,
   `sync`, `enable` and `disable` need a writable plugin data directory, which
   the default Codex sandboxes do not grant.
@@ -133,7 +137,10 @@ python3 ~/.claude/plugins/cache/llm-accuracy/evidence-memory/<version>/hooks/mem
   --session-id <session-id> enable
 ```
 
-Use `python` if `python3` is unavailable. The CLI also accepts explicit paths and
+Use the configured Python 3.9+ executable; verify it runs rather than relying
+on its name being present. Native Windows Claude hooks use direct execution
+with no Git Bash dependency. The separate experimental Codex package retains
+its POSIX-shell requirement. See the repository compatibility contract. The CLI also accepts explicit paths and
 session IDs for manual Codex transcript ingestion. This does not install Codex
 hooks. `status`, `sync /exact/transcript.jsonl`, `lookup KEY`, `search "keywords"`,
 `fetch ID`, `state`, `remember` and `disable` are subcommands; see the memory skill for paging
@@ -192,7 +199,7 @@ results, newest first, as a short ID, tool name(s), time, logged size and host
 error flag. It carries no call arguments or result content, because call input
 can hold secrets or instruction-like text; the model fetches the ID to see both.
 The packet also carries a bounded subset of current state and a resolved
-`command_prefix` for the CLI. It stays within the host output budget, dropping
+`command_argv` for the CLI and a legacy shell-specific `command_prefix`. It stays within the host output budget, dropping
 the oldest listed results before any state, and is omitted when there is no
 listed result or state. The model must still choose to retrieve; storage alone
 does not guarantee it will. An ID is provenance for a logged historical result,
@@ -240,9 +247,21 @@ No network, external telemetry or cross-session retrieval is added. Never commit
 memory, transcripts or real query results as fixtures.
 
 Synthetic replay tests establish storage/retrieval properties and measured local
-I/O, not a general improvement in model answer accuracy. A clean native Windows
-installed-host smoke passed with synthetic data; live long-session benefit and
-macOS host behaviour remain unmeasured. See the
+I/O, not a general improvement in model answer accuracy. A historical native
+Windows installed-host smoke passed with synthetic data on 25 Sep 2026; it does
+not certify the current 0.5.0 candidate. Live long-session benefit and macOS
+host behaviour remain unmeasured. See the
 [standalone validation receipt](../../docs/validation/evidence-memory-standalone-2026-09-25.json).
 The 0.3.0 scope choices and restore-packet comparison are in the
 [0.3.0 receipt](../../docs/validation/evidence-memory-0.3.0-2026-09-30.json).
+
+## Overlapping hooks
+
+Ordinary capture quietly defers when the session lock is busy; it does not
+advance the cursor. A later hook or `sync TRANSCRIPT_PATH` catches up without
+duplicating indexed events. Restore, Stop and PreCompact wait at most 0.5
+seconds, then report persistent contention with a fixed advisory. A final
+deferred capture needs a later sync; a busy restore may omit context.
+`status`/`sync` return `memory_session_lock_busy` when the lock remains held.
+Other capture/restore failures still report diagnostics. Do not delete locks
+or bypass them. No local capture or CLI execution is available in Desktop Chat.

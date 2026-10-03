@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.6.6"
+    assert claude["version"] == "0.7.0"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -51,7 +51,7 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
     manifest = load_json("plugins/session-ledger/.claude-plugin/plugin.json")
 
     assert manifest["name"] == "session-ledger"
-    assert manifest["version"] == "0.2.7"
+    assert manifest["version"] == "0.3.0"
     assert manifest["license"] == "MIT"
     assert manifest["defaultEnabled"] is False
     assert not (LEDGER / ".codex-plugin").exists()
@@ -65,7 +65,7 @@ def test_session_ledger_manifest_is_separate_and_claude_only() -> None:
 def test_evidence_memory_is_independent_and_explicit() -> None:
     manifest = load_json("plugins/evidence-memory/.claude-plugin/plugin.json")
     assert manifest["name"] == "evidence-memory"
-    assert manifest["version"] == "0.4.0"
+    assert manifest["version"] == "0.5.0"
     assert manifest["defaultEnabled"] is False
     assert "dependencies" not in manifest
     assert (EVIDENCE / "hooks" / "memory.py").exists()
@@ -84,13 +84,15 @@ def test_codex_marketplace_publishes_only_evidence_memory() -> None:
         assert not (plugin / ".codex-plugin").exists()
 
 
-def test_codex_hooks_reuse_the_claude_hook_commands() -> None:
+def test_codex_hooks_use_a_separate_posix_launcher() -> None:
     claude = load_json("plugins/evidence-memory/hooks/hooks.json")["hooks"]
     codex = load_json("plugins/evidence-memory/hooks/codex-hooks.json")["hooks"]
     assert set(codex) == {"UserPromptSubmit", "Stop", "PreCompact", "PostToolUse", "SessionStart"}
     for event, groups in codex.items():
         commands = [hook["command"] for group in groups for hook in group["hooks"]]
-        assert commands == [hook["command"] for group in claude[event] for hook in group["hooks"]]
+        action = "hook-restore" if event == "SessionStart" else "hook-capture"
+        assert all(action in command and "user_config" not in command for command in commands)
+        assert all(action in hook["args"] for group in claude[event] for hook in group["hooks"])
         assert all(hook["timeout"] <= 10 for group in groups for hook in group["hooks"])
     assert "hook-restore" in codex["SessionStart"][0]["hooks"][0]["command"]
 

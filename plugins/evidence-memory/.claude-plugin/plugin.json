@@ -2,12 +2,20 @@
   "name": "evidence-memory",
   "displayName": "Evidence Memory",
   "description": "Experimental current-session search and correction memory for external tool results (MCP and web by default) and your answers to Claude's questions; exact results stay local and may contain sensitive data.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "defaultEnabled": false,
   "author": {
     "name": "Warwick"
   },
   "homepage": "https://github.com/warwick-bit/llm-accuracy",
   "repository": "https://github.com/warwick-bit/llm-accuracy",
-  "license": "MIT"
+  "license": "MIT",
+  "userConfig": {
+    "python_executable": {
+      "type": "string",
+      "title": "Python executable",
+      "description": "A working Python 3.9+ executable name or absolute path, with no arguments. Linux/macOS: python3. Windows: python or the full python.exe path. Git Bash is optional.",
+      "required": true
+    }
+  }
 }

@@ -1,11 +1,27 @@
 """Hook tests use the host POSIX shell, including explicit Git Bash on Windows."""
 
 import os
+import sys
 from pathlib import Path
 
 import pytest
 
 HOOK_SHELL = os.environ.get("HOOK_TEST_SHELL", "/bin/sh" if os.name == "posix" else "")
+
+
+def hook_argv(handler, root, data="", executable=None):
+    """Apply the documented exec-form substitutions without involving a shell."""
+    values = {"CLAUDE_PLUGIN_ROOT": str(root), "CLAUDE_PLUGIN_DATA": str(data),
+              "user_config.python_executable": executable or sys.executable}
+
+    def expand(value):
+        for key, replacement in values.items():
+            value = value.replace("${" + key + "}", replacement)
+        assert "${" not in value
+        return value
+
+    assert isinstance(handler["args"], list)
+    return [expand(handler["command"]), *map(expand, handler["args"])]
 
 
 @pytest.fixture(autouse=True)

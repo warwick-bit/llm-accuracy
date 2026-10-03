@@ -3,23 +3,22 @@
 The behaviour tests in test_session_ledger.py import the module and call
 functions directly, which leaves CLI parsing, stdin handling, interpreter
 invocation, and the hooks.json contract uncovered. These tests execute the
-exact command strings shipped in hooks.json — and the inline commands embedded
-in the begin-plan and clear SKILL.md files — through a POSIX shell, the same
-way Claude Code runs them.
+exact argument vectors shipped in hooks.json and the begin-plan and clear skill
+instructions. This checks their CLI contract; model adherence to skill prose
+still requires installed-host QA.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-from conftest import HOOK_SHELL
+from conftest import hook_argv
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,18 +33,15 @@ EVENT_ACTIONS = {
     "SessionStart": "session-start",
 }
 
-posix_only = pytest.mark.skipif(
-    not HOOK_SHELL, reason="requires a configured POSIX hook shell"
-)
 
 
-def hook_command(event: str) -> str:
+def hook_command(event: str) -> dict:
     config = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))["hooks"]
     matchers = config[event]
     assert len(matchers) == 1
     hooks = matchers[0]["hooks"]
     assert len(hooks) == 1
-    return hooks[0]["command"]
+    return hooks[0]
 
 
 def clean_environment() -> dict[str, str]:
@@ -77,7 +73,7 @@ def run_hook(
         environment["CLAUDE_PLUGIN_DATA"] = str(data_root)
     environment.update(extra_env or {})
     return subprocess.run(
-        [HOOK_SHELL, "-c", hook_command(event)],
+        hook_argv(hook_command(event), PLUGIN_ROOT, data_root or ""),
         input=stdin_text,
         capture_output=True,
         text=True,
@@ -86,34 +82,20 @@ def run_hook(
     )
 
 
-def skill_command(name: str) -> str:
-    """Return the one inline command embedded in a skill's SKILL.md."""
-    source = (PLUGIN_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
-    commands = re.findall(r"!`([^`]+)`", source)
-    assert len(commands) == 1, f"{name} skill must embed exactly one inline command"
-    return commands[0]
-
-
-def run_skill(
-    name: str,
-    *,
-    data_root: Path | None,
-    session_id: str | None,
-) -> subprocess.CompletedProcess[str]:
-    """Run one skill's embedded command exactly as skill preprocessing would."""
-    environment = clean_environment()
-    environment["CLAUDE_PLUGIN_ROOT"] = str(PLUGIN_ROOT)
-    if data_root is not None:
-        environment["CLAUDE_PLUGIN_DATA"] = str(data_root)
-    if session_id is not None:
-        environment["CLAUDE_SESSION_ID"] = session_id
-    return subprocess.run(
-        [HOOK_SHELL, "-c", skill_command(name)],
-        capture_output=True,
-        text=True,
-        env=environment,
-        timeout=30,
-    )
+def run_skill(name, *, data_root, session_id):
+    source = (PLUGIN_ROOT / "skills" / name / "SKILL.md").read_text()
+    assert "!`" not in source
+    vector = json.loads(source.split('```json\n', 1)[1].split('\n```', 1)[0])
+    replacements = {'${user_config.python_executable}': sys.executable,
+                    '${CLAUDE_PLUGIN_ROOT}': str(PLUGIN_ROOT),
+                    '${CLAUDE_PLUGIN_DATA}': str(data_root) if data_root is not None else '',
+                    '${CLAUDE_SESSION_ID}': session_id or ''}
+    command = []
+    for argument in vector:
+        for token, value in replacements.items():
+            argument = argument.replace(token, value)
+        command.append(argument)
+    return subprocess.run(command, capture_output=True, text=True, env=clean_environment(), timeout=30)
 
 
 def record_file(data_root: Path) -> Path | None:
@@ -133,18 +115,14 @@ def test_hooks_json_shape_matches_the_documented_contract() -> None:
     assert set(config["hooks"]) == set(EVENT_ACTIONS)
     for event, action in EVENT_ACTIONS.items():
         hook = config["hooks"][event][0]["hooks"][0]
-        assert set(hook) == {"type", "command", "timeout"}
+        assert set(hook) == {"type", "command", "args", "timeout"}
         assert hook["type"] == "command"
         assert hook["timeout"] == 5
-        assert hook["command"] == (
-            'if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; '
-            'else PLUGIN_PYTHON=python; fi; '
-            '"$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" '
-            f'{action} --plugin-data "${{CLAUDE_PLUGIN_DATA}}"'
-        )
+        assert hook["command"] == "${user_config.python_executable}"
+        assert hook["args"][2:] == ["${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py", "session-ledger.py",
+                                action, "--plugin-data", "${CLAUDE_PLUGIN_DATA}"]
 
 
-@posix_only
 def test_user_prompt_submit_command_captures_the_prompt(tmp_path: Path) -> None:
     data_root = tmp_path / "plugin-data"
     payload = {
@@ -170,7 +148,6 @@ def test_user_prompt_submit_command_captures_the_prompt(tmp_path: Path) -> None:
     assert entries[0]["fingerprint"].startswith("hook:")
 
 
-@posix_only
 def test_stop_command_captures_the_last_assistant_message(tmp_path: Path) -> None:
     data_root = tmp_path / "plugin-data"
     payload = {
@@ -189,7 +166,6 @@ def test_stop_command_captures_the_last_assistant_message(tmp_path: Path) -> Non
     assert roles == [("assistant", "Synthetic wiring reply.")]
 
 
-@posix_only
 def test_pre_compact_command_flushes_the_transcript_tail(tmp_path: Path) -> None:
     data_root = tmp_path / "plugin-data"
     transcript = tmp_path / "transcript.jsonl"
@@ -220,7 +196,6 @@ def test_pre_compact_command_flushes_the_transcript_tail(tmp_path: Path) -> None
     assert roles == [("assistant", "Synthetic transcript text.")]
 
 
-@posix_only
 def test_post_compact_then_session_start_restores_the_summary(tmp_path: Path) -> None:
     data_root = tmp_path / "plugin-data"
     compact_payload = {
@@ -253,7 +228,6 @@ def test_post_compact_then_session_start_restores_the_summary(tmp_path: Path) ->
     assert "Synthetic compact summary evidence." in output["additionalContext"]
 
 
-@posix_only
 @pytest.mark.parametrize("event", sorted(EVENT_ACTIONS))
 @pytest.mark.parametrize("stdin_text", ["", "{not json", '["not", "an", "object"]'])
 def test_malformed_stdin_fails_open_without_output(
@@ -269,7 +243,6 @@ def test_malformed_stdin_fails_open_without_output(
     assert record_file(data_root) is None
 
 
-@posix_only
 def test_missing_plugin_data_environment_fails_open(tmp_path: Path) -> None:
     payload = {
         "session_id": "wiring-session",
@@ -288,7 +261,6 @@ def test_missing_plugin_data_environment_fails_open(tmp_path: Path) -> None:
     assert not list(tmp_path.rglob("record.json"))
 
 
-@posix_only
 def test_capture_command_applies_opt_in_redaction_from_the_environment(
     tmp_path: Path,
 ) -> None:
@@ -313,7 +285,6 @@ def test_capture_command_applies_opt_in_redaction_from_the_environment(
     assert entries[0]["text"] == "Key [REDACTED:aws-access-key-id] was pasted here."
 
 
-@posix_only
 def test_begin_plan_skill_command_starts_a_boundary(tmp_path: Path) -> None:
     data_root = tmp_path / "plugin-data"
 
@@ -325,7 +296,6 @@ def test_begin_plan_skill_command_starts_a_boundary(tmp_path: Path) -> None:
     assert len(list(data_root.glob("session-ledger/sessions/*/scope.json"))) == 1
 
 
-@posix_only
 @pytest.mark.parametrize("missing", ["plugin-data", "session-id"])
 def test_begin_plan_skill_command_reports_failure_when_env_is_missing(
     tmp_path: Path, missing: str
@@ -344,7 +314,6 @@ def test_begin_plan_skill_command_reports_failure_when_env_is_missing(
     assert not list(tmp_path.rglob("scope.json"))
 
 
-@posix_only
 def test_clear_skill_command_deletes_state_and_reports_it(tmp_path: Path) -> None:
     data_root = tmp_path / "plugin-data"
     payload = {
@@ -364,7 +333,6 @@ def test_clear_skill_command_deletes_state_and_reports_it(tmp_path: Path) -> Non
     assert not (data_root / "session-ledger").exists()
 
 
-@posix_only
 def test_clear_skill_command_reports_failure_without_plugin_data(
     tmp_path: Path,
 ) -> None:
@@ -377,7 +345,6 @@ def test_clear_skill_command_reports_failure_without_plugin_data(
     )
 
 
-@posix_only
 def test_navigation_and_compaction_use_same_session_record(tmp_path: Path) -> None:
     data_root = tmp_path / "data"
     payload = {"session_id": "synthetic-navigation", "cwd": str(tmp_path / "first")}

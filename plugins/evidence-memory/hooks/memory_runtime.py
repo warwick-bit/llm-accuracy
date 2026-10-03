@@ -246,8 +246,36 @@ def remove_file(path: Path) -> None:
         pass
 
 
+class SessionLockBusy(BlockingIOError):
+    """Expected contention, raised only before entering a locked operation."""
+
+
+def acquire_session_lock(descriptor: int, *, shared: bool = False,
+                         wait: bool = True, timeout: float | None = None) -> None:
+    deadline = time.monotonic() + (timeout if timeout is not None else 1)
+    while True:
+        try:
+            if fcntl is not None:
+                mode = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
+                fcntl.flock(descriptor, mode | (0 if wait and timeout is None else fcntl.LOCK_NB))
+            elif msvcrt is not None:
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+            else:
+                raise OSError("lock_unavailable")
+            return
+        except OSError as error:
+            busy = error.errno in (errno.EACCES, errno.EAGAIN, errno.EDEADLK)
+            if not busy:
+                raise
+            if (not wait and timeout is None) or time.monotonic() >= deadline:
+                raise SessionLockBusy(errno.EAGAIN, "memory_session_lock_busy") from None
+            time.sleep(min(0.025, max(0, deadline - time.monotonic())))
+
+
 @contextmanager
-def session_hash_lock(root: Path, session_hash: str, *, wait: bool = True) -> Iterator[None]:
+def session_hash_lock(root: Path, session_hash: str, *, wait: bool = True,
+                      timeout: float | None = None) -> Iterator[None]:
     if not re.fullmatch(r"[0-9a-f]{64}", session_hash):
         raise ValueError("invalid_session")
     directory = state_directory(root) / "locks"
@@ -260,23 +288,7 @@ def session_hash_lock(root: Path, session_hash: str, *, wait: bool = True) -> It
     try:
         if not stat.S_ISREG(os.fstat(descriptor).st_mode):
             raise OSError("unsafe_memory_path")
-        if fcntl is not None:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | (0 if wait else fcntl.LOCK_NB))
-        elif msvcrt is not None:
-            deadline = time.monotonic() + 1
-            while True:
-                try:
-                    os.lseek(descriptor, 0, os.SEEK_SET)
-                    msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
-                    break
-                except OSError as error:
-                    if not wait and error.errno in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
-                        raise BlockingIOError(errno.EAGAIN, "memory_session_lock_busy") from None
-                    if error.errno not in (errno.EACCES, errno.EAGAIN, errno.EDEADLK) or time.monotonic() >= deadline:
-                        raise
-                    time.sleep(0.025)
-        else:
-            raise OSError("lock_unavailable")
+        acquire_session_lock(descriptor, wait=wait, timeout=timeout)
         try:
             yield
         finally:
@@ -318,7 +330,7 @@ def shared_session_lock(root: Path, session_hash: str, *, wait: bool = True) -> 
         if not stat.S_ISREG(os.fstat(descriptor).st_mode):
             raise OSError("unsafe_memory_path")
         if fcntl is not None:
-            fcntl.flock(descriptor, fcntl.LOCK_SH | (0 if wait else fcntl.LOCK_NB))
+            acquire_session_lock(descriptor, shared=True, wait=wait)
         try:
             yield
         finally:

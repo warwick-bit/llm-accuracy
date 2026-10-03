@@ -1,0 +1,145 @@
+{
+  "schema_version": 4,
+  "minimum_claude_code": "2.1.287",
+  "python_minimum": "3.9",
+  "packages": {
+    "llm-accuracy": {
+      "version": "0.7.0",
+      "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
+    },
+    "deterministic-data": {
+      "version": "0.1.0",
+      "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+    },
+    "session-ledger": {
+      "version": "0.3.0",
+      "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
+    },
+    "evidence-memory": {
+      "version": "0.5.0",
+      "sha256": "1adb6cb9793a9e9433405a0dd9c900b442b092f083c4e3400859f93facded45a"
+    }
+  },
+  "support_policy": {
+    "code": "native_installation_and_local_live_qa",
+    "desktop_chat": "experimental_stateless_skills",
+    "cowork": "experimental_stateless_skills"
+  },
+  "targets": {
+    "code-linux": {
+      "outcome": "untested"
+    },
+    "code-wsl": {
+      "outcome": "pass",
+      "platform": "Linux/WSL",
+      "host_kind": "code",
+      "host_version": "2.1.287",
+      "python_version": "3.12.3",
+      "packages": {
+        "llm-accuracy": {
+          "version": "0.7.0",
+          "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
+        },
+        "deterministic-data": {
+          "version": "0.1.0",
+          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+        },
+        "session-ledger": {
+          "version": "0.3.0",
+          "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
+        },
+        "evidence-memory": {
+          "version": "0.5.0",
+          "sha256": "1adb6cb9793a9e9433405a0dd9c900b442b092f083c4e3400859f93facded45a"
+        }
+      },
+      "checks": {
+        "clean_install": true,
+        "configured_python": true,
+        "prompt_delivery": true,
+        "upgrade": true,
+        "uninstall": true,
+        "invalid_python_advisory_then_recovery": true
+      }
+    },
+    "code-windows-no-bash": {
+      "outcome": "untested"
+    },
+    "code-windows-git-bash": {
+      "outcome": "pass",
+      "platform": "Windows",
+      "host_kind": "code",
+      "host_version": "2.1.287",
+      "python_version": "3.13.1",
+      "packages": {
+        "llm-accuracy": {
+          "version": "0.7.0",
+          "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
+        },
+        "deterministic-data": {
+          "version": "0.1.0",
+          "sha256": "981947a7e9c2bf14600f30c718103a4f923027cd376959cf2fe19ff84d122965"
+        },
+        "session-ledger": {
+          "version": "0.3.0",
+          "sha256": "915657f19a747c18d23a3b7b8635712ff2edc559b298f7383e18bbf0adcd3560"
+        },
+        "evidence-memory": {
+          "version": "0.5.0",
+          "sha256": "1adb6cb9793a9e9433405a0dd9c900b442b092f083c4e3400859f93facded45a"
+        }
+      },
+      "checks": {
+        "clean_install": true,
+        "configured_python": true,
+        "prompt_delivery": true,
+        "upgrade": true,
+        "uninstall": true,
+        "invalid_python_advisory_then_recovery": true,
+        "git_bash_present": true
+      }
+    },
+    "code-macos": {
+      "outcome": "untested"
+    },
+    "desktop-chat-windows": {
+      "outcome": "untested"
+    },
+    "desktop-chat-macos": {
+      "outcome": "untested"
+    },
+    "cowork-windows": {
+      "outcome": "untested"
+    },
+    "cowork-macos": {
+      "outcome": "untested"
+    },
+    "desktop-chat-linux": {
+      "outcome": "untested"
+    },
+    "cowork-linux": {
+      "outcome": "untested"
+    }
+  },
+  "native_installations": {
+    "code-linux": {
+      "outcome": "untested"
+    },
+    "code-windows-no-bash": {
+      "outcome": "untested"
+    },
+    "code-windows-git-bash": {
+      "outcome": "untested"
+    },
+    "code-macos": {
+      "outcome": "untested"
+    }
+  },
+  "capabilities": {
+    "code": "configured_exec_hooks",
+    "desktop_chat": "skills_only",
+    "cowork": "stateless_skills_only_unverified_hooks",
+    "desktop_code": "unverified_ui",
+    "codex_memory": "experimental_posix_only"
+  }
+}

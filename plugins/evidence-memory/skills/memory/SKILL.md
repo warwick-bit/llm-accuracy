@@ -12,21 +12,34 @@ Codex cells that call an MCP or web tool. Local shell, file and edit output is
 not stored; re-read the file or re-run the local command instead. Tools whose
 names suggest HR, payroll, bank, tax, identity or secret data are withheld and
 counted in `status`. After compaction, the injected packet lists recent external
-result IDs and a resolved `command_prefix`; use that prefix when the placeholders
-below are not substituted.
+result IDs and a resolved `command_argv`. Append the action and its arguments
+to that vector and execute directly when the placeholders below are not
+substituted. If only a shell tool is available, quote each vector element for
+that actual shell. The legacy `command_prefix` is POSIX on Linux/macOS and
+PowerShell on Windows; it is not a universal Windows shell command. Never send
+the PowerShell prefix to Git Bash or cmd.exe.
 
-```bash
-if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_PYTHON=python; fi
-"$MEMORY_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/memory.py" --plugin-data "${CLAUDE_PLUGIN_DATA}" --session-id "${CLAUDE_SESSION_ID}" status
-```
+In Claude Code, run the configured executable `${user_config.python_executable}`
+with `${CLAUDE_PLUGIN_ROOT}/hooks/memory.py`, `--plugin-data`,
+`${CLAUDE_PLUGIN_DATA}`, `--session-id`, `${CLAUDE_SESSION_ID}`, then `status`.
+Use an argument vector when available. Otherwise quote each value as a literal
+for the active shell: PowerShell uses `&` before the executable and single quotes
+with embedded ASCII/smart single quotes (U+2018–U+201B) doubled; POSIX uses shell-escaped single arguments.
+Never evaluate substituted text as a complete shell command. If local execution
+or any required placeholder is unavailable (including Claude Desktop Chat),
+say memory capture is unavailable; do not claim retrieval or persistence.
 
 If the placeholders above are not filled in (as in Codex), use the
-`command_prefix` from the post-compaction memory packet. Before the first
+`command_argv` from the post-compaction memory packet. Before the first
 compaction, Codex's POSIX shell can build the same prefix from its own
 environment:
 
 ```bash
-if command -v python3 >/dev/null 2>&1; then MEMORY_PYTHON=python3; else MEMORY_PYTHON=python; fi
+MEMORY_PYTHON=
+for candidate in python3 python; do
+  if "$candidate" -c 'import sys; sys.exit(sys.version_info < (3, 9))' </dev/null >/dev/null 2>&1; then MEMORY_PYTHON=$candidate; break; fi
+done
+test -n "$MEMORY_PYTHON" || exit 1
 MEMORY_HOME="${CODEX_HOME:-$HOME/.codex}"
 MEMORY_PY="$(ls -td "$MEMORY_HOME"/plugins/cache/llm-accuracy/evidence-memory/*/hooks/memory.py | head -n 1)"
 "$MEMORY_PYTHON" "$MEMORY_PY" --plugin-data "$MEMORY_HOME/plugins/data/evidence-memory-llm-accuracy" --session-id "$CODEX_THREAD_ID" status

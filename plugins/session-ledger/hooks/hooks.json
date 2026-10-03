@@ -5,8 +5,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
-            "timeout": 5
+            "command": "${user_config.python_executable}",
+            "timeout": 5,
+            "args": [
+              "-c",
+              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
+              "session-ledger.py",
+              "capture",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ]
           }
         ]
       }
@@ -16,8 +25,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" capture --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
-            "timeout": 5
+            "command": "${user_config.python_executable}",
+            "timeout": 5,
+            "args": [
+              "-c",
+              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
+              "session-ledger.py",
+              "capture",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ]
           }
         ]
       }
@@ -27,8 +45,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" pre-compact --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
-            "timeout": 5
+            "command": "${user_config.python_executable}",
+            "timeout": 5,
+            "args": [
+              "-c",
+              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
+              "session-ledger.py",
+              "pre-compact",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ]
           }
         ]
       }
@@ -38,8 +65,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" post-compact --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
-            "timeout": 5
+            "command": "${user_config.python_executable}",
+            "timeout": 5,
+            "args": [
+              "-c",
+              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
+              "session-ledger.py",
+              "post-compact",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ]
           }
         ]
       }
@@ -49,8 +85,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; \"$PLUGIN_PYTHON\" \"${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py\" session-start --plugin-data \"${CLAUDE_PLUGIN_DATA}\"",
-            "timeout": 5
+            "command": "${user_config.python_executable}",
+            "timeout": 5,
+            "args": [
+              "-c",
+              "import os,runpy,sys; p=sys.argv.pop(1); runpy.run_path(p,run_name='__main__') if os.path.isfile(p) else None",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py",
+              "session-ledger.py",
+              "session-start",
+              "--plugin-data",
+              "${CLAUDE_PLUGIN_DATA}"
+            ]
           }
         ]
       }

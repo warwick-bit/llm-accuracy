@@ -4,7 +4,24 @@ description: Permanently delete all locally stored Session Ledger state.
 disable-model-invocation: true
 ---
 
-!`if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; else PLUGIN_PYTHON=python; fi; "$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" clear --plugin-data "${CLAUDE_PLUGIN_DATA}"`
+Execute this argument vector after substituting the host placeholders:
+
+```json
+[
+  "${user_config.python_executable}",
+  "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py",
+  "clear",
+  "--plugin-data",
+  "${CLAUDE_PLUGIN_DATA}"
+]
+```
+
+Use direct execution when available. With a shell tool, quote every element
+as a literal for the active shell (PowerShell: `&` before the executable and
+single quotes with embedded ASCII/smart single quotes (U+2018–U+201B) doubled; POSIX: shell-escaped single
+arguments). Never evaluate substituted text as a complete shell command.
+If local execution or a required placeholder is unavailable, report that the
+operation could not be confirmed. This skill has no shell preprocessing.
 
 Report deletion only if the command says `Cleared local Session Ledger state.`
 If it cannot confirm deletion — or prints nothing at all — tell the user that

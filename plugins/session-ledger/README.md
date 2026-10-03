@@ -8,10 +8,12 @@ and `${CLAUDE_PLUGIN_DATA}` in 2.1.78. Use a current Claude Code release;
 the live Windows smoke test for this release used 2.1.281. See the
 [Claude Code changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
 
-It also requires Python 3.9 or later, available as `python3` or `python`, on the machine running Claude Code
-(CI-tested on 3.9-3.13). Hooks and ledger commands prefer `python3` and fall back
-to `python` when that command is absent. Windows requires a POSIX-compatible
-hook shell such as Git Bash.
+The source candidate requires Claude Code 2.1.287+ and a configured Python
+3.9+ executable (CI covers 3.9–3.14). Hooks launch directly without a shell;
+native Windows targets operation with or without Git Bash. Installed-host
+Windows/macOS verification is still required before release. The Python option must name
+one working executable, with no arguments. See the repository compatibility
+contract for current installed-host coverage and Desktop mode boundaries.
 
 ## Install and enable
 
@@ -26,7 +28,9 @@ In Claude Code, run these commands separately:
 The plugin is deliberately disabled by default because it persists local
 conversation text. Installing it alone does not confirm that its hooks run.
 Open `/plugin`, show disabled plugins if needed, enable Session Ledger, and
-check that the Errors tab is empty. Then exit and start a new Claude Code
+check that the Errors tab is empty. Set this plugin's **Python executable** option
+in `/config` to a working Python 3.9+ executable, with no arguments.
+Then exit and start a new Claude Code
 session. After updating Claude Code itself, check the new session's version;
 an already-open process continues to use its previous version.
 
@@ -38,8 +42,9 @@ claude plugin marketplace update llm-accuracy
 claude plugin update session-ledger@llm-accuracy
 ```
 
-Confirm version 0.2.7 or later and the enabled state in `/plugin`, then restart
-Claude Code. This production plugin is separate from any temporary QA plugin;
+Confirm the installed version and enabled state in `/plugin`. Upgrading to the
+source candidate also requires its Python option; set it in `/config` before
+restarting Claude Code. This plugin is separate from any temporary QA plugin;
 close the QA launcher and use your normal Claude Code launch for everyday work.
 
 ## What it does

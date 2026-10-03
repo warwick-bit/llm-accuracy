@@ -5,12 +5,18 @@ products. Use the path below that matches where you work.
 
 ## Validation status
 
-Platform capability and runtime evidence are separate.
+Platform capability and runtime evidence are separate. The source candidate uses
+shell-independent hooks; read [compatibility and current release evidence](COMPATIBILITY.md)
+before relying on an OS or Desktop mode. Published-release receipts below are historical.
 
-**Current plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
+**Earlier plugin notes:** [LLM Accuracy 0.6.6](release-0.6.6.md),
 [Session Ledger 0.2.7](release-session-ledger-0.2.7.md), and
 [Evidence Memory 0.4.0](release-evidence-memory-0.4.0.md). The records below
 describe historical builds.
+
+The current [compatibility release](release-platform-candidate.md) includes
+[Evidence Memory 0.5.0](release-evidence-memory-0.5.0.md), which preserves the
+question-answer capture from 0.4.0 and requires explicit Python configuration.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
 
@@ -47,10 +53,11 @@ and the general and targeted advisory hooks.
 
 ### Before you start
 
-- Use a current Claude Code installation. If `/plugin` is unavailable, update
-  Claude Code first.
-- Have Python 3.9 or later available as `python3` or `python` and a
-  POSIX-compatible hook shell. CI exercises launchers on Linux and native Windows with Git Bash.
+- Use Claude Code 2.1.287 or later for this source candidate.
+- Configure a working Python 3.9+ executable in the plugin option before
+  starting a session. Linux/WSL/macOS normally use `python3`; native Windows
+  uses `python` or an absolute `python.exe` path. Git Bash is optional.
+  An installed Windows Store alias alone is not a working Python runtime.
 - Install only if you trust the plugin source. It runs local advisory hook
   commands in Claude Code.
 
@@ -63,7 +70,8 @@ claude plugin marketplace add warwick-bit/llm-accuracy --scope user
 claude plugin install llm-accuracy@llm-accuracy --scope user
 ```
 
-Start or return to Claude Code, then run:
+Start or return to Claude Code. Open `/config` and set LLM Accuracy's **Python
+executable** option to the verified executable from the prerequisites. Then run:
 
 ```text
 /reload-plugins
@@ -134,12 +142,10 @@ record and Claude's compact summary may contain sensitive local content. It is
 unsupported in Claude Desktop Chat, Cowork, Claude chat on the web, and Claude
 Code on the web.
 
-Session Ledger requires Python 3.9 or later (CI-tested 3.9-3.13) on the machine
-running Claude Code. Check it with `python3 --version`, or `python --version`
-when `python3` is unavailable (for example, a Windows python.org installation).
-The Claude Code hooks select `python3` when present and otherwise use `python`; the
-selected command must run Python 3.9 or later. Windows hooks still require a
-POSIX-compatible shell such as Git Bash. No `python3.exe` copy or alias is needed.
+Session Ledger requires Claude Code 2.1.287+ and a configured Python 3.9+
+executable (CI covers 3.9–3.14). The candidate launches hooks directly with
+argument vectors on Linux/WSL, native Windows and macOS; Git Bash is optional.
+See [configuration and current evidence](COMPATIBILITY.md).
 
 Install it after adding the marketplace:
 
@@ -148,8 +154,9 @@ claude plugin install session-ledger@llm-accuracy --scope user
 claude plugin enable session-ledger@llm-accuracy --scope user
 ```
 
-Then run `/reload-plugins` in an active Claude Code session, or start a new
-one. After that, use Claude normally: the ledger starts automatically with the
+Before reloading, open `/config` and set Session Ledger's **Python executable**
+option; each hook plugin has its own option. Then run `/reload-plugins` in an
+active Claude Code session, or start a new one. After that, use Claude normally: the ledger starts automatically with the
 session, captures a bounded rolling user/assistant session record on user-prompt
 and turn-complete hooks, flushes it before context compaction, and restores it
 only when that same compacted session continues. It never carries into a
@@ -207,7 +214,8 @@ claude plugin install evidence-memory@llm-accuracy --scope user
 claude plugin enable evidence-memory@llm-accuracy --scope user
 ```
 
-Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
+Open `/config` and set Evidence Memory's **Python executable** option before
+reloading. Restart Claude Code or run `/reload-plugins`. Capture starts at the next session
 start or prompt, with a fresh cutoff that excludes earlier transcript rows.
 The `/evidence-memory:memory` skill provides search, lookup, correction,
 `disable`, `begin-plan`, and `clear`. Those deletion commands stop capture for
@@ -222,7 +230,10 @@ capture.
 
 ### Update or remove
 
-To update to the latest released versions:
+Marketplace updates read the repository's default branch, currently `main`.
+They can make a source candidate installable before a GitHub release is tagged;
+check [current compatibility evidence](COMPATIBILITY.md) before upgrading.
+To update the marketplace versions:
 
 ```bash
 claude plugin marketplace update llm-accuracy
@@ -232,8 +243,13 @@ claude plugin update session-ledger@llm-accuracy --scope user
 claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
-Run the optional plugin updates only for plugins you installed. Then run
-`/reload-plugins` in an active Claude Code session.
+Run the optional plugin updates only for plugins you installed. On upgrade to
+Accuracy 0.7.0, Ledger 0.3.0 or Memory 0.5.0, open `/config` and set each installed
+hook plugin's **Python executable** option before reloading. Then run
+`/reload-plugins` in an active Claude Code session. The read-only command
+`claude plugin configure PLUGIN@llm-accuracy` shows options and which are unset;
+it does not save values without `--values-stdin`. For headless configuration,
+see [the compatibility guide](COMPATIBILITY.md#configure-python-before-starting-a-session).
 
 Marketplace auto-update is off by default for third-party marketplaces like
 this one. To opt in, run `/plugin`, open **Marketplaces**, select
@@ -261,6 +277,10 @@ If installation fails, first confirm the repository contains
 
 ## Claude Desktop and Cowork — release ZIP
 
+Current Desktop Chat/Cowork support is **experimental**, limited to stateless
+Accuracy and Deterministic Data skills. Current UI QA remains untested; Code
+terminal certification does not establish Desktop behavior.
+
 Download the latest `llm-accuracy-<version>.zip` asset from the
 [latest GitHub release](https://github.com/warwick-bit/llm-accuracy/releases/latest).
 In Claude Desktop or Cowork, open **Customize**, then **Plugins**, and upload
@@ -278,11 +298,13 @@ In the **Chat** tab, LLM Accuracy's skills are available, including self-audit.
 The automatic advisory hooks do not run in chat, so use the skill when you want
 an explicit check of an earlier answer.
 
-### Claude Cowork — full plugin
+### Claude Cowork — experimental stateless skills
 
-In **Cowork**, the plugin's skills and advisory hooks can run. The hook behavior
-is the same general-plus-targeted, non-blocking behavior described for Claude
-Code terminal. The new general mode still needs a Cowork runtime smoke.
+In **Cowork**, use only stateless LLM Accuracy or Deterministic Data. The current
+candidate's configured Python hook delivery is unverified in Cowork's execution
+environment; do not assume the desktop's Python is available there. Session
+Ledger and Evidence Memory are unsupported. Record a current Cowork smoke before
+claiming automatic reminders work; Desktop Chat remains skills-only.
 
 ## Claude chat on the web — personal marketplace (skills only)
 

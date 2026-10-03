@@ -35,7 +35,12 @@ mean the underlying claim is correct.
 
 ## Day-to-day use
 
-Once installed and activated, use Claude Code or Cowork normally. A general
+In Claude Code, configure this plugin's **Python executable** option in `/config`
+before reloading. Use a working Python 3.9+ executable with no arguments.
+Cowork stateless skills are a separate target; this source candidate's hook
+delivery in Cowork is unverified and Desktop Chat runs no hooks.
+
+Once installed, configured and activated in Claude Code, a general
 fidelity reminder covers each non-empty prompt, including technical requests,
 file paths, implementation requests and brief follow-ups. It asks Claude to
 verify the measurement, population and environment, establish coverage before
@@ -162,10 +167,13 @@ Inventory rows identify **LLM Accuracy**, not every plugin from its marketplace;
 an unknown version must not be guessed to belong to Session Ledger.
 
 The underlying script is `scripts/accuracy_doctor.py` in the installed plugin.
-Use Python 3; on Windows install Git Bash or pass its path using `--shell`.
+Use Python 3.9+ and `--python-executable` to probe the configured executable.
+The candidate uses Claude Code 2.1.287+ exec hooks; native Windows needs no
+Git Bash. A local doctor probe does not verify the installed option. See the
+repository compatibility contract for current host coverage.
 `emitted` means the command returned hook context; `disabled` identifies a
 bypass; `no_context`, `invalid_response`, `execution_failed`, `timeout` and
-`shell_unavailable` need investigation. `missing_default` is normal;
+`unusable` and `unsupported_version` need investigation. `missing_default` is normal;
 `config_unavailable` or `invalid_config` leaves only built-in triggers active.
 Unknown reminder modes are reported and fall back to general mode.
 

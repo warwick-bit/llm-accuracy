@@ -253,13 +253,9 @@ def test_hook_commands_include_the_script_and_action() -> None:
         (post_compact, "post-compact"),
         (session_start, "session-start"),
     ):
-        assert hook["command"] == (
-            'if command -v python3 >/dev/null 2>&1; then PLUGIN_PYTHON=python3; '
-            'else PLUGIN_PYTHON=python; fi; '
-            '"$PLUGIN_PYTHON" "${CLAUDE_PLUGIN_ROOT}/hooks/session-ledger.py" '
-            f'{action} --plugin-data "${{CLAUDE_PLUGIN_DATA}}"'
-        )
-        assert "args" not in hook
+        assert hook["command"] == "${user_config.python_executable}"
+        assert hook["args"][2:] == ["${CLAUDE_PLUGIN_ROOT}/hooks/hook_runner.py", "session-ledger.py",
+                                   action, "--plugin-data", "${CLAUDE_PLUGIN_DATA}"]
 
 
 def test_hook_source_uses_python_3_8_compatible_utc_timezone() -> None:

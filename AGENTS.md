@@ -1,8 +1,8 @@
 # LLM Accuracy Repository Guidance
 
 This public repository distributes standalone Claude Code plugins. Evidence
-Memory also ships an experimental Codex package that reuses its Claude hook
-commands; the other plugins stay Claude-only.
+Memory also ships a separate experimental Codex POSIX package; the other plugins
+stay Claude-only. Read `docs/COMPATIBILITY.md` before editing runtime or packaging.
 Keep each plugin generic and safe to share publicly.
 
 ## Before changing files
@@ -44,3 +44,24 @@ Keep each plugin generic and safe to share publicly.
 Run `python3 -m pytest -q`, JSON parsing for the marketplace and plugin
 manifests, and `python3 -m py_compile` for every hook module. Run a clean
 Claude installation smoke before a release.
+
+Run `python3 scripts/check_compatibility.py` before proposing a change. Before a
+release, also run it with `--release`. Reset stale candidate receipts to untested;
+never copy a historical pass onto changed source. Preserve native Windows without
+Git Bash CI and its no-skip check. Skills must not assume POSIX preprocessing or
+local execution in Chat. Keep Codex manifests free of Claude userConfig placeholders.
+
+Main publishes the marketplace. Before merging protected source, run
+`python3 scripts/check_marketplace_publication.py --base-ref BASE_SHA` with the
+actual PR base commit; main/tag builds use `--release`. Keep publication in the
+required `release-gates` aggregate and fail on missing or skipped jobs. Its
+narrow docs/test exemptions do not cover package READMEs, catalogs or receipts.
+Independently review checker/workflow/receipt changes. Require credential-free
+native installation and direct installed-hook execution on Linux/macOS/Windows
+with and without Bash, plus at least one genuine current-source local live Code
+pass. Keep live coverage gaps explicit; offline results use separate installed
+rows and cannot certify live delivery on another OS. Desktop Chat/Cowork remain
+experimental stateless skills with six explicit untested rows. Terminal receipts
+do not certify Desktop UI or Cowork hooks. Keep native installed CI mandatory
+in the aggregate; missing/failed/skipped evidence fails. CI never needs a model
+credential or copies a local login/profile. Optional live tests stay local.

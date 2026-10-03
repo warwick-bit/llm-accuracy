@@ -40,6 +40,24 @@ def result(answer, **updates):
     }
 
 
+def test_explicit_plugin_probe_configures_the_loaded_plugin_name(modules, tmp_path, monkeypatch):
+    probe = modules[1]
+    monkeypatch.setenv('CLAUDE_CONFIG_DIR', str(tmp_path / 'synthetic-auth'))
+    monkeypatch.setattr(probe.shutil, 'which', lambda name: 'synthetic-claude')
+    observed = []
+
+    def capture(command, cwd, env, stdin, timeout):
+        observed.append(command)
+        return {'status': 'ok', 'answers': []}
+
+    monkeypatch.setattr(probe, 'communicate', capture)
+    assert probe.run_probe(['synthetic'], PLUGIN)['status'] == 'ok'
+    command = observed[0]
+    assert command[command.index('--plugin-dir') + 1] == str(PLUGIN.resolve())
+    options = json.loads(command[command.index('--settings') + 1])
+    assert options == {'pluginConfigs': {'llm-accuracy': {'options': {'python_executable': sys.executable}}}}
+
+
 @pytest.mark.parametrize(
     "answer,valid,passed",
     [
@@ -73,23 +91,6 @@ def test_numeric_value_difference_is_not_rounded_away(modules, value):
     assert not modules[2].score(result("Answer: " + value), ["20"], 1, True, True)[
         "factual_pass"
     ]
-
-
-@pytest.mark.parametrize(
-    "discovered,expected",
-    [
-        (r"C:\Windows\System32\bash.exe", None),
-        (r"C:\Windows\Sysnative\bash.exe", None),
-        (r"D:\Git\bin\bash.exe", r"D:\Git\bin\bash.exe"),
-        (None, None),
-    ],
-)
-def test_windows_shell_discovery_rejects_wsl_launcher(
-    modules, tmp_path, monkeypatch, discovered, expected
-):
-    monkeypatch.setenv("ProgramFiles", str(tmp_path))
-    monkeypatch.setattr(modules[0].shutil, "which", lambda name: discovered)
-    assert modules[0].find_windows_shell() == expected
 
 
 @pytest.mark.parametrize("exception", [KeyboardInterrupt, RuntimeError])
@@ -310,7 +311,7 @@ def test_disabled_hook_and_invalid_mode_visible(modules, monkeypatch):
     monkeypatch.setenv("CC_SKIP_CLAIM_FIDELITY", "1")
     monkeypatch.setenv("CC_CLAIM_FIDELITY_MODE", "unknown-value")
     monkeypatch.setattr(doctor, "probe_command", lambda *a: "emitted")
-    report = doctor.diagnose(shell="synthetic-shell")
+    report = doctor.diagnose(python_executable=sys.executable)
     assert report["hook_commands"]["claim_fidelity"] == "disabled"
     assert not report["mode_recognized"]
     assert report["status"] == "attention"

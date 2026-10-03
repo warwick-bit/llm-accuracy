@@ -3,6 +3,22 @@
 Open a draft pull request for a scoped change, or use the feedback issue form
 for a sanitized, reproducible problem.
 
+Runtime and packaging changes must follow [the compatibility contract](docs/COMPATIBILITY.md).
+Run `python3 scripts/check_compatibility.py`, keep all OS/host cells explicit,
+and record current installed-host QA before a release (`--release`). Tests on
+Windows with Git Bash do not establish support without it; Chat is skills-only.
+
+Main is the marketplace delivery branch. Protected changes require actual native
+installation and direct installed-hook execution on Linux/macOS/Windows with
+and without Bash, plus at least one current-source local live Code pass. Desktop
+Chat/Cowork are experimental stateless skills; their untested rows remain visible.
+Run `python3 scripts/check_marketplace_publication.py --base-ref BASE_SHA` using
+the actual PR base commit. Main/tag builds use `--release`. Keep native installed
+QA and publication in the required aggregate; independently review checker,
+workflow and receipt changes. Offline installed rows cannot be used as live
+passes. Hosted jobs run without login files, secrets or model calls; local live
+QA uses isolated profiles. See [free QA setup](docs/INSTALLED_QA.md#hosted-code-qa).
+
 Never include credentials, customer data, raw prompts, provider responses, logs,
 or private transcripts. Replace names, IDs, amounts, dates, and examples with
 synthetic equivalents.
@@ -24,7 +40,9 @@ It installs the plugin from this checkout through a local-path marketplace into
 an auth-only temporary profile, checks the installed files byte for byte, then
 runs three short Sonnet sessions: installed, installed with the `# fidelity-ok`
 bypass, and the release archive. The receipt holds only counts, booleans and
-hashes. `--skip-live` checks the installation without model calls.
+hashes. It configures the running Python executable only inside the temporary
+profiles, including explicit settings for the archive session. Configuration
+failure blocks the smoke. `--skip-live` checks the installation without model calls.
 
 Keep the plugins generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.

@@ -6,6 +6,9 @@
 - [ ] Marketplace and plugin manifests parse.
 - [ ] Retained hooks compile.
 - [ ] Distribution boundary checked.
+- [ ] `python3 scripts/check_compatibility.py`; source/version bindings current.
+- [ ] Linux/WSL, Windows with/without Git Bash, macOS, Desktop Chat/Code/Cowork considered.
+- [ ] Installed-host gaps explicitly marked untested; no historical pass reused.
 
 ## Privacy and distribution boundary
 
@@ -16,3 +19,4 @@
 ## Follow-up
 
 - [ ] Clean Claude Code installation smoke is recorded when a release is proposed.
+- [ ] `python3 scripts/check_compatibility.py --release` before release/tagging.
