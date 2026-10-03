@@ -16,7 +16,9 @@ the figure could be computed from a file you supplied.
   forms of the old description tripped host command-safety checks.
 
 With a catalogue, routing is unchanged: a question whose definition the
-catalogue lacks still stops at the catalogue gap.
+catalogue lacks still stops at the catalogue gap. A customised catalogue shipped
+inside the plugin under `catalogues/` counts as a catalogue, and the bundled
+example is used only when the user explicitly asks for it.
 
 **Evidence and limits.** These are screens on one synthetic invoices fixture,
 not powered comparisons; see the

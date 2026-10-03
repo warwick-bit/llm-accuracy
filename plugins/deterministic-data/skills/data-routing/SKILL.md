@@ -20,12 +20,17 @@ example is synthetic and cannot answer a real question.
 
 ## Before use
 
-1. Locate the user-owned catalogue in the working directory or at a path the
-   user gives. Do not treat the installed example as a source of truth. If no
-   user-owned catalogue exists, this skill does not apply: say in one sentence
-   that no deterministic-data catalogue is configured, then answer through
-   ordinary analysis and label any figure as non-canonical. Do not withhold an
-   answer, or produce an evidence receipt, only because no catalogue exists.
+1. Locate the user-owned catalogue: a path the user gives, a catalogue in the
+   working directory, or a customised catalogue shipped in this plugin under
+   `${CLAUDE_PLUGIN_ROOT}/catalogues/` (any file there except
+   `example.catalogue.json`). The bundled `example.catalogue.json` is synthetic:
+   route through it only when the user explicitly asks for the example, and
+   never treat it as a source of truth. If no user-owned catalogue exists and
+   the user did not ask for the example, this skill does not apply: say in one
+   sentence that no deterministic-data catalogue is configured, then answer
+   through ordinary analysis and label any figure as non-canonical. Do not
+   withhold an answer, or produce an evidence receipt, only because no
+   catalogue exists.
 2. Validate it with
    `${CLAUDE_PLUGIN_ROOT}/scripts/validate_catalogue.py <catalogue>`.
 3. Confirm the declared source adapter is available and read-only for this task.
