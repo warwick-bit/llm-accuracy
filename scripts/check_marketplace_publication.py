@@ -76,7 +76,7 @@ def main(arguments=None) -> int:
     try:
         errors = publication_errors(options.root, base=options.base_ref, release=options.release,
                                     ci_receipts=options.ci_receipts)
-    except ValueError as error:
+    except (ValueError, RecursionError) as error:
         label = str(error)
         errors = [label if label.startswith('publication_') else 'invalid_publication_evidence']
     except (OSError, KeyError, TypeError, AttributeError, UnicodeError, subprocess.SubprocessError):
