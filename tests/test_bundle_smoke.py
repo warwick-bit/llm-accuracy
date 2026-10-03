@@ -25,6 +25,31 @@ def test_windows_run_records_the_git_bash_state_it_proved(monkeypatch):
     assert bundle.windows_bash_state() == 'unclear'
 
 
+@pytest.mark.parametrize('state', ['present', 'absent', 'unclear'])
+def test_smoke_report_carries_the_probed_windows_bash_state(monkeypatch, state):
+    def git(command, **kwargs):
+        return subprocess.CompletedProcess(command, 1 if 'diff' in command else 0, stdout=b'', stderr=b'')
+    monkeypatch.setattr(bundle, 'require_committed_source', lambda: 'a' * 40)
+    monkeypatch.setattr(bundle, 'changed_paths', lambda root, baseline: [])
+    monkeypatch.setattr(bundle.subprocess, 'run', git)
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Windows')
+    monkeypatch.setattr(bundle, 'windows_bash_state', lambda: state)
+    monkeypatch.setattr(bundle.smoke, 'host_version', lambda claude: '9.9.9 (Claude Code)')
+    monkeypatch.setattr(bundle, 'package_binding', lambda root, name: {'version': '0.0.0', 'sha256': '0' * 64})
+    monkeypatch.setattr(bundle.smoke, 'auth_profile', lambda root, **k: {'CLAUDE_CONFIG_DIR': str(root / 'p')})
+    monkeypatch.setattr(bundle, 'lifecycle', lambda *a, **k: {'lifecycle': True})
+    monkeypatch.setattr(bundle, 'installed_listing', lambda claude, env, root: [])
+    monkeypatch.setattr(bundle.smoke, 'installed_entry', lambda listing, name: {})
+    monkeypatch.setattr(bundle.smoke, 'path_inside', lambda path, root: True)
+    monkeypatch.setattr(bundle.installed_hook_probe, 'run', lambda *a: True)
+    monkeypatch.setattr(bundle, 'python_options', lambda profile: {})
+    monkeypatch.setattr(bundle, 'action', lambda *a, **k: None)
+    monkeypatch.setattr(bundle, 'bundle_removed', lambda listing: True)
+    report = bundle.run_smoke('synthetic-host', 'synthetic-baseline', live=False)
+    assert report['windows_bash'] == state
+    assert report['status'] == 'partial'
+
+
 def test_installed_byte_missing_and_extra_files_are_failures(tmp_path):
     source, profile = tmp_path / 'source', tmp_path / 'profile'
     entries = []

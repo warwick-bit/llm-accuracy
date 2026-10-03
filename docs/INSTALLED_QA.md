@@ -99,9 +99,11 @@ settings, credentials or hook payloads. A setup/model failure is a failed smoke;
 
 The second harness checks installed/default, bypass and release-archive Accuracy
 delivery on committed source. Neither harness certifies live Ledger/Memory
-capture, uninstall data retention, Desktop UI, or Windows Bash availability.
-The direct installed-hook probe checks synthetic persistence separately; actual
-model-driven capture, data retention, UI and Bash proof need their own evidence. The marketplace source is local, not a fresh hosted
+capture, uninstall data retention or Desktop UI. On native Windows the bundle
+smoke records the Git Bash state it probed (`windows_bash`, below); elsewhere it
+records `not_tested`. The direct installed-hook probe checks synthetic
+persistence separately; actual model-driven capture, data retention and UI need
+their own evidence. The marketplace source is local, not a fresh hosted
 GitHub download.
 
 Before recording a Code pass, confirm the invalid-Python recovery field passes
@@ -120,10 +122,15 @@ hashes or seals.
 
 Native Windows requires two distinct runs: without accessible Git Bash and with
 Git Bash available. Inspect the effective child PATH and executable resolution
-for each run. The bundle smoke probes Git Bash itself and writes `windows_bash`
-(`present`, `absent`, or `unclear` when `CLAUDE_CODE_GIT_BASH_PATH` names no usable
-Bash). The recorder accepts a run only for the target its probe proved, so filling
-both Windows rows needs one run in each state. WSL is a separate target and
+for each run. The bundle smoke probes Git Bash itself (PATH `bash`, the
+`CLAUDE_CODE_GIT_BASH_PATH` override and the standard Git install folders) and
+writes `windows_bash`: `present` when any of them is a usable GNU Bash, otherwise
+`unclear` when the override is set and `absent` when it is not. An override that
+names no usable Bash still records `present` if another usable Bash exists, so
+for the no-Bash run clear both PATH and the override. The recorder accepts a run
+only for the target its probe proved, so filling both Windows rows needs one run
+in each state. The field is a plain receipt value: it guards against recording
+the wrong run by accident, not against a hand-edited receipt. WSL is a separate target and
 does not certify either Windows scenario. Native Linux is also separate from WSL.
 
 ## Desktop skills QA
