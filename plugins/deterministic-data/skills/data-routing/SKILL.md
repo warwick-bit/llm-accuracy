@@ -5,7 +5,7 @@ argument-hint: "[data question and catalogue path]"
 skill: data-routing
 plugin: deterministic-data
 fully_qualified: deterministic-data:data-routing
-version: "0.1.0"
+version: "0.1.1"
 triggers:
   - pattern: "\\b(deterministic data|data catalogue|metric catalogue|catalogue route|definition ambiguity)\\b"
     confidence: 0.85

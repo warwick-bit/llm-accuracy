@@ -16,7 +16,9 @@ describe historical builds.
 
 The current [compatibility release](release-platform-candidate.md) includes
 [Evidence Memory 0.5.0](release-evidence-memory-0.5.0.md), which preserves the
-question-answer capture from 0.4.0 and requires explicit Python configuration.
+question-answer capture from 0.4.0 and requires explicit Python configuration,
+and [Deterministic Data 0.1.1](release-deterministic-data-0.1.1.md), which
+steps aside when no catalogue exists.
 
 **Historical 0.6.0 candidate — 23 Sep 2026:**
 

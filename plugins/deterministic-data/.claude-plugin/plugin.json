@@ -1,7 +1,7 @@
 {
   "name": "deterministic-data",
   "description": "Editable catalogue and routing template for deterministic, source-bound data answers in Claude Code and Cowork.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Warwick"
   },

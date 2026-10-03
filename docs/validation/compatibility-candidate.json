@@ -8,8 +8,8 @@
       "sha256": "92396ede57d2b58bdc9af5989d3f5f2f87b8d285d43227772d06b78357c46da3"
     },
     "deterministic-data": {
-      "version": "0.1.0",
-      "sha256": "90174bd388ae468d5e085053baeab0bb2110fe6b365f080b45b8ad1d247691a7"
+      "version": "0.1.1",
+      "sha256": "6687ecc0fa47e96cca47c64c5541357d7a3eaef999b20594fc0c031a311bdf11"
     },
     "session-ledger": {
       "version": "0.3.0",
