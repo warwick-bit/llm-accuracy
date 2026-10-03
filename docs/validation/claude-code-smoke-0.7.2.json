@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "scope": "fresh_profile_local_marketplace_and_archive",
-  "source_commit": "f185f90ea370a256dc5b9542989fee3e8642c157",
-  "plugin_tree": "8baf865628f1332053d5e2925e07f069446047c5",
+  "source_commit": "ed703d2a650300be07f3352d43ad4545e6c49f0e",
+  "plugin_tree": "1f278b4c22cd4bdc5ec51c6686460cc0c14957f3",
   "plugin_version": "0.7.2",
   "host_version": "2.1.288 (Claude Code)",
   "model_requested": "sonnet",
@@ -74,7 +74,7 @@
     },
     "isolated_cleanup": true
   },
-  "archive_sha256": "1d14005431b55035d658af72636be23214de9d45f8b80a91dadbdb7375f1d327",
+  "archive_sha256": "f0ba1ba046135ce2c01c63980dafe65b0b524dac29b466771fe678eb9c9907bb",
   "passed": true,
   "tested_on": "2026-10-04",
   "platform": "Linux/WSL",
