@@ -25,6 +25,35 @@ def test_windows_run_records_the_git_bash_state_it_proved(monkeypatch):
     assert bundle.windows_bash_state() == 'unclear'
 
 
+def test_windows_probe_checks_path_override_and_git_install_folders(monkeypatch):
+    monkeypatch.setattr(bundle.smoke, 'platform_label', lambda: 'Windows')
+    monkeypatch.setenv('CLAUDE_CODE_GIT_BASH_PATH', 'C:/override/bash.exe')
+    found = {'git': 'D:/Tools/Git/cmd/git.exe', 'bash': 'E:/bin/bash.exe'}
+    monkeypatch.setattr(bundle.shutil, 'which', found.get)
+    probed = []
+    monkeypatch.setattr(bundle, 'usable_bash', lambda path: probed.append(str(path)) or False)
+    assert bundle.windows_bash_state() == 'unclear'
+    roots = ('C:/Program Files/Git', 'C:/Program Files (x86)/Git', 'D:/Tools/Git')
+    expected = {'E:/bin/bash.exe', 'C:/override/bash.exe'} | {
+        str(Path(root) / suffix) for root in roots for suffix in ('bin/bash.exe', 'usr/bin/bash.exe')}
+    assert set(probed) == expected
+    for source in expected:  # Each source alone proves Bash present.
+        monkeypatch.setattr(bundle, 'usable_bash', lambda path, source=source: str(path) == source)
+        assert bundle.windows_bash_state() == 'present', source
+
+
+@pytest.mark.parametrize(('stdout', 'code', 'usable'), [
+    (b'GNU bash, version 5.2.37(1)-release', 0, True),
+    (b'zsh 5.9 (x86_64-pc-msys)', 0, False),
+    (b'GNU bash, version 5.2.37(1)-release', 1, False),
+])
+def test_usable_bash_needs_a_gnu_bash_version(monkeypatch, stdout, code, usable):
+    def version(command, **kwargs):
+        return subprocess.CompletedProcess(command, code, stdout=stdout, stderr=b'')
+    monkeypatch.setattr(bundle.subprocess, 'run', version)
+    assert bundle.usable_bash('D:/Tools/Git/bin/bash.exe') is usable
+
+
 @pytest.mark.parametrize('state', ['present', 'absent', 'unclear'])
 def test_smoke_report_carries_the_probed_windows_bash_state(monkeypatch, state):
     def git(command, **kwargs):
