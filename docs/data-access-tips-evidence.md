@@ -3,8 +3,9 @@
 Raw-free figures behind the README's
 [data-access tips](../README.md#tips-from-our-data-access-tests). Recorded
 4 Oct 2026. These tests measured how Claude Code handles fetched data under
-different access routes. They do not test the LLM Accuracy plugins or measure
-an overall accuracy rate.
+different access routes. They do not test the published LLM Accuracy plugins
+(the file-workflow pilot used an unpublished one) or measure an overall
+accuracy rate.
 
 ## Access-route screen
 
@@ -43,8 +44,10 @@ Opus    Records CLI          $0.42           35           38k
     ceiling, so the test cannot rank routes on accuracy;
   - three runs per cell at 600 invoices and one at 4,000, so no variance
     estimate at 4,000;
-  - MCP results reached the model as escaped JSON, adding 1.09 to 1.16 times
-    the characters, a small part of the token gap;
+  - MCP results reached the model as escaped JSON, 1.09 to 1.16 times as
+    many characters as plain text, a small part of the token gap;
+  - both sizes ran on work-in-progress versions of the harness (the 4,000-invoice
+    screen on an earlier one), and neither was re-run on the final version;
   - costs are the CLI-reported figures, not billed dollars.
 
 ## File-workflow pilot
@@ -54,8 +57,9 @@ Opus    Records CLI          $0.42           35           38k
 - **Host:** Claude Code 2.1.280, `claude-sonnet-5`, low effort.
 - **Fixture:** one 400-row synthetic mixed-currency workflow (aggregate, then
   selected detail in a fresh session); one run per setup.
-- **Result:** raw fetch and follow-up 236,331 reported tokens; file helper and
-  follow-up 90,383. All requested fields exact.
+- **Result:** raw fetch and follow-up 236,331 reported tokens; existing file
+  helper and follow-up 90,383; the pilot's capture plugin and follow-up
+  183,275. All requested fields exact.
 - **Limits:**
   - one observation per setup, no variance estimate;
   - totals sum input, cache creation, cache reads and output, so they are not
@@ -78,6 +82,11 @@ Pointer v2, medium, Bash       +46.0%
 Pointer v2, medium, MCP        +13.6%
 ```
 
-- **Mechanism:** with a file reference in place of the output, Claude often
-  read the full file back, adding calls and context. All completed
-  comparisons were exact.
+- **Mechanism:**
+  - **v1:** with a file reference in place of the output, Claude often read the
+    full file back, adding calls and context.
+  - **v2:** added guidance to calculate over the file. Its medium cases still
+    used more tokens; the note gives no cause.
+  - **Fidelity:** for a 152,453-byte Bash output, v1 received a 30,000-character
+    preview and saved it as if it were the whole source.
+- **Exactness:** all completed comparisons were exact.
