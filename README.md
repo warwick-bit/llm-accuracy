@@ -212,6 +212,32 @@ upload it through **Customize → Plugins**, and use the same test prompts. See
 the [installation guide](docs/INSTALL.md) for updates, removal, other Claude
 products and the optional plugins.
 
+### Tips from our data-access tests
+
+Two small synthetic tests of how Claude Code handles data it fetches. Every
+setup got the exact answers, so the differences below are cost and time, not
+accuracy. The samples are small: treat these as working rules, not measured
+guarantees. The [test record](docs/data-access-tips-evidence.md)
+has the figures and limits.
+
+- **Let a query or script do the arithmetic; don't page raw rows into the
+  conversation.** Over 600 synthetic invoices (two Claude models, three runs
+  each), paging raw records through a tool into Claude's context cost 9 to 14
+  times as much and took 3.5 to 5.4 times as long (median) as the other
+  routes. At 4,000 invoices (one run) it cost about 150 to 190 times as much.
+  Claude stayed exact by re-typing about 800 numbers per command into
+  files and computing over them.
+- **The cost is raw rows in context, not MCP itself.** A SQL tool over MCP that
+  returned only the computed result cost about the same as the command-line
+  routes ($0.16 against $0.15 to $0.16 for one model, $0.37 against $0.31 to
+  $0.42 for the other, per three runs).
+- **Save large results to a file and compute over the file.** In a 400-row
+  synthetic workflow (one run each), a file-backed helper used about 90,000
+  tokens against about 236,000 for a raw fetch. Both were exact.
+- **Don't swap tool output for a file pointer automatically.** A hook that
+  replaced large output with a file reference used 13.6% to 146% more tokens
+  on medium tasks, because Claude often read the whole file back.
+
 ## Licence and boundary
 
 This repository is public and MIT-licensed; see [LICENSE](LICENSE).
