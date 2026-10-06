@@ -13,6 +13,11 @@ and say what is still unknown. Deterministic Data adds your team's reviewed
 definitions and declared source routes when repeat questions need a consistent
 method.
 
+## Acknowledgements
+
+Special thanks to [Sophiie AI](https://www.sophiie.ai/) for allowing me to open
+source LLM Accuracy, which I developed over six months while working there.
+
 ## Start here
 
 Use **LLM Accuracy** for everyday questions where a plausible answer could
