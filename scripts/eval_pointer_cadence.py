@@ -35,7 +35,7 @@ POINTER_MARK = "Pinned metrics take precedence"
 BANNER_MARK = "Workspace advisory context"
 FIDELITY_MARK = "CLAIM FIDELITY CHECK"
 
-# S2 stress: a per-prompt route to a direct-answer data source, the 5 Sep competitor.
+# S2 stress: a per-prompt route to a competing direct-answer data source.
 ROUTING_FILE = "cadence-routing-banner.py"
 ROUTING_MARK = "Metric routing (ops-analytics)"
 ROUTING_TEXT = (

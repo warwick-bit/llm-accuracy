@@ -35,7 +35,7 @@ ARMS = pc.ARMS
 CODEX_AUTH = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex") / "auth.json"
 # Sessions run in bwrap: a fresh PID namespace and /proc, a cleared environment rebuilt from
 # this allowlist, the host's /usr and a few /etc files read-only, and no host home directory.
-# The R0 incident (2026-10-07): an inherited environment let a session print credentials.
+# An inherited environment exposes host variables to the session, so none is passed through.
 ENV_ALLOW = ("LANG", "LC_ALL", "LC_CTYPE", "TERM", "USER", "LOGNAME", "TZ")
 ETC_BINDS = (
     "resolv.conf", "hosts", "nsswitch.conf", "host.conf", "gai.conf", "ssl", "ca-certificates",
@@ -43,8 +43,8 @@ ETC_BINDS = (
 )
 HOOK_PYTHON = "/usr/bin/python3"
 NATIVE_CODEX = "node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl"
-# ChatGPT-account connectors (apps), plugins and web search reach real company systems from
-# inside the sandbox; the first R1 used them. Sessions get the shell and nothing else.
+# Account connectors (apps), plugins and web search reach outside systems from inside the
+# sandbox. Sessions get the shell and nothing else.
 NO_CONNECTORS = (
     "-c", "features.apps=false", "-c", "features.plugins=false", "-c", 'web_search="disabled"',
 )

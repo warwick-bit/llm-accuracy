@@ -5,7 +5,8 @@ keeps working as well as the same text injected on every `UserPromptSubmit`, dee
 into a session, while another per-prompt banner competes for attention. Each
 experiment has three arms that differ only in how the instruction is registered:
 
-- `every_prompt`: the instruction is injected on every prompt (the released behaviour);
+- `every_prompt`: the instruction is injected on every prompt (the released behaviour). The
+  pointer's arm also injects it once at `SessionStart`, as the installed pointer hook does;
 - `session_start`: the byte-identical text is injected once, from `SessionStart`;
 - `none`: no instruction. This target-instruction-off control shows the behaviour comes from the
   text; other hooks and the competing banner still run.
@@ -20,8 +21,8 @@ anything smaller is a screen.
 1. **Claim-fidelity contract** (`scripts/eval_reminder_cadence.py`). The scored behaviour
    is the Checked / Gap / Next footer on substantive diagnosis questions. The scorer is
    the deterministic `footer_present` check. Sessions have 8 turns, with probes at turns
-   2, 5 and 8 and routine or ~12k-character filler between them. The stress variant has
-   20 turns, ~150k characters of filler, and probes at turns 2, 11 and 20.
+   2, 5 and 8 and routine or ~11k-character filler between them. The stress variant has
+   20 turns, ~137k characters of filler, and probes at turns 2, 11 and 20.
 2. **Metrics-registry pointer** (`scripts/eval_pointer_cadence.py`, Claude Code;
    `scripts/eval_pointer_cadence_codex.py`, Codex CLI). The pointer is a behaviour
    instruction: read a synthetic metric registry before quoting a metric. A probe scores
@@ -91,13 +92,22 @@ host so the CLI can reach the model API.
 The receipts were recorded with drivers carrying the author's private competing banner
 and the original wording of the pointer's plugin name and registry path. Before
 publication, those strings were replaced with the generic text in the current drivers.
-The published drivers differ from the final pre-publication commit only in those strings
-and a Python 3.9-compatible temporary-directory cleanup in the Codex driver;
-each receipt names the earlier commit it was recorded with. As a result:
+The published drivers differ from the final pre-publication commit only in those strings,
+a Python 3.9-compatible temporary-directory cleanup in the Codex driver, and comment wording.
+As a result:
 
-- `banner_sha256` and `pointer_sha256` in the receipts identify the original text, not
-  the published text;
-- `harness_commit` values name pre-publication commits that are not in this repository;
+- `banner_sha256`, `pointer_sha256` and the Codex `harness_digest` identify the original
+  text, not the published text;
+- `harness_commit` names the last pre-publication commit that wrote to each receipt; these
+  commits are not in this repository. One receipt spans two commits:
+  `pointer-cadence-2026-10-main-opus.json` holds 36 rows from an earlier commit and 6 from
+  the one it names. The arm, case and fixture digests matched, so the receipt guard
+  accepted the extension;
+- the stress receipt's `layout` field still shows the 8-turn layout (`FPFFPFFP`); the
+  `turns` field in its rows gives the real probe turns. The 8-turn Sonnet screen receipt
+  also carries a `stress_verdict`, which only applies to the stress receipt;
+- `resolved_model` in the Codex receipts repeats the requested model; the driver does not
+  read the serving model from Codex output;
 - rerunning the published drivers repeats the design with the generic banner. It is
   comparable, but not byte-identical, so `--accumulate` refuses to extend these receipts.
 
