@@ -6,12 +6,14 @@ into a session, while another per-prompt banner competes for attention. Each
 experiment has three arms that differ only in how the instruction is registered:
 
 - `every_prompt`: the instruction is injected on every prompt (the released behaviour). The
-  pointer's arm also injects it once at `SessionStart`, as the installed pointer hook does;
+  pointer's arm also injects it once at `SessionStart`, mirroring the deployment it was
+  taken from, where the pointer hook is registered on both events;
 - `session_start`: the byte-identical text is injected once, from `SessionStart`;
 - `none`: no instruction. This target-instruction-off control shows the behaviour comes from the
   text; other hooks and the competing banner still run.
 
-All arms also carry a fixed per-prompt advisory banner of about 1.6k characters.
+All arms also carry a fixed per-prompt advisory banner of about 1.6k characters (the
+generic banner in the published drivers is about 1.7k).
 Prompts and banners never mention the behaviour being scored. The decision rules
 were written before any model run. A verdict needs at least 12 sessions per arm;
 anything smaller is a screen.

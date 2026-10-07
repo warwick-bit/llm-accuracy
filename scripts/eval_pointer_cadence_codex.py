@@ -35,7 +35,6 @@ ARMS = pc.ARMS
 CODEX_AUTH = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex") / "auth.json"
 # Sessions run in bwrap: a fresh PID namespace and /proc, a cleared environment rebuilt from
 # this allowlist, the host's /usr and a few /etc files read-only, and no host home directory.
-# An inherited environment exposes host variables to the session, so none is passed through.
 ENV_ALLOW = ("LANG", "LC_ALL", "LC_CTYPE", "TERM", "USER", "LOGNAME", "TZ")
 ETC_BINDS = (
     "resolv.conf", "hosts", "nsswitch.conf", "host.conf", "gai.conf", "ssl", "ca-certificates",
