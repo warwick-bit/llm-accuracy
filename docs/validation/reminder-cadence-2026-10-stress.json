@@ -1,0 +1,1038 @@
+{
+  "experiment": "reminder-cadence",
+  "date": "2026-10-07",
+  "model": "claude-opus-5-5",
+  "effort": null,
+  "canary": false,
+  "harness_commit": "cd4da90e4ad59429a20689e6bfe75e648f40f5b2",
+  "arm_digests": {
+    "every_prompt": "4a0d7109bcc99de2dec604e4f4ad6b169a26db8ba57641f9202d81e7153695a9",
+    "session_start": "6668346786715abdc017f7924e588786c5dbe9b7a6f92522e57266c5bc646ba3",
+    "none": "11f126a9bb876cd3edeb1e95ee4bd4db2011a6c59e75a0a5f32c628f9fb77e48"
+  },
+  "case_digest": "ad5c463edad77812a10b82f8463be9517627d7f463352662de8d7d5ef234001e",
+  "banner_sha256": "cfeb0c7dc395fe9664bfd8fcf78743aac6bc970e83bf2f66f8feae184860b581",
+  "layout": "FPFFPFFP",
+  "decision_rule": {
+    "min_sessions_per_arm": 12,
+    "redundant": "B_deep >= A_deep - 0.10 and CI_upper(A-B) <= 0.20 and B_filler <= A_filler + 0.05",
+    "still_matters": "CI_lower(A-B) > 0 and A_deep - B_deep >= 0.20",
+    "discriminates": "C_deep <= 0.20 and A_deep >= 0.70"
+  },
+  "rows": [
+    {
+      "case": "stress_a",
+      "arm": "every_prompt",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 20,
+      "plumbing_ok": true,
+      "hook_response_count": 80,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_a",
+      "arm": "session_start",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 1,
+      "plumbing_ok": true,
+      "hook_response_count": 61,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_a",
+      "arm": "none",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 0,
+      "plumbing_ok": true,
+      "hook_response_count": 60,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "case": "stress_b",
+      "arm": "every_prompt",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 20,
+      "plumbing_ok": true,
+      "hook_response_count": 80,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_b",
+      "arm": "session_start",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 1,
+      "plumbing_ok": true,
+      "hook_response_count": 61,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_b",
+      "arm": "none",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 0,
+      "plumbing_ok": true,
+      "hook_response_count": 60,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "case": "stress_a",
+      "arm": "every_prompt",
+      "repeat": 1,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 20,
+      "plumbing_ok": true,
+      "hook_response_count": 80,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_a",
+      "arm": "session_start",
+      "repeat": 1,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 1,
+      "plumbing_ok": true,
+      "hook_response_count": 61,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_a",
+      "arm": "none",
+      "repeat": 1,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 0,
+      "plumbing_ok": true,
+      "hook_response_count": 60,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "case": "stress_b",
+      "arm": "every_prompt",
+      "repeat": 1,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 20,
+      "plumbing_ok": true,
+      "hook_response_count": 80,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_b",
+      "arm": "session_start",
+      "repeat": 1,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 1,
+      "plumbing_ok": true,
+      "hook_response_count": 61,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "stress_b",
+      "arm": "none",
+      "repeat": 1,
+      "turns": {
+        "probe": [
+          1,
+          10,
+          19
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          10,
+          19
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18
+        ]
+      },
+      "status": "ok",
+      "scorable": true,
+      "result_count": 20,
+      "fidelity_hook_responses": 0,
+      "plumbing_ok": true,
+      "hook_response_count": 60,
+      "resolved_model": "claude-opus-5-5",
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 4,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "footers": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  ],
+  "summary": {
+    "arms": {
+      "every_prompt": {
+        "sessions": 4,
+        "usable_sessions": 4,
+        "early": {
+          "hits": 4,
+          "n": 4,
+          "rate": 1.0
+        },
+        "deep": {
+          "hits": 8,
+          "n": 8,
+          "rate": 1.0
+        },
+        "filler": {
+          "hits": 0,
+          "n": 68,
+          "rate": 0.0
+        },
+        "turn_2": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_11": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_20": {
+          "hits": 4,
+          "n": 4
+        }
+      },
+      "session_start": {
+        "sessions": 4,
+        "usable_sessions": 4,
+        "early": {
+          "hits": 4,
+          "n": 4,
+          "rate": 1.0
+        },
+        "deep": {
+          "hits": 8,
+          "n": 8,
+          "rate": 1.0
+        },
+        "filler": {
+          "hits": 0,
+          "n": 68,
+          "rate": 0.0
+        },
+        "turn_2": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_11": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_20": {
+          "hits": 4,
+          "n": 4
+        }
+      },
+      "none": {
+        "sessions": 4,
+        "usable_sessions": 4,
+        "early": {
+          "hits": 0,
+          "n": 4,
+          "rate": 0.0
+        },
+        "deep": {
+          "hits": 0,
+          "n": 8,
+          "rate": 0.0
+        },
+        "filler": {
+          "hits": 0,
+          "n": 68,
+          "rate": 0.0
+        },
+        "turn_2": {
+          "hits": 0,
+          "n": 4
+        },
+        "turn_11": {
+          "hits": 0,
+          "n": 4
+        },
+        "turn_20": {
+          "hits": 0,
+          "n": 4
+        }
+      }
+    },
+    "verdict": {
+      "ci_95_gap_every_minus_session": [
+        0.0,
+        0.0
+      ],
+      "gap_point": 0.0,
+      "discriminates": true,
+      "label": "screen_only"
+    },
+    "stress_verdict": {
+      "label": "session_start_holds_at_depth",
+      "deep_hits": {
+        "every_prompt": 8,
+        "session_start": 8,
+        "n": 8
+      }
+    }
+  }
+}
