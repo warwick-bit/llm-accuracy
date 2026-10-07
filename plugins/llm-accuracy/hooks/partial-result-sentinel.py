@@ -300,7 +300,7 @@ MAX_ENVELOPES = 256
 # intact: measured across 458 real MCP text bodies the largest was 47,620
 # characters, because the host replaces anything over its own token budget with
 # a truncation notice, which is detected separately. Parsing a 5 MB body costs
-# about 45 ms against the 3 s hook timeout, so the headroom is deliberate --
+# about 45 ms against the 10 s hook timeout, so the headroom is deliberate --
 # a lower bound would silently skip inspection of exactly the large results
 # most likely to be paginated. The body is already a decoded string by this
 # point, so like MAX_INPUT_CHARS this counts characters rather than bytes; for
@@ -311,8 +311,8 @@ MAX_CONTENT_BLOCKS = 32
 # many dictionaries are visited, not how wide any one of them is.
 MAX_FIELDS_PER_NODE = 4096
 # The host payload itself is bounded before it is parsed. Parsing is linear in
-# input size, and a 50 MB payload measured 4.05 s against the 3 s hook timeout,
-# so an oversized payload is dropped rather than parsed. stdin is a text
+# input size, and a 50 MB payload measured 4.05 s, a large share of the 10 s
+# hook timeout, so an oversized payload is dropped rather than parsed. stdin is a text
 # stream, so this counts decoded characters rather than bytes.
 MAX_INPUT_CHARS = 10_000_000
 
@@ -607,7 +607,7 @@ def main() -> int:
         if tool in ("Bash", "Read"):
             from builtin_result_signals import BUILTIN_ADVICE, builtin_codes
 
-            codes = builtin_codes(tool, response)
+            codes = builtin_codes(tool, response, payload.get("tool_input"))
             advice = BUILTIN_ADVICE
         elif isinstance(tool, str) and (not tool or tool.startswith("mcp__")):
             codes = collect_codes(response)

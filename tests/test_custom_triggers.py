@@ -24,7 +24,7 @@ def config_file(tmp_path: Path, payload: object) -> Path:
     [
         (2, "claim_fidelity", "Fix socket pressure in net.py.", "equal membership"),
         (0, "analysis", "Fix socket pressure in net.py.", "analysis contract"),
-        (1, "fusion_evidence", "Fix socket pressure in net.py.", "FUSION EVIDENCE"),
+        (1, "fusion_evidence", "Fix socket pressure in net.py.", "Source reconciliation"),
     ],
 )
 def test_custom_phrases_override_builtin_suppressors(
@@ -226,6 +226,7 @@ def test_general_mode_custom_phrase_adds_detailed_guidance(tmp_path):
     context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
     assert "competing causes" in context
     assert "equal membership" in context
+    assert context.count("CLAIM FIDELITY CHECK") == 1
     assert len(context) <= 2000
 
 

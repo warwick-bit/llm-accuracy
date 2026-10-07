@@ -164,7 +164,7 @@ def test_commands_fail_open_when_plugin_root_is_missing(
                 "The CRM is stale and the data warehouse has missing rows. "
                 "Reconcile this unique source conflict."
             ),
-            "FUSION EVIDENCE TRIGGER",
+            "Source reconciliation",
         ),
         (
             "UserPromptSubmit",
@@ -327,6 +327,15 @@ def blocks(body: object) -> list[dict]:
 SENTINEL_END_TO_END_CASES = [
     ({"tool_name": "Read", "tool_response": {"type": "text", "file": {"startLine": 10, "numLines": 3, "totalLines": 31}}},
      "file_read_excerpt", "actual Read metadata fires"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x"},
+      "tool_response": {"type": "text", "file": {"startLine": 1, "numLines": 2000, "totalLines": 3100}}},
+     "file_read_excerpt", "a host cut on an unbounded Read fires"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x", "offset": 10, "limit": 3},
+      "tool_response": {"type": "text", "file": {"startLine": 10, "numLines": 3, "totalLines": 31}}},
+     "", "a range the model requested stays silent"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x", "offset": 10},
+      "tool_response": {"type": "text", "file": {"startLine": 10, "numLines": 2000, "totalLines": 3100}}},
+     "file_read_excerpt", "a host cut after an offset-only Read fires"),
     ({"tool_name": "Bash", "tool_response": {"stdout": "x" * 30, "persistedOutputPath": "/tmp/synthetic", "persistedOutputSize": 100}},
      "bash_output_excerpt", "actual Bash metadata fires"),
     ({"tool_name": "Bash", "tool_response": {"stdout": '{"has_more":true}', "has_more": True}},

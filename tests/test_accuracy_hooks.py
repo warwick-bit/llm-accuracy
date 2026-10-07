@@ -406,7 +406,7 @@ def test_fusion_hook_emits_advisory_context(monkeypatch, capsys) -> None:
     output = json.loads(capsys.readouterr().out)
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
     assert (
-        "fusion evidence trigger"
+        "source reconciliation"
         in output["hookSpecificOutput"]["additionalContext"].lower()
     )
 

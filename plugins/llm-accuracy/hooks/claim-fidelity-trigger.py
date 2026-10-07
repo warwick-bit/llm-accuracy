@@ -64,8 +64,10 @@ GENERAL_CONTRACT = (
     "for diagnosis and fix checks. Advisory guidance, not independent verification."
 )
 
+LABEL = "CLAIM FIDELITY CHECK: "
+
 CONTRACT = (
-    "CLAIM FIDELITY CHECK: Keep every load-bearing conclusion inside the observed "
+    LABEL + "Keep every load-bearing conclusion inside the observed "
     "source, subject, population, definition, grain, window, freshness and completeness. "
     "A successful read proves only what it returned. Equal counts or totals do not prove "
     "equal membership. A business timestamp does not prove pipeline completeness. A "
@@ -99,7 +101,8 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     if mode == "targeted":
         return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
     if should_fire(prompt):
-        return GENERAL_CONTRACT + " " + CONTRACT + " " + TECHNICAL_FOOTER
+        # One label per reminder; the targeted contract follows the general one.
+        return GENERAL_CONTRACT + " " + CONTRACT[len(LABEL) :] + " " + TECHNICAL_FOOTER
     return GENERAL_CONTRACT + " " + TECHNICAL_FOOTER
 
 
