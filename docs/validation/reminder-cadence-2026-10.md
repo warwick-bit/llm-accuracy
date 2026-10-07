@@ -7,7 +7,8 @@ experiment has three arms that differ only in how the instruction is registered:
 
 - `every_prompt`: the instruction is injected on every prompt (the released behaviour);
 - `session_start`: the byte-identical text is injected once, from `SessionStart`;
-- `none`: no instruction. This framework-off control shows the behaviour comes from the text.
+- `none`: no instruction. This target-instruction-off control shows the behaviour comes from the
+  text; other hooks and the competing banner still run.
 
 All arms also carry a fixed per-prompt advisory banner of about 1.6k characters.
 Prompts and banners never mention the behaviour being scored. The decision rules
@@ -24,16 +25,21 @@ anything smaller is a screen.
 2. **Metrics-registry pointer** (`scripts/eval_pointer_cadence.py`, Claude Code;
    `scripts/eval_pointer_cadence_codex.py`, Codex CLI). The pointer is a behaviour
    instruction: read a synthetic metric registry before quoting a metric. A probe scores
-   as a hit when its metric's entry file was read at or before the probe turn. Only file
-   reads are enabled. The S2 variant adds a competing route: a second per-prompt banner
-   and CSV exports that invite a direct answer.
+   as a hit when its metric's entry file was read at or before the probe turn. Claude Code
+   sessions enable only the Read tool. Codex sessions run shell commands in Codex's
+   read-only sandbox, and a read is a successful command naming the entry file (a
+   directory-wide search counts as reading every entry, in all arms). A second Codex
+   signal, the entry's binding line appearing in successful command output at or before
+   the probe turn, agreed with the first on all 216 Codex probe turns. The S2 variant adds
+   a competing route: a second per-prompt banner and CSV exports that invite a direct
+   answer.
 
 Deep probes are those at turns 5 and 8 (11 and 20 in the stress variant).
 
 ## Results
 
 ```text
-Instruction / model             Variant       Per arm  Deep: every / start / none  Label
+Instruction / model             Variant       Usable   Deep: every / start / none  Label
 Contract  claude-opus-5-5       8 turns       12       24/24  24/24  0/24          redundant
 Contract  claude-opus-5-5       20 turns      4         8/8    8/8   0/8           holds at depth (screen)
 Contract  claude-sonnet-5-5     8 turns       4         8/8    8/8   0/8           screen
@@ -53,8 +59,8 @@ degenerate ([0, 0]). The Wilson 95% lower bound for the session-start deep rate 
 24/24 is 0.862. No arm applied the footer or opened the registry on a filler turn.
 
 On Haiku 4.5 under the competing route, the session-start pointer decayed: 4/8 deep
-probes, and 7 of 12 probes answered from the CSV exports without reading the registry
-entry. The every-prompt arm on Haiku scored 8/8. Cadence can therefore depend on the
+probes, and on 7 of 12 probes the session read the CSV exports without reading the
+registry entry. The every-prompt arm on Haiku scored 8/8. Cadence can therefore depend on the
 model, and these results should not be carried over to other models without a test.
 
 ## Scope
@@ -74,15 +80,19 @@ The Codex driver runs each session inside `bwrap`. It uses an allowlisted enviro
 a private PID namespace, an isolated home, a read-only project, and a closed stdin.
 Account connectors, plugins and web search are disabled. Any MCP or web tool item fails
 the session's plumbing check. These controls were added after early runs exposed two
-problems: an inherited shell environment and reachable account connectors. No scored
-Codex receipt comes from a run without them.
+problems: an inherited shell environment and reachable account connectors. Both Codex
+receipts were recorded with them (author's run log; the harness commit is in each
+receipt). The controls limit what a session sees of the host. They do not hide the
+session's own Codex home, which holds its login file, and the network is shared with the
+host so the CLI can reach the model API.
 
 ## Provenance
 
 The receipts were recorded with drivers carrying the author's private competing banner
 and the original wording of the pointer's plugin name and registry path. Before
 publication, those strings were replaced with the generic text in the current drivers.
-Arms, cases, probes, fixtures, scorers and decision rules are unchanged. As a result:
+The published drivers differ from the final pre-publication commit only in those strings;
+each receipt names the earlier commit it was recorded with. As a result:
 
 - `banner_sha256` and `pointer_sha256` in the receipts identify the original text, not
   the published text;
