@@ -91,7 +91,8 @@ host so the CLI can reach the model API.
 The receipts were recorded with drivers carrying the author's private competing banner
 and the original wording of the pointer's plugin name and registry path. Before
 publication, those strings were replaced with the generic text in the current drivers.
-The published drivers differ from the final pre-publication commit only in those strings;
+The published drivers differ from the final pre-publication commit only in those strings
+and a Python 3.9-compatible temporary-directory cleanup in the Codex driver;
 each receipt names the earlier commit it was recorded with. As a result:
 
 - `banner_sha256` and `pointer_sha256` in the receipts identify the original text, not

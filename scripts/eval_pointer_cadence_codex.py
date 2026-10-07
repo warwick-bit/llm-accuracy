@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+import contextlib
 from datetime import date
 import hashlib
 import json
@@ -407,6 +408,20 @@ def turn_command(
     return command + ([thread] if thread else []) + [prompt]
 
 
+@contextlib.contextmanager
+def session_root():
+    """Temporary session root whose cleanup ignores sandbox leftovers.
+
+    Equivalent to TemporaryDirectory(ignore_cleanup_errors=True), which needs
+    Python 3.10; this repository supports 3.9.
+    """
+    path = tempfile.mkdtemp(prefix="pointer-codex-")
+    try:
+        yield path
+    finally:
+        shutil.rmtree(path, ignore_errors=True)
+
+
 def file_digest(path: Path) -> str | None:
     return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
 
@@ -414,9 +429,7 @@ def file_digest(path: Path) -> str | None:
 def run_session(
     prompts: list[str], arm: str, model: str, effort: str, timeout: int, stress: bool
 ) -> dict:
-    with tempfile.TemporaryDirectory(
-        prefix="pointer-codex-", ignore_cleanup_errors=True
-    ) as directory:
+    with session_root() as directory:
         root = Path(directory)
         layout = session_layout(root, stress)
         work, home = layout["work"], layout["codex_home"]
