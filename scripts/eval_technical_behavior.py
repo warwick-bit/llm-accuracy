@@ -15,6 +15,11 @@ PLUGIN = ROOT / "plugins/llm-accuracy"
 sys.path.insert(0, str(PLUGIN / "scripts"))
 from host_probe import run_probe  # noqa: E402
 
+# These evals measure what the reminder says, with one delivery per turn, as
+# recorded since 0.6.0. The 0.8.0 default sends it once per session instead,
+# so they pin the every-prompt mode; the cadence evals measure the difference.
+EVERY_PROMPT = {"claim_fidelity_mode": "general"}
+
 # Oracles are author-owned, independent of model verdicts and footer presence.
 # Every case is synthetic. These constrained fields do not score arbitrary prose.
 CASES = (
@@ -217,6 +222,7 @@ def main() -> int:
                 PLUGIN if arm == "candidate" else None,
                 model=args.model,
                 timeout=120,
+                plugin_options=EVERY_PROMPT,
             )
             row[arm] = score(
                 result, expected, len(prompts), technical, arm == "candidate"

@@ -355,6 +355,8 @@ def run_probe(
     """Run an auth-only temporary profile with no tools, MCPs or saved session.
 
     `plugin_options` adds saved plugin options, such as a pinned reminder mode.
+    Options the loaded manifest does not declare are dropped, so an older
+    released plugin runs with its own defaults.
     """
     if not MODEL_NAME.fullmatch(model):
         return {"status": "invalid_model", "answers": []}
@@ -406,8 +408,11 @@ def run_probe(
             command.extend(["--plugin-dir", str(plugin.resolve())])
             try:
                 manifest = json.loads((plugin / ".claude-plugin/plugin.json").read_text())
-                options = dict(plugin_options or {})
-                if "python_executable" in manifest.get("userConfig", {}):
+                declared = manifest.get("userConfig", {})
+                options = {
+                    k: v for k, v in (plugin_options or {}).items() if k in declared
+                }
+                if "python_executable" in declared:
                     # Explicit local probe option; --plugin-dir does not save defaults.
                     import sys
                     options["python_executable"] = sys.executable

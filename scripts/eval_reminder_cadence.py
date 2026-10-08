@@ -21,7 +21,12 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from eval_technical_behavior import PLUGIN, footer_present, run_probe  # noqa: E402
+from eval_technical_behavior import (  # noqa: E402
+    EVERY_PROMPT,
+    PLUGIN,
+    footer_present,
+    run_probe,
+)
 
 ARMS = ("every_prompt", "session_start", "none")
 HOOK_FILE = "claim-fidelity-trigger.py"
@@ -31,7 +36,7 @@ SESSION_MATCHER = "startup|resume|clear|compact"
 # The recorded runs used llm-accuracy 0.7.x, which sent the general contract on
 # every prompt and had no SessionStart contract. Each arm pins that mode and
 # drops the 0.8.0 SessionStart registration, so the arms stay the recorded ones.
-RECORDED_OPTIONS = {"claim_fidelity_mode": "general"}
+RECORDED_OPTIONS = EVERY_PROMPT
 SHIPPED_SESSION_HOOK = f'"{HOOK_FILE}:session-start"'
 LAYOUT = ("F", "P", "F", "F", "P", "F", "F", "P")
 PROBE_TURNS = tuple(i for i, kind in enumerate(LAYOUT) if kind == "P")

@@ -58,10 +58,11 @@ def test_explicit_plugin_probe_configures_the_loaded_plugin_name(modules, tmp_pa
     assert options == {'pluginConfigs': {'llm-accuracy': {'options': {'python_executable': sys.executable}}}}
 
     observed.clear()
-    pinned = {'claim_fidelity_mode': 'general'}
+    pinned = {'claim_fidelity_mode': 'general', 'undeclared_option': 'x'}
     assert probe.run_probe(['synthetic'], PLUGIN, plugin_options=pinned)['status'] == 'ok'
     command = observed[0]
     options = json.loads(command[command.index('--settings') + 1])
+    # Only options the loaded manifest declares reach the plugin.
     assert options == {'pluginConfigs': {'llm-accuracy': {'options': {
         'python_executable': sys.executable, 'claim_fidelity_mode': 'general'}}}}
 
@@ -543,6 +544,7 @@ def test_natural_footer_comparison_requires_both_plugins_and_pinned_model(
 
     def probe(prompts, plugin, **kwargs):
         roots.append(plugin)
+        assert kwargs["plugin_options"] == {"claim_fidelity_mode": "general"}
         return result(
             "Checked: supplied evidence\nGap: environment\nNext: test",
             resolved_model=model,
@@ -790,3 +792,18 @@ def test_kill_falls_back_to_owned_child_when_group_signal_is_denied(modules, mon
         if process.poll() is None:
             process.kill()
             process.wait()
+
+
+def test_technical_eval_pins_every_prompt_delivery(modules, monkeypatch):
+    evaluator = modules[2]
+    seen = []
+
+    def probe(prompts, plugin, **kwargs):
+        seen.append(kwargs.get("plugin_options"))
+        return {"status": "timeout", "answers": []}
+
+    monkeypatch.setattr(evaluator, "run_probe", probe)
+    monkeypatch.setattr(sys, "argv", ["eval", "--live", "--case", "correction"])
+    evaluator.main()
+    assert seen == [{"claim_fidelity_mode": "general"}] * 2
+
