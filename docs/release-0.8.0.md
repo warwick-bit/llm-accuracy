@@ -20,15 +20,17 @@ instead of on every prompt, and fixes three smaller hook issues.
   that prompt's fidelity guidance, but it cannot remove a session reminder that
   is already in context. `CC_SKIP_CLAIM_FIDELITY=1` still mutes both.
 - **Partial-read warning:** a `Read` with a `limit` the model chose no longer
-  gets an excerpt warning, because the model already knows it read a slice. An
-  offset alone still gets the warning, because the host can still cut the end.
+  gets an excerpt warning when the host returned that many lines or reached the
+  end of the file, because the model already knows it read a slice. A shorter
+  host cut before the end, or an offset alone, still gets the warning.
 - **Source-conflict reminder:** it now reads "Source reconciliation" instead of
   naming an internal protocol.
 - **One label:** in `general` mode, a prompt that also matches a fidelity
   trigger gets one "CLAIM FIDELITY CHECK" label, not two.
 
 `/llm-accuracy:accuracy-doctor` reports the effective mode, including a mode
-saved in `/config`.
+saved in `/config`, and in `session` mode also runs the `SessionStart`
+reminder command.
 
 **Evidence and limits.** The change rests on the
 [reminder-cadence evidence note](validation/reminder-cadence-2026-10.md), which

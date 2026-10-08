@@ -177,9 +177,9 @@ failure, and no signal certifies full-file or project-wide coverage.
 ## Diagnose activation
 
 Run `/llm-accuracy:accuracy-doctor` when reminders appear inactive. The local
-report checks package version, general/targeted mode, user-config validity,
-phrase counts, bypasses and actual registered hook commands using synthetic
-prompts. It also lists the host's reported installation versions and enabled
+report checks package version, reminder mode, user-config validity, phrase
+counts, bypasses and actual registered hook commands using synthetic prompts
+and, in `session` mode, a synthetic session start. It also lists the host's reported installation versions and enabled
 flags for this plugin. `not_listed` can be normal for an explicit `--plugin-dir`
 load. Neither registration nor a working command proves the current session
 loaded a hook: `current_session_activation` remains `unverified`.

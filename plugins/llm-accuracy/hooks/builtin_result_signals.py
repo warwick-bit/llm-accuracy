@@ -22,10 +22,6 @@ def builtin_codes(
             if size > len(stdout.encode("utf-8", errors="replace")):
                 return {"bash_output_excerpt"}
     if tool == "Read" and response.get("type") == "text":
-        # A model-chosen limit already tells the model it read a slice. An
-        # offset alone does not: the host can still cut the end of the read.
-        if isinstance(tool_input, dict) and tool_input.get("limit") is not None:
-            return set()
         file = response.get("file")
         if not isinstance(file, dict):
             return set()
@@ -34,6 +30,12 @@ def builtin_codes(
         )
         if all(type(value) is int for value in (start, count, total)):
             if start >= 1 and 0 <= count <= total and (start > 1 or count < total):
+                # A model-chosen limit already tells the model it read a slice,
+                # unless the host returned fewer lines than it asked for before
+                # the end of the file. An offset alone can still be cut short.
+                limit = tool_input.get("limit") if isinstance(tool_input, dict) else None
+                if type(limit) is int and (count >= limit or start + count > total):
+                    return set()
                 return {"file_read_excerpt"}
     return set()
 

@@ -106,12 +106,22 @@ def command_argv(handler: dict, root: Path, executable: str) -> list[str]:
 
 
 
-def probe_command(command: dict, prompt: str, root: Path, executable: str) -> str:
+# hooks.json passes this action to the claim-fidelity SessionStart registration.
+SESSION_START_ACTION = "claim-fidelity-trigger.py:session-start"
+SESSION_PROBE = "claim_fidelity_session"
+# Outside session mode the SessionStart command is expected to stay silent.
+SESSION_NOT_USED = "not_used_in_mode"
+
+
+def probe_command(
+    command: dict, prompt: str, root: Path, executable: str, event: str = "UserPromptSubmit"
+) -> str:
     env = {**os.environ, "CLAUDE_PLUGIN_ROOT": str(root), "CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE": executable}
+    payload = {"prompt": prompt} if event == "UserPromptSubmit" else {"hook_event_name": event, "source": "startup"}
     try:
         result = subprocess.run(
             command_argv(command, root, executable),
-            input=json.dumps({"prompt": prompt}),
+            input=json.dumps(payload),
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -129,7 +139,7 @@ def probe_command(command: dict, prompt: str, root: Path, executable: str) -> st
         payload = json.loads(result.stdout)
         context = payload["hookSpecificOutput"]
         valid = (
-            context["hookEventName"] == "UserPromptSubmit"
+            context["hookEventName"] == event
             and isinstance(context["additionalContext"], str)
             and bool(context["additionalContext"])
         )
@@ -138,14 +148,19 @@ def probe_command(command: dict, prompt: str, root: Path, executable: str) -> st
         return "no_context" if not result.stdout.strip() else "invalid_response"
 
 
-def check_hooks(root: Path, executable: str) -> dict[str, str]:
+def check_hooks(root: Path, executable: str, mode: str) -> dict[str, str]:
     try:
-        groups = json.loads((root / "hooks/hooks.json").read_text())["hooks"][
-            "UserPromptSubmit"
+        registered = json.loads((root / "hooks/hooks.json").read_text())["hooks"]
+        commands = [h for group in registered["UserPromptSubmit"] for h in group["hooks"]]
+        sessions = [
+            h
+            for group in registered["SessionStart"]
+            for h in group["hooks"]
+            if isinstance(h, dict) and SESSION_START_ACTION in h.get("command", "")
         ]
-        commands = [h for group in groups for h in group["hooks"]]
-        if len(commands) != len(PROMPTS) or not all(
-            isinstance(command, dict) and "python-launcher.cmd" in command.get("command", "") for command in commands
+        if len(commands) != len(PROMPTS) or len(sessions) != 1 or not all(
+            isinstance(command, dict) and "python-launcher.cmd" in command.get("command", "")
+            for command in commands + sessions
         ):
             raise ValueError("registration")
     except (OSError, ValueError, KeyError, TypeError):
@@ -162,6 +177,14 @@ def check_hooks(root: Path, executable: str) -> dict[str, str]:
             if disabled
             else probe_command(command, prompt, root, executable)
         )
+    # Session mode sends the general reminder from SessionStart, not prompts.
+    outcomes[SESSION_PROBE] = (
+        "disabled"
+        if os.environ.get("CC_SKIP_CLAIM_FIDELITY") == "1"
+        else probe_command(sessions[0], "", root, executable, "SessionStart")
+        if mode == "session"
+        else SESSION_NOT_USED
+    )
     return outcomes
 
 
@@ -177,11 +200,14 @@ def diagnose(root: Path = ROOT, python_executable: str | None = None) -> dict:
     mode, mode_recognized = claim_fidelity_mode()
     executable = python_executable or os.environ.get("CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE") or sys.executable
     interpreter = python_status(executable)
-    hooks = check_hooks(root, executable) if interpreter["status"] == "ok" else {"interpreter": interpreter["status"]}
+    hooks = check_hooks(root, executable, mode) if interpreter["status"] == "ok" else {"interpreter": interpreter["status"]}
     healthy = (
         config_status in {"ok", "missing_default"}
         and mode_recognized
-        and all(v == "emitted" for v in hooks.values())
+        and all(
+            v == "emitted" or (k, v) == (SESSION_PROBE, SESSION_NOT_USED)
+            for k, v in hooks.items()
+        )
     )
     return {
         "status": "ok" if healthy and version != "invalid_manifest" else "attention",
@@ -227,12 +253,23 @@ def presentation(report: dict) -> dict[str, str]:
         report.get("hook_commands", {}).get(family) == "emitted"
         for family, _, _ in PROMPTS
     )
+    session = report.get("hook_commands", {}).get(SESSION_PROBE)
+    session_text = (
+        ""
+        if session is None
+        else "; the session-start probe emitted the general reminder"
+        if session == "emitted"
+        else "; the session-start reminder is not used in this mode"
+        if session == SESSION_NOT_USED
+        else "; the session-start probe did not emit the general reminder"
+    )
     live = report.get("live")
     live_ok = isinstance(live, dict) and live_passed(live)
     registration_ok = registration_matches(report)
     attention = (
         report.get("status") != "ok"
         or emitted != len(PROMPTS)
+        or session not in (None, "emitted", SESSION_NOT_USED)
         or (live is not None and not live_ok)
     )
     live_text = (
@@ -247,7 +284,7 @@ def presentation(report: dict) -> dict[str, str]:
         "headline": "Diagnostic checks need attention."
         if attention
         else "Local package probes passed; current-session activation is unverified.",
-        "checked": f"{emitted}/{len(PROMPTS)} prompt-hook command probes emitted reminders; {live_text}.",
+        "checked": f"{emitted}/{len(PROMPTS)} prompt-hook command probes emitted reminders{session_text}; {live_text}.",
         "gap": (
             "Current-session activation, substantive response compliance and factual accuracy remain unverified."
             + ("" if registration_ok else " Host registration requires inspection.")

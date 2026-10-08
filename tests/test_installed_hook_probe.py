@@ -87,3 +87,18 @@ def test_duplicate_initial_capture_cannot_certify_exactly_once(
     assert not probe.memory_probe(
         installed["evidence-memory"], tmp_path, sys.executable, environment()
     )
+
+
+def test_installed_probe_requires_the_session_start_reminder(installed, tmp_path):
+    options = dict.fromkeys(installed, sys.executable)
+    # A user mode override does not hide the shipped default from the probe.
+    overridden = {**environment(), "CC_CLAIM_FIDELITY_MODE": "general"}
+    assert probe.run(installed, tmp_path, options, overridden)
+    config = installed["llm-accuracy"] / "hooks/accuracy_config.py"
+    config.write_text(
+        config.read_text().replace(
+            'DEFAULT_FIDELITY_MODE = "session"', 'DEFAULT_FIDELITY_MODE = "general"'
+        )
+    )
+    assert probe.run(installed, tmp_path, options, environment()) is False
+

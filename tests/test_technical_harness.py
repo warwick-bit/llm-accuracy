@@ -807,3 +807,40 @@ def test_technical_eval_pins_every_prompt_delivery(modules, monkeypatch):
     evaluator.main()
     assert seen == [{"claim_fidelity_mode": "general"}] * 2
 
+
+def test_doctor_probes_the_session_start_reminder(modules, monkeypatch, tmp_path):
+    doctor = modules[0]
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert report["hook_commands"]["claim_fidelity_session"] == "emitted"
+    assert "session-start probe emitted" in doctor.presentation(report)["checked"]
+    monkeypatch.setenv("CC_CLAIM_FIDELITY_MODE", "general")
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert report["hook_commands"]["claim_fidelity_session"] == "not_used_in_mode"
+    monkeypatch.delenv("CC_CLAIM_FIDELITY_MODE")
+    # Without its SessionStart registration the default mode has no general reminder.
+    plugin = tmp_path / "plugin"
+    import shutil
+    shutil.copytree(PLUGIN, plugin, ignore=shutil.ignore_patterns("__pycache__"))
+    manifest = plugin / "hooks/hooks.json"
+    hooks = json.loads(manifest.read_text())
+    hooks["hooks"]["SessionStart"] = [
+        group for group in hooks["hooks"]["SessionStart"]
+        if "session-start" not in json.dumps(group)
+    ]
+    manifest.write_text(json.dumps(hooks))
+    report = doctor.diagnose(plugin, python_executable=sys.executable)
+    assert report["hook_commands"] == {"registration": "invalid"}
+    assert report["status"] == "attention"
+
+
+def test_doctor_flags_a_silent_session_start_probe(modules, monkeypatch):
+    doctor = modules[0]
+    monkeypatch.setattr(
+        doctor, "probe_command",
+        lambda *a: "no_context" if a[-1:] == ("SessionStart",) else "emitted",
+    )
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert report["hook_commands"]["claim_fidelity_session"] == "no_context"
+    assert report["status"] == "attention"
+    assert doctor.presentation(report)["status"] == "attention"
+
