@@ -55,9 +55,11 @@ not guarantee correct or current answers.
 
 ## Releasing
 
-`main` is the delivery branch: a version is live for installs once its pull
-request merges. A GitHub release records that version; it does not ship it.
-After a version-bump pull request merges:
+`main` is the delivery branch for marketplace installs: a version is live for
+them once its pull request merges. Claude Desktop and Cowork users install the
+LLM Accuracy ZIP from the latest release instead (README, `docs/INSTALL.md`),
+so a version reaches them only when its release carries that ZIP. After a
+version-bump pull request merges:
 
 1. Write the notes in `docs/release-<version>.md` (LLM Accuracy) or
    `docs/release-<plugin>-<version>.md` (Evidence Memory, Session Ledger).
@@ -73,8 +75,21 @@ After a version-bump pull request merges:
    Evidence Memory and Session Ledger use the tag prefixes `evidence-memory-v`
    and `session-ledger-v`, their own titles, and `--latest=false`, so the
    newest LLM Accuracy release stays marked Latest.
-3. Check with `gh release list` that each tag points at the intended commit and
-   that LLM Accuracy is Latest.
+3. Attach the LLM Accuracy ZIP and its checksum, built from a clean checkout of
+   the tagged commit. Evidence Memory and Session Ledger releases carry no
+   assets.
+
+   ```bash
+   git switch --detach v<version>
+   python3 scripts/build_plugin_zip.py --output dist/llm-accuracy-<version>.zip
+   (cd dist && sha256sum llm-accuracy-<version>.zip > SHA256SUMS.txt)
+   gh release upload v<version> dist/llm-accuracy-<version>.zip dist/SHA256SUMS.txt
+   ```
+
+4. Check each tag's commit directly; `gh release list` shows tags, not commits.
+   After `git fetch --tags origin`, `git rev-parse v<version>^{commit}` must
+   print the merge commit. Then `gh release view v<version>` must list both
+   assets, and `gh release list` must show LLM Accuracy as Latest.
 
 ## Changing a detection rule
 
