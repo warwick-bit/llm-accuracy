@@ -23,6 +23,7 @@ CONTROL_VARS = (
     "CLAUDECODE",
     "LLM_ACCURACY_CONFIG",
     "CC_CLAIM_FIDELITY_MODE",
+    "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE",
     "CC_SKIP_ANALYSIS",
     "CC_SKIP_FUSION_EVIDENCE",
     "CC_SKIP_CLAIM_FIDELITY",
@@ -349,8 +350,12 @@ def run_probe(
     model: str = "sonnet",
     timeout: int = 60,
     effort: str | None = None,
+    plugin_options: dict[str, str] | None = None,
 ) -> dict:
-    """Run an auth-only temporary profile with no tools, MCPs or saved session."""
+    """Run an auth-only temporary profile with no tools, MCPs or saved session.
+
+    `plugin_options` adds saved plugin options, such as a pinned reminder mode.
+    """
     if not MODEL_NAME.fullmatch(model):
         return {"status": "invalid_model", "answers": []}
     if effort is not None and effort not in {"low", "medium", "high", "xhigh", "max"}:
@@ -401,11 +406,14 @@ def run_probe(
             command.extend(["--plugin-dir", str(plugin.resolve())])
             try:
                 manifest = json.loads((plugin / ".claude-plugin/plugin.json").read_text())
+                options = dict(plugin_options or {})
                 if "python_executable" in manifest.get("userConfig", {}):
                     # Explicit local probe option; --plugin-dir does not save defaults.
                     import sys
+                    options["python_executable"] = sys.executable
+                if options:
                     command.extend(["--settings", json.dumps({"pluginConfigs": {
-                        manifest["name"]: {"options": {"python_executable": sys.executable}}
+                        manifest["name"]: {"options": options}
                     }})])
             except (OSError, ValueError, KeyError):
                 return {"status": "invalid_plugin_manifest", "answers": []}

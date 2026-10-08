@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Add general evidence guidance, with an opt-in targeted-only mode.
+"""Add general evidence guidance once per session, plus targeted prompt guidance.
 
-General mode covers technical requests and terse follow-ups without guessing
-their risk from keywords. Subprocess tests live in tests/test_accuracy_wiring.py.
+Session mode (the default) adds the static general reminder from SessionStart,
+which runs on startup, resume, clear and compaction. Prompts then receive only
+the targeted guidance their wording triggers. General mode restores the general
+reminder on every prompt; targeted mode keeps only the triggered guidance.
+Subprocess tests live in tests/test_accuracy_wiring.py.
 No prompt or evidence is retained or echoed.
 """
 
@@ -15,7 +18,7 @@ import sys
 
 from hook_input import read_hook_input
 
-from accuracy_config import custom_trigger_matches
+from accuracy_config import claim_fidelity_mode, custom_trigger_matches
 
 
 BYPASS_RE = re.compile(r"#\s*fidelity-ok\b", re.IGNORECASE)
@@ -34,8 +37,9 @@ REPORT_PERCENTAGE_RE = re.compile(
     re.IGNORECASE,
 )
 
-MODE_ENV = "CC_CLAIM_FIDELITY_MODE"
 MAX_INPUT_CHARS = 1_000_000
+# hooks.json passes this action to the SessionStart registration.
+SESSION_START = "session-start"
 
 TECHNICAL_FOOTER = (
     "End substantive technical diagnoses, verification claims and evidence-sufficiency "
@@ -94,11 +98,16 @@ def should_fire(prompt: str) -> bool:
     return False
 
 
+def context_for_session(mode: str) -> str:
+    """Static guidance for a session start; a prompt bypass cannot reach it."""
+    return GENERAL_CONTRACT + " " + TECHNICAL_FOOTER if mode == "session" else ""
+
+
 def context_for_prompt(prompt: str, mode: str) -> str:
     """Choose bounded guidance without treating prompt text as configuration."""
     if not prompt.strip() or BYPASS_RE.search(prompt):
         return ""
-    if mode == "targeted":
+    if mode != "general":
         return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
     if should_fire(prompt):
         # One label per reminder; the targeted contract follows the general one.
@@ -106,28 +115,39 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     return GENERAL_CONTRACT + " " + TECHNICAL_FOOTER
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     if os.environ.get("CC_SKIP_CLAIM_FIDELITY") == "1":
         return 0
+    arguments = sys.argv[1:] if argv is None else argv
     try:
-        raw = read_hook_input(sys.stdin, MAX_INPUT_CHARS + 1)
-        if len(raw) > MAX_INPUT_CHARS:
-            return 0
-        payload = json.loads(raw)
-        if not isinstance(payload, dict):
-            return 0
-        prompt = payload.get("prompt")
-        if not isinstance(prompt, str):
-            return 0
-        mode = os.environ.get(MODE_ENV, "general").strip().lower()
-        context = context_for_prompt(prompt, mode)
+        mode, _ = claim_fidelity_mode()
+        if arguments[:1] == [SESSION_START]:
+            # Every SessionStart source gets the reminder: an injection does not
+            # survive the next compaction, so it must return after each one.
+            # The payload is drained but not needed, so it cannot suppress it.
+            try:
+                read_hook_input(sys.stdin, MAX_INPUT_CHARS + 1)
+            except Exception:
+                pass
+            event, context = "SessionStart", context_for_session(mode)
+        else:
+            raw = read_hook_input(sys.stdin, MAX_INPUT_CHARS + 1)
+            if len(raw) > MAX_INPUT_CHARS:
+                return 0
+            payload = json.loads(raw)
+            if not isinstance(payload, dict):
+                return 0
+            prompt = payload.get("prompt")
+            if not isinstance(prompt, str):
+                return 0
+            event, context = "UserPromptSubmit", context_for_prompt(prompt, mode)
         if not context:
             return 0
         print(
             json.dumps(
                 {
                     "hookSpecificOutput": {
-                        "hookEventName": "UserPromptSubmit",
+                        "hookEventName": event,
                         "additionalContext": context,
                     }
                 }

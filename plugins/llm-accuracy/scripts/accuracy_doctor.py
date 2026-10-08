@@ -18,7 +18,7 @@ from hook_shell import shell_argv
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "hooks"))
-from accuracy_config import read_configuration  # noqa: E402
+from accuracy_config import claim_fidelity_mode, read_configuration  # noqa: E402
 
 
 PROMPTS = (
@@ -174,20 +174,20 @@ def diagnose(root: Path = ROOT, python_executable: str | None = None) -> dict:
             raise ValueError("version")
     except (OSError, ValueError, KeyError, TypeError):
         version = "invalid_manifest"
-    mode = os.environ.get("CC_CLAIM_FIDELITY_MODE", "general").strip().lower()
+    mode, mode_recognized = claim_fidelity_mode()
     executable = python_executable or os.environ.get("CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE") or sys.executable
     interpreter = python_status(executable)
     hooks = check_hooks(root, executable) if interpreter["status"] == "ok" else {"interpreter": interpreter["status"]}
     healthy = (
         config_status in {"ok", "missing_default"}
-        and mode in {"general", "targeted"}
+        and mode_recognized
         and all(v == "emitted" for v in hooks.values())
     )
     return {
         "status": "ok" if healthy and version != "invalid_manifest" else "attention",
         "package_version": version,
-        "mode": "targeted" if mode == "targeted" else "general",
-        "mode_recognized": mode in {"general", "targeted"},
+        "mode": mode,
+        "mode_recognized": mode_recognized,
         "config_status": config_status,
         "phrase_counts": {
             family: len(phrases.get(family, [])) for family, _, _ in PROMPTS

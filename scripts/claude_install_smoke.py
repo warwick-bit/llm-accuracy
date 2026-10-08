@@ -54,7 +54,20 @@ TECHNICAL_PROMPT = (
     "the previous build and has not been checked. Can we call the production "
     "incident resolved? Answer briefly."
 )
-BYPASS_PROMPT = "Reply with the single word ready. # fidelity-ok"
+TARGETED_PROMPT = (
+    "Does this prove the retry patch fixed the outage? Answer in one sentence."
+)
+BYPASS_PROMPT = (
+    "Does this prove the retry patch fixed the outage? "
+    "Reply with the single word ready. # fidelity-ok"
+)
+# The default mode adds the general reminder once, at SessionStart. Prompts add
+# targeted guidance only, so the bypass is visible only beside the same trigger.
+LIVE_SESSIONS = (
+    ("installed_default_session", TECHNICAL_PROMPT, 1),
+    ("installed_targeted", TARGETED_PROMPT, 2),
+    ("installed_bypass", BYPASS_PROMPT, 1),
+)
 SESSION_FIELDS = (
     "status",
     "result_count",
@@ -307,10 +320,7 @@ def run_smoke(claude: str, model: str, timeout: int, live: bool) -> dict:
             installed is not None and checks["installed_byte_mismatches"] == 0
         )
         if live:
-            for name, prompt, expected in (
-                ("installed_default_session", TECHNICAL_PROMPT, 1),
-                ("installed_bypass", BYPASS_PROMPT, 0),
-            ):
+            for name, prompt, expected in LIVE_SESSIONS:
                 result = communicate(
                     session_command(claude, model),
                     work,

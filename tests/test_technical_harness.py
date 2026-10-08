@@ -57,6 +57,14 @@ def test_explicit_plugin_probe_configures_the_loaded_plugin_name(modules, tmp_pa
     options = json.loads(command[command.index('--settings') + 1])
     assert options == {'pluginConfigs': {'llm-accuracy': {'options': {'python_executable': sys.executable}}}}
 
+    observed.clear()
+    pinned = {'claim_fidelity_mode': 'general'}
+    assert probe.run_probe(['synthetic'], PLUGIN, plugin_options=pinned)['status'] == 'ok'
+    command = observed[0]
+    options = json.loads(command[command.index('--settings') + 1])
+    assert options == {'pluginConfigs': {'llm-accuracy': {'options': {
+        'python_executable': sys.executable, 'claim_fidelity_mode': 'general'}}}}
+
 
 @pytest.mark.parametrize(
     "answer,valid,passed",
@@ -304,6 +312,29 @@ def test_inventory_filters_other_plugins_and_paths(modules, monkeypatch):
         "plugin": "llm-accuracy",
         "installations": [{"version": "0.6.0", "enabled": False}],
     }
+
+
+@pytest.mark.parametrize(
+    ("environment", "mode"),
+    [
+        ({}, "session"),
+        ({"CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "general"}, "general"),
+        (
+            {
+                "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "general",
+                "CC_CLAIM_FIDELITY_MODE": "targeted",
+            },
+            "targeted",
+        ),
+    ],
+)
+def test_doctor_reports_the_effective_mode(modules, monkeypatch, environment, mode):
+    doctor = modules[0]
+    for key, value in environment.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setattr(doctor, "probe_command", lambda *a: "emitted")
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert (report["mode"], report["mode_recognized"]) == (mode, True)
 
 
 def test_disabled_hook_and_invalid_mode_visible(modules, monkeypatch):

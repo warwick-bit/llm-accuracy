@@ -16,6 +16,8 @@ describe historical builds.
 
 The current [automatic Python patch](release-python-default.md) removes required
 interpreter setup. Saved interpreter choices remain in effect.
+[LLM Accuracy 0.8.0](release-0.8.0.md) adds the general fidelity reminder once
+per session start, resume, clear and compaction instead of on every prompt.
 [LLM Accuracy 0.7.2](release-0.7.2.md) inspects the data before asking which
 definition a vague business question means, and covers new-customer counts.
 [Deterministic Data 0.1.1](release-deterministic-data-0.1.1.md) steps aside when
@@ -88,13 +90,14 @@ Use Claude Code normally. LLM Accuracy has no command to run or system prompt to
 paste for matching prompts. Its self-audit skill is available when you ask
 Claude to check one of its own earlier answers.
 
-Since 0.6.0, the general fidelity reminder runs on each non-empty prompt,
-including technical requests and short follow-ups. Additional reminders target
+Since 0.8.0, the general fidelity reminder is added once when a session starts,
+resumes, is cleared or is compacted, rather than on every prompt; it still
+covers technical requests and short follow-ups. Additional reminders target
 ambiguous business questions, open-ended analysis, evidence-boundary claims,
 source conflicts and context compaction. They do not fetch evidence, block work
 or verify facts automatically. Use `/llm-accuracy:claim-fidelity` for an explicit
 check. See [reminder modes](../plugins/llm-accuracy/README.md#reminder-modes) for
-targeted-only behaviour and bypasses. Hook delivery does not prove improved
+every-prompt and targeted-only behaviour and bypasses. Hook delivery does not prove improved
 diagnostic accuracy on your tasks.
 To extend the targeted checks for your domain, add a user-owned
 [`llm-accuracy.json` configuration](../plugins/llm-accuracy/README.md#custom-trigger-phrases).
@@ -245,7 +248,7 @@ claude plugin update session-ledger@llm-accuracy --scope user
 claude plugin update evidence-memory@llm-accuracy --scope user
 ```
 
-Run the optional plugin updates only for plugins you installed. Accuracy 0.7.2,
+Run the optional plugin updates only for plugins you installed. Accuracy 0.8.0,
 Ledger 0.3.1 and Memory 0.5.1 automatically find Python when no executable is
 saved. Upgrades normally need no setting change. Saved choices survive updates;
 if discovery or a saved executable fails, correct or clear each installed hook

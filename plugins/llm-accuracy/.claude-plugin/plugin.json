@@ -1,7 +1,7 @@
 {
   "name": "llm-accuracy",
   "description": "Advisory evidence reminders for technical and data work, targeted ambiguity checks, claim fidelity, and self-audit.",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "author": {
     "name": "Warwick"
   },
@@ -13,6 +13,12 @@
       "type": "string",
       "title": "Python executable (optional)",
       "description": "Leave empty for automatic Python 3.9+ discovery. Set an executable name or absolute path, without arguments, only to override discovery. No Git Bash required on Windows.",
+      "required": false
+    },
+    "claim_fidelity_mode": {
+      "type": "string",
+      "title": "Claim fidelity reminder mode (optional)",
+      "description": "Leave empty for session: the evidence reminder once per session start, resume, clear and compaction, plus targeted guidance on matching prompts. general: the reminder on every prompt. targeted: matching prompts only. The CC_CLAIM_FIDELITY_MODE environment variable overrides this.",
       "required": false
     }
   }

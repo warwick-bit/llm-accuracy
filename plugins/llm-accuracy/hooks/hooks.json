@@ -56,6 +56,16 @@
             "statusMessage": "Checking llm-accuracy post-compaction accuracy"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "set -- \"claim-fidelity-trigger.py:session-start\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"claim-fidelity-trigger.py:session-start\"); exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking llm-accuracy claim fidelity"
+          }
+        ]
       }
     ]
   }

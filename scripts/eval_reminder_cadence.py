@@ -28,6 +28,11 @@ HOOK_FILE = "claim-fidelity-trigger.py"
 BANNER_FILE = "cadence-banner.py"
 SESSION_FILE = "cadence-session-contract.py"
 SESSION_MATCHER = "startup|resume|clear|compact"
+# The recorded runs used llm-accuracy 0.7.x, which sent the general contract on
+# every prompt and had no SessionStart contract. Each arm pins that mode and
+# drops the 0.8.0 SessionStart registration, so the arms stay the recorded ones.
+RECORDED_OPTIONS = {"claim_fidelity_mode": "general"}
+SHIPPED_SESSION_HOOK = f'"{HOOK_FILE}:session-start"'
 LAYOUT = ("F", "P", "F", "F", "P", "F", "F", "P")
 PROBE_TURNS = tuple(i for i, kind in enumerate(LAYOUT) if kind == "P")
 DEEP_TURNS = PROBE_TURNS[1:]
@@ -238,11 +243,20 @@ def _claim_entry(hooks: dict) -> tuple[dict, dict]:
     raise ValueError("claim-fidelity UserPromptSubmit registration not found")
 
 
+def drop_shipped_session_hook(hooks: dict) -> None:
+    hooks["SessionStart"] = [
+        group
+        for group in hooks.get("SessionStart", [])
+        if not any(SHIPPED_SESSION_HOOK in h.get("command", "") for h in group["hooks"])
+    ]
+
+
 def rewire(hooks: dict, arm: str) -> dict:
     """Return the arm's hook map; only the claim-fidelity cadence and banner differ."""
     if arm not in ARMS:
         raise ValueError(arm)
     hooks = json.loads(json.dumps(hooks))
+    drop_shipped_session_hook(hooks)
     group, hook = _claim_entry(hooks)
 
     def clone(script: str) -> dict:
@@ -430,7 +444,14 @@ def run_one(
     job: tuple[str, str, int, list[str], Path, str, int, str | None, bool],
 ) -> dict:
     case, arm, repeat, prompts, tree, model, timeout, effort, show = job
-    result = run_probe(prompts, tree, model=model, timeout=timeout, effort=effort)
+    result = run_probe(
+        prompts,
+        tree,
+        model=model,
+        timeout=timeout,
+        effort=effort,
+        plugin_options=RECORDED_OPTIONS,
+    )
     layout = layout_for(case)
     row = {
         "case": case,

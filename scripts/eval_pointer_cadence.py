@@ -354,6 +354,7 @@ def rewire(hooks: dict, arm: str, stress: bool = False) -> dict:
     if arm not in ARMS:
         raise ValueError(arm)
     hooks = json.loads(json.dumps(hooks))
+    cadence.drop_shipped_session_hook(hooks)
     group, hook = cadence._claim_entry(hooks)
 
     def clone(script: str, matcher: str | None = None) -> dict:
@@ -544,7 +545,12 @@ def session_command(tree: Path, model: str, effort: str | None) -> list[str]:
         json.dumps(
             {
                 "pluginConfigs": {
-                    "llm-accuracy": {"options": {"python_executable": sys.executable}}
+                    "llm-accuracy": {
+                        "options": {
+                            "python_executable": sys.executable,
+                            **cadence.RECORDED_OPTIONS,
+                        }
+                    }
                 }
             }
         ),

@@ -215,16 +215,18 @@ def test_empty_custom_list_does_not_remove_builtins(tmp_path):
     assert "equal membership" in result.stdout
 
 
-def test_general_mode_custom_phrase_adds_detailed_guidance(tmp_path):
+@pytest.mark.parametrize("mode", ["general", "session"])
+def test_custom_phrase_adds_detailed_guidance(tmp_path, mode):
     path = config_file(tmp_path, {"extra_triggers": {"claim_fidelity": ["socket pressure"]}})
     result = run_hook(
         "UserPromptSubmit", 2, json.dumps({"prompt": "Check socket pressure."}),
-        controls={"LLM_ACCURACY_CONFIG": str(path)},
+        controls={"LLM_ACCURACY_CONFIG": str(path), "CC_CLAIM_FIDELITY_MODE": mode},
     )
     assert result.returncode == 0
     assert result.stderr == ""
     context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert "competing causes" in context
+    # Session mode sends the general reminder at SessionStart, not here.
+    assert ("competing causes" in context) == (mode == "general")
     assert "equal membership" in context
     assert context.count("CLAIM FIDELITY CHECK") == 1
     assert len(context) <= 2000

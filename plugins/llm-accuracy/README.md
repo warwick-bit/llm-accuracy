@@ -45,8 +45,9 @@ Cowork stateless skills are a separate target; this source candidate's hook
 delivery in Cowork is unverified and Desktop Chat runs no hooks.
 
 Once installed and activated in Claude Code, a general
-fidelity reminder covers each non-empty prompt, including technical requests,
-file paths, implementation requests and brief follow-ups. It asks Claude to
+fidelity reminder is added when a session starts, resumes, is cleared or is
+compacted. It covers technical requests, file paths, implementation requests
+and brief follow-ups without repeating on every prompt. It asks Claude to
 verify the measurement, population and environment, establish coverage before
 universal claims, test competing causes, and revisit dependent conclusions after
 a correction. It also points diagnoses and fix checks to the verify-technical skill;
@@ -65,24 +66,45 @@ The post-compaction reminder remains separate. None verifies facts automatically
 
 ## Reminder modes
 
-- **General (default since 0.6.0):** a short evidence reminder on each non-empty
-  prompt. Explicit evidence-boundary prompts also receive the existing detailed
-  fidelity guidance. Greetings and creative tasks receive the general reminder
-  too; it asks Claude to keep non-factual tasks brief. This trades extra context
-  for coverage, not for guaranteed compliance or correctness.
-- **Targeted:** set `CC_CLAIM_FIDELITY_MODE=targeted` in the environment inherited
-  by Claude Code to restore the previous keyword-gated fidelity behaviour.
-  Unset it or use `general` to restore the default. Unknown values use general
-  mode. Restart Claude Code after changing its inherited environment.
-- **Mute:** include `# fidelity-ok` in a prompt, or set
-  `CC_SKIP_CLAIM_FIDELITY=1` in the host environment. These controls mute only the
-  fidelity reminder; the other hooks keep their own controls.
+- **Session (default since 0.8.0):** the general reminder is added once, from
+  `SessionStart`: at startup, resume and `/clear`, and again after every
+  compaction, because an injected reminder does not survive the next one.
+  Explicit evidence-boundary prompts also receive the detailed fidelity
+  guidance. The reminder also covers greetings and creative tasks; it asks
+  Claude to keep non-factual tasks brief.
+- **General (default 0.6.0 to 0.7.2):** the same reminder on every non-empty
+  prompt, plus the detailed guidance on evidence-boundary prompts. This uses
+  more context. Choose it if you rely on a model the cadence tests did not
+  cover (below).
+- **Targeted:** fidelity guidance only on prompts that match a fidelity
+  trigger; no session reminder.
+- **Choose a mode:** set the optional **Claim fidelity reminder mode** in
+  `/config` to `session`, `general` or `targeted`; empty means `session`. A
+  non-empty `CC_CLAIM_FIDELITY_MODE` in the environment inherited by Claude Code
+  overrides the saved option. Unknown values use `session`. Start a new session
+  after changing either.
+- **Mute:** include `# fidelity-ok` in a prompt to mute that prompt's fidelity
+  guidance; it cannot remove a session reminder that is already in context. Set
+  `CC_SKIP_CLAIM_FIDELITY=1` in the host environment to mute both. These controls
+  mute only the fidelity reminder; the other hooks keep their own controls.
 
-For example, start a targeted-only Claude Code session from a POSIX shell:
+For example, start a Claude Code session with the reminder on every prompt from
+a POSIX shell:
 
 ```bash
-CC_CLAIM_FIDELITY_MODE=targeted claude
+CC_CLAIM_FIDELITY_MODE=general claude
 ```
+
+**Why once per session.** In isolated tests, the reminder's footer instruction
+was followed as often when sent once from `SessionStart` as when sent on every
+prompt: 24/24 deep probes each on Claude Opus 5.5 (12 sessions per arm, 8
+turns), 8/8 each in a 20-turn stress run, and 8/8 each in a smaller Claude
+Sonnet 5.5 screen; with no reminder, 0 of the same probes. These are synthetic
+sessions with one competing per-prompt banner, not real long sessions or tool-heavy work. In a separate screen of a
+different, behaviour-changing reminder, Claude Haiku 4.5 followed the
+once-per-session copy less often than the every-prompt copy (4/8 vs 8/8) when
+another instruction competed with it; Haiku was not tested with this reminder.
+See [the evidence note](https://github.com/warwick-bit/llm-accuracy/blob/main/docs/validation/reminder-cadence-2026-10.md).
 
 Do not edit installed cache files to configure the mode. Host support for
 inheriting environment settings varies; this shell example is for Claude Code,
@@ -109,8 +131,8 @@ inherited by Claude Code.
 ```
 
 - **Claim fidelity:** evidence scope, measurement, coverage and causal claims.
-  In general mode, a match adds detailed guidance to the short baseline. In
-  targeted mode, it activates the check even when built-in phrases do not match.
+  A match adds the detailed guidance to that prompt in every mode, even when
+  built-in phrases do not match.
 - **Analysis:** the existing open-ended data-analysis contract. Use for analysis
   of your domain's data, not for every technical word.
 - **Source conflict (`fusion_evidence`):** the existing source-reconciliation
@@ -179,7 +201,7 @@ repository compatibility contract for current host coverage.
 bypass; `no_context`, `invalid_response`, `execution_failed`, `timeout` and
 `unusable` and `unsupported_version` need investigation. `missing_default` is normal;
 `config_unavailable` or `invalid_config` leaves only built-in triggers active.
-Unknown reminder modes are reported and fall back to general mode.
+Unknown reminder modes are reported and fall back to session mode.
 
 Add `--live` only when you want one model request. It uses an existing local
 Claude subscription login in a temporary auth-only profile, explicit plugin
