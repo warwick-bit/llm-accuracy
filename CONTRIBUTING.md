@@ -75,21 +75,30 @@ version-bump pull request merges:
    Evidence Memory and Session Ledger use the tag prefixes `evidence-memory-v`
    and `session-ledger-v`, their own titles, and `--latest=false`, so the
    newest LLM Accuracy release stays marked Latest.
-3. Attach the LLM Accuracy ZIP and its checksum, built from a clean checkout of
-   the tagged commit. Evidence Memory and Session Ledger releases carry no
-   assets.
+3. Attach the LLM Accuracy ZIP and its checksum. `gh release create` makes the
+   tag on GitHub only, so fetch it, check it points at the merge commit
+   (`gh release list` shows tags, not commits), and build from a checkout of
+   that commit with no local changes. Evidence Memory and Session Ledger
+   releases carry no assets.
 
    ```bash
+   git fetch --tags origin
+   test "$(git rev-parse v<version>^{commit})" = "<merge-sha>"
    git switch --detach v<version>
+   test -z "$(git status --porcelain)"
    python3 scripts/build_plugin_zip.py --output dist/llm-accuracy-<version>.zip
-   (cd dist && sha256sum llm-accuracy-<version>.zip > SHA256SUMS.txt)
-   gh release upload v<version> dist/llm-accuracy-<version>.zip dist/SHA256SUMS.txt
+   cd dist
+   shasum -a 256 llm-accuracy-<version>.zip > SHA256SUMS.txt
+   shasum -a 256 -c SHA256SUMS.txt
+   gh release upload v<version> llm-accuracy-<version>.zip SHA256SUMS.txt
    ```
 
-4. Check each tag's commit directly; `gh release list` shows tags, not commits.
-   After `git fetch --tags origin`, `git rev-parse v<version>^{commit}` must
-   print the merge commit. Then `gh release view v<version>` must list both
-   assets, and `gh release list` must show LLM Accuracy as Latest.
+   `shasum` ships with macOS and Linux; `-c` fails on an empty or wrong
+   checksum file.
+4. Check what was published: download both assets into an empty directory
+   with `gh release download v<version> --dir <empty-dir>` and run
+   `shasum -a 256 -c SHA256SUMS.txt` there. `gh release list` must show LLM
+   Accuracy as Latest.
 
 ## Changing a detection rule
 
