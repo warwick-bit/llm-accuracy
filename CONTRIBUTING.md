@@ -27,8 +27,14 @@ Before proposing a release-affecting change, run:
 
 ```bash
 python3 -m pytest -q
+uv run --no-project --python 3.9 --with pytest python -m pytest -q
 find plugins -path '*/hooks/*.py' -print0 | xargs -0 -r python3 -m py_compile
 ```
+
+The second line runs the suite on Python 3.9, the oldest version the gates test
+(they run 3.9 to 3.14). A newer local Python does not catch a 3.10+ API: for
+example, `TemporaryDirectory(ignore_cleanup_errors=True)` passed on 3.11 and
+failed only in the 3.9 gate.
 
 Before a release, run the clean installation smoke on the committed tree:
 
@@ -46,6 +52,96 @@ failure blocks the smoke. `--skip-live` checks the installation without model ca
 
 Keep the plugins generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
+
+## Releasing
+
+`main` is the delivery branch for marketplace installs: a version is live for
+them once its pull request merges. Claude Desktop and Cowork users install the
+LLM Accuracy ZIP from the latest release instead (README, `docs/INSTALL.md`),
+so a version reaches them only when its release carries that ZIP. After a
+version-bump pull request merges:
+
+1. Write the notes in `docs/release-<version>.md` (LLM Accuracy) or
+   `docs/release-<plugin>-<version>.md` (Evidence Memory, Session Ledger).
+   Start them with a line that dates the version, for example
+   `_Published 8 Oct 2026 for the version that reached main on 8 Oct 2026 (17bae38)._`
+2. Tag the merge commit, not a later `main`, and do not mark the release
+   Latest yet:
+
+   ```bash
+   (
+     set -euo pipefail
+     version='<version>' merge_sha='<merge-sha>'
+     gh release create "v$version" --target "$merge_sha" --title "LLM Accuracy $version" \
+       --notes-file "docs/release-$version.md" --latest=false
+   )
+   ```
+
+   An LLM Accuracy release becomes Latest only in step 4, after its ZIP has
+   been checked, so Desktop and Cowork users never reach a Latest release
+   without one. Evidence Memory and Session Ledger use the tag prefixes
+   `evidence-memory-v` and `session-ledger-v`, their own titles, and
+   `--latest=false` too. Their releases carry no assets, so they stop here.
+3. Attach the LLM Accuracy ZIP and its checksum. `gh release create` makes the
+   tag on GitHub only, so fetch it, check it points at the merge commit
+   (`gh release list` shows tags, not commits), and build from a checkout of
+   that commit with no local changes. Run the block as one piece: the subshell
+   stops at the first failed command, so a failed check uploads nothing.
+   `shasum` ships with
+   macOS; on Linux it comes with Perl, which some distributions package
+   separately (on Alpine, `perl-utils`).
+
+   ```bash
+   (
+     set -euo pipefail
+     version='<version>' merge_sha='<merge-sha>'
+     git fetch --tags origin
+     test "$(git rev-parse "v$version^{commit}")" = "$merge_sha"
+     git switch --detach "v$version"
+     test -z "$(git status --porcelain)"
+     python3 scripts/build_plugin_zip.py --output "dist/llm-accuracy-$version.zip"
+     cd dist
+     shasum -a 256 "llm-accuracy-$version.zip" > SHA256SUMS.txt
+     shasum -a 256 -c SHA256SUMS.txt
+     gh release upload "v$version" "llm-accuracy-$version.zip" SHA256SUMS.txt
+   )
+   ```
+
+   `shasum -c` fails on an empty or wrong checksum file.
+4. Check what was published, then mark the release Latest. The download goes
+   into a new empty directory, and `shasum -c` fails if either asset is
+   missing or does not match:
+
+   ```bash
+   (
+     set -euo pipefail
+     version='<version>'
+     check_dir="$(mktemp -d)"
+     gh release download "v$version" --dir "$check_dir"
+     cd "$check_dir"
+     shasum -a 256 -c SHA256SUMS.txt
+     gh release edit "v$version" --latest
+     gh release list --limit 3
+   )
+   ```
+
+   `gh release list` must show LLM Accuracy `<version>` as Latest.
+
+If step 3 stops, the release is not Latest yet, so fix it in place:
+
+- **The tag check fails:** the release points at the wrong commit. Delete the
+  release with its tag and the tag step 3 fetched, then repeat from step 2:
+  `gh release delete v<version> --cleanup-tag --yes` and
+  `git tag -d v<version>`.
+- **The upload stops partway:** `gh release upload` does not replace an
+  existing asset, so delete what was uploaded
+  (`gh release delete-asset v<version> <asset> --yes`) and rerun step 3.
+
+Once step 4 has marked the release Latest, do not rerun steps 3 or 4 on it. If
+a Latest asset turns out wrong, first mark the newest earlier LLM Accuracy
+release that carries a ZIP Latest again (`gh release edit v<previous> --latest`),
+so Desktop and Cowork users keep a release with a ZIP. Then delete both assets
+and repeat steps 3 and 4.
 
 ## Changing a detection rule
 
