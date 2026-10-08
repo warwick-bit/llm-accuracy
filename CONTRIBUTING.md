@@ -65,40 +65,63 @@ version-bump pull request merges:
    `docs/release-<plugin>-<version>.md` (Evidence Memory, Session Ledger).
    Start them with a line that dates the version, for example
    `_Published 8 Oct 2026 for the version that reached main on 8 Oct 2026 (17bae38)._`
-2. Tag the merge commit, not a later `main`:
+2. Tag the merge commit, not a later `main`, and do not mark the release
+   Latest yet:
 
    ```bash
    gh release create v<version> --target <merge-sha> --title "LLM Accuracy <version>" \
-     --notes-file docs/release-<version>.md --latest
+     --notes-file docs/release-<version>.md --latest=false
    ```
 
-   Evidence Memory and Session Ledger use the tag prefixes `evidence-memory-v`
-   and `session-ledger-v`, their own titles, and `--latest=false`, so the
-   newest LLM Accuracy release stays marked Latest.
+   An LLM Accuracy release becomes Latest only in step 4, after its ZIP has
+   been checked, so Desktop and Cowork users never reach a Latest release
+   without one. Evidence Memory and Session Ledger use the tag prefixes
+   `evidence-memory-v` and `session-ledger-v`, their own titles, and
+   `--latest=false` too. Their releases carry no assets, so they stop here.
 3. Attach the LLM Accuracy ZIP and its checksum. `gh release create` makes the
    tag on GitHub only, so fetch it, check it points at the merge commit
    (`gh release list` shows tags, not commits), and build from a checkout of
-   that commit with no local changes. Evidence Memory and Session Ledger
-   releases carry no assets.
+   that commit with no local changes. Run the block as one piece: the subshell
+   stops at the first failed command, so a failed check uploads nothing.
+   `--clobber` lets a rerun replace a partial upload. `shasum` ships with
+   macOS; on Linux it comes with Perl, which some distributions package
+   separately (on Alpine, `perl-utils`).
 
    ```bash
-   git fetch --tags origin
-   test "$(git rev-parse v<version>^{commit})" = "<merge-sha>"
-   git switch --detach v<version>
-   test -z "$(git status --porcelain)"
-   python3 scripts/build_plugin_zip.py --output dist/llm-accuracy-<version>.zip
-   cd dist
-   shasum -a 256 llm-accuracy-<version>.zip > SHA256SUMS.txt
-   shasum -a 256 -c SHA256SUMS.txt
-   gh release upload v<version> llm-accuracy-<version>.zip SHA256SUMS.txt
+   (
+     set -euo pipefail
+     version='<version>' merge_sha='<merge-sha>'
+     git fetch --tags origin
+     test "$(git rev-parse "v$version^{commit}")" = "$merge_sha"
+     git switch --detach "v$version"
+     test -z "$(git status --porcelain)"
+     python3 scripts/build_plugin_zip.py --output "dist/llm-accuracy-$version.zip"
+     cd dist
+     shasum -a 256 "llm-accuracy-$version.zip" > SHA256SUMS.txt
+     shasum -a 256 -c SHA256SUMS.txt
+     gh release upload "v$version" "llm-accuracy-$version.zip" SHA256SUMS.txt --clobber
+   )
    ```
 
-   `shasum` ships with macOS and Linux; `-c` fails on an empty or wrong
-   checksum file.
-4. Check what was published: download both assets into an empty directory
-   with `gh release download v<version> --dir <empty-dir>` and run
-   `shasum -a 256 -c SHA256SUMS.txt` there. `gh release list` must show LLM
-   Accuracy as Latest.
+   `shasum -c` fails on an empty or wrong checksum file.
+4. Check what was published, then mark the release Latest. The download goes
+   into a new empty directory, and `shasum -c` fails if either asset is
+   missing or does not match:
+
+   ```bash
+   (
+     set -euo pipefail
+     version='<version>'
+     check_dir="$(mktemp -d)"
+     gh release download "v$version" --dir "$check_dir"
+     cd "$check_dir"
+     shasum -a 256 -c SHA256SUMS.txt
+     gh release edit "v$version" --latest
+     gh release list --limit 3
+   )
+   ```
+
+   `gh release list` must show LLM Accuracy `<version>` as Latest.
 
 ## Changing a detection rule
 
