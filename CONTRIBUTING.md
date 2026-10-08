@@ -69,8 +69,12 @@ version-bump pull request merges:
    Latest yet:
 
    ```bash
-   gh release create v<version> --target <merge-sha> --title "LLM Accuracy <version>" \
-     --notes-file docs/release-<version>.md --latest=false
+   (
+     set -euo pipefail
+     version='<version>' merge_sha='<merge-sha>'
+     gh release create "v$version" --target "$merge_sha" --title "LLM Accuracy $version" \
+       --notes-file "docs/release-$version.md" --latest=false
+   )
    ```
 
    An LLM Accuracy release becomes Latest only in step 4, after its ZIP has
@@ -83,7 +87,7 @@ version-bump pull request merges:
    (`gh release list` shows tags, not commits), and build from a checkout of
    that commit with no local changes. Run the block as one piece: the subshell
    stops at the first failed command, so a failed check uploads nothing.
-   `--clobber` lets a rerun replace a partial upload. `shasum` ships with
+   `shasum` ships with
    macOS; on Linux it comes with Perl, which some distributions package
    separately (on Alpine, `perl-utils`).
 
@@ -99,7 +103,7 @@ version-bump pull request merges:
      cd dist
      shasum -a 256 "llm-accuracy-$version.zip" > SHA256SUMS.txt
      shasum -a 256 -c SHA256SUMS.txt
-     gh release upload "v$version" "llm-accuracy-$version.zip" SHA256SUMS.txt --clobber
+     gh release upload "v$version" "llm-accuracy-$version.zip" SHA256SUMS.txt
    )
    ```
 
@@ -122,6 +126,22 @@ version-bump pull request merges:
    ```
 
    `gh release list` must show LLM Accuracy `<version>` as Latest.
+
+If step 3 stops, the release is not Latest yet, so fix it in place:
+
+- **The tag check fails:** the release points at the wrong commit. Delete the
+  release with its tag and the tag step 3 fetched, then repeat from step 2:
+  `gh release delete v<version> --cleanup-tag --yes` and
+  `git tag -d v<version>`.
+- **The upload stops partway:** `gh release upload` does not replace an
+  existing asset, so delete what was uploaded
+  (`gh release delete-asset v<version> <asset> --yes`) and rerun step 3.
+
+Once step 4 has marked the release Latest, do not rerun steps 3 or 4 on it. If
+a Latest asset turns out wrong, first mark the newest earlier LLM Accuracy
+release that carries a ZIP Latest again (`gh release edit v<previous> --latest`),
+so Desktop and Cowork users keep a release with a ZIP. Then delete both assets
+and repeat steps 3 and 4.
 
 ## Changing a detection rule
 
