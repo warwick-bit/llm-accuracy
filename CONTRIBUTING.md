@@ -27,8 +27,14 @@ Before proposing a release-affecting change, run:
 
 ```bash
 python3 -m pytest -q
+uv run --no-project --python 3.9 --with pytest python -m pytest -q
 find plugins -path '*/hooks/*.py' -print0 | xargs -0 -r python3 -m py_compile
 ```
+
+The second line runs the suite on Python 3.9, the oldest version the gates test
+(they run 3.9 to 3.14). A newer local Python does not catch a 3.10+ API: for
+example, `TemporaryDirectory(ignore_cleanup_errors=True)` passed on 3.11 and
+failed only in the 3.9 gate.
 
 Before a release, run the clean installation smoke on the committed tree:
 
@@ -46,6 +52,29 @@ failure blocks the smoke. `--skip-live` checks the installation without model ca
 
 Keep the plugins generic. The plugin may improve evidence hygiene, but it does
 not guarantee correct or current answers.
+
+## Releasing
+
+`main` is the delivery branch: a version is live for installs once its pull
+request merges. A GitHub release records that version; it does not ship it.
+After a version-bump pull request merges:
+
+1. Write the notes in `docs/release-<version>.md` (LLM Accuracy) or
+   `docs/release-<plugin>-<version>.md` (Evidence Memory, Session Ledger).
+   Start them with a line that dates the version, for example
+   `_Published 8 Oct 2026 for the version that reached main on 8 Oct 2026 (17bae38)._`
+2. Tag the merge commit, not a later `main`:
+
+   ```bash
+   gh release create v<version> --target <merge-sha> --title "LLM Accuracy <version>" \
+     --notes-file docs/release-<version>.md --latest
+   ```
+
+   Evidence Memory and Session Ledger use the tag prefixes `evidence-memory-v`
+   and `session-ledger-v`, their own titles, and `--latest=false`, so the
+   newest LLM Accuracy release stays marked Latest.
+3. Check with `gh release list` that each tag points at the intended commit and
+   that LLM Accuracy is Latest.
 
 ## Changing a detection rule
 
