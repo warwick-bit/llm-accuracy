@@ -16,8 +16,13 @@ import eval_reminder_cadence as cadence  # noqa: E402
 
 def run_hook(script: Path, payload: dict) -> str:
     env = {
-        k: v for k, v in os.environ.items() if not k.startswith(("CC_", "LLM_ACCURACY"))
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith(("CC_", "LLM_ACCURACY", "CLAUDE_PLUGIN_OPTION_"))
     }
+    # Claude Code passes the harness's saved plugin options to hooks this way.
+    for key, value in cadence.RECORDED_OPTIONS.items():
+        env["CLAUDE_PLUGIN_OPTION_" + key.upper()] = value
     result = subprocess.run(
         [sys.executable, str(script)],
         input=json.dumps(payload),
@@ -61,6 +66,27 @@ def test_arms_differ_only_in_claim_fidelity_cadence(trees):
         for c in registered(trees["every_prompt"], "UserPromptSubmit")
         if cadence.HOOK_FILE not in c
     ] == base
+
+
+def test_arms_keep_the_recorded_release_conditions(trees):
+    # The 0.8.0 SessionStart reminder would reach every arm, including none.
+    for tree in trees.values():
+        assert not any(
+            cadence.HOOK_FILE in c for c in registered(tree, "SessionStart")
+        )
+    assert cadence.RECORDED_OPTIONS == {"claim_fidelity_mode": "general"}
+
+
+def test_sessions_run_with_the_recorded_mode(monkeypatch, tmp_path):
+    seen = {}
+
+    def probe(prompts, tree, **options):
+        seen.update(options)
+        return {"status": "ok", "answers": []}
+
+    monkeypatch.setattr(cadence, "run_probe", probe)
+    cadence.run_one(("light_a", "none", 0, ["p"], tmp_path, "m", 1, None, False))
+    assert seen["plugin_options"] == {"claim_fidelity_mode": "general"}
 
 
 def test_session_start_matcher_covers_compaction(trees):

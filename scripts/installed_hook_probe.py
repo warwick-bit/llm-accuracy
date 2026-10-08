@@ -14,6 +14,7 @@ from hook_command import shell_argv
 SESSION = "synthetic-installed-qa"
 SUMMARY = "Synthetic installed ledger summary."
 MARKER = "Synthetic installed memory marker 4831."
+FIDELITY_MODE_VARIABLES = ("CC_CLAIM_FIDELITY_MODE", "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE")
 
 
 def invoke(
@@ -143,6 +144,19 @@ def _run(
         index=2,
     )
     if b"CLAIM FIDELITY CHECK" not in accuracy:
+        return False
+    # The default session mode adds the general reminder from SessionStart.
+    # A user mode override would mute it, so the probe checks the default.
+    started = invoke(
+        installed["llm-accuracy"],
+        "SessionStart",
+        {"session_id": SESSION, "cwd": str(root), "hook_event_name": "SessionStart", "source": "startup"},
+        root / "accuracy-data",
+        options["llm-accuracy"],
+        {k: v for k, v in env.items() if k not in FIDELITY_MODE_VARIABLES},
+        index=1,
+    )
+    if b"CLAIM FIDELITY CHECK" not in started:
         return False
     ledger, data = installed["session-ledger"], root / "ledger-data"
     compact = {"session_id": SESSION, "cwd": str(root), "compact_summary": SUMMARY}

@@ -34,6 +34,10 @@ EXPECTED_HANDLERS = {
         "post-compact-accuracy.py",
         "Checking llm-accuracy post-compaction accuracy",
     ),
+    ("SessionStart", 1): (
+        "claim-fidelity-trigger.py:session-start",
+        "Checking llm-accuracy claim fidelity",
+    ),
     ("PostToolUse", 0): (
         "partial-result-sentinel.py",
         "Checking llm-accuracy partial result signal",
@@ -57,6 +61,7 @@ def clean_environment() -> dict[str, str]:
         "CC_SKIP_FUSION_EVIDENCE",
         "CC_SKIP_CLAIM_FIDELITY",
         "CC_CLAIM_FIDELITY_MODE",
+        "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE",
         "CC_SKIP_PARTIAL_RESULT",
         "CLAUDE_PLUGIN_ROOT",
     }
@@ -95,6 +100,8 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
     assert set(config) == {"hooks"}
     assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse"}
     assert config["hooks"]["SessionStart"][0]["matcher"] == "compact"
+    # No matcher: startup, resume, clear and compaction all restore the reminder.
+    assert "matcher" not in config["hooks"]["SessionStart"][1]
     assert config["hooks"]["PostToolUse"][0]["matcher"] == "^(mcp__.*|Bash|Read)$"
 
     for key, (filename, status_message) in EXPECTED_HANDLERS.items():
@@ -105,8 +112,8 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
         assert handler["statusMessage"] == status_message
         assert "python-launcher.cmd" in handler["command"]
         assert "user_config" not in handler["command"]
-        assert filename in handler["command"]
-        assert (PLUGIN_ROOT / "hooks" / filename).is_file()
+        assert f'"{filename}"' in handler["command"]
+        assert (PLUGIN_ROOT / "hooks" / filename.partition(":")[0]).is_file()
 
 
 def test_commands_support_plugin_paths_with_spaces_and_apostrophes(
@@ -164,7 +171,7 @@ def test_commands_fail_open_when_plugin_root_is_missing(
                 "The CRM is stale and the data warehouse has missing rows. "
                 "Reconcile this unique source conflict."
             ),
-            "FUSION EVIDENCE TRIGGER",
+            "Source reconciliation",
         ),
         (
             "UserPromptSubmit",
@@ -202,29 +209,127 @@ def test_user_prompt_commands_fail_open_on_malformed_stdin(
     assert result.stdout == ""
 
 
-@pytest.mark.parametrize(
-    "prompt",
-    [
-        "The editor stalls after login.",
-        "Proceed with the investigation.",
-        "Which explanation survives the latest test?",
-        "Repair retry handling in src/transport.py.",
-        "Are we finished with the patch?",
-        "Draft an update for the service owner.",
-        "The first diagnosis was wrong. Reconsider it.",
-        "Hello!",
-    ],
-)
+ORDINARY_PROMPTS = [
+    "The editor stalls after login.",
+    "Proceed with the investigation.",
+    "Which explanation survives the latest test?",
+    "Repair retry handling in src/transport.py.",
+    "Are we finished with the patch?",
+    "Draft an update for the service owner.",
+    "The first diagnosis was wrong. Reconsider it.",
+    "Hello!",
+]
+SESSION_SOURCES = ["startup", "resume", "clear", "compact", "fork", None]
+GENERAL_ONLY = "environment and version"
+TARGETED_ONLY = "equal membership"
+
+
+def session_start(source: str | None, controls: dict[str, str] | None = None):
+    payload = {"hook_event_name": "SessionStart"}
+    if source is not None:
+        payload["source"] = source
+    return run_hook("SessionStart", 1, json.dumps(payload), controls=controls)
+
+
+@pytest.mark.parametrize("prompt", ORDINARY_PROMPTS)
 def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> None:
-    result = run_hook("UserPromptSubmit", 2, json.dumps({"prompt": prompt}))
+    result = run_hook(
+        "UserPromptSubmit",
+        2,
+        json.dumps({"prompt": prompt}),
+        controls={"CC_CLAIM_FIDELITY_MODE": "general"},
+    )
 
     assert result.returncode == 0
     assert result.stderr == ""
     assert prompt not in result.stdout
     output = json.loads(result.stdout)
     assert set(output) == {"hookSpecificOutput"}  # no blocking decision
+    assert_general_reminder(output["hookSpecificOutput"]["additionalContext"])
+
+
+@pytest.mark.parametrize("prompt", ORDINARY_PROMPTS)
+def test_default_session_mode_keeps_ordinary_prompts_silent(prompt: str) -> None:
+    result = run_hook("UserPromptSubmit", 2, json.dumps({"prompt": prompt}))
+
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == ""
+
+
+@pytest.mark.parametrize("source", SESSION_SOURCES)
+def test_default_session_start_adds_the_general_reminder(source) -> None:
+    result = session_start(source)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    output = json.loads(result.stdout)
+    assert set(output) == {"hookSpecificOutput"}  # no blocking decision
+    assert output["hookSpecificOutput"]["hookEventName"] == "SessionStart"
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert "environment and version" in context
+    assert_general_reminder(context)
+    assert TARGETED_ONLY not in context
+
+
+@pytest.mark.parametrize(
+    "stdin_text",
+    ["", "{not json", '["not", "an", "object"]', "x" * 1_000_001,
+     json.dumps({"hook_event_name": "SessionStart", "prompt": "Hi # fidelity-ok"})],
+    ids=["empty", "malformed", "array", "oversized", "bypass-marker"],
+)
+def test_session_start_reminder_ignores_its_payload(stdin_text: str) -> None:
+    result = run_hook("SessionStart", 1, stdin_text)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    assert GENERAL_ONLY in json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+
+
+@pytest.mark.parametrize(
+    ("controls", "emits"),
+    [
+        ({}, True),
+        ({"CC_CLAIM_FIDELITY_MODE": "session"}, True),
+        ({"CC_CLAIM_FIDELITY_MODE": " Session "}, True),
+        ({"CC_CLAIM_FIDELITY_MODE": "typo"}, True),
+        ({"CC_CLAIM_FIDELITY_MODE": "general"}, False),
+        ({"CC_CLAIM_FIDELITY_MODE": "targeted"}, False),
+        ({"CC_SKIP_CLAIM_FIDELITY": "1"}, False),
+        ({"CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "general"}, False),
+        ({"CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "targeted"}, False),
+        ({"CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "typo"}, True),
+        (
+            {
+                "CC_CLAIM_FIDELITY_MODE": "session",
+                "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "general",
+            },
+            True,
+        ),
+        (
+            {
+                "CC_CLAIM_FIDELITY_MODE": "  ",
+                "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "general",
+            },
+            False,
+        ),
+    ],
+)
+def test_session_start_reminder_follows_the_mode(
+    controls: dict[str, str], emits: bool
+) -> None:
+    result = session_start("startup", controls)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    if emits:
+        context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
+        assert_general_reminder(context)
+    else:
+        assert result.stdout == ""
+
+
+def assert_general_reminder(context: str) -> None:
+    assert context.count("CLAIM FIDELITY CHECK") == 1
+    assert GENERAL_ONLY in context
     assert "previews, samples" in context
     assert "competing causes" in context
     assert "repeated reversals" in context
@@ -239,25 +344,42 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
     assert len(context) <= 1500
 
 
+ORDINARY = "Repair src/transport.py."
+TRIGGERED = "Does this prove causation?"
+OPTION = "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE"
+
+
 @pytest.mark.parametrize(
-    ("prompt", "controls", "fires"),
+    ("prompt", "controls", "expected"),
     [
-        ("Repair src/transport.py.", {"CC_CLAIM_FIDELITY_MODE": "targeted"}, False),
-        ("Does this prove causation?", {"CC_CLAIM_FIDELITY_MODE": "targeted"}, True),
-        ("Repair src/transport.py.", {"CC_CLAIM_FIDELITY_MODE": " TARGETED "}, False),
-        ("Repair src/transport.py.", {"CC_CLAIM_FIDELITY_MODE": "typo"}, True),
-        ("Repair src/transport.py.", {"CC_SKIP_CLAIM_FIDELITY": "1"}, False),
-        ("Repair src/transport.py. # fidelity-ok", {}, False),
-        ("Repair src/transport.py. # Fidelity-OK", {}, False),
-        (
-            "Does this prove causation? # fidelity-ok",
-            {"CC_CLAIM_FIDELITY_MODE": "targeted"},
-            False,
-        ),
+        # Default session mode: targeted guidance only; the baseline is at SessionStart.
+        (ORDINARY, {}, None),
+        (TRIGGERED, {}, "targeted"),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "typo"}, None),
+        (TRIGGERED, {"CC_CLAIM_FIDELITY_MODE": "typo"}, "targeted"),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "general"}, "general"),
+        (TRIGGERED, {"CC_CLAIM_FIDELITY_MODE": "general"}, "general+targeted"),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "targeted"}, None),
+        (TRIGGERED, {"CC_CLAIM_FIDELITY_MODE": "targeted"}, "targeted"),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": " TARGETED "}, None),
+        # The saved plugin option, and the environment variable's precedence.
+        (ORDINARY, {OPTION: "general"}, "general"),
+        (ORDINARY, {OPTION: " General "}, "general"),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "targeted", OPTION: "general"}, None),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "", OPTION: "general"}, "general"),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "typo", OPTION: "general"}, None),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "general", OPTION: "session"}, "general"),
+        # Mutes.
+        (ORDINARY, {"CC_SKIP_CLAIM_FIDELITY": "1", "CC_CLAIM_FIDELITY_MODE": "general"}, None),
+        (TRIGGERED, {"CC_SKIP_CLAIM_FIDELITY": "1"}, None),
+        (TRIGGERED + " # fidelity-ok", {}, None),
+        (TRIGGERED + " # Fidelity-OK", {}, None),
+        (ORDINARY + " # fidelity-ok", {"CC_CLAIM_FIDELITY_MODE": "general"}, None),
+        (TRIGGERED + " # fidelity-ok", {"CC_CLAIM_FIDELITY_MODE": "targeted"}, None),
     ],
 )
 def test_fidelity_modes_and_bypasses(
-    prompt: str, controls: dict[str, str], fires: bool
+    prompt: str, controls: dict[str, str], expected: str | None
 ) -> None:
     result = run_hook(
         "UserPromptSubmit", 2, json.dumps({"prompt": prompt}), controls=controls
@@ -265,15 +387,18 @@ def test_fidelity_modes_and_bypasses(
 
     assert result.returncode == 0
     assert result.stderr == ""
-    if fires:
-        output = json.loads(result.stdout)
-        assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
-        assert "CLAIM FIDELITY CHECK" in output["hookSpecificOutput"]["additionalContext"]
-        assert "Checked:" in output["hookSpecificOutput"]["additionalContext"]
-        assert "Gap:" in output["hookSpecificOutput"]["additionalContext"]
-        assert "Next:" in output["hookSpecificOutput"]["additionalContext"]
-    else:
+    if expected is None:
         assert result.stdout == ""
+        return
+    output = json.loads(result.stdout)
+    assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    context = output["hookSpecificOutput"]["additionalContext"]
+    assert context.count("CLAIM FIDELITY CHECK") == 1
+    assert "Checked:" in context
+    assert "Gap:" in context
+    assert "Next:" in context
+    assert (GENERAL_ONLY in context) == expected.startswith("general")
+    assert (TARGETED_ONLY in context) == expected.endswith("targeted")
 
 
 @pytest.mark.parametrize(
@@ -327,6 +452,21 @@ def blocks(body: object) -> list[dict]:
 SENTINEL_END_TO_END_CASES = [
     ({"tool_name": "Read", "tool_response": {"type": "text", "file": {"startLine": 10, "numLines": 3, "totalLines": 31}}},
      "file_read_excerpt", "actual Read metadata fires"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x"},
+      "tool_response": {"type": "text", "file": {"startLine": 1, "numLines": 2000, "totalLines": 3100}}},
+     "file_read_excerpt", "a host cut on an unbounded Read fires"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x", "offset": 10, "limit": 3},
+      "tool_response": {"type": "text", "file": {"startLine": 10, "numLines": 3, "totalLines": 31}}},
+     "", "a range the model requested stays silent"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x", "limit": 5000},
+      "tool_response": {"type": "text", "file": {"startLine": 1, "numLines": 2000, "totalLines": 3100}}},
+     "file_read_excerpt", "a host cut below the requested limit fires"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x", "offset": 3000, "limit": 500},
+      "tool_response": {"type": "text", "file": {"startLine": 3000, "numLines": 101, "totalLines": 3100}}},
+     "", "a requested range that reaches the end of the file stays silent"),
+    ({"tool_name": "Read", "tool_input": {"file_path": "/tmp/x", "offset": 10},
+      "tool_response": {"type": "text", "file": {"startLine": 10, "numLines": 2000, "totalLines": 3100}}},
+     "file_read_excerpt", "a host cut after an offset-only Read fires"),
     ({"tool_name": "Bash", "tool_response": {"stdout": "x" * 30, "persistedOutputPath": "/tmp/synthetic", "persistedOutputSize": 100}},
      "bash_output_excerpt", "actual Bash metadata fires"),
     ({"tool_name": "Bash", "tool_response": {"stdout": '{"has_more":true}', "has_more": True}},

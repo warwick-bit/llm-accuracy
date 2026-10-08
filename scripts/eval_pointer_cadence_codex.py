@@ -57,17 +57,21 @@ CANARY = (
 WRAP_SCRIPT = '''#!/usr/bin/env python3
 """Experiment-only: run one hook, log name/event/source/emitted, pass its output through."""
 import json
+import os
 import subprocess
 import sys
 
 name, script, log = sys.argv[1], sys.argv[2], sys.argv[3]
+# The recorded runs used llm-accuracy 0.7.x: the general contract on every prompt.
+env = dict(os.environ, CC_CLAIM_FIDELITY_MODE="general")
 raw = sys.stdin.read()
 try:
     payload = json.loads(raw or "{}")
 except ValueError:
     payload = {}
 out = subprocess.run(
-    [sys.executable, script], input=raw, capture_output=True, text=True, timeout=20
+    [sys.executable, script], input=raw, capture_output=True, text=True, timeout=20,
+    env=env,
 ).stdout
 emitted = False
 try:

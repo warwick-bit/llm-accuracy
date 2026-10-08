@@ -459,11 +459,12 @@ to run or system prompt to paste for matching prompts. The self-audit workflow
 is also available when you ask the assistant to check one of its earlier
 answers.
 
-In Claude Code, the general fidelity reminder runs on each non-empty prompt.
+In Claude Code, the general fidelity reminder is added once when a session
+starts, resumes, is cleared or is compacted (every prompt is an opt-in mode).
 Additional reminders target ambiguous business questions, open-ended analysis,
 evidence-boundary claims, source conflicts and context compaction. They do not
-block work, fetch evidence, or verify an answer for you. General mode adds context
-even to greetings and creative tasks; it asks Claude to keep those tasks brief.
+block work, fetch evidence, or verify an answer for you. The general reminder also
+covers greetings and creative tasks; it asks Claude to keep those tasks brief.
 Delivery coverage is not proof that the model follows the reminder or answers
 more accurately.
 

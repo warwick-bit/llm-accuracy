@@ -1,4 +1,4 @@
-"""Read additive, literal trigger phrases from user-owned configuration.
+"""Read additive, literal trigger phrases and the claim-fidelity mode.
 
 No writes, network access, regex execution from config, or user-content logging.
 The default file is outside the installed plugin cache. Configuration errors
@@ -13,10 +13,16 @@ import re
 import stat
 import sys
 from pathlib import Path
+from typing import Mapping
 
 
 CONFIG_ENV = "LLM_ACCURACY_CONFIG"
 FAMILIES = frozenset({"claim_fidelity", "analysis", "fusion_evidence"})
+FIDELITY_MODE_ENV = "CC_CLAIM_FIDELITY_MODE"
+# Claude Code passes the saved plugin option to hooks under this name.
+FIDELITY_MODE_OPTION = "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE"
+FIDELITY_MODES = ("session", "general", "targeted")
+DEFAULT_FIDELITY_MODE = "session"
 MAX_CONFIG_BYTES = 32_768
 MAX_PHRASES_PER_FAMILY = 64
 MAX_PHRASE_CHARS = 120
@@ -74,6 +80,24 @@ def read_triggers() -> dict[str, list[str]]:
     if code not in {"ok", "missing_default"}:
         print(f"LLM Accuracy: {code}; built-in checks remain active.", file=sys.stderr)
     return phrases
+
+
+def claim_fidelity_mode(
+    environ: Mapping[str, str] | None = None,
+) -> tuple[str, bool]:
+    """Return the effective claim-fidelity mode and whether its value was known.
+
+    A non-empty environment variable overrides the saved plugin option. An
+    unknown value selects the default; it does not fall through to the option.
+    """
+    environ = os.environ if environ is None else environ
+    for name in (FIDELITY_MODE_ENV, FIDELITY_MODE_OPTION):
+        value = environ.get(name, "").strip().lower()
+        if value:
+            if value in FIDELITY_MODES:
+                return value, True
+            return DEFAULT_FIDELITY_MODE, False
+    return DEFAULT_FIDELITY_MODE, True
 
 
 def custom_trigger_matches(family: str, prompt: str) -> bool:

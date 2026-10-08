@@ -18,6 +18,11 @@ case runs once per arm. Baseline and candidate use the same requested model
 profiles and working directories, no tools or MCPs, and no saved session.
 Only the candidate loads this plugin. Hook events attest delivery and detect
 baseline contamination. Turns are sent after the preceding result event.
+Both this suite and the natural footer comparison below set
+`claim_fidelity_mode` to `general`, so guidance arrives on every turn as in the
+recorded runs; a plugin that does not declare the option ignores it. They
+measure what the guidance says, not how often it is sent; the reminder-cadence
+evals cover that.
 
 The factual oracle compares exact declared Answer fields with author-owned
 expected values, comparing decimal numbers by value (for example, `20.0` and

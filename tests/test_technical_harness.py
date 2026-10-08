@@ -57,6 +57,15 @@ def test_explicit_plugin_probe_configures_the_loaded_plugin_name(modules, tmp_pa
     options = json.loads(command[command.index('--settings') + 1])
     assert options == {'pluginConfigs': {'llm-accuracy': {'options': {'python_executable': sys.executable}}}}
 
+    observed.clear()
+    pinned = {'claim_fidelity_mode': 'general', 'undeclared_option': 'x'}
+    assert probe.run_probe(['synthetic'], PLUGIN, plugin_options=pinned)['status'] == 'ok'
+    command = observed[0]
+    options = json.loads(command[command.index('--settings') + 1])
+    # Only options the loaded manifest declares reach the plugin.
+    assert options == {'pluginConfigs': {'llm-accuracy': {'options': {
+        'python_executable': sys.executable, 'claim_fidelity_mode': 'general'}}}}
+
 
 @pytest.mark.parametrize(
     "answer,valid,passed",
@@ -306,6 +315,29 @@ def test_inventory_filters_other_plugins_and_paths(modules, monkeypatch):
     }
 
 
+@pytest.mark.parametrize(
+    ("environment", "mode"),
+    [
+        ({}, "session"),
+        ({"CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "general"}, "general"),
+        (
+            {
+                "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE": "general",
+                "CC_CLAIM_FIDELITY_MODE": "targeted",
+            },
+            "targeted",
+        ),
+    ],
+)
+def test_doctor_reports_the_effective_mode(modules, monkeypatch, environment, mode):
+    doctor = modules[0]
+    for key, value in environment.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setattr(doctor, "probe_command", lambda *a: "emitted")
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert (report["mode"], report["mode_recognized"]) == (mode, True)
+
+
 def test_disabled_hook_and_invalid_mode_visible(modules, monkeypatch):
     doctor = modules[0]
     monkeypatch.setenv("CC_SKIP_CLAIM_FIDELITY", "1")
@@ -512,6 +544,7 @@ def test_natural_footer_comparison_requires_both_plugins_and_pinned_model(
 
     def probe(prompts, plugin, **kwargs):
         roots.append(plugin)
+        assert kwargs["plugin_options"] == {"claim_fidelity_mode": "general"}
         return result(
             "Checked: supplied evidence\nGap: environment\nNext: test",
             resolved_model=model,
@@ -759,3 +792,55 @@ def test_kill_falls_back_to_owned_child_when_group_signal_is_denied(modules, mon
         if process.poll() is None:
             process.kill()
             process.wait()
+
+
+def test_technical_eval_pins_every_prompt_delivery(modules, monkeypatch):
+    evaluator = modules[2]
+    seen = []
+
+    def probe(prompts, plugin, **kwargs):
+        seen.append(kwargs.get("plugin_options"))
+        return {"status": "timeout", "answers": []}
+
+    monkeypatch.setattr(evaluator, "run_probe", probe)
+    monkeypatch.setattr(sys, "argv", ["eval", "--live", "--case", "correction"])
+    evaluator.main()
+    assert seen == [{"claim_fidelity_mode": "general"}] * 2
+
+
+def test_doctor_probes_the_session_start_reminder(modules, monkeypatch, tmp_path):
+    doctor = modules[0]
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert report["hook_commands"]["claim_fidelity_session"] == "emitted"
+    assert "session-start probe emitted" in doctor.presentation(report)["checked"]
+    monkeypatch.setenv("CC_CLAIM_FIDELITY_MODE", "general")
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert report["hook_commands"]["claim_fidelity_session"] == "not_used_in_mode"
+    monkeypatch.delenv("CC_CLAIM_FIDELITY_MODE")
+    # Without its SessionStart registration the default mode has no general reminder.
+    plugin = tmp_path / "plugin"
+    import shutil
+    shutil.copytree(PLUGIN, plugin, ignore=shutil.ignore_patterns("__pycache__"))
+    manifest = plugin / "hooks/hooks.json"
+    hooks = json.loads(manifest.read_text())
+    hooks["hooks"]["SessionStart"] = [
+        group for group in hooks["hooks"]["SessionStart"]
+        if "session-start" not in json.dumps(group)
+    ]
+    manifest.write_text(json.dumps(hooks))
+    report = doctor.diagnose(plugin, python_executable=sys.executable)
+    assert report["hook_commands"] == {"registration": "invalid"}
+    assert report["status"] == "attention"
+
+
+def test_doctor_flags_a_silent_session_start_probe(modules, monkeypatch):
+    doctor = modules[0]
+    monkeypatch.setattr(
+        doctor, "probe_command",
+        lambda *a: "no_context" if a[-1:] == ("SessionStart",) else "emitted",
+    )
+    report = doctor.diagnose(python_executable=sys.executable)
+    assert report["hook_commands"]["claim_fidelity_session"] == "no_context"
+    assert report["status"] == "attention"
+    assert doctor.presentation(report)["status"] == "attention"
+

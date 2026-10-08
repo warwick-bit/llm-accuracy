@@ -38,8 +38,8 @@ python3 scripts/claude_install_smoke.py --receipt docs/validation/claude-code-sm
 
 It installs the plugin from this checkout through a local-path marketplace into
 an auth-only temporary profile, checks the installed files byte for byte, then
-runs three short Sonnet sessions: installed, installed with the `# fidelity-ok`
-bypass, and the release archive. The receipt holds only counts, booleans and
+runs four short Sonnet sessions: installed, a fidelity-trigger prompt, the same
+prompt with the `# fidelity-ok` bypass, and the release archive. The receipt holds only counts, booleans and
 hashes. It configures the running Python executable only inside the temporary
 profiles, including explicit settings for the archive session. Configuration
 failure blocks the smoke. `--skip-live` checks the installation without model calls.

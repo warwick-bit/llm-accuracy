@@ -34,6 +34,8 @@ def test_arms_differ_only_in_pointer_cadence(trees):
         start_cmds = registered(tree, "SessionStart")
         assert prompt_cmds[: len(released_prompt)] == released_prompt
         assert sum(pc.cadence.BANNER_FILE in c for c in prompt_cmds) == 1
+        # The recorded competitor ran on every prompt, with no SessionStart copy.
+        assert not any(pc.cadence.HOOK_FILE in c for c in start_cmds)
         pointer = (
             any(pc.POINTER_FILE in c for c in start_cmds),
             any(pc.POINTER_FILE in c for c in prompt_cmds),
@@ -359,3 +361,10 @@ def test_case_digest_ignores_case_selection_and_matches_full_run_receipts():
     expected = hashlib.sha256(json.dumps({c: full[c] for c in pc.CASES}).encode()).hexdigest()
     assert pc.cases_digest(False) == expected
     assert pc.cases_digest(True) != expected
+
+
+def test_sessions_pin_the_recorded_fidelity_mode(tmp_path):
+    command = pc.session_command(tmp_path, "synthetic-model", None)
+    settings = json.loads(command[command.index("--settings") + 1])
+    options = settings["pluginConfigs"]["llm-accuracy"]["options"]
+    assert options["claim_fidelity_mode"] == "general"
