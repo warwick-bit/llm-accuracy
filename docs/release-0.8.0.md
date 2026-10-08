@@ -52,7 +52,17 @@ competing per-prompt banner. Decision rules were written before any model run.
   answers become more accurate. If you rely on a model these tests did not
   cover, choose `general`.
 
-**Installation.** INSTALLATION_PENDING
+**Installation.** A clean temporary Claude Code 2.1.293 profile on Linux/WSL
+installed 0.8.0 from a local-path marketplace; the installed files matched the
+committed package byte for byte. The default session received one reminder,
+from `SessionStart`; a session whose prompt matched a fidelity trigger received
+two; the same prompt with `# fidelity-ok` received one; and the release-archive
+session received one. See the
+[installation smoke](validation/claude-code-smoke-0.8.0.json). The isolated
+bundle smoke on the same commit passed every required Code check and is
+recorded as the `code-wsl` live pass in the
+[compatibility record](validation/compatibility-candidate.json); the native
+Linux, macOS and Windows installation rows come from CI.
 
 ## Update
 
