@@ -273,6 +273,9 @@ content.
 
 For source-adapter integration, see [tool failures, refreshes and evidence receipts](docs/tool-failure-contract.md), including synthetic regression cases and the limits of structural validation. For output-boundary guidance, see [evidence boundaries and answer publication](docs/answer-boundaries.md), including unsupported derivations and runtime limitations.
 
+Third-party tools for nearby jobs, with what we checked and when, are listed
+in [companion tools](docs/companion-tools.md).
+
 Provider-specific verification integrations are intentionally out of scope.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for feedback rules and [SECURITY.md](SECURITY.md)
 for responsible disclosure.
