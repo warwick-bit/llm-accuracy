@@ -125,6 +125,9 @@ factual accuracy, time saved, live plugin delivery or model adoption.
 
 ## Scope discipline
 
+Owner direction: keep this local for testing and iteration. Do not push branches,
+open PRs, merge, release or install it.
+
 Following the owner's simplicity reminder, this deliverable has one script and
 five focused tests. The pilot's seven-boundary matrix and solver results are
 reused as historical design evidence; no new boundary-injection interface,
@@ -146,12 +149,26 @@ and all 15 hook modules plus the demo compile. Repository-wide Ruff validation p
 Independent read-only GPT-6.1 Sol review found no blocking defects, using the
 complete three-file candidate and consumer receipt. It did not independently
 execute the code, and explicitly left full-suite completion pending. The
-repository-wide suite is still running. The first full-suite
-attempt was interrupted after repeated shell setup failures: an inherited Bash
+repository-wide suite completed: 1,201 passed, 22 failed and 15 skipped (530.56 s).
+All 22 failing test IDs also failed on unchanged base `402947b` in a separate
+isolated checkout (11.97 s). These pre-existing Windows permission, path and hook
+probe failures remain unresolved; the full suite is not green. The five new
+consumer tests passed. No unrelated source was changed to repair the base suite.
+The first full-suite attempt was interrupted after repeated shell setup failures: an inherited Bash
 selection conflicted with PowerShell test prefixes. The rerun uses the repository
 CI's explicit Git Bash test setting; no repository code changed for that issue.
 
-This candidate
-is for local evaluation; any future merge of its script still requires the
+The protected-source publication preflight reports four missing installed-host
+receipts: Linux, macOS, Windows with Bash and Windows without Bash. No release
+readiness is claimed and no installations were added to fill these gaps. Only
+Python 3.13.1 on native Windows was exercised locally; other runtimes are untested.
+
+The failure mapping above was checked against these results: the direct-write
+control exposed the intended mixed output; the staged producer preserved the old
+result; a post-switch exception left the complete new result; valid alternatives
+passed. The remaining correspondence/source/prose gaps are unchanged. No newly
+verified omission in the candidate requires another component or review pass.
+
+This candidate is for local evaluation; any future merge of its script still requires the
 repository's protected-source publication gates. Offline demo results do not
 certify plugin installation, live delivery, or other OS/client support.
