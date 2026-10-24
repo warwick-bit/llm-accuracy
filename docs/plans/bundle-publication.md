@@ -336,3 +336,113 @@ packet-only, not independent executions or hash checks. No actor run was repeate
 The owning packet workflow now records the necessary pre-call byte/coverage check;
 no shared wrapper or new test framework was changed. Essential checks and bounded
 review are complete; stop this trial without extra features or collection.
+
+## Larger mission: reusable local verification workflow
+
+Owner now requests a larger autonomous session goal, explicitly superseding the
+one-trial stop boundary above. Desired outcome: dependable everyday financial/data
+outputs with less bespoke prompting and manual checking. A useful result must
+show actual consumer use, honest coverage and acceptable effort; it need not add
+code or prove general efficacy.
+
+Smallest useful deliverable: a short reusable optional workflow around the existing
+checker, qualified on ordinary source files and naturally worded reports. Begin
+with one review-and-source-update trajectory using CSV input, then an independent
+fresh task that produces a report. Use only a few necessary deliveries. Record
+claims that require model interpretation or independent arithmetic; do not expand
+the regular expressions to manufacture coverage. A normal workflow document is
+sufficient unless real consumer evidence justifies skill/plugin packaging. No
+installation or live-profile change is authorized. Existing publication mechanics
+stay separate unless a tested consumer actually needs bundled publication.
+
+Essential checks: before collection freeze the workflow, checker, inputs, runtime
+and hand-derived expectations; preserve original raw sources and claims; inspect
+the model's conversion from raw data to checker input and from prose to checked
+statement; distinguish execution, partial coverage, source binding and unsupported
+claims; exercise source updates and legitimate alternatives. Keep complete failed
+attempts and timings. Fix only verified consequential gaps, rerun only affected
+behavior with fresh cases where relevant, then independently review the final
+deliverable. Review packet delivery must pass its byte/redaction dry-run check.
+Reuse established code tests when source is unchanged.
+
+Failure mapping: a correct derived JSON can hide wrong raw-source mapping -> audit
+actual row population/units/periods against original files; canonical text can
+reject true variants -> retain original prose and explicitly map meaning without
+claiming the parser verified it; narrow checks can mask side claims -> inspect the
+whole reader-facing report and list meaningful unchecked conclusions; stale input
+bindings -> raw and derived source identities and a changed-source continuation;
+review truncation -> preflight delivered byte coverage. Same-family authorship,
+few synthetic trajectories and absent matched Claude access remain gaps, not
+reasons for a broader campaign. No global hooks, proof engine or universal schema.
+
+The verification session owns this workflow and its focused consumer trials.
+The other session retains broad model comparisons and its completed private
+stale-policy check. Communicate through the existing mutually acknowledged notes;
+do not modify its checkout, shared frozen runners or receipts. Local-only/no-push,
+PR, merge, release, install or paid API boundaries remain. Continue autonomously
+through the above stages; stop at a reviewed useful candidate or concrete limit,
+not after each setup step. Ask only for a consequential unresolved owner decision.
+
+Owner subsequently authorizes limited Opus 5.5/Sonnet 5.5 subscription evaluations
+after Sol 6.1 iteration, and Sol 6.1 subagents for useful concurrent work. Native
+Claude's current Team login was explicitly confirmed by the owner as intended.
+The evaluation session owns matched Claude calls and capacity accounting; this
+session supplies the stable workflow and focused comparison request, avoiding
+duplicate calls. No paid API fallback. Two read-only Sol subagent tasks cover
+fixture/source interpretation and safe runtime preparation.
+
+First workflow qualification: two Sol deliveries using raw CSV and a naturally
+worded report correctly propagated 15%/AUD23,000 to 5%/AUD21,000, preserved valid
+wording, rejected a false universal increase and retained causal uncertainty.
+Five helper outputs reproduce, raw-to-derived values match, inputs/prior outputs
+are unchanged and all 37 pins matched before iteration. Independent source audit
+agrees. A concrete usability defect remains in the actor's evidence: reproduction
+commands said "from this directory" but required the parent work root. A controlled
+run from the delivery directory failed for that missing path, while the same inputs
+reproduced from the correct root. The owning workflow now requires an explicit
+working directory. The next fresh generation task checks that small correction
+as well as signed revenue and an undefined percentage from a zero baseline.
+
+The fresh generation task correctly kept legitimate negative credits, reported
+AUD0 to AUD100 total change, and left total/negative-baseline percentage growth
+undefined under the supplied definitions. Both regions increased AUD50; Harbour's
+positive-baseline growth was 50%. The helper supported the every-region sentence;
+six other paragraphs required separate interpretation/arithmetic. All 37 pins,
+12 recorded manifest hashes and raw-to-derived values matched. A disposable WSL
+replay reproduced the report, claims, calculations and full helper JSON while
+preserving original evidence. The explicit working directory was correct.
+
+Two evidence limitations remain visible: the actor's audit says its script
+regenerates the audit, but it only retains/hashes that separately authored text;
+and replay under Windows changes generated line endings and thus source/claim
+hashes despite equivalent calculations. The original-host WSL replay matches.
+Neither artifact is a general report generator. These private consumer artifacts
+are retained unchanged; no production code or new regression groups are warranted.
+
+The smallest useful deliverable is the optional workflow document, not plugin
+packaging. It reduces the bespoke instructions supplied in these tasks but still
+relies on an assistant to interpret raw sources and unsupported prose. Three
+deliveries across two Sol sessions do not establish repeatability, net time saved,
+or accuracy improvement over an untreated assistant. No compactions occurred.
+Independent source inspection found no material numerical/report-content error;
+the separate final delivery review remains required. Prior implementation tests
+are reused because helper/publication source is unchanged, including the disclosed
+22 pre-existing Windows suite failures. No full-green or release-readiness claim.
+
+The other session has qualified restored WSL subscription access and owns its
+limited CFO Opus/Sonnet collection. A frozen v2 workflow comparison request was
+handed off for one initial report-review task per Claude model only if its existing
+native-tool route and capacity permit. Acceptance/results remain pending; this
+session has made no Claude inference call. The initial Sol reference used v1
+(before the cwd sentence), so any comparison must disclose that prompt difference.
+
+Final independent Sol 6.1/high personal delivery review returned PASS with no
+findings. Dry-run and actual metadata both confirm 121,725 evidence bytes with
+no truncation or redaction. This was a packet-only review; execution/preservation
+conclusions rely on parent audits and supplied artifacts. The review explicitly
+retains the reproduction limits, three-delivery synthetic scope, absent Claude
+results and pre-existing suite failures. Current diff whitespace and compatibility
+checks pass. The bounded workflow deliverable and essential checks are complete;
+do not add packaging, parser capabilities or more Sol cases without new evidence.
+The separately owned Claude comparison request remains a handoff, not a completed
+comparison or a reason to hold this useful local checkpoint open indefinitely.
