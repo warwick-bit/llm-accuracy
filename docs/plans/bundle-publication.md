@@ -172,3 +172,104 @@ verified omission in the candidate requires another component or review pass.
 This candidate is for local evaluation; any future merge of its script still requires the
 repository's protected-source publication gates. Offline demo results do not
 certify plugin installation, live delivery, or other OS/client support.
+
+## Next local experiment: numerical commentary
+
+Desired outcome: catch a wrong or stale numerical sentence even when its report
+generator repeats it consistently. The owner authorizes autonomous local iteration;
+all earlier no-push/no-PR/no-merge/no-install boundaries remain in force.
+
+Smallest useful deliverable: one standalone checker for two explicit sentence
+forms, using one supplied revenue snapshot and a text file with one claim per
+line. It checks total growth and whether revenue increased for every declared
+region. Every nonblank line is retained, including unsupported or compound prose.
+No model call, automatic extraction, broad prose parser, plugin packaging,
+publication refactor or new solver model is needed. Existing receipt validators
+only establish structural evidence hygiene and cannot perform these calculations.
+
+Essential checks: run the CLI on original and changed sources; distinguish a
+wrong claim from missing evidence; accept legitimate rounding and presentation
+variants; expose a false universal claim despite correct aggregate growth; never
+certify unsupported/causal prose or an empty population. Use hand-calculated
+fictional expectations, a small focused test file and one independent review.
+Run required repository checks, reusing the recorded unchanged-base diagnosis
+for the 22 existing Windows failures unless new blocking evidence appears.
+
+Contract choices from the failure lookback:
+
+| Failure | Choice and check | Remaining gap |
+|---|---|---|
+| Stale sentence agrees with its generator | Recalculate from supplied source; changed-source CLI check | Source authority still assumed |
+| Prose-to-formal translation changes meaning | Recognize two complete sentence forms; preserve sentence and expose interpretation | Other wording is not verified; no extraction efficacy claim |
+| Selected correct claims imply whole-answer approval | Retain every nonblank line and per-line outcome; no overall truth/pass flag | One claim per line is the supported input contract |
+| Wrong population or dates | Match exact declared regions, currency and distinct ordered periods | Declared population may itself omit real-world regions |
+| Missing evidence treated as false or true | Separate not-verified from contradicted; incomplete/empty population controls | Cannot recover missing evidence |
+| Valid alternatives rejected | Source/claim reordering, case/whitespace and declared display-precision checks | Only two sentence forms, not arbitrary paraphrases |
+| Check receipt goes stale or hashes wrong bytes | Hash exact source, report and checker bytes in each result | Historical results remain historical; no automatic invalidation service |
+
+Only the numerical value of an increase is checked; an increase is not called an
+improvement in business performance. Growth requires a positive starting total;
+zero/negative denominators need another agreed definition and remain unverified.
+Percentages are rounded to the sentence's displayed precision (zero to two decimal
+places), with ties away from zero. Integer-cent input and exact integer arithmetic
+avoid floating-point tolerances. A supplied population and revenue definition are
+assumptions, not independently verified facts.
+
+Run the fictional example from the repository root:
+
+```text
+python scripts/numerical_claims_demo.py tests/fixtures/numerical-claims/source.json tests/fixtures/numerical-claims/claims.txt
+```
+
+The supplied revenue totals are AUD 3,000 and AUD 3,360. The result supports the
+12% sentence, contradicts 15%, supports an increase in both declared regions,
+and leaves the causal sentence and compound numerical/audit sentence unverified.
+The five input lines remain visible. Copy the fixtures to a disposable directory
+to experiment; changing September South revenue to 207000 cents gives 9% total
+growth, and the unchanged 12% sentence is then contradicted.
+
+Supported forms (case, whitespace, optional final period and displayed numerical
+precision may vary):
+
+- `Total revenue growth was 12% from 2026-08 to 2026-09 in AUD.`
+- `Revenue increased for every region from 2026-08 to 2026-09 in AUD.`
+
+The source defines `metric: revenue`, one `currency`, a nonempty unique
+`population` list of regions, and `values_cents` mapping each selected YYYY-MM to
+exactly those regions and signed integer-cent amounts. A missing region, wrong
+currency, missing period or undefined growth denominator yields not verified.
+Duplicate JSON keys produce an execution error instead of silently selecting one
+value. The consumer must inspect per-line statuses: CLI exit 0 means execution
+completed, not that the claims are true. Exit 2 means input/execution failure.
+
+The checker does not understand arbitrary paraphrases. For example, an unfamiliar
+wording can be factually correct and still return not verified. Each report line
+must be a complete claim; unsupported paragraphs/compound claims remain visible
+without partially certifying a recognized fragment. The result exposes the
+interpreted periods, currency, declared population, arithmetic and counterexamples.
+This is an explicit local workflow, not an install-and-forget Claude plugin.
+
+Five new focused tests and the five existing publication tests pass together
+(10 passed). The changed-source control establishes that repeating the original
+sentence does not make it pass; the checker consumes changed data independently.
+Five retained separate-process scenarios also pass: original mixed claims,
+changed source with old report, corrected numerical claim, aggregate growth with
+one declining region, and missing region. The last two distinguish contradicted
+from not verified. Exact input/checker hashes bind each result. Compatibility,
+repository-wide Ruff, all seven manifest parses and all 15 hook compilations plus
+the new checker pass. Independent read-only GPT-6.1 Sol review found no blockers
+in the complete bounded packet. It did not independently execute the code or
+verify the hashes. The full native Windows suite completed with 1,206 passed,
+22 failed and 15 skipped in 735.18 seconds. Its 22 failed IDs exactly match the
+previously reproduced unchanged-base failures; there are no additional failures.
+JUnit confirms all five new tests and all five publication tests passed without
+skips. The full suite remains non-green due to those existing gaps; no unrelated
+fixes or additional review pass were added. Current checker, tests and fixture
+hashes still match the retained consumer/reviewer packet.
+
+The failure mapping above is satisfied within the declared scope. In particular,
+the original 12% sentence becomes contradicted after the source changes, missing
+regional evidence remains not verified, and a valid reformatted/rounded claim can
+pass. Unverified prose and source authority remain visible gaps. No new blocking
+omission requires expanding the framework. No general accuracy or time-saving
+estimate is claimed. All work stays local for further experiments.
