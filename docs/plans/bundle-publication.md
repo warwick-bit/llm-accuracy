@@ -273,3 +273,66 @@ regional evidence remains not verified, and a valid reformatted/rounded claim ca
 pass. Unverified prose and source authority remain visible gaps. No new blocking
 omission requires expanding the framework. No general accuracy or time-saving
 estimate is claimed. All work stays local for further experiments.
+
+## Prompted model-use qualification
+
+Desired outcome: establish whether a model actually uses the unchanged numerical
+checker, corrects contradicted claims and communicates unsupported claims honestly.
+The owner authorized this local experiment after reviewing the parallel session's
+completed ordinary-versus-recurring-check comparison. Reuse that evidence; do not
+duplicate its campaign or its ongoing stale-policy checker work.
+
+Smallest useful deliverable: one isolated Sol 6.1/high session, three deliveries
+(new fictional report, changed source, incomplete source), saved actual commands,
+checker results and reader-facing dispositions. Reuse the established isolated
+native CLI transport and snapshot runner. No product/runtime changes, plugin,
+new parser, new repository test group or general efficacy comparison. Claude
+coverage remains unavailable on the previously qualified route; do not substitute
+this Sol run for Claude evidence. Explicit prompting tests assisted adoption,
+not spontaneous invocation. The existing 64k setting is retained without trying
+to induce compaction or estimate a session-length threshold.
+
+Essential checks: freeze inputs/checker/runtime and hand-derived expectations
+before the first call; verify source/checker preservation and actual execution;
+independently rerun saved checker inputs; inspect every original claim and all
+final prose; verify source changes invalidate earlier arithmetic and missing data
+stays unknown. Retain failed attempts and overhead. One independent delivery
+review covers these results. Reuse prior repository checks because executable
+repository source is unchanged; only this existing brief changes.
+
+Failure mapping: a claimed check is not execution -> inspect native tool receipts
+and saved byte bindings; correct totals hide false universals -> include aggregate
+growth with a declining region; lexical checks reject valid wording -> include a
+supported format variant and a true unsupported paraphrase; partial checking
+overclaims truth -> retain causal/compound claims and distinguish unchecked from
+false; stale receipts -> deliver a changed snapshot then incomplete data. Residual
+gaps: one synthetic trajectory, same-family author/auditor, no expert gold, no
+matched Claude run, no unprompted adoption, no repeatability or efficacy estimate.
+
+Collection completed with three deliveries in the same Sol session, eight actual
+checker executions, no observed compaction and no source/helper/prior-output
+mutation. Original growth was 25%, became 15% after a source correction, then
+became unknown when one region was missing. The model propagated those changes,
+preserved the legitimate formatting variant, independently checked an unfamiliar
+paraphrase and kept causal/customer-audit claims unresolved. Parent inspection
+found no material delivered error within the declared scope. Eight saved results
+reproduce as identical parsed JSON; all 34 frozen pins matched after collection.
+
+The model also independently calculated its corrections in the same tool command
+that executed the helper; no distinct model repair turn driven by checker feedback
+was established. This is prompted-use qualification, not causal accuracy benefit.
+Native stage-call time totals 136.405 seconds; it is neither isolated checker
+overhead nor total evaluation cost. Detailed synthetic prompts, outputs and
+receipts stay outside repository source. The only repository change is this
+brief; prior source checks are reused.
+
+Independent Sol 6.1/high delivery review returned no blockers. The initial packet
+hit the review wrapper's 80,000-byte default and omitted later consumer outputs;
+its PASS was retained with that limitation. A targeted 70,374-byte supplement
+delivered the missing second/third outputs and complete brief diff without
+truncation or redaction, confirmed by dry-run and actual metadata. Its PASS/no
+findings explicitly closes that missing-output coverage. Both reviews were
+packet-only, not independent executions or hash checks. No actor run was repeated.
+The owning packet workflow now records the necessary pre-call byte/coverage check;
+no shared wrapper or new test framework was changed. Essential checks and bounded
+review are complete; stop this trial without extra features or collection.
