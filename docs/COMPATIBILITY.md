@@ -39,8 +39,8 @@ Claude release matrix below and do not certify other Codex hosts or UI surfaces.
   Linux/WSL/macOS and Windows only when its hook runtime supplies a POSIX shell.
   It uses a usability probe, not Claude's user configuration substitution.
   Native Codex without a POSIX hook shell is unsupported. The Claude native
-  Windows gate does not establish native Codex support. Other packages remain
-  Claude-only. CLI access and the current installed capture state must be
+  Windows gate does not establish native Codex support. Session Ledger and
+  Deterministic Data remain Claude-only. CLI access and the current installed capture state must be
   checked before relying on memory.
 
 ## Configure Python before starting a session

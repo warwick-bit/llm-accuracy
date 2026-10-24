@@ -499,3 +499,76 @@ or broaden the published Codex catalogue before qualification. Use Sol6.1 for
 mixed-task iteration, then only bounded installed-Claude acceptance checks.
 No Claude calls have been made in this stage. The final outcome still includes
 actual Claude validation; a successful Sol run cannot certify Claude activation.
+
+### Installed mixed-workflow result — 24 October 2026
+
+The local 0.8.1 candidate now packages the shared numerical skill/reference and
+existing checker, alongside the existing technical and claim skills. Codex has
+three skills and explicitly empty hooks; Claude retains its advisory hooks.
+After isolated qualification, the existing Codex catalogue gained an optional
+Accuracy entry. No integrations, persistence, new parser forms or automatic proof
+gate were added. The legacy numerical CLI delegates to the one packaged checker.
+
+The first Sol trial produced correct content but did not actually activate an
+installed plugin: the private harness had enabled a plugin without registering
+and installing its marketplace. That attempt is retained and excluded from
+installed success. Correcting only the trial setup produced an installed Sol6.1
+four-turn session. A subsequent installed Sonnet5.5 four-turn session used the
+same synthetic report, source update, coding bug and planning tasks. Both consumed
+installed skills and the actual packaged helper; Claude also emitted the expected
+fidelity reminder. Native versions were Codex 0.160.0 and Claude Code 2.1.310.
+All 29 package files matched source before/after; the final 70 trial pins matched.
+The actual repository Codex catalogue separately passed credential-free install
+and enabled-plugin discovery in a fresh owned profile.
+
+Parent reproduction and independent content inspection found no material error
+in these eight deliveries. Both corrected revenue growth to 15%, then 5% when the
+authoritative source changed; rejected the universal regional-growth and causal
+claims; reproduced/fixed the zero-discount bug without claiming production was
+fixed; and kept tentative dates and incomplete approvals tentative. Earlier
+deliverables and sources were preserved, except the requested invoice edit.
+The four saved helper outputs per model reproduced as equal parsed JSON. Only
+four Sonnet calls were used for this acceptance stage; no Opus duplicate was needed.
+
+Limits: one short session per model, synthetic tasks and no untreated control,
+compaction, efficacy estimate or long-session guarantee. The helper validates
+derived inputs, not raw-source authority or every final prose clause. Claude's
+"corrected claims" file intentionally rechecks the positive universal statement
+as contradicted; its report discloses that the actual negation is checked through
+Inland arithmetic. Full reports were inspected separately. Saved reproduction
+instructions do not rebuild all prose/calculations, and Sol's script uses the
+temporary installed-helper path. Exported artifacts are not self-contained apps.
+Claude also loaded three host built-ins; this is acceptance, not a controlled
+comparison between models. No normal user profile was changed.
+
+Checks: the clean Linux checkout on WSL initially had 1,243 passes and two stale
+distribution expectations (version and Codex catalogue). Both existing tests
+were updated; all 11 distribution tests pass, and the final WSL suite passes
+all 1,245 tests in 82.98 seconds. Compatibility, distribution
+boundary, eight manifest parses, 15 hook compilations and local ZIP build pass.
+No new test groups were introduced. Native Windows full suite had 209 failures,
+1,013 passes and 21 skips in this environment, with demonstrated shell mismatch
+among the failures; these are not all attributed to a baseline. An earlier WSL
+run against Windows worktree Git metadata was invalidated and stopped; its log is
+retained. Native Windows live support remains unqualified, and release matrix
+rows remain untested. These local WSL trials do not waive release/install gates.
+
+Private evidence is under the owning run's `plugin-everyday-v2-20261024/`:
+`sol-results/`, `claude/`, both consumer audits, frozen inputs, offline install
+qualification, suite logs and `final-checks.json`. Failed first-attempt evidence
+remains in `plugin-everyday-20261024/`.
+
+Independent native Sol6.1/high delivery review returned PASS with no blocking
+findings. Preflight and actual review both received all 228,024 evidence bytes
+without truncation or redaction. Two advisory packet gaps were reconciled against
+preserved records: the packet extracted Sol's nested receipt incorrectly, omitting
+its tool calls; the supplemental audit identifies installed-cache skill reads
+and successful generation/helper execution. Claude's CLI list reports a cache
+directory, while native session initialization explicitly reports the registered
+local marketplace source as the loaded plugin path. Its helper commands use that
+loaded path, and both trees match all 29 frozen files. This establishes actual
+local-marketplace use, not execution from the cache directory. Supplemental
+parent/agent reconciliation is not a second independent review. The reviewer was
+packet-only and did not execute artifacts. Local candidate delivery and essential
+checks are complete; normal profiles remain unchanged. No push, PR, merge or
+release was performed. Stop here unless new blocking evidence appears.

@@ -24,6 +24,25 @@ The Codex package exposes three shared verification skills and no automatic hook
 Claude keeps its existing advisory session reminders. Installation in an isolated
 test profile does not enable either package in your everyday profile.
 
+For the same local candidate in Claude Code:
+
+```text
+claude plugin marketplace add /absolute/path/to/this/checkout
+claude plugin install llm-accuracy@llm-accuracy
+```
+
+Start a fresh session after installing. If this marketplace name already points
+to a different checkout or the published repository, inspect that registration
+before changing it so the intended source is clear.
+
+The 24 October 2026 local WSL trial exercised one four-turn session each in
+Codex 0.160.0 (Sol6.1) and Claude Code 2.1.310 (Sonnet5.5): report checking, a
+source correction, a coding bug and planning with incomplete approvals. Both
+consumed the installed package and produced correct results on those tasks.
+This is a local candidate, not a published release or evidence of universal
+reliability. Native Windows, macOS and Desktop delivery remain unqualified for
+this change; see the [scope and checks](plans/bundle-publication.md#installed-mixed-workflow-result--24-october-2026).
+
 The original repository CLI remains available:
 
 ```text
