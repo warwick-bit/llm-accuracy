@@ -446,3 +446,56 @@ checks pass. The bounded workflow deliverable and essential checks are complete;
 do not add packaging, parser capabilities or more Sol cases without new evidence.
 The separately owned Claude comparison request remains a handoff, not a completed
 comparison or a reason to hold this useful local checkpoint open indefinitely.
+
+## Owner-expanded mission: everyday installed Claude use
+
+Desired outcome: the owner explicitly wants an optional plugin tested in actual
+Claude day-to-day sessions, emphasizing mixed coding, reports and planning. This
+extends the completed document milestone; no claim of exhaustive failure coverage
+or general proof follows. Keep work local with no push, PR, merge or release.
+
+Smallest useful deliverable: extend the existing standalone Accuracy plugin with
+one numerical-verification skill/reference and the already-qualified checker.
+Reuse claim-fidelity and verify-technical for nonnumerical/coding tasks. Keep one
+canonical checker implementation and a compatibility entrypoint for existing
+local CLI use. No new plugin, hooks, catalogue, persistence or parser expansion.
+Installation and live testing use an owned temporary Claude profile; ordinary
+user settings and company work remain separate.
+
+Essential checks: exercise the installed local-marketplace package (a plugin-dir
+load alone is insufficient), confirm exact installed source and actual skill/
+helper consumption, inspect a report plus changed-source continuation, a coding
+diagnosis and a factual planning request with unsupported approval/causal claims.
+Include ordinary prompts as well as explicit invocation, preserving uncertainty
+and avoiding numerical machinery on unrelated tasks. Prepare/check with Sol first,
+then a small Sonnet trial and bounded Opus comparison if capacity permits. Run
+existing checker and packaging checks plus repository-required gates, preserve
+failed attempts, and independently review the final candidate/evidence. Installed
+WSL use cannot certify other hosts, Desktop UI, long-session reliability or efficacy.
+
+Failure mapping: installation/load is not execution -> record host inventory,
+hook events, skill and actual helper calls; derived JSON can hide wrong source
+mapping -> audit raw CSV and authority changes; successful arithmetic can hide
+unsupported side claims -> inspect the full report and planning conclusions;
+unrelated tests can hide coding failure -> compare the actual failing input before
+and after; duplicate instructions can drift -> package one workflow/reference;
+stale compatibility passes -> reset candidate bindings after package edits;
+profile interference -> isolated configuration and no competing Claude campaign;
+review evidence truncation -> dry-run packet byte/coverage check. Existing source
+and consumer checks are reused, not expanded into a universal test battery.
+
+Rejected larger approach: a new general verifier/plugin or automatic per-answer
+proof gate. Existing Accuracy already supplies advisory session reminders and
+technical/claim workflows; only the numerical packaged path is missing. Revisit
+only if a concrete consumer failure warrants it. The other session owns completed
+CFO comparisons and its separate sequential study; it has been notified that our
+older optional two-model workflow handoff is superseded by this installed trial.
+
+Owner subsequently directs Codex-first development to conserve Claude quota.
+Qualify the same three shared skills and checker through a minimal skills-only
+Codex manifest and an isolated local test marketplace first. Explicitly disable
+default hook discovery in that manifest; do not port Claude hook/runtime settings
+or broaden the published Codex catalogue before qualification. Use Sol6.1 for
+mixed-task iteration, then only bounded installed-Claude acceptance checks.
+No Claude calls have been made in this stage. The final outcome still includes
+actual Claude validation; a successful Sol run cannot certify Claude activation.

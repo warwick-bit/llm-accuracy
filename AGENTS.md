@@ -1,7 +1,8 @@
 # LLM Accuracy Repository Guidance
 
 This public repository distributes standalone Claude Code plugins. Evidence
-Memory also ships a separate experimental Codex POSIX package; the other plugins
+Memory also ships a separate experimental Codex POSIX package. Accuracy has an
+experimental Codex skills-only manifest with no automatic hooks; the other plugins
 stay Claude-only. Read `docs/COMPATIBILITY.md` before editing runtime or packaging.
 Keep each plugin generic and safe to share publicly.
 

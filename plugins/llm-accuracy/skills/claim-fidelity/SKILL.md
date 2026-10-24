@@ -17,6 +17,15 @@ priority: 56
 
 Check whether the conclusion stays inside the authority of the evidence.
 
+On a host that does not expand `${CLAUDE_PLUGIN_ROOT}`, resolve it as the package
+root two directories above this skill's directory. Use that absolute path for
+bundled references/scripts; do not assume the placeholder is a shell variable.
+
+For a numerical report with supplied source files, use the packaged
+`llm-accuracy:verify-numerical` skill when applicable. Its two revenue checks
+do not cover the report's other factual, causal or decision claims; keep those
+within this evidence-boundary audit.
+
 ## Workflow
 
 1. State the exact load-bearing claim. Split compound claims before checking.

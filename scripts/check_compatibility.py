@@ -140,12 +140,16 @@ def marketplace_errors(root: Path) -> list[str]:
         errors.append('invalid_claude_marketplace_routes')
     codex = json.loads((root / '.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
     entries = codex.get('plugins') if isinstance(codex, dict) else None
-    if (not isinstance(entries, list) or len(entries) != 1 or not isinstance(entries[0], dict)
+    codex_names = {'evidence-memory', 'llm-accuracy'}
+    if (not isinstance(entries, list) or len(entries) != len(codex_names)
             or codex.get('name') != 'llm-accuracy' or set(codex) - {'name', 'interface', 'plugins'}
-            or set(entries[0]) - {'name', 'source', 'policy', 'category', 'description'}
-            or entries[0].get('name') != 'evidence-memory'
-            or entries[0].get('source') != {'source': 'local', 'path': './plugins/evidence-memory'}
-            or entries[0].get('policy') != {'installation': 'AVAILABLE', 'authentication': 'ON_USE'}):
+            or any(not isinstance(row, dict)
+                   or set(row) - {'name', 'source', 'policy', 'category', 'description'}
+                   or row.get('name') not in codex_names
+                   or row.get('source') != {'source': 'local', 'path': './plugins/' + row.get('name', '')}
+                   or row.get('policy') != {'installation': 'AVAILABLE', 'authentication': 'ON_USE'}
+                   for row in entries)
+            or {row['name'] for row in entries} != codex_names):
         errors.append('invalid_codex_marketplace_routes')
     for name in PACKAGES:
         manifest = json.loads((root / 'plugins' / name / '.claude-plugin/plugin.json').read_text(encoding='utf-8'))

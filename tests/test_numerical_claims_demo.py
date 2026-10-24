@@ -9,7 +9,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts/numerical_claims_demo.py"
+SCRIPT = ROOT / "plugins/llm-accuracy/scripts/check_numerical_claims.py"
 FIXTURES = ROOT / "tests/fixtures/numerical-claims"
 spec = importlib.util.spec_from_file_location("numerical_claims_demo", SCRIPT)
 demo = importlib.util.module_from_spec(spec)
@@ -41,6 +41,10 @@ def test_cli_preserves_all_claims_and_exact_input_bindings():
                                 "claims": hashlib.sha256(claims_bytes).hexdigest(),
                                 "checker": hashlib.sha256(SCRIPT.read_bytes()).hexdigest()}
     assert source_path.read_bytes() == source_bytes and claims_path.read_bytes() == claims_bytes
+    legacy = subprocess.run(
+        [sys.executable, "-B", str(ROOT / "scripts/numerical_claims_demo.py"),
+         str(source_path), str(claims_path)], capture_output=True, text=True, timeout=30)
+    assert legacy.returncode == 0 and json.loads(legacy.stdout) == result
 
 
 def test_changed_source_contradicts_the_same_old_sentence(tmp_path):

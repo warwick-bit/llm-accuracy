@@ -11,6 +11,13 @@ bound to the candidate's package bytes; historical passes do not certify it.
 
 ## OS and host boundaries
 
+Accuracy also has an experimental Codex skills-only package: verify-numerical,
+verify-technical and claim-fidelity share the same instructions/helpers as Claude.
+Its Codex manifest explicitly disables hook discovery; it does not port Claude
+session reminders or configuration. The local Codex catalogue exposes it as an
+optional installation. This candidate's focused WSL trials are separate from the
+Claude release matrix below and do not certify other Codex hosts or UI surfaces.
+
 - **Claude Code terminal/IDE:** Linux,
   WSL, native Windows and macOS use the same shell-form registrations. CI checks
   shipped commands on Linux, Windows with and without Git Bash, and macOS.
