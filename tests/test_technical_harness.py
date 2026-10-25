@@ -588,9 +588,17 @@ def test_natural_footer_never_scores_incomplete_pair(modules, monkeypatch):
 
 
 @pytest.mark.parametrize("later_turn", [False, True])
-def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, later_turn):
+def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, monkeypatch, later_turn):
     import time
 
+    cleanup_started = []
+    real_kill = modules[1]._kill
+
+    def record_cleanup(process):
+        cleanup_started.append(time.monotonic())
+        real_kill(process)
+
+    monkeypatch.setattr(modules[1], "_kill", record_cleanup)
     program = "import time;time.sleep(5)"
     payload = "x" * 131072 + "\n"
     if later_turn:
@@ -606,7 +614,11 @@ def test_timeout_covers_blocked_stdin_delivery(modules, tmp_path, later_turn):
         [sys.executable, "-c", program], tmp_path, dict(os.environ), payload, 0.2
     )
     assert result == {"status": "timeout", "answers": []}
-    assert time.monotonic() - started < 3
+    assert len(cleanup_started) == 1
+    assert cleanup_started[0] - started < 3
+    # Windows taskkill has a separate five-second tree-cleanup allowance.
+    # Keep the exchange deadline above independent of that cleanup latency.
+    assert time.monotonic() - started < (7 if os.name == "nt" else 3)
 
 
 @pytest.mark.parametrize("separator", ["\u0085", "\u2028", "\u2029"])
