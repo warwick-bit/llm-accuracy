@@ -6,7 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from eval_technical_behavior import PLUGIN, run_probe, score
+from eval_technical_behavior import EVERY_PROMPT, PLUGIN, run_probe, score
 from paired_probe import run_pair
 
 # Author-owned synthetic cases: no footer request or constrained Answer field.
@@ -46,7 +46,11 @@ def compare_case(
     arms = ("baseline", "candidate") if index % 2 == 0 else ("candidate", "baseline")
     def probe(arm):
         return run_probe(
-            prompts, baseline if arm == "baseline" else PLUGIN, model=model, timeout=120
+            prompts,
+            baseline if arm == "baseline" else PLUGIN,
+            model=model,
+            timeout=120,
+            plugin_options=EVERY_PROMPT,
         )
 
     def valid(result):

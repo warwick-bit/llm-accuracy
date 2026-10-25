@@ -4,8 +4,8 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.7.1",
-      "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
+      "version": "0.8.0",
+      "sha256": "e2da9591293fd5a8aa4036da97eda90bc2b7220d61c0da0985275b8ec85ba824"
     },
     "deterministic-data": {
       "version": "0.1.1",
@@ -33,12 +33,12 @@
       "outcome": "pass",
       "platform": "Linux/WSL",
       "host_kind": "code",
-      "host_version": "2.1.288",
+      "host_version": "2.1.293",
       "python_version": "3.12.3",
       "packages": {
         "llm-accuracy": {
-          "version": "0.7.1",
-          "sha256": "0032a5e79731ba1a6f6fad13eee80918a5225c561d06c817c29efe1f8b0c6bdc"
+          "version": "0.8.0",
+          "sha256": "e2da9591293fd5a8aa4036da97eda90bc2b7220d61c0da0985275b8ec85ba824"
         },
         "deterministic-data": {
           "version": "0.1.1",
@@ -64,8 +64,8 @@
         "uninstall": true,
         "invalid_python_advisory_then_recovery": true
       },
-      "source_commit": "84276aa88fd14eab41fbaeed5e8e07dcce84da0d",
-      "row_sha256": "fbe4af20a0e74bfa4d394b259424de34e076748230dfaa3d43000b0aa2184446"
+      "source_commit": "0b5d74476620234ded8928b9e6e16dabd2387a21",
+      "row_sha256": "4dcf44105e6d1ac2124e8ab047d83a24c79e555b835c7bd89b2c68d93d7a6e32"
     },
     "code-windows-no-bash": {
       "outcome": "untested"

@@ -60,7 +60,8 @@ plugin. Multiple rows, disabled entries, unknown versions or mismatches need
 inspection in the host's plugin interface; do not guess their origin or remove
 them automatically. Registration alone does not prove activation.
 
-The offline probe executes this package's hook commands with synthetic prompts.
+The offline probe executes this package's hook commands with synthetic prompts
+and, in `session` mode, a synthetic session start.
 It cannot prove the running host loaded the plugin. Verify host registration in
 the host's plugin and hook interfaces before attributing a missing reminder to
 the model. A skill being available does not prove its hooks ran.

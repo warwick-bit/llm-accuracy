@@ -91,10 +91,16 @@ def bundle_removed(listing):
         for row in entries for name in PACKAGES)
 
 
+# The session reminder from SessionStart plus this prompt's targeted guidance:
+# 2 responses show both hook events ran. An unusable Python gives 0.
+DELIVERY_PROMPT = 'Does this prove the retry patch fixed the outage? Reply exactly OK. Do not use tools.'
+DELIVERED_FIDELITY_RESPONSES = 2
+
+
 def delivery_passed(result):
     inventory = result.get('host_inventory', {})
     return (result.get('status') == 'ok' and result.get('result_count') == 1
-            and result.get('fidelity_hook_responses') == 1
+            and result.get('fidelity_hook_responses') == DELIVERED_FIDELITY_RESPONSES
             and inventory.get('accuracy_plugin_count') == 1
             and inventory.get('tool_count') == 0 and inventory.get('mcp_count') == 0)
 
@@ -125,7 +131,7 @@ def lifecycle(claude, root, source, env, *, live=False, timeout=60):
     if live:
         command = smoke.session_command(claude, 'sonnet') + ['--setting-sources', 'user', '--effort', 'low']
         result = smoke.communicate(command, root, env,
-                                   smoke.stream_input('Reply exactly OK. Do not use tools.'), timeout)
+                                   smoke.stream_input(DELIVERY_PROMPT), timeout)
         unconfigured_delivery = unset and delivery_passed(result)
     configure_bundle(claude, env, root)
     upgrade = installation_matches(installed_listing(claude, env, root), ROOT, profile)
@@ -220,12 +226,12 @@ def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
             action(claude, env, root, 'configure', 'llm-accuracy@llm-accuracy', '--values-stdin',
                    value=json.dumps({'python_executable': str(root / 'absent-python-executable')}))
             unavailable = smoke.communicate(command, root, env,
-                                            smoke.stream_input('Reply exactly OK. Do not use tools.'), timeout)
+                                            smoke.stream_input(DELIVERY_PROMPT), timeout)
             advisory = (unavailable.get('status') == 'ok' and unavailable.get('result_count') == 1
                         and unavailable.get('fidelity_hook_responses') == 0)
             configure_bundle(claude, env, root)
             result = smoke.communicate(command, root, env,
-                                       smoke.stream_input('Reply exactly OK. Do not use tools.'), timeout)
+                                       smoke.stream_input(DELIVERY_PROMPT), timeout)
             checks['prompt_delivery'] = delivery_passed(result)
             report['invalid_python_advisory_then_recovery'] = advisory and checks['prompt_delivery']
             checks['invalid_python_advisory_then_recovery'] = report['invalid_python_advisory_then_recovery']

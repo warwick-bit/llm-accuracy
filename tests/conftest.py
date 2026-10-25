@@ -10,6 +10,16 @@ import pytest
 HOOK_SHELL = os.environ.get("HOOK_TEST_SHELL", "/bin/sh" if os.name == "posix" else "")
 
 
+def fidelity_responses(prompt):
+    """Claim-fidelity hook responses a one-turn default-mode session receives."""
+    import importlib.util
+    path = Path(__file__).resolve().parents[1] / "plugins/llm-accuracy/hooks/claim-fidelity-trigger.py"
+    spec = importlib.util.spec_from_file_location("claim_fidelity_trigger", path)
+    hook = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hook)
+    return bool(hook.context_for_session("session")) + bool(hook.context_for_prompt(prompt, "session"))
+
+
 def hook_argv(handler, root, data="", executable=None):
     """Export synthetic host values, preserving the shipped shell command."""
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
@@ -38,3 +48,4 @@ def isolate_accuracy_configuration(monkeypatch, tmp_path):
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(tmp_path / "claude-profile"))
     monkeypatch.delenv("LLM_ACCURACY_CONFIG", raising=False)
     monkeypatch.delenv("CC_CLAIM_FIDELITY_MODE", raising=False)
+    monkeypatch.delenv("CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE", raising=False)

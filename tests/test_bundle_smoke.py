@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from conftest import fidelity_responses
+
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('bundle_smoke', ROOT / 'scripts/claude_bundle_smoke.py')
 bundle = importlib.util.module_from_spec(SPEC)
@@ -119,17 +121,22 @@ def test_one_remaining_bundle_registration_is_not_uninstalled():
     assert not bundle.bundle_removed('[{"id":"evidence-memory@llm-accuracy"}]')
 
 
-@pytest.mark.parametrize('count', [0, 2])
+@pytest.mark.parametrize('count', [0, 1, 3])
 def test_missing_or_duplicate_prompt_delivery_cannot_pass(count):
     report = {'status': 'ok', 'result_count': 1, 'fidelity_hook_responses': count,
               'host_inventory': {'accuracy_plugin_count': 1, 'tool_count': 0, 'mcp_count': 0}}
     assert not bundle.delivery_passed(report)
-    report['fidelity_hook_responses'] = 1
+    report['fidelity_hook_responses'] = 2
     assert bundle.delivery_passed(report)
 
 
+def test_delivery_prompt_needs_both_hook_events():
+    # One response from SessionStart, one from the prompt's targeted guidance.
+    assert fidelity_responses(bundle.DELIVERY_PROMPT) == bundle.DELIVERED_FIDELITY_RESPONSES == 2
+
+
 def test_live_prompt_with_tools_or_mcps_cannot_pass():
-    report = {'status': 'ok', 'result_count': 1, 'fidelity_hook_responses': 1,
+    report = {'status': 'ok', 'result_count': 1, 'fidelity_hook_responses': 2,
               'host_inventory': {'accuracy_plugin_count': 1, 'tool_count': 1, 'mcp_count': 0}}
     assert not bundle.delivery_passed(report)
     report['host_inventory'].update(tool_count=0, mcp_count=1)

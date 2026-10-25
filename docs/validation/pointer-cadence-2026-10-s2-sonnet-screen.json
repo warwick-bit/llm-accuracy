@@ -1,0 +1,1603 @@
+{
+  "experiment": "pointer-cadence",
+  "date": "2026-10-07",
+  "model": "claude-sonnet-5-5",
+  "effort": null,
+  "plumbing_mode": false,
+  "variant": "s2_competing_route",
+  "harness_commit": "33ea11d942d35ebc2bdec8f649600fa73fe47fb7",
+  "arm_digests": {
+    "every_prompt": "bd75d43506da97c210cb687efb810eeb3df9f8d857cef533bcf4954906ac1cfb",
+    "session_start": "84b4d92c5a24d131aae8efc078b3ac77db00fcd53b8e434b53d2f891cd81d2dc",
+    "none": "6baf5aa1108e9a8801abb1b133eb1ff5583c31660f0ab41f44b59d5ae6811607"
+  },
+  "case_digest": "74a601dca5c324e3fdc2c775b86fd3b7e634b552aa19a43d66f2f4b3cb2d4699",
+  "fixture_digest": "69cf5c4a2ae5f4205a7fc95206fcbd81970d3d4d76e5274d05d53b57c2e74589",
+  "pointer_sha256": "a54b4e6d230f35453feb4835a37150c53406e2a88675f385964904210b9fc3de",
+  "layout": "FPFFPFFP",
+  "endpoint": "probe metric's entry file Read (successfully) at or before the probe turn",
+  "decision_rule": "Phase 1 rule on deep probes (turns 5, 8); filler = any metrics/ read on a filler turn",
+  "rows": [
+    {
+      "case": "light_a",
+      "arm": "every_prompt",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "active_subscribers",
+        null,
+        null,
+        "logo_churn_rate",
+        null,
+        null,
+        "support_backlog"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 9,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 6
+      },
+      "turn_reads": [
+        [],
+        [
+          "metrics/active_subscribers.md",
+          "metrics/index.md"
+        ],
+        [
+          "notes/standup-2026-09-30.md"
+        ],
+        [],
+        [
+          "metrics/logo_churn_rate.md"
+        ],
+        [
+          "notes/release-checklist.md"
+        ],
+        [],
+        [
+          "metrics/support_backlog.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "light_a",
+      "arm": "session_start",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "active_subscribers",
+        null,
+        null,
+        "logo_churn_rate",
+        null,
+        null,
+        "support_backlog"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 1,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 7
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "metrics/active_subscribers.md",
+          "metrics/index.md"
+        ],
+        [
+          "notes/standup-2026-09-30.md"
+        ],
+        [],
+        [
+          "metrics/logo_churn_rate.md"
+        ],
+        [
+          "notes/release-checklist.md"
+        ],
+        [],
+        [
+          "metrics/support_backlog.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "light_a",
+      "arm": "none",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "active_subscribers",
+        null,
+        null,
+        "logo_churn_rate",
+        null,
+        null,
+        "support_backlog"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 0,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 5
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "data/accounts.csv"
+        ],
+        [
+          "notes/standup-2026-09-30.md"
+        ],
+        [],
+        [],
+        [
+          "notes/release-checklist.md"
+        ],
+        [],
+        [
+          "data/tickets.csv"
+        ]
+      ],
+      "per_turn": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "entry_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "index_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "data_read_without_entry": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        true
+      ]
+    },
+    {
+      "case": "light_b",
+      "arm": "every_prompt",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "gross_bookings",
+        null,
+        null,
+        "trial_conversion",
+        null,
+        null,
+        "avg_order_value"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 9,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 7
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "metrics/gross_bookings.md",
+          "metrics/index.md"
+        ],
+        [
+          "notes/onboarding-todo.md"
+        ],
+        [],
+        [
+          "metrics/trial_conversion.md"
+        ],
+        [
+          "notes/infra-ports.md"
+        ],
+        [],
+        [
+          "metrics/avg_order_value.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "light_b",
+      "arm": "session_start",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "gross_bookings",
+        null,
+        null,
+        "trial_conversion",
+        null,
+        null,
+        "avg_order_value"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 1,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 7
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "metrics/gross_bookings.md",
+          "metrics/index.md"
+        ],
+        [
+          "notes/onboarding-todo.md"
+        ],
+        [],
+        [
+          "metrics/trial_conversion.md"
+        ],
+        [
+          "notes/infra-ports.md"
+        ],
+        [],
+        [
+          "metrics/avg_order_value.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "light_b",
+      "arm": "none",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "gross_bookings",
+        null,
+        null,
+        "trial_conversion",
+        null,
+        null,
+        "avg_order_value"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 0,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 6
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "data/orders.csv"
+        ],
+        [
+          "notes/onboarding-todo.md"
+        ],
+        [],
+        [
+          "data/trials.csv"
+        ],
+        [
+          "notes/infra-ports.md"
+        ],
+        [],
+        []
+      ],
+      "per_turn": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "entry_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "index_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "data_read_without_entry": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "heavy_a",
+      "arm": "every_prompt",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "logo_churn_rate",
+        null,
+        null,
+        "avg_order_value",
+        null,
+        null,
+        "active_subscribers"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 9,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 7
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "metrics/index.md",
+          "metrics/logo_churn_rate.md"
+        ],
+        [
+          "notes/banana-bread.md"
+        ],
+        [],
+        [
+          "metrics/avg_order_value.md"
+        ],
+        [
+          "notes/standup-2026-09-30.md"
+        ],
+        [],
+        [
+          "metrics/active_subscribers.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "heavy_a",
+      "arm": "session_start",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "logo_churn_rate",
+        null,
+        null,
+        "avg_order_value",
+        null,
+        null,
+        "active_subscribers"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 1,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 7
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "metrics/index.md",
+          "metrics/logo_churn_rate.md"
+        ],
+        [
+          "notes/banana-bread.md"
+        ],
+        [],
+        [
+          "metrics/avg_order_value.md"
+        ],
+        [
+          "notes/standup-2026-09-30.md"
+        ],
+        [],
+        [
+          "metrics/active_subscribers.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "heavy_a",
+      "arm": "none",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "logo_churn_rate",
+        null,
+        null,
+        "avg_order_value",
+        null,
+        null,
+        "active_subscribers"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 0,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 6
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "data/accounts.csv"
+        ],
+        [
+          "notes/banana-bread.md"
+        ],
+        [],
+        [
+          "data/orders.csv"
+        ],
+        [
+          "notes/standup-2026-09-30.md"
+        ],
+        [],
+        []
+      ],
+      "per_turn": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "entry_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "index_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "data_read_without_entry": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "heavy_b",
+      "arm": "every_prompt",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "trial_conversion",
+        null,
+        null,
+        "support_backlog",
+        null,
+        null,
+        "gross_bookings"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 9,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 6
+      },
+      "turn_reads": [
+        [],
+        [
+          "metrics/index.md",
+          "metrics/trial_conversion.md"
+        ],
+        [
+          "notes/release-checklist.md"
+        ],
+        [],
+        [
+          "metrics/support_backlog.md"
+        ],
+        [
+          "notes/onboarding-todo.md"
+        ],
+        [],
+        [
+          "metrics/gross_bookings.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "heavy_b",
+      "arm": "session_start",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "trial_conversion",
+        null,
+        null,
+        "support_backlog",
+        null,
+        null,
+        "gross_bookings"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 1,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 6
+      },
+      "turn_reads": [
+        [],
+        [
+          "metrics/index.md",
+          "metrics/trial_conversion.md"
+        ],
+        [
+          "notes/release-checklist.md"
+        ],
+        [],
+        [
+          "metrics/support_backlog.md"
+        ],
+        [
+          "notes/onboarding-todo.md"
+        ],
+        [],
+        [
+          "metrics/gross_bookings.md"
+        ]
+      ],
+      "per_turn": [
+        false,
+        true,
+        false,
+        false,
+        true,
+        false,
+        false,
+        true
+      ],
+      "entry_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "index_read_this_turn": [
+        null,
+        true,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ],
+      "data_read_without_entry": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ]
+    },
+    {
+      "case": "heavy_b",
+      "arm": "none",
+      "repeat": 0,
+      "turns": {
+        "probe": [
+          1,
+          4,
+          7
+        ],
+        "early": [
+          1
+        ],
+        "deep": [
+          4,
+          7
+        ],
+        "filler": [
+          0,
+          2,
+          3,
+          5,
+          6
+        ]
+      },
+      "probe_keys": [
+        null,
+        "trial_conversion",
+        null,
+        null,
+        "support_backlog",
+        null,
+        null,
+        "gross_bookings"
+      ],
+      "status": "ok",
+      "scorable": true,
+      "result_count": 8,
+      "marks": {
+        "pointer": 0,
+        "banner": 8,
+        "fidelity": 8,
+        "routing": 8
+      },
+      "plumbing_ok": true,
+      "resolved_model": "claude-sonnet-5-5",
+      "tool_calls_by_name": {
+        "Read": 6
+      },
+      "turn_reads": [
+        [],
+        [
+          "data/README.md",
+          "data/trials.csv"
+        ],
+        [
+          "notes/release-checklist.md"
+        ],
+        [],
+        [
+          "data/tickets.csv"
+        ],
+        [
+          "notes/onboarding-todo.md"
+        ],
+        [],
+        [
+          "data/orders.csv"
+        ]
+      ],
+      "per_turn": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "entry_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "index_read_this_turn": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "binding_cited": [
+        null,
+        false,
+        null,
+        null,
+        false,
+        null,
+        null,
+        false
+      ],
+      "data_read_without_entry": [
+        null,
+        true,
+        null,
+        null,
+        true,
+        null,
+        null,
+        true
+      ]
+    }
+  ],
+  "summary": {
+    "arms": {
+      "every_prompt": {
+        "sessions": 4,
+        "usable_sessions": 4,
+        "early": {
+          "hits": 4,
+          "n": 4,
+          "rate": 1.0
+        },
+        "deep": {
+          "hits": 8,
+          "n": 8,
+          "rate": 1.0,
+          "wilson_lower_95": 0.6756
+        },
+        "filler": {
+          "hits": 0,
+          "n": 20,
+          "rate": 0.0
+        },
+        "turn_2": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_5": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_8": {
+          "hits": 4,
+          "n": 4
+        },
+        "secondary": {
+          "entry_read_on_probe_turn": 12,
+          "index_read_on_probe_turn": 4,
+          "binding_cited": 12,
+          "data_read_without_entry": 0,
+          "probes": 12
+        }
+      },
+      "session_start": {
+        "sessions": 4,
+        "usable_sessions": 4,
+        "early": {
+          "hits": 4,
+          "n": 4,
+          "rate": 1.0
+        },
+        "deep": {
+          "hits": 8,
+          "n": 8,
+          "rate": 1.0,
+          "wilson_lower_95": 0.6756
+        },
+        "filler": {
+          "hits": 0,
+          "n": 20,
+          "rate": 0.0
+        },
+        "turn_2": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_5": {
+          "hits": 4,
+          "n": 4
+        },
+        "turn_8": {
+          "hits": 4,
+          "n": 4
+        },
+        "secondary": {
+          "entry_read_on_probe_turn": 12,
+          "index_read_on_probe_turn": 4,
+          "binding_cited": 12,
+          "data_read_without_entry": 0,
+          "probes": 12
+        }
+      },
+      "none": {
+        "sessions": 4,
+        "usable_sessions": 4,
+        "early": {
+          "hits": 0,
+          "n": 4,
+          "rate": 0.0
+        },
+        "deep": {
+          "hits": 0,
+          "n": 8,
+          "rate": 0.0,
+          "wilson_lower_95": 0.0
+        },
+        "filler": {
+          "hits": 0,
+          "n": 20,
+          "rate": 0.0
+        },
+        "turn_2": {
+          "hits": 0,
+          "n": 4
+        },
+        "turn_5": {
+          "hits": 0,
+          "n": 4
+        },
+        "turn_8": {
+          "hits": 0,
+          "n": 4
+        },
+        "secondary": {
+          "entry_read_on_probe_turn": 0,
+          "index_read_on_probe_turn": 0,
+          "binding_cited": 0,
+          "data_read_without_entry": 9,
+          "probes": 12
+        }
+      }
+    },
+    "verdict": {
+      "ci_95_gap_every_minus_session": [
+        0.0,
+        0.0
+      ],
+      "gap_point": 0.0,
+      "discriminates": true,
+      "label": "screen_only"
+    }
+  }
+}

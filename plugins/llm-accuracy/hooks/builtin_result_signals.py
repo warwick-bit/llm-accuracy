@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 
-def builtin_codes(tool: str, response: object) -> set[str]:
+def builtin_codes(
+    tool: str, response: object, tool_input: object = None
+) -> set[str]:
     if not isinstance(response, dict):
         return set()
     if tool == "Bash":
@@ -28,6 +30,12 @@ def builtin_codes(tool: str, response: object) -> set[str]:
         )
         if all(type(value) is int for value in (start, count, total)):
             if start >= 1 and 0 <= count <= total and (start > 1 or count < total):
+                # A model-chosen limit already tells the model it read a slice,
+                # unless the host returned fewer lines than it asked for before
+                # the end of the file. An offset alone can still be cut short.
+                limit = tool_input.get("limit") if isinstance(tool_input, dict) else None
+                if type(limit) is int and (count >= limit or start + count > total):
+                    return set()
                 return {"file_read_excerpt"}
     return set()
 

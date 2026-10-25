@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Advisory hook: trigger Fusion Evidence Protocol for source-conflict prompts."""
+"""Advisory hook: add source-reconciliation guidance for source-conflict prompts."""
 
 from __future__ import annotations
 
@@ -57,15 +57,15 @@ BYPASS_MARKERS = ("# fusion-ok", "[fusion-ok]")
 BYPASS_ENV = "CC_SKIP_FUSION_EVIDENCE"
 
 CONTRACT = (
-    "FUSION EVIDENCE TRIGGER: This prompt has explicit source conflict/gap/permission/capped-result "
-    "signals. Apply the Fusion Evidence Protocol before final answer: (1) inventory each source, "
+    "Source reconciliation: this prompt reports a source conflict, gap, permission limit or "
+    "capped result. Before the final answer: (1) inventory each source, "
     "grain, timestamp, and failure state; (2) separate current truth from historical events; "
     "(3) do not convert failed queries, zero-row joins, capped rows, missing denominators, or "
     "redacted/permission-limited data into confirmed facts; (4) preserve disagreements in the "
     "answer; (5) if the runtime supports it and the answer is high-impact, run a second-model "
-    "challenge/synthesis pass focused only on unsupported claims and missing caveats. Use this "
-    "protocol for evidence reconciliation only; do not generalize this trigger to routine "
-    "code review. Mute with `# fusion-ok` or `CC_SKIP_FUSION_EVIDENCE=1`."
+    "challenge/synthesis pass focused only on unsupported claims and missing caveats. This "
+    "applies to evidence reconciliation, not routine code review. "
+    "Mute with `# fusion-ok` or `CC_SKIP_FUSION_EVIDENCE=1`."
 )
 
 

@@ -11,6 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from conftest import fidelity_responses
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -266,7 +268,8 @@ def fake_host(monkeypatch, tmp_path, list_code=0, configure_code=0):
 
     def communicate(command, cwd, env, stdin, timeout):
         commands.append(command)
-        return probe(fidelity_hook_responses=0 if "fidelity-ok" in stdin else 1)
+        prompt = json.loads(stdin)["message"]["content"]
+        return probe(fidelity_hook_responses=fidelity_responses(prompt))
 
     monkeypatch.setattr(smoke, "run_cli", run_cli)
     monkeypatch.setattr(smoke, "build_archive", build_archive)
@@ -280,7 +283,7 @@ def test_every_command_uses_the_selected_executable(monkeypatch, tmp_path):
     assert receipt["passed"] is True
     assert {command[0] for command in commands} == {"/opt/candidate/claude"}
     sessions = [command for command in commands if "--print" in command]
-    assert len(sessions) == 3
+    assert len(sessions) == len(smoke.LIVE_SESSIONS) + 1
     assert sum("--plugin-dir" in command for command in sessions) == 1
     assert receipt["checks"]["archive_session"]["passed"] is True
     assert receipt["checks"]["isolated_cleanup"] is True
@@ -359,3 +362,11 @@ def test_receipt_write_failure_reports_class_without_path(
     error = capsys.readouterr().err
     assert "receipt not written" in error
     assert "synthetic-receipt-dir" not in error
+
+
+def test_live_session_expectations_match_the_shipped_hook():
+    for _, prompt, expected in smoke.LIVE_SESSIONS:
+        assert fidelity_responses(prompt) == expected, prompt
+    # The bypass is visible only if the same prompt fires without it.
+    assert smoke.BYPASS_PROMPT.startswith(smoke.TARGETED_PROMPT.split("?")[0])
+

@@ -13,6 +13,11 @@ and say what is still unknown. Deterministic Data adds your team's reviewed
 definitions and declared source routes when repeat questions need a consistent
 method.
 
+## Acknowledgements
+
+Special thanks to [Sophiie AI](https://www.sophiie.ai/) for allowing me to open
+source LLM Accuracy, which I developed over six months while working there.
+
 ## Start here
 
 Use **LLM Accuracy** for everyday questions where a plausible answer could
@@ -41,6 +46,9 @@ unverified. See [platform capabilities and current QA](docs/COMPATIBILITY.md).
 The general reminder asks Claude to verify measurements and coverage, test
 competing causes, and revisit dependent conclusions when correcting a diagnosis.
 Additional business-ambiguity and source-conflict reminders remain targeted.
+When the data is available, the ambiguity reminder asks Claude to inspect it
+first and show how each reading changes the figure before asking which one you
+mean.
 Use `/llm-accuracy:claim-fidelity` for an explicit check. See
 [reminder modes](plugins/llm-accuracy/README.md#reminder-modes) to restore the
 previous targeted-only behaviour or mute the fidelity reminder.
@@ -63,6 +71,9 @@ Checked / Gap / Next footer. These are advisory workflows, not accuracy guarante
   means leads, conversion, revenue, retention or payback.
 - **Did the new onboarding flow improve activation?** The answer depends on the
   activation event, cohort, measurement window and comparison group.
+- **How many new customers did we get in July?** "New" could mean a first
+  payment, a sign-up or a trial, and the count also moves with test or merged
+  accounts, returning customers, the time zone and duplicate rows.
 - **Sales increased after our pricing change. Does that prove the pricing
   change caused the increase?** Timing alone does not rule out seasonality,
   mix changes, campaigns or other causes.
@@ -205,6 +216,35 @@ For Cowork, download the latest
 upload it through **Customize → Plugins**, and use the same test prompts. See
 the [installation guide](docs/INSTALL.md) for updates, removal, other Claude
 products and the optional plugins.
+
+### Tips from our data-access tests
+
+Three small synthetic tests of how Claude Code handles data it fetches. Every
+completed setup got the exact answers, so the differences below are cost and
+time, not accuracy. The samples are small: treat these as working rules, not measured
+guarantees. The [test record](docs/data-access-tips-evidence.md)
+has the figures and limits.
+
+- **Let a query or script do the arithmetic; don't page raw rows into the
+  conversation.** Over 600 synthetic invoices (two Claude models, three runs
+  each), paging raw records through a tool into Claude's context cost 9 to 14
+  times as much and took 3.5 to 5.4 times as long (median) as the other
+  routes. At 4,000 invoices (one Sonnet run per route) it cost about 150 to
+  190 times as much. Claude stayed exact by re-typing the page rows into files
+  (about 800 numbers in a typical command) and computing over them.
+- **The cost is raw rows in context, not MCP itself.** A SQL tool over MCP that
+  returned only the computed result cost about the same as the command-line
+  routes ($0.16 against $0.15 to $0.16 for one model, $0.37 against $0.31 to
+  $0.42 for the other, per three runs).
+- **Save large results to a file and compute over the file.** In a 400-row
+  synthetic workflow (one run each), a compact file-backed helper used about
+  90,000 tokens and a heavier capture plugin about 183,000, against about
+  236,000 for a raw fetch whose output spilled to a file. All were exact.
+- **Don't swap tool output for a file pointer automatically.** A hook that
+  replaced large output with a file reference used 106.7% to 146.3% more tokens
+  on medium tasks, because Claude often read the whole file back. With added
+  guidance to calculate over the file, it still used 13.6% to 46.0% more. The
+  first version also saved a truncated preview as if it were the full output.
 
 ## Licence and boundary
 
@@ -422,11 +462,12 @@ to run or system prompt to paste for matching prompts. The self-audit workflow
 is also available when you ask the assistant to check one of its earlier
 answers.
 
-In Claude Code, the general fidelity reminder runs on each non-empty prompt.
+In Claude Code, the general fidelity reminder is added once when a session
+starts, resumes, is cleared or is compacted (every prompt is an opt-in mode).
 Additional reminders target ambiguous business questions, open-ended analysis,
 evidence-boundary claims, source conflicts and context compaction. They do not
-block work, fetch evidence, or verify an answer for you. General mode adds context
-even to greetings and creative tasks; it asks Claude to keep those tasks brief.
+block work, fetch evidence, or verify an answer for you. The general reminder also
+covers greetings and creative tasks; it asks Claude to keep those tasks brief.
 Delivery coverage is not proof that the model follows the reminder or answers
 more accurately.
 
