@@ -6,13 +6,16 @@ endorse them. Their authors have not reviewed or endorsed these plugins.
 
 **Read this first.**
 
-- **One-off check:** each tool was smoke-tested once, on 2 Oct 2026. We
-  installed it into a clean virtual environment and ran its documented basic
-  use on synthetic data. No model calls were made.
+- **One-off checks:** tools marked smoke-tested were checked on 2 Oct 2026,
+  using clean environments and synthetic data. The reference-only tools were
+  read, not run. No model calls were made.
 - **Not an accuracy claim:** we did not test whether any tool makes Claude's
   answers more accurate.
 - **Licences change:** licences and repository details were read on 3 Oct
   2026. Re-check the licence and the latest release before you use a tool.
+- **Link refresh:** all ten repository links were rechecked on 25 Oct 2026;
+  each repository existed and was not archived. The dated smoke tests and
+  code-reading checks below were not repeated.
 - **Your data:** try each tool on synthetic data first. Some tools write files
   that can contain real values from your data.
 
