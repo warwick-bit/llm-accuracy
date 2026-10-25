@@ -28,10 +28,10 @@ def hide_windows_test_children(monkeypatch):
     """Noninteractive test children must never open a console window."""
     if os.name != "nt":
         return
-    real_popen = subprocess.Popen
-    signature = inspect.signature(real_popen)
+    real_init = subprocess.Popen.__init__
+    signature = inspect.signature(real_init)
 
-    def hidden_popen(*args, **kwargs):
+    def hidden_init(*args, **kwargs):
         call = signature.bind(*args, **kwargs)
         startupinfo = call.arguments.get("startupinfo")
         startupinfo = copy.copy(startupinfo) if startupinfo is not None else subprocess.STARTUPINFO()
@@ -39,9 +39,10 @@ def hide_windows_test_children(monkeypatch):
         startupinfo.wShowWindow = subprocess.SW_HIDE
         call.arguments["startupinfo"] = startupinfo
         call.arguments["creationflags"] = call.arguments.get("creationflags", 0) | subprocess.CREATE_NO_WINDOW
-        return real_popen(*call.args, **call.kwargs)
+        return real_init(*call.args, **call.kwargs)
 
-    monkeypatch.setattr(subprocess, "Popen", hidden_popen)
+    # Keep Popen a class: asyncio.windows_utils subclasses it on import.
+    monkeypatch.setattr(subprocess.Popen, "__init__", hidden_init)
 
 
 def fidelity_responses(prompt):

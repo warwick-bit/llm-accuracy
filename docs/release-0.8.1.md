@@ -22,8 +22,10 @@ These establish installation and hook delivery, not a general accuracy benefit.
 An isolated native Codex skills-only installation also matched all 31 package
 files; its manifest declares three skills and disables automatic hooks.
 
-Publication remains blocked pending all four native installation CI receipts
-from the same hosted run. Local Windows evidence cannot certify Linux, macOS or
-a Windows host without Bash. Desktop Chat, Desktop Code UI and Cowork delivery
-remain unverified. See the [compatibility contract](COMPATIBILITY.md). No normal
-profile rollout or public release is included in this local qualification.
+At this local qualification checkpoint, publication still required all four
+native installation CI receipts from the same hosted run. Local Windows evidence
+cannot certify Linux, macOS or a Windows host without Bash. Follow
+[draft PR #77](https://github.com/warwick-bit/llm-accuracy/pull/77) for current
+hosted CI results. Desktop Chat, Desktop Code UI and Cowork delivery remain
+unverified. See the [compatibility contract](COMPATIBILITY.md). No normal profile
+rollout or public release is included in this local qualification.
