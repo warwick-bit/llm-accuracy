@@ -1,0 +1,15 @@
+{
+  "name": "llm-accuracy",
+  "version": "0.8.1",
+  "description": "Experimental skills for checking numerical reports, technical work and evidence boundaries. No automatic Codex hooks or guarantee of correctness.",
+  "author": {"name": "Warwick"},
+  "license": "MIT",
+  "skills": ["./skills/verify-numerical", "./skills/verify-technical", "./skills/claim-fidelity"],
+  "hooks": {"hooks": {}},
+  "interface": {
+    "displayName": "LLM Accuracy",
+    "shortDescription": "Optional evidence and numerical checks",
+    "developerName": "Warwick",
+    "category": "Productivity"
+  }
+}

@@ -12,6 +12,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType
 
+from conftest import symlink_or_skip
+
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / "plugins" / "session-ledger" / "hooks" / "session-ledger.py"
@@ -559,7 +561,7 @@ def test_precompact_flushes_the_current_ledger_before_summary_persistence(
     assert "Synthetic compact result." in resumed_context
 
 
-def test_tool_blocks_and_symlinked_transcripts_are_never_captured(
+def test_tool_blocks_are_never_captured(
     tmp_path: Path,
 ) -> None:
     ledger = load_ledger()
@@ -596,8 +598,13 @@ def test_tool_blocks_and_symlinked_transcripts_are_never_captured(
     record = json.loads(ledger.record_path(data_root, "session-one").read_text())
     assert record["entries"] == []
 
+
+def test_symlinked_transcripts_are_never_captured(tmp_path: Path) -> None:
+    ledger = load_ledger()
+    transcript = tmp_path / "session.jsonl"
+    transcript.write_text("Synthetic transcript", encoding="utf-8")
     link = tmp_path / "linked-session.jsonl"
-    link.symlink_to(transcript)
+    symlink_or_skip(link, transcript)
     assert ledger.read_transcript_tail(str(link)) == ""
 
 
@@ -644,7 +651,7 @@ def test_symlinked_state_directory_fails_open_without_writing_outside(
     outside = tmp_path / "outside"
     data_root.mkdir()
     outside.mkdir()
-    ledger.state_directory(data_root).symlink_to(outside, target_is_directory=True)
+    symlink_or_skip(ledger.state_directory(data_root), outside, target_is_directory=True)
 
     assert not ledger.write_compact_summary(
         compact_payload(), data_root=data_root, now=NOW
@@ -661,7 +668,8 @@ def test_symlinked_lock_directory_fails_open_without_writing_outside(
     data_root.mkdir()
     outside.mkdir()
     ledger.state_directory(data_root).mkdir()
-    (ledger.state_directory(data_root) / "locks").symlink_to(
+    symlink_or_skip(
+        ledger.state_directory(data_root) / "locks",
         outside, target_is_directory=True
     )
 
@@ -681,7 +689,7 @@ def test_symlinked_lock_file_fails_open_without_following_its_target(
     outside.write_text("unchanged", encoding="utf-8")
     lock = ledger.lock_path(data_root, "session-one")
     lock.parent.mkdir(parents=True)
-    lock.symlink_to(outside)
+    symlink_or_skip(lock, outside)
 
     assert not ledger.write_compact_summary(
         compact_payload(), data_root=data_root, now=NOW
@@ -695,7 +703,7 @@ def test_symlinked_state_directory_is_never_read_or_pruned(tmp_path: Path) -> No
     outside = tmp_path / "outside"
     data_root.mkdir()
     outside.mkdir()
-    ledger.state_directory(data_root).symlink_to(outside, target_is_directory=True)
+    symlink_or_skip(ledger.state_directory(data_root), outside, target_is_directory=True)
     session_id = "session-one"
     current_record = outside / "sessions" / ledger.digest(session_id) / "record.json"
     expired_record = outside / "sessions" / "unrelated" / "record.json"
@@ -743,7 +751,7 @@ def test_symlinked_plugin_data_root_is_never_read_pruned_or_cleared(
     outside = tmp_path / "outside"
     data_root = tmp_path / "plugin-data"
     outside.mkdir()
-    data_root.symlink_to(outside, target_is_directory=True)
+    symlink_or_skip(data_root, outside, target_is_directory=True)
     session_id = "session-one"
     external_record = ledger.record_path(data_root, session_id)
     external_record.parent.mkdir(parents=True)

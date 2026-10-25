@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import zipfile
@@ -202,10 +203,20 @@ def test_auth_profile_copies_only_credentials_and_strips_controls(
     monkeypatch.setenv("CC_SKIP_CLAIM_FIDELITY", "1")
     root = tmp_path / "smoke"
     root.mkdir()
+    chmod = Path.chmod
+    chmod_calls = []
+
+    def record_chmod(path, mode, **kwargs):
+        chmod_calls.append((path, mode))
+        return chmod(path, mode, **kwargs)
+
+    monkeypatch.setattr(Path, "chmod", record_chmod)
     env = smoke.auth_profile(root)
     profile = Path(env["CLAUDE_CONFIG_DIR"])
     assert sorted(path.name for path in profile.iterdir()) == [".credentials.json"]
-    assert (profile / ".credentials.json").stat().st_mode & 0o777 == 0o600
+    assert chmod_calls == [(profile / ".credentials.json", 0o600)]
+    if os.name == "posix":  # Windows chmod does not implement POSIX permission bits.
+        assert (profile / ".credentials.json").stat().st_mode & 0o777 == 0o600
     assert "CC_SKIP_CLAIM_FIDELITY" not in env
 
 

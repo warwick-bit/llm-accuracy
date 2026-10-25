@@ -13,6 +13,14 @@ and say what is still unknown. Deterministic Data adds your team's reviewed
 definitions and declared source routes when repeat questions need a consistent
 method.
 
+Implementation, regression tests, installation checks and release receipts live
+in this repository. Reproducible model studies, comparisons, charts and the
+practitioner narrative live in the
+[Finance/Data Eval repository](https://github.com/warwick-bit/llm-finance-data-eval).
+The studies report failures and limitations; they do not establish a universal
+accuracy benefit. See the [0.8.1 candidate status](docs/release-0.8.1.md) for
+current local qualification and outstanding release gates.
+
 ## Acknowledgements
 
 Special thanks to [Sophiie AI](https://www.sophiie.ai/) for allowing me to open
@@ -26,8 +34,8 @@ still be the wrong answer. Most people should install only this plugin first.
 The basic loop is:
 
 1. You ask Claude a normal question.
-2. A configured Claude Code hook adds a short general evidence reminder on each
-   non-empty prompt, including technical requests and brief follow-ups.
+2. By default, a configured Claude Code hook adds a short general evidence
+   reminder at session start, with targeted reminders on relevant prompts.
 3. Claude is asked to clarify material ambiguity or keep the answer aligned
    with the source's population, definition, time window, freshness and
    completeness.

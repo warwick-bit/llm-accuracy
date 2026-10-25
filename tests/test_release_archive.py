@@ -12,6 +12,8 @@ from types import ModuleType
 
 import pytest
 
+from conftest import symlink_or_skip
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -92,7 +94,7 @@ def test_release_archive_rejects_external_symlink(tmp_path: Path) -> None:
     plugin.mkdir()
     outside = tmp_path.parent / "outside-release-artifact.md"
     outside.write_text("private source", encoding="utf-8")
-    (plugin / "linked.md").symlink_to(outside)
+    symlink_or_skip(plugin / "linked.md", outside)
 
     with pytest.raises(ValueError, match="symlink artifact: linked.md"):
         builder.build_archive(tmp_path / "llm-accuracy.zip", plugin=plugin)

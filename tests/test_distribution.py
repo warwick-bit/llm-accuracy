@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.8.0"
+    assert claude["version"] == "0.8.1"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -75,12 +75,18 @@ def test_evidence_memory_is_independent_and_explicit() -> None:
     assert (codex["hooks"], codex["skills"]) == ("./hooks/codex-hooks.json", "./skills/")
 
 
-def test_codex_marketplace_publishes_only_evidence_memory() -> None:
+def test_codex_marketplace_publishes_memory_and_accuracy() -> None:
     codex = load_json(".agents/plugins/marketplace.json")
     assert codex["name"] == "llm-accuracy"
     assert [(entry["name"], entry["source"]) for entry in codex["plugins"]] == [
-        ("evidence-memory", {"source": "local", "path": "./plugins/evidence-memory"})]
-    for plugin in (PLUGIN, DETERMINISTIC, LEDGER):
+        ("evidence-memory", {"source": "local", "path": "./plugins/evidence-memory"}),
+        ("llm-accuracy", {"source": "local", "path": "./plugins/llm-accuracy"})]
+    accuracy = load_json("plugins/llm-accuracy/.codex-plugin/plugin.json")
+    assert accuracy["version"] == load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")["version"]
+    assert accuracy["skills"] == [
+        "./skills/verify-numerical", "./skills/verify-technical", "./skills/claim-fidelity"]
+    assert accuracy["hooks"] == {"hooks": {}}
+    for plugin in (DETERMINISTIC, LEDGER):
         assert not (plugin / ".codex-plugin").exists()
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 from pathlib import Path
@@ -55,6 +56,10 @@ def run_hooks(home: Path, event: str, payload: dict) -> None:
 
 
 @pytest.mark.parametrize("arm", pc.ARMS)
+@pytest.mark.skipif(
+    os.name != "posix",
+    reason="Experimental Codex cadence hook runner requires a POSIX shell and /usr/bin/python3",
+)
 def test_codex_home_hooks_emit_and_log(tmp_path, monkeypatch, arm):
     monkeypatch.setattr(cx, "CODEX_AUTH", tmp_path / "absent-auth.json")
     layout = cx.session_layout(tmp_path, stress=False)
@@ -244,9 +249,10 @@ def test_hook_marks_counts_emitted_only(tmp_path):
 
 
 def test_turn_command_isolates_the_profile_and_resumes_by_thread():
-    first = cx.turn_command(Path("/x/codex"), "gpt-5.5", "xhigh", "hello", None)
-    later = cx.turn_command(Path("/x/codex"), "gpt-5.5", "xhigh", "again", "th-1")
-    assert first[0] == later[0] == "/x/codex"
+    executable = Path("/x/codex")
+    first = cx.turn_command(executable, "gpt-5.5", "xhigh", "hello", None)
+    later = cx.turn_command(executable, "gpt-5.5", "xhigh", "again", "th-1")
+    assert first[0] == later[0] == str(executable)
     assert first[1:3] == ["exec", "--json"] and "resume" not in first
     assert later[1:3] == ["exec", "resume"] and later[-2:] == ["th-1", "again"]
     for command in (first, later):
@@ -368,7 +374,15 @@ def test_registry_lives_outside_the_project(tmp_path, stress):
         cx.fixture_files(stress)["metrics"]
     )
     log = cx.build_codex_home("session_start", layout, stress)
-    assert str(registry) in (log.parent / "experiment-hooks/pointer.py").read_text()
+    script = ast.parse((log.parent / "experiment-hooks/pointer.py").read_text())
+    pointer_text = next(
+        ast.literal_eval(node.value) for node in script.body
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "TEXT"
+            for target in node.targets
+        )
+    )
+    assert str(registry) in pointer_text
 
 
 # Runs inside the sandbox; prints key names and booleans only, never a value.

@@ -270,6 +270,7 @@ def _kill(process) -> None:
                     ["taskkill", "/PID", str(process.pid), "/T", "/F"],
                     capture_output=True,
                     timeout=5,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
                 )
             except (OSError, subprocess.TimeoutExpired):
                 pass
@@ -300,6 +301,7 @@ def communicate(
             encoding="utf-8",
             errors="replace",
             start_new_session=os.name == "posix",
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     except OSError:
         return {"status": "host_unavailable", "answers": []}

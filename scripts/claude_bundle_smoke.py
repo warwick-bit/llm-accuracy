@@ -34,7 +34,8 @@ def require_committed_source():
             raise ValueError('bundle_source_not_committed')
     status = subprocess.run(['git', '-C', str(ROOT), 'status', '--porcelain',
                              '--untracked-files=all', '--', 'plugins', '.claude-plugin'],
-                            capture_output=True, check=True, timeout=30)
+                            capture_output=True, check=True, timeout=30,
+                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
     if status.stdout:
         raise ValueError('bundle_source_not_committed')
     return smoke.git_value('rev-parse', 'HEAD')
@@ -164,7 +165,8 @@ def usable_bash(path):
         return False
     try:
         env = {key: value for key, value in os.environ.items() if key not in smoke.CONTROL_VARS}
-        result = subprocess.run([str(path), '--version'], env=env, capture_output=True, timeout=15)
+        result = subprocess.run([str(path), '--version'], env=env, capture_output=True, timeout=15,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
         return result.returncode == 0 and b'GNU bash' in result.stdout
     except (OSError, subprocess.SubprocessError):
         return False
@@ -190,7 +192,8 @@ def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
     commit = require_committed_source()
     changed_paths(ROOT, baseline)  # Prove a real, available ancestor; never fall back.
     if subprocess.run(['git', '-C', str(ROOT), 'diff', '--quiet', baseline, 'HEAD', '--', 'plugins'],
-                      capture_output=True, timeout=30).returncode != 1:
+                      capture_output=True, timeout=30,
+                      creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0).returncode != 1:
         raise ValueError('bundle_upgrade_requires_different_baseline')
     report = {'scope': 'code_bundle_registration_accuracy_delivery', 'source_commit': commit,
               'platform': smoke.platform_label(), 'desktop_gui': 'not_tested',
@@ -204,12 +207,14 @@ def run_smoke(claude, baseline, *, live=True, timeout=60, ci_auth=False):
         source.mkdir()
         baseline_files = subprocess.run(['git', '-C', str(ROOT), 'ls-tree', '-r', '--name-only', baseline,
                                          '--', 'plugins', '.claude-plugin'],
-                                        capture_output=True, check=True, timeout=30).stdout.decode('utf-8').splitlines()
+                                        capture_output=True, check=True, timeout=30,
+                                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0).stdout.decode('utf-8').splitlines()
         for name in baseline_files:
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(subprocess.run(['git', '-C', str(ROOT), 'show', baseline + ':' + name],
-                                            capture_output=True, check=True, timeout=30).stdout)
+                                            capture_output=True, check=True, timeout=30,
+                                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0).stdout)
         report['baseline_packages'] = {name: package_binding(source, name) for name in PACKAGES}
         env = smoke.auth_profile(root, ci=True, live=live) if ci_auth else smoke.auth_profile(root)
         checks = lifecycle(claude, root, source, env, live=live, timeout=timeout)

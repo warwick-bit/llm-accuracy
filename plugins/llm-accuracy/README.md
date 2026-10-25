@@ -1,6 +1,7 @@
 # LLM Accuracy plugin
 
-LLM Accuracy is a Claude Code and Cowork plugin for evidence-aware LLM work. It
+LLM Accuracy provides evidence-aware workflows for Claude Code and experimental
+Codex skills-only use, with separate experimental stateless host support. It
 ships general accuracy hygiene rather than a claim of universal factual
 correctness.
 
@@ -15,6 +16,8 @@ correctness.
   window, freshness and completeness boundaries;
 - nudges a model to recheck stale details after long sessions; and
 - provides self-audit and claim-fidelity workflows;
+- provides an optional `verify-numerical` workflow and executable checks for
+  total revenue growth and whether every declared region increased;
 - includes a stateless evidence-receipt schema and structural validator for
   workflows that already produce typed evidence boundaries.
 
@@ -22,7 +25,8 @@ correctness.
 
 - access a provider, database, or external source of truth;
 - verify a specific domain metric or business definition;
-- certify source truth, arithmetic, domain correctness or factual accuracy;
+- certify source truth, arbitrary arithmetic, domain correctness or whole-answer
+  factual accuracy;
 - create or persist prompt epochs, receipts, prompts, or tool output;
 - collect telemetry, persist prompts or tool output, or send data to a server;
   or
@@ -35,6 +39,25 @@ pass means the receipt satisfies the generic structural contract; it does not
 mean the underlying claim is correct.
 
 ## Day-to-day use
+
+For Codex data analysis, the same package includes source/metric scope checks,
+numerical verification, technical verification and correction-aware summaries.
+The [mathematical verification guide](references/mathematical-verification.md)
+covers dataset-specific Python/SQL checks, exact arithmetic and the boundaries
+of formal proof. An optional publication example demonstrates one narrow reader
+contract; it is not automatically run or a proof of arbitrary analysis.
+The Codex manifest enables skills only, with no hooks or persistent memory.
+Skill selection and correct application still depend on the model.
+
+For a report and its source files, ask Claude to check the report normally or use
+`/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,
+executes the bounded revenue checker when applicable, and distinguishes other
+calculations and unchecked claims. After a source change, ask it to update the
+report and recheck affected conclusions. See the
+[numerical workflow and supported forms](references/numerical-verification.md).
+This requires file/execution tools and Python; Desktop Chat cannot establish a
+local checker run. Ordinary coding and planning still use the existing technical
+and claim-fidelity guidance. Automatic skill selection is not guaranteed.
 
 In Claude Code, Python 3.9+ is discovered automatically by probing `python3`,
 `python`, then Windows `py -3`. Installs and upgrades normally need no setting

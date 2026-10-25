@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -28,16 +29,19 @@ def changed_paths(root: Path, base: str) -> list:
         raise ValueError('publication_base_unavailable')
     resolved = subprocess.run(
         ['git', '-C', str(root), 'rev-parse', '--verify', '--end-of-options', base + '^{commit}'],
-        capture_output=True, timeout=30, check=False)
+        capture_output=True, timeout=30, check=False,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
     commit = resolved.stdout.decode('ascii').strip()
     if resolved.returncode or not re.fullmatch(r'[0-9a-f]{40,64}', commit):
         raise ValueError('publication_base_unavailable')
     ancestor = subprocess.run(['git', '-C', str(root), 'merge-base', '--is-ancestor', commit, 'HEAD'],
-                              capture_output=True, timeout=30, check=False)
+                              capture_output=True, timeout=30, check=False,
+                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
     if ancestor.returncode:
         raise ValueError('publication_base_not_ancestor')
     result = subprocess.run(['git', '-C', str(root), 'diff', '--raw', '--no-renames', '-z', commit, 'HEAD'],
-                            capture_output=True, timeout=30, check=False)
+                            capture_output=True, timeout=30, check=False,
+                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
     if result.returncode:
         raise ValueError('publication_diff_unavailable')
     fields = result.stdout.split(b'\0')
