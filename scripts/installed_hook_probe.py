@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -39,6 +40,7 @@ def invoke(
         env=child,
         capture_output=True,
         timeout=15,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
     if result.returncode or result.stderr:
         raise ValueError("installed_hook_probe_failed")
@@ -59,6 +61,7 @@ def memory_cli(plugin: Path, data: Path, python: str, env: dict, *arguments) -> 
         env=env,
         capture_output=True,
         timeout=15,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
     if result.returncode or result.stderr:
         raise ValueError("installed_hook_probe_failed")

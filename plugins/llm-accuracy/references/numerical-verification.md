@@ -40,6 +40,8 @@ Ask the assistant:
    retain earlier results as historical. Keep unresolved material claims visible.
    Record the working directory for each reproduction command and make every
    relative path resolve from that directory.
+   Include postprocessing/finalization steps that change the delivered wording;
+   reproducing an earlier output is insufficient if it drops final qualifications.
 
 ## Helper input and scope
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import tempfile
 import zipfile
@@ -43,6 +44,7 @@ def repository_root(plugin: Path) -> Path:
         capture_output=True,
         check=False,
         text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
     if result.returncode:
         raise ValueError("plugin source must be inside a Git worktree")
@@ -68,6 +70,7 @@ def tracked_plugin_files(plugin: Path) -> list[Path]:
                 relative_plugin.as_posix(),
             ],
             check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
         if result.returncode:
             raise ValueError("plugin source has uncommitted changes")
@@ -84,6 +87,7 @@ def tracked_plugin_files(plugin: Path) -> list[Path]:
         ],
         capture_output=True,
         check=True,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
     return sorted(
         repository / Path(relative_path)

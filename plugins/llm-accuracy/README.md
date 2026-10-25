@@ -1,6 +1,7 @@
 # LLM Accuracy plugin
 
-LLM Accuracy is a Claude Code and Cowork plugin for evidence-aware LLM work. It
+LLM Accuracy provides evidence-aware workflows for Claude Code and experimental
+Codex skills-only use, with separate experimental stateless host support. It
 ships general accuracy hygiene rather than a claim of universal factual
 correctness.
 
@@ -38,6 +39,15 @@ pass means the receipt satisfies the generic structural contract; it does not
 mean the underlying claim is correct.
 
 ## Day-to-day use
+
+For Codex data analysis, the same package includes source/metric scope checks,
+numerical verification, technical verification and correction-aware summaries.
+The [mathematical verification guide](references/mathematical-verification.md)
+covers dataset-specific Python/SQL checks, exact arithmetic and the boundaries
+of formal proof. An optional publication example demonstrates one narrow reader
+contract; it is not automatically run or a proof of arbitrary analysis.
+The Codex manifest enables skills only, with no hooks or persistent memory.
+Skill selection and correct application still depend on the model.
 
 For a report and its source files, ask Claude to check the report normally or use
 `/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,

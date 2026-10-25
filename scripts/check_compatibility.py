@@ -266,7 +266,8 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
 def overlay_ci_receipts(root: Path, receipt: dict, directory: Path) -> dict:
     """Accept only this checkout's complete native CI receipts; never persist them."""
     commit = subprocess.run(['git', '-C', str(root), 'rev-parse', 'HEAD'],
-                            capture_output=True, text=True, check=True, timeout=30).stdout.strip()
+                            capture_output=True, text=True, check=True, timeout=30,
+                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0).stdout.strip()
     expected = {target + '.json' for target in CI_TARGETS}
     run_id = os.environ.get('GITHUB_RUN_ID', '')
     if not re.fullmatch(r'[1-9][0-9]*', run_id):

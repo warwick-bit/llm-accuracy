@@ -27,6 +27,17 @@ def commit(root, path, text='synthetic'):
     return git(root, 'rev-parse', 'HEAD')
 
 
+def commit_index_entry(root, path, text, mode='100644'):
+    # Git trees support newline names and symlink modes even when the host
+    # filesystem cannot create them; the guard reads committed tree metadata.
+    blob = subprocess.run(['git', '-C', str(root), 'hash-object', '-w', '--stdin'],
+                          input=text, capture_output=True, text=True, check=True).stdout.strip()
+    # Permit the synthetic newline tree name without checking it out or changing config.
+    git(root, '-c', 'core.protectNTFS=false', 'update-index', '--add', '--cacheinfo',
+        f'{mode},{blob},{path}')
+    git(root, '-c', 'commit.gpgsign=false', 'commit', '-qm', 'synthetic tree fixture')
+
+
 @pytest.fixture
 def repository(tmp_path):
     git(tmp_path, 'init', '-q')
@@ -62,7 +73,10 @@ def test_protected_and_unknown_changes_require_release_qa(repository, monkeypatc
                                   'tests/test_guard.py', 'docs/space and\nnewline.md'])
 def test_narrow_docs_and_tests_exemption_uses_real_diff(repository, monkeypatch, name):
     root, base = repository
-    commit(root, name, 'changed synthetic')
+    if '\n' in name:
+        commit_index_entry(root, name, 'changed synthetic')
+    else:
+        commit(root, name, 'changed synthetic')
     monkeypatch.setattr(guard, 'validate', lambda *a, **k: pytest.fail('release validator ran'))
     assert guard.publication_errors(root, base=base) == []
 
@@ -94,10 +108,7 @@ def test_deleted_or_renamed_package_remains_protected(repository):
 
 def test_symlink_does_not_inherit_docs_exemption(repository):
     root, base = repository
-    (root / 'docs').mkdir()
-    (root / 'docs/guide.md').symlink_to('../README.md')
-    git(root, 'add', 'docs/guide.md')
-    git(root, '-c', 'commit.gpgsign=false', 'commit', '-qm', 'synthetic symlink')
+    commit_index_entry(root, 'docs/guide.md', '../README.md', mode='120000')
     assert guard.changed_paths(root, base) == [('docs/guide.md', True)]
     assert guard.exempt_path('docs/guide.md', symlink=True) is False
 

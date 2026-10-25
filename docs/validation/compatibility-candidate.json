@@ -5,7 +5,7 @@
   "packages": {
     "llm-accuracy": {
       "version": "0.8.1",
-      "sha256": "8f68415450c36456ab4da8462243815864ee392e58a0bdd7998425b27469ca12"
+      "sha256": "d30eeb9e9f00227ab3249d10cb8cba6d670fe8e829718a7bba1e2bdfb6de27aa"
     },
     "deterministic-data": {
       "version": "0.1.1",

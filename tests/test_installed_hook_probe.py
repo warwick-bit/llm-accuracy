@@ -29,7 +29,13 @@ def installed(tmp_path):
 
 def environment():
     # A failed assertion must never render inherited service credentials.
-    names = ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR")
+    # Preserve Windows command discovery when isolating service credentials;
+    # the stripped environment lost native stdin/output and opened windows.
+    # conftest binds CLAUDE_CONFIG_DIR to this test's synthetic profile.
+    names = (
+        "PATH", "PATHEXT", "COMSPEC", "SYSTEMROOT", "SYSTEMDRIVE", "WINDIR", "TEMP", "TMP", "TMPDIR",
+        "CLAUDE_CONFIG_DIR",
+    )
     return {key: os.environ[key] for key in names if key in os.environ}
 
 

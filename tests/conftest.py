@@ -1,13 +1,47 @@
 """Hook tests use the host POSIX shell, including explicit Git Bash on Windows."""
 
+import copy
+import inspect
 import os
 import sys
 import shlex
+import subprocess
 from pathlib import Path
 
 import pytest
 
 HOOK_SHELL = os.environ.get("HOOK_TEST_SHELL", "/bin/sh" if os.name == "posix" else "")
+
+
+def symlink_or_skip(link, target, *, target_is_directory=False):
+    """Exercise real symlinks wherever the current Windows token permits them."""
+    try:
+        link.symlink_to(target, target_is_directory=target_is_directory)
+    except OSError as error:
+        if os.name == "nt" and getattr(error, "winerror", None) == 1314:
+            pytest.skip("Windows symlink creation requires Developer Mode or symlink privilege")
+        raise
+
+
+@pytest.fixture(autouse=True)
+def hide_windows_test_children(monkeypatch):
+    """Noninteractive test children must never open a console window."""
+    if os.name != "nt":
+        return
+    real_popen = subprocess.Popen
+    signature = inspect.signature(real_popen)
+
+    def hidden_popen(*args, **kwargs):
+        call = signature.bind(*args, **kwargs)
+        startupinfo = call.arguments.get("startupinfo")
+        startupinfo = copy.copy(startupinfo) if startupinfo is not None else subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        call.arguments["startupinfo"] = startupinfo
+        call.arguments["creationflags"] = call.arguments.get("creationflags", 0) | subprocess.CREATE_NO_WINDOW
+        return real_popen(*call.args, **call.kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", hidden_popen)
 
 
 def fidelity_responses(prompt):
