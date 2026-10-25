@@ -64,6 +64,9 @@ def hook_argv(handler, root, data="", executable=None):
     env = dict(os.environ, HOOK_TEST_SHELL=HOOK_SHELL)
     powershell = os.name == 'nt' and not HOOK_SHELL
     if powershell:
+        # The prefix below uses PowerShell syntax; an ambient Claude Bash
+        # preference must not override this test's selected shell.
+        env.pop('CLAUDE_CODE_GIT_BASH_PATH', None)
         def quote(value):
             for character in ("'", '\u2018', '\u2019', '\u201a', '\u201b'):
                 value = value.replace(character, character * 2)
