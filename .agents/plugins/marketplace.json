@@ -15,6 +15,13 @@
         "authentication": "ON_USE"
       },
       "category": "Productivity"
+    },
+    {
+      "name": "llm-accuracy",
+      "source": {"source": "local", "path": "./plugins/llm-accuracy"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_USE"},
+      "category": "Productivity",
+      "description": "Experimental skills-only numerical, technical and claim checks; no automatic Codex hooks."
     }
   ]
 }

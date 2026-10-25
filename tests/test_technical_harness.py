@@ -111,6 +111,8 @@ def test_probe_cleans_up_on_interruption_and_unexpected_errors(
     children = []
 
     def spawn(*args, **kwargs):
+        if os.name == "nt":
+            assert kwargs.get("creationflags", 0) & subprocess.CREATE_NO_WINDOW
         child = original_popen(*args, **kwargs)
         children.append(child)
         return child

@@ -17,6 +17,15 @@ priority: 56
 
 Check whether the conclusion stays inside the authority of the evidence.
 
+On a host that does not expand `${CLAUDE_PLUGIN_ROOT}`, resolve it as the package
+root two directories above this skill's directory. Use that absolute path for
+bundled references/scripts; do not assume the placeholder is a shell variable.
+
+For a numerical report with supplied source files, use the packaged
+`llm-accuracy:verify-numerical` skill when applicable. Its two revenue checks
+do not cover the report's other factual, causal or decision claims; keep those
+within this evidence-boundary audit.
+
 ## Workflow
 
 1. State the exact load-bearing claim. Split compound claims before checking.
@@ -40,6 +49,34 @@ When an evidence receipt is supplied, validate its structure with
 does not verify source truth, arithmetic, domain correctness, or the resulting
 claim. If the calling workflow supplies the current prompt epoch, pass it with
 `--expected-epoch`; otherwise report prompt binding as unchecked.
+
+## Metric headlines and follow-ups
+
+Keep a consequential headline number attached to the population, period and
+definition it measures, in the headline sentence itself. A later caveat does not
+make a broad label such as "our churn rate" equivalent to a selected cohort's rate.
+Use a short description; no new table, file or repeated calculation is required.
+
+On follow-up, preserve that meaning or explicitly name the changed measure before
+comparing numbers. Existing-user return, new-user retention and subscription
+renewal can all be valid without being interchangeable. Align populations and
+definitions where possible; if labels still disagree for the same subjects,
+retain that conflict rather than explaining it away as a denominator difference.
+When the business definition is unsettled, name the supported working measure
+instead of silently choosing a canonical rate. Ask only if the missing choice
+changes the requested decision and cannot be resolved from the available context.
+
+For a continuing investigation, reuse the existing brief/profile to retain the
+agreed metric or label, population, cutoff, source version and consequential
+assumptions. Update only what changed; do not create a parallel memory system.
+When correcting an output, visibly identify the superseded claim where readers
+will encounter it, and revisit dependent summaries and recommendations.
+
+Before shortening a report, check its headline against the calculation and ask
+what evidence would disprove it. A payment-derived run-rate estimate does not
+become contractual recurring revenue by being called MRR; a historical scenario
+does not become a ceiling on a future intervention. Keep the essential assumption
+in the short answer rather than relying on a caveat elsewhere.
 
 ## Technical investigations
 

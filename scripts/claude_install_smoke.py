@@ -100,6 +100,7 @@ def git_value(*arguments: str) -> str:
         capture_output=True,
         check=True,
         text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     ).stdout.strip()
 
 
@@ -115,7 +116,8 @@ def host_version(claude: str) -> str:
     """Report the CLI version only when it has the expected shape."""
     try:
         text = subprocess.run(
-            [claude, "--version"], capture_output=True, text=True, timeout=60
+            [claude, "--version"], capture_output=True, text=True, timeout=60,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         ).stdout.strip()
     except (OSError, subprocess.TimeoutExpired):
         return "unreported"
@@ -161,7 +163,8 @@ def run_cli(
     try:
         return subprocess.run(
             command, env=env, cwd=cwd, input=input_text,
-            capture_output=True, text=True, encoding="utf-8", timeout=180
+            capture_output=True, text=True, encoding="utf-8", timeout=180,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     except (OSError, subprocess.TimeoutExpired, UnicodeError):
         return subprocess.CompletedProcess(command, -1, "", "")

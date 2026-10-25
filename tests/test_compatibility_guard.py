@@ -307,7 +307,8 @@ def distribution(tmp_path):
 
 @pytest.mark.parametrize('change', ['external', 'dictionary', 'unknown', 'duplicate', 'name',
                                   'inline_hooks', 'strict_override', 'traversal', 'missing_prefix',
-                                  'null', 'case', 'extra_codex', 'codex_redirect', 'codex_policy'])
+                                  'null', 'case', 'extra_codex', 'codex_redirect', 'codex_policy',
+                                  'codex_accuracy_redirect', 'codex_duplicate'])
 def test_catalog_routes_and_behavior_cannot_reuse_package_attestations(distribution, change):
     path = distribution / ('.agents/plugins/marketplace.json' if change.startswith(('extra_codex', 'codex_'))
                            else '.claude-plugin/marketplace.json')
@@ -341,6 +342,10 @@ def test_catalog_routes_and_behavior_cannot_reuse_package_attestations(distribut
         entry['source']['path'] = './plugins/untested'
     elif change == 'codex_policy':
         entry['policy']['installation'] = 'REQUIRED'
+    elif change == 'codex_accuracy_redirect':
+        value['plugins'][1]['source']['path'] = './plugins/untested'
+    elif change == 'codex_duplicate':
+        value['plugins'][1] = entry.copy()
     path.write_text(json.dumps(value))
     label = 'invalid_codex_marketplace_routes' if 'codex' in change else 'invalid_claude_marketplace_routes'
     assert label in guard.validate(distribution, guard.candidate(distribution))

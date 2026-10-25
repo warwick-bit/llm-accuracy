@@ -140,12 +140,16 @@ def marketplace_errors(root: Path) -> list[str]:
         errors.append('invalid_claude_marketplace_routes')
     codex = json.loads((root / '.agents/plugins/marketplace.json').read_text(encoding='utf-8'))
     entries = codex.get('plugins') if isinstance(codex, dict) else None
-    if (not isinstance(entries, list) or len(entries) != 1 or not isinstance(entries[0], dict)
+    codex_names = {'evidence-memory', 'llm-accuracy'}
+    if (not isinstance(entries, list) or len(entries) != len(codex_names)
             or codex.get('name') != 'llm-accuracy' or set(codex) - {'name', 'interface', 'plugins'}
-            or set(entries[0]) - {'name', 'source', 'policy', 'category', 'description'}
-            or entries[0].get('name') != 'evidence-memory'
-            or entries[0].get('source') != {'source': 'local', 'path': './plugins/evidence-memory'}
-            or entries[0].get('policy') != {'installation': 'AVAILABLE', 'authentication': 'ON_USE'}):
+            or any(not isinstance(row, dict)
+                   or set(row) - {'name', 'source', 'policy', 'category', 'description'}
+                   or row.get('name') not in codex_names
+                   or row.get('source') != {'source': 'local', 'path': './plugins/' + row.get('name', '')}
+                   or row.get('policy') != {'installation': 'AVAILABLE', 'authentication': 'ON_USE'}
+                   for row in entries)
+            or {row['name'] for row in entries} != codex_names):
         errors.append('invalid_codex_marketplace_routes')
     for name in PACKAGES:
         manifest = json.loads((root / 'plugins' / name / '.claude-plugin/plugin.json').read_text(encoding='utf-8'))
@@ -262,7 +266,8 @@ def validate(root: Path, receipt: dict, *, release: bool = False) -> list[str]:
 def overlay_ci_receipts(root: Path, receipt: dict, directory: Path) -> dict:
     """Accept only this checkout's complete native CI receipts; never persist them."""
     commit = subprocess.run(['git', '-C', str(root), 'rev-parse', 'HEAD'],
-                            capture_output=True, text=True, check=True, timeout=30).stdout.strip()
+                            capture_output=True, text=True, check=True, timeout=30,
+                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0).stdout.strip()
     expected = {target + '.json' for target in CI_TARGETS}
     run_id = os.environ.get('GITHUB_RUN_ID', '')
     if not re.fullmatch(r'[1-9][0-9]*', run_id):

@@ -1,13 +1,48 @@
 """Hook tests use the host POSIX shell, including explicit Git Bash on Windows."""
 
+import copy
+import inspect
 import os
 import sys
 import shlex
+import subprocess
 from pathlib import Path
 
 import pytest
 
 HOOK_SHELL = os.environ.get("HOOK_TEST_SHELL", "/bin/sh" if os.name == "posix" else "")
+
+
+def symlink_or_skip(link, target, *, target_is_directory=False):
+    """Exercise real symlinks wherever the current Windows token permits them."""
+    try:
+        link.symlink_to(target, target_is_directory=target_is_directory)
+    except OSError as error:
+        if os.name == "nt" and getattr(error, "winerror", None) == 1314:
+            pytest.skip("Windows symlink creation requires Developer Mode or symlink privilege")
+        raise
+
+
+@pytest.fixture(autouse=True)
+def hide_windows_test_children(monkeypatch):
+    """Noninteractive test children must never open a console window."""
+    if os.name != "nt":
+        return
+    real_init = subprocess.Popen.__init__
+    signature = inspect.signature(real_init)
+
+    def hidden_init(*args, **kwargs):
+        call = signature.bind(*args, **kwargs)
+        startupinfo = call.arguments.get("startupinfo")
+        startupinfo = copy.copy(startupinfo) if startupinfo is not None else subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        call.arguments["startupinfo"] = startupinfo
+        call.arguments["creationflags"] = call.arguments.get("creationflags", 0) | subprocess.CREATE_NO_WINDOW
+        return real_init(*call.args, **call.kwargs)
+
+    # Keep Popen a class: asyncio.windows_utils subclasses it on import.
+    monkeypatch.setattr(subprocess.Popen, "__init__", hidden_init)
 
 
 def fidelity_responses(prompt):
@@ -30,6 +65,9 @@ def hook_argv(handler, root, data="", executable=None):
     env = dict(os.environ, HOOK_TEST_SHELL=HOOK_SHELL)
     powershell = os.name == 'nt' and not HOOK_SHELL
     if powershell:
+        # The prefix below uses PowerShell syntax; an ambient Claude Bash
+        # preference must not override this test's selected shell.
+        env.pop('CLAUDE_CODE_GIT_BASH_PATH', None)
         def quote(value):
             for character in ("'", '\u2018', '\u2019', '\u201a', '\u201b'):
                 value = value.replace(character, character * 2)

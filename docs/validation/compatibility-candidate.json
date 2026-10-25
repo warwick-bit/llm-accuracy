@@ -4,8 +4,8 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.8.0",
-      "sha256": "e2da9591293fd5a8aa4036da97eda90bc2b7220d61c0da0985275b8ec85ba824"
+      "version": "0.8.1",
+      "sha256": "d30eeb9e9f00227ab3249d10cb8cba6d670fe8e829718a7bba1e2bdfb6de27aa"
     },
     "deterministic-data": {
       "version": "0.1.1",
@@ -30,15 +30,21 @@
       "outcome": "untested"
     },
     "code-wsl": {
+      "outcome": "untested"
+    },
+    "code-windows-no-bash": {
+      "outcome": "untested"
+    },
+    "code-windows-git-bash": {
       "outcome": "pass",
-      "platform": "Linux/WSL",
+      "platform": "Windows",
       "host_kind": "code",
-      "host_version": "2.1.293",
-      "python_version": "3.12.3",
+      "host_version": "2.1.287",
+      "python_version": "3.13.1",
       "packages": {
         "llm-accuracy": {
-          "version": "0.8.0",
-          "sha256": "e2da9591293fd5a8aa4036da97eda90bc2b7220d61c0da0985275b8ec85ba824"
+          "version": "0.8.1",
+          "sha256": "d30eeb9e9f00227ab3249d10cb8cba6d670fe8e829718a7bba1e2bdfb6de27aa"
         },
         "deterministic-data": {
           "version": "0.1.1",
@@ -62,16 +68,11 @@
         "prompt_delivery": true,
         "upgrade": true,
         "uninstall": true,
-        "invalid_python_advisory_then_recovery": true
+        "invalid_python_advisory_then_recovery": true,
+        "git_bash_present": true
       },
-      "source_commit": "0b5d74476620234ded8928b9e6e16dabd2387a21",
-      "row_sha256": "4dcf44105e6d1ac2124e8ab047d83a24c79e555b835c7bd89b2c68d93d7a6e32"
-    },
-    "code-windows-no-bash": {
-      "outcome": "untested"
-    },
-    "code-windows-git-bash": {
-      "outcome": "untested"
+      "source_commit": "49f3f8488fc35193fe99f8d155d74c9331110efe",
+      "row_sha256": "85496cd1f9d4dcde98c158ce132c695399d3caf1578d5f62452470ac0a95b593"
     },
     "code-macos": {
       "outcome": "untested"
