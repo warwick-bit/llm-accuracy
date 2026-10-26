@@ -142,6 +142,16 @@ def result(errors: list[str]) -> dict[str, Any]:
     }
 
 
+def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Reject ambiguous objects before decoding can discard an earlier value."""
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError("receipt_unreadable")
+        value[key] = item
+    return value
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("receipt", nargs="?", type=Path)
@@ -153,9 +163,9 @@ def main() -> int:
         else:
             stream = getattr(sys.stdin, "buffer", None)
             raw = stream.read().decode("utf-8") if stream is not None else sys.stdin.read()
-        payload = json.loads(raw)
+        payload = json.loads(raw, object_pairs_hook=unique_object)
         errors = validate_receipt(payload, expected_epoch=args.expected_epoch)
-    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError):
+    except (OSError, ValueError, RecursionError):
         errors = ["receipt_unreadable"]
     print(json.dumps(result(errors), sort_keys=True, separators=(",", ":")))
     return 0 if not errors else 1

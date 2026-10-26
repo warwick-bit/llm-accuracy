@@ -193,3 +193,40 @@ def test_deep_json_fails_without_echo(plugin, via_file, tmp_path):
     # assume one recursion threshold across Python versions and operating systems.
     assert output["errors"] in (["receipt_unreadable"], ["receipt_not_object"])
     assert "SYNTHETIC-NO-ECHO" not in process.stdout
+
+
+@pytest.mark.parametrize("plugin", [CORE, DATA], ids=["accuracy", "data"])
+@pytest.mark.parametrize("via_file", [False, True], ids=["stdin", "file"])
+@pytest.mark.parametrize("case", ["source_status", "completeness", "escaped_key", "integer_limit"])
+def test_ambiguous_or_undecodable_json_returns_private_structured_failure(plugin, via_file, case, tmp_path):
+    receipt = valid_receipt()
+    receipt["caveats"] = ["SYNTHETIC-NO-ECHO"]
+    raw = json.dumps(receipt)
+    if case == "source_status":
+        raw = raw.replace('"status": "success"', '"status": "failed", "status": "success"')
+    elif case == "completeness":
+        raw = raw.replace('"status": "complete"', '"status": "partial", "status": "complete"')
+    elif case == "escaped_key":
+        # Escaping does not make two spellings of the same decoded key distinct.
+        raw = raw.replace('"claim_status": "supported"',
+                          '"claim_status": "withheld", "claim_\\u0073tatus": "supported"')
+    else:
+        # Older Python versions may decode this, then reject the receipt's shape.
+        # Newer versions can reject the integer in the JSON decoder itself.
+        raw = '{"SYNTHETIC-NO-ECHO":' + "1" * 5000 + "}"
+    command = [sys.executable, str(plugin / "scripts" / "validate_evidence_receipt.py")]
+    if via_file:
+        path = tmp_path / "receipt.json"
+        path.write_text(raw, encoding="utf-8")
+        command.append(str(path))
+    process = subprocess.run(command, input=None if via_file else raw,
+                             text=True, capture_output=True, timeout=20)
+    assert process.returncode == 1
+    assert process.stderr == ""
+    output = json.loads(process.stdout)
+    assert output["status"] == "fail"
+    assert output["authority"] == "structural_only"
+    assert output["errors"]
+    if case != "integer_limit":
+        assert output["errors"] == ["receipt_unreadable"]
+    assert "SYNTHETIC-NO-ECHO" not in process.stdout
