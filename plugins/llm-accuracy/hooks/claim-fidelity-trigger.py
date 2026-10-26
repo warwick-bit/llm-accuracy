@@ -54,7 +54,7 @@ TECHNICAL_FOOTER = (
 )
 
 GENERAL_CONTRACT = (
-    "CLAIM FIDELITY CHECK: Before concluding, identify what the evidence establishes "
+    "CLAIM FIDELITY CHECK: Identify what evidence establishes "
     "and what is missing. For each material claim, including intermediate assertions, "
     "check whether a plausible alternative could produce the same observation "
     "without that claim being true. If evidence cannot distinguish it, qualify or "
@@ -66,7 +66,7 @@ GENERAL_CONTRACT = (
     "a root cause. Corrections must revisit dependent conclusions; repeated "
     "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
     "for diagnosis and fix checks. For material ambiguity, use llm-accuracy:clarify "
-    "with interactive multiple-choice. Advisory guidance, not independent verification."
+    "with interactive multiple-choice. Advisory, not verification."
 )
 
 LABEL = "CLAIM FIDELITY CHECK: "
