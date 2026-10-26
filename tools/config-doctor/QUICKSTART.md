@@ -229,8 +229,23 @@ controls which files may be read; it does not establish whole-harness coverage.
    Include a link/path to the full report and state whether edits were applied.
    Priority is advice, not approval. Keep the full inventory and evidence in the
    report. If validation is pending or refused, say so. Keep the chat checklist
-   outside the saved JSON; the priority overview belongs in its `summary` field. A JSON-only batch auditor returns JSON; the interactive
+   outside the saved JSON; the priority overview belongs in its `summary` field.
+   A JSON-only batch auditor returns JSON; the interactive
    caller provides the summary after running `report`.
+
+   Then offer one follow-up through the client's available interactive
+   multiple-choice question tool: **Investigate missing evidence**, **Test a
+   proposed fix**, or **Finish here**. Use only applicable choices, recommending
+   the most useful first. Link the relevant IDs and explain what the check would
+   establish, its specific access needs and likely effort/cost (or uncertainty).
+   Use short choices in chat only if the tool is unavailable in the current mode.
+   Skip this for JSON-only batch callers, an already answered choice, or when no
+   useful follow-up remains. A selection covers only the concrete scope described;
+   establish any unspecified inputs or tests before acting. No answer means no
+   new access or execution. Runtime/model tests need a separately agreed scope;
+   investigating is not approval to apply edits. Reassess affected findings and
+   priorities after new evidence, prepare a fresh packet for new sources, and
+   validate the updated report while preserving unresolved limits.
 
 4. Exercise a proposed change in a disposable copy using the named task/check.
    Record both correct behavior and the control that must remain. Repeat the

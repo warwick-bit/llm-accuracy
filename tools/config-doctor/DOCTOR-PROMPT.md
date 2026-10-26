@@ -428,6 +428,34 @@ If a batch caller explicitly requests JSON only, return only the assessment;
 the interactive caller presents this summary after validating it. Keep detailed
 evidence and the full finding inventory in the report. List only unread dependencies
 affecting a decision.
+
+After the validated interactive summary, offer one multiple-choice follow-up
+using the host's available interactive question tool (Codex or Claude), rather
+than only printing a question in chat. Use two or three applicable choices:
+- **Investigate missing evidence:** name the finding/coverage IDs and the smallest
+  source check that could change the advice.
+- **Test a proposed fix:** name the proposal ID and a bounded check in a disposable
+  copy, including the useful behavior that must remain intact.
+- **Finish here:** keep the report and leave unresolved items clearly marked.
+Explain what each investigation/test would establish, the specific inputs/access
+it needs, and the likely effort or cost; say when that estimate is unknown.
+Put the most useful choice first and label it Recommended. Recommend further
+work only where it could materially change the advice; omit inapplicable choices.
+If no useful follow-up remains, finish without inventing work or a question.
+If the question tool is unavailable in the current client/mode, present the same
+short choices in chat. Do not prompt a JSON-only batch caller. Reuse a follow-up
+choice already supplied; do not ask again or repeatedly offer a declined check.
+
+Wait for an explicit answer before new access or execution; silence and a
+preselected option are not consent. A selection authorises only the concrete
+scope described. If paths, probes or costs remain unspecified, establish those
+before proceeding. Runtime/model tests are a separate agreed stage, not part of
+the source audit; selecting a test does not authorise live configuration edits,
+MCP calls or paid model calls that were not explicitly agreed. Reuse existing
+authorisation. For new sources, prepare a fresh packet in a new output location;
+reassess affected findings and priorities against the new evidence, validate the
+updated report, and keep remaining limits visible. Applying a fix stays separate.
+
 State the evidence stages compactly: source prepared; isolated execution;
 installed; actual consumer delivery; measured model benefit. Mark stages without
 evidence UNVERIFIED. A clean
