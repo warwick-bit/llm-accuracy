@@ -37,6 +37,11 @@ short question in chat, with numbered choices where useful. Do not repeat a tool
 question in chat.
 
 Ask the smallest set of questions needed to remove the material ambiguity.
+Follow the user's configured language, tone, accessibility and question-format
+preferences, within the host tool's constraints. Otherwise use plain English:
+short questions, familiar words and choices that explain the practical difference.
+Avoid unexplained jargon and internal implementation details; explain a necessary
+technical term briefly. Preserve the intended meaning when simplifying a question.
 Wait for the answer before dependent calculations or conclusions; continue
 independent work where useful. A recommended or preselected option, elapsed time,
 an empty response or dismissal is not an answer. If the user explicitly asks you

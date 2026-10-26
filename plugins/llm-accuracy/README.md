@@ -61,6 +61,8 @@ Claude Code or select the Clarify skill in Codex to use it on demand. Its descri
 also allows automatic selection; the Claude reminders point to it. Codex remains
 skills-only, so automatic selection depends on the model, not a prompt hook.
 Already-settled choices and harmless implementation details do not need questions.
+Questions follow the user's configured language and style preferences, with plain
+English as the default and brief explanations for necessary technical terms.
 Recommendations need a reason and are never treated as an answer. Independent
 work can continue while dependent work waits for the user's reply. Hosts without
 a suitable question tool use a short chat question. No new integration or setting
