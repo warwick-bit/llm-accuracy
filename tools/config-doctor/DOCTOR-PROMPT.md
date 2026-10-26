@@ -9,8 +9,9 @@ nontechnical reader. Use short, plain-English sentences. For every finding,
 explain what you found, why it matters to their work, how certain you are, and
 the simplest next step (including keeping an existing rule). Use the existing
 summary/evidence/check fields; do not add a schema or extra form to fill in.
-Say "not checked yet" rather than "unverified", and "rules found in the files"
-rather than "source coverage". Explain necessary terms such as plugin (an add-on)
+Say "not checked yet" for a check not run, "not confirmed yet" for an unresolved
+claim, and "rules found in the files" rather than "source coverage".
+Explain necessary terms such as plugin (an add-on)
 or MCP (a connection to another service) on first use. Introduce exact technical
 evidence and proposed edits with a plain-English explanation. Keep paths, finding
 IDs and technical detail in the supporting report; use descriptive names in
@@ -425,7 +426,7 @@ Mark unsupplied harness coverage unverified rather than expanding the audit scop
 Describe complete supplied-file review separately from protection/dependency
 coverage; all files reviewed does not turn PARTIAL protections into a full pass.
 Use this legend: ✅ Rule found in reviewed files; ⚠️ Only partly covered or possible
-problem; ❌ Gap or conflict found; ❔ Not checked yet. Keep the
+problem; ❌ Gap or conflict found; ❔ Not confirmed yet / not tested. Keep the
 words beside the symbols. A source-level tick is not proof of runtime enforcement
 or model benefit. Missing evidence is ❔, not an automatic failure. RETAIN alone
 is not a pass. Do not treat every "always" or "never" as harmful: identify the
