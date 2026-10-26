@@ -360,6 +360,31 @@ AGENTS.md, overrides and referenced guidance; mark loading and model-specific
 workaround status unverified unless receipts are supplied. Do not inspect broad
 runtime configuration to guess either target's active setup.
 
+Prioritise recommendations so the user can decide what deserves action. Put a
+compact overview in the existing assessment `summary`, linking finding IDs and
+giving a plain reason for each disposition:
+- **Do first:** an evidence-backed, consequential gap or conflict in the current
+  reviewed scope. Name the smallest useful change and the check it must pass.
+  A proposed benefit remains a hypothesis until measured.
+- **Already covered / keep:** an existing control or completed fix covers the
+  requirement in the supplied current evidence. Cite it; do not add a duplicate.
+  Source coverage alone does not establish runtime delivery or effectiveness.
+- **Needs evidence:** a decision depends on missing or uncertain evidence. Name
+  the smallest check needed; do not turn an unknown into an absence or an edit.
+- **Optional:** a supported, lower-impact improvement whose benefit may not
+  justify its maintenance or complexity. Explain the tradeoff; skipping is valid.
+
+Use these labels in prose, not new JSON fields or recommendation enum values.
+Keep RETAIN/NARROW/RETIRE/ADD and the full finding inventory. Do not manufacture
+findings to populate every category. Where needed, link a coverage ID instead.
+Within the overview, order by consequence and strength of evidence, then effort
+and dependencies. An urgent evidence check can precede an edit. Give up to three
+immediate next actions with IDs and reasons; explain why other proposals can wait.
+Keep current-source evidence separate from historical audit advice. Reconcile
+overlaps before prioritising, and preserve useful controls in any proposed change.
+Priority is advice, not approval to apply; neither a high priority nor a clean
+report authorises changes.
+
 Keep the saved assessment as valid JSON; the rendered report carries exact
 proposals and detailed evidence. In an interactive audit, finish after report
 validation with a readable summary directly in chat, not only a file path or JSON.
@@ -392,7 +417,8 @@ is not a pass. Do not treat every "always" or "never" as harmful: identify the
 specific scope problem. If performance degradation was not measured, mark that
 claim unverified even when a source-level risk was found. Keep that distinction
 in a short note, or a separate row when useful.
-Give up to three useful next actions and a link/path to the full report. State
+Present the same priority overview and up to three immediate next actions in
+chat, with IDs, reasons and a link/path to the full report. State
 what was actually validated and whether any edits were applied. Distinguish
 proposed edits from checks still needed and controls to keep. If another audit
 is supplied, consolidate verified overlaps by root cause; do not apply duplicate

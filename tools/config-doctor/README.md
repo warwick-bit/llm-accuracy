@@ -1,4 +1,4 @@
-# Config Doctor — 0.1.0 preview
+# Config Doctor — 0.1.1 preview
 
 Find conflicting instructions, stale assumptions and gaps in your Claude Code or
 Codex setup. Config Doctor prepares selected source files for your agent to review
@@ -22,7 +22,7 @@ is a different diagnostic for that plugin's own installation and configuration.
 
 ```text
 Fetch and extract CONFIG Doctor from this released ZIP into a new local folder:
-https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.0/config-doctor-0.1.0.zip
+https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.1/config-doctor-0.1.1.zip
 Do not overwrite existing files. Use its config-doctor folder to audit my selected
 profile. Check that Python 3.11+ is available; if not, explain what is needed.
 Before any memory/history lookup or audit-input read, read that directory's
@@ -43,13 +43,15 @@ validation, and state the selected scope and any unverified coverage.
 
 ### Optional manual download
 
-If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.0/config-doctor-0.1.0.zip)
+If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.1/config-doctor-0.1.1.zip)
 and extract it yourself. Use the local-folder startup prompt in
 [QUICKSTART.md](QUICKSTART.md), replacing its folder placeholder with your path.
 
 Expect a checklist of existing protections, partial coverage, evidence-backed gaps
-and things not yet verified, followed by up to three next actions and a detailed
-report. Relevant installed plugins and MCP tool descriptions belong in the selected
+and things not yet verified, followed by a prioritised summary and detailed
+report. Doctor explains what to **do first**, what is **already covered / keep**,
+what **needs evidence**, and what is **optional**, with reasons and up to three
+immediate next actions. You do not need to accept every recommendation. Relevant installed plugins and MCP tool descriptions belong in the selected
 evidence so Doctor can check for existing protection before proposing duplicates.
 
 The audit does not connect to MCP servers, call a model itself, execute audited
