@@ -270,11 +270,17 @@ results. Keep relevant missing guidance explicit and defer overlapping additions
    A JSON-only batch auditor returns JSON; the interactive
    caller provides the summary after running `report`.
 
-   Then offer one follow-up through the client's available interactive
+   Present the validated summary before offering one follow-up through the client's available interactive
    multiple-choice question tool: **Check what's uncertain**, **Try a change
    safely**, or **Finish here**. Use only applicable choices, recommending
-   the most useful first. Link the relevant IDs and explain what the check would
-   establish, its specific access needs and likely effort/cost (or uncertainty).
+   the most useful first. Group useful unresolved checks that could change the
+   advice into a clearly described option, rather than silently choosing only one.
+   Name what is included and what remains unchecked. Separate checks with different
+   access, risk or cost. Just above the question, explain the checks and their
+   specific access needs and likely effort/cost (or uncertainty) in a few plain-English
+   sentences; link the findings there. Keep the question and labels short, with
+   commands and test mechanics in the supporting report. Show any additional
+   location needed; do not make the user find paths.
    Use short choices in chat only if the tool is unavailable in the current mode.
    Skip this for JSON-only batch callers, an already answered choice, or when no
    useful follow-up remains. A selection covers only the concrete scope described;
@@ -282,7 +288,12 @@ results. Keep relevant missing guidance explicit and defer overlapping additions
    new access or execution. Runtime/model tests need a separately agreed scope;
    investigating is not approval to apply edits. Reassess affected findings and
    priorities after new evidence, prepare a fresh packet for new sources, and
-   validate the updated report while preserving unresolved limits.
+   validate the updated report while preserving unresolved limits in headlines,
+   ticks and priority labels too. For example, an offline test that generates
+   reminders and one observed startup reminder support "Offline checks passed;
+   startup reminder received in this session", not "All reminders reach the AI"
+   or "Delivery settled". Other reminder paths and whether the AI follows them
+   remain unverified. Keeping a control does not mean every uncertainty is resolved.
 
 4. Exercise a proposed change in a disposable copy using the named task/check.
    Record both correct behavior and the control that must remain. Repeat the

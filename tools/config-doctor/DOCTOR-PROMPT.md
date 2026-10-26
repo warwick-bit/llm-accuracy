@@ -439,16 +439,24 @@ the interactive caller presents this summary after validating it. Keep detailed
 evidence and the full finding inventory in the report. List only unread dependencies
 affecting a decision.
 
-After the validated interactive summary, offer one multiple-choice follow-up
+After presenting the validated interactive summary (not before it), offer one multiple-choice follow-up
 using the host's available interactive question tool (Codex or Claude), rather
 than only printing a question in chat. Use two or three applicable choices:
-- **Check what's uncertain:** explain the unresolved issue and the smallest
-  check that could change the advice; link it to the relevant finding in the report.
+- **Check what's uncertain:** group the useful unresolved checks that could change
+  the advice into one clearly described option. Name what it includes and what
+  remains unchecked; do not silently select just one finding from several.
+  Separate checks needing different access, risk or cost rather than hiding them
+  inside a bundle. Link the relevant findings in the report.
 - **Try a change safely:** identify the proposed change and explain the small test
   in a separate copy, including what must keep working.
 - **Finish here:** keep the report and leave unresolved items clearly marked.
-Explain what each investigation/test would establish, the specific inputs/access
-it needs, and the likely effort or cost; say when that estimate is unknown.
+Explain the scope just above the question in a few plain-English sentences:
+what the checks would establish, the specific inputs/access they need and likely
+effort or cost (or that it is unknown). Keep the question and choice labels short.
+For example, "Check whether stopped reviews leave anything running, startup works
+without the other app, and the safety check runs when expected." Keep process IDs,
+command flags and test mechanics in the supporting report. If extra access is
+needed, show the identified location; do not ask the user to discover paths.
 Put the most useful choice first and label it Recommended. Recommend further
 work only where it could materially change the advice; omit inapplicable choices.
 If no useful follow-up remains, finish without inventing work or a question.
@@ -465,6 +473,14 @@ MCP calls or paid model calls that were not explicitly agreed. Reuse existing
 authorisation. For new sources, prepare a fresh packet in a new output location;
 reassess affected findings and priorities against the new evidence, validate the
 updated report, and keep remaining limits visible. Applying a fix stays separate.
+
+Keep the same evidence limits in headlines, ticks, priority labels and follow-ups
+as in the detailed report. For example, an offline check that generates reminders
+plus one observed startup reminder supports "Offline checks passed; startup
+reminder received in this session." It does not support "All reminders reach the
+AI" or "Delivery settled": other reminder paths and whether the AI follows them
+remain unverified. A keep recommendation may retain these limits; it is not a
+declaration that every related uncertainty has been resolved.
 
 State the evidence stages compactly: source prepared; isolated execution;
 installed; actual consumer delivery; measured model benefit. Mark stages without
