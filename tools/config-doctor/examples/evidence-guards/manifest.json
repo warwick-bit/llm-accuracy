@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "client": "claude",
+  "profile": "synthetic evidence-guard example; no live home",
+  "problem": "Audit guard false blocks, query-support claims and unreliable evaluation feedback without weakening the missing-evidence control",
+  "files": [
+    {
+      "id": "guard-policy",
+      "path": "CLAUDE.md",
+      "role": "instructions",
+      "consumer": "synthetic policy source only; no guard is installed or exercised"
+    }
+  ]
+}

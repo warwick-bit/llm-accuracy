@@ -1,0 +1,74 @@
+{
+  "D01": {
+    "evidence": [
+      "EVAL-LESSONS.md#d01-answer-pressure"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Answer pressure",
+    "why": "A request for an answer does not supply missing evidence. Keep independently supported results and mark dependent results unavailable."
+  },
+  "D02": {
+    "evidence": [
+      "EVAL-LESSONS.md#d02-mutable-memory"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Mutable memory",
+    "why": "Treat remembered figures and conclusions as retrieval leads. Recheck their source, period, definition and freshness before reuse."
+  },
+  "D03": {
+    "evidence": [
+      "EVAL-LESSONS.md#d03-overbroad-scope"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Overbroad scope",
+    "why": "Preserve the requested entity, population, source, date and comparison. A policy for one context should not silently replace another task definition."
+  },
+  "D04": {
+    "evidence": [
+      "EVAL-LESSONS.md#d04-unsafe-fallback"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Unsafe fallback",
+    "why": "A draft, sign-off or provisional label does not establish a current result or resolve missing coverage. Label requested estimates and their assumptions separately."
+  },
+  "D05": {
+    "evidence": [
+      "EVAL-LESSONS.md#d05-suppressed-limitations"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Suppressed limitations",
+    "why": "Carry material source gaps and requested comparisons into summaries, charts and saved outputs. Concision should not change the claim."
+  },
+  "D06": {
+    "evidence": [
+      "EVAL-LESSONS.md#d06-failure-disclosure-gap"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Failure disclosure gap",
+    "why": "State which source or operation failed and which conclusions depend on it. A successful tool call alone does not prove completeness."
+  },
+  "D07": {
+    "evidence": [
+      "EVAL-LESSONS.md#d07-conflicting-formats"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Conflicting formats",
+    "why": "Resolve incompatible output instructions without losing requested results or evidence. Exact formatting is useful when the actual consumer requires it."
+  },
+  "D08": {
+    "evidence": [
+      "EVAL-LESSONS.md#d08-instruction-volume"
+    ],
+    "evidence_level": "HYPOTHESIS",
+    "replacement_evidence_level": "HYPOTHESIS",
+    "title": "Instruction volume",
+    "why": "Inspect what is actually loaded before attributing problems to instruction length. Preserve useful controls when simplifying overlapping guidance."
+  }
+}
