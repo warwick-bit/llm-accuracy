@@ -36,14 +36,25 @@ Sources: [evidence companion, sections 1–3 and 5](https://github.com/warwick-b
 and [retention wording/coverage findings](https://github.com/warwick-bit/llm-finance-data-eval/blob/39223f6/followup/evaluation/results/2026-10-24-subscription-retention/REPORT.md).
 These are observed scoped failure examples, not comparable model failure rates.
 
-## Further additions worth evaluating
+## Final-report inventory follow-up
 
-The strongest next addition is a final-report assertion inventory: bind each
+The owner authorized the final-report assertion inventory follow-up: bind each
 material number, policy threshold, population label and consequential qualification
 to its checked source or explicitly mark it unchecked. Check the delivered prose
 after shortening or regeneration, including side claims. The present helpers
 cannot prove the inventory is complete; adding automatic extraction would need
-its own omission and false-positive controls.
+its own omission and false-positive controls. The bounded implementation now uses
+an explicit complete-line inventory, reports every unlisted nonblank delivered
+line and missing assertion, reruns the existing numerical checker, and checks
+source-byte freshness behind separately recorded manual assessments. It never
+promotes those assessments or line coverage to verified semantic support.
+
+Named controls in `tests/test_report_inventory.py` exercise omitted side prose,
+changed thresholds and numerical sources, final shortening, missing evidence,
+source preservation, and valid line ordering/whitespace/repeated occurrences.
+See the packaged `references/report-inventory.md` for the consumer workflow.
+
+## Further addition worth evaluating
 
 A second opportunity is an optional deliverable/reuse check for user-authored
 analysis programs: required files, changed-input runs and preservation of the
@@ -51,7 +62,7 @@ previous complete output on failure. It belongs at the consuming application's
 publication boundary; the stateless Accuracy plugin should not claim to enforce
 arbitrary writers or silently rerun a user's program.
 
-Neither recommendation is implemented as an additional framework here. For a new
+The deliverable/reuse recommendation remains unimplemented. For a new
 model efficacy study, follow the eval repository's standing protocol: observed-
 failure replay and realistic human-led conversation, each in matched clean and
 current-harness sessions, with actual delivery verified and original failures

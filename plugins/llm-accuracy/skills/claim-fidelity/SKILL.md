@@ -33,6 +33,13 @@ Use existing host retrieval tools for URLs; unavailable retrieval remains unchec
 A resolved reference or matching quotation does not establish that the source
 supports the surrounding claim. Apply the scope and inference checks below separately.
 
+For a consequential final report or a shortened/regenerated draft, read
+`${CLAUDE_PLUGIN_ROOT}/references/report-inventory.md`. Its optional local helper
+binds an explicit assertion inventory to the actual delivered file, shows every
+unlisted nonblank line and missing assertion, reruns bounded numerical checks,
+and flags changed sources behind manual assessments. Line coverage is not semantic
+completeness, and recorded manual assessments are not machine verification.
+
 ## Workflow
 
 1. State the exact load-bearing claim. Split compound claims before checking.

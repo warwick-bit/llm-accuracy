@@ -247,6 +247,16 @@ can require `claude auth login`; never share credentials. This opt-in diagnostic
 invokes local commands and sends a synthetic prompt to Claude; automatic hooks
 do neither. No raw answers or credential values are reported.
 
+## Check the final report
+
+Claim Fidelity includes an optional [final-report assertion inventory](references/report-inventory.md).
+The local helper compares an explicit inventory with the delivered text, retains
+all unlisted nonblank lines and missing assertions, reruns bounded numerical
+checks, and flags changed source files behind manual assessments. It accepts
+line reordering and surrounding whitespace changes while retaining every repeated
+occurrence. Line coverage and source-hash matches do not certify semantic truth
+or completeness; arbitrary prose still needs an evidence-boundary assessment.
+
 ## Verify technical work
 
 Use `/llm-accuracy:verify-technical` for a diagnosis, disputed cause or fix claim.
