@@ -267,6 +267,10 @@ results. Keep relevant missing guidance explicit and defer overlapping additions
    Priority is advice, not approval. Keep the full inventory and evidence in the
    report. If validation is pending or refused, say so. Keep the chat checklist
    outside the saved JSON; the priority overview belongs in its `summary` field.
+   Keep meaning-bearing words when shortening findings, including source
+   restrictions and uncertainty. Check the exact source before accepting or
+   rejecting a recommendation; a shortened paraphrase may omit the reason for it.
+   An optional wording hypothesis is not an observed behavior failure.
    A JSON-only batch auditor returns JSON; the interactive
    caller provides the summary after running `report`.
 
@@ -296,6 +300,12 @@ results. Keep relevant missing guidance explicit and defer overlapping additions
    remain unverified. Keeping a control does not mean every uncertainty is resolved.
 
 4. Exercise a proposed change in a disposable copy using the named task/check.
+   First check that the expected answer follows from the supplied data and metric
+   definition. A fall in total users measures net count change, not churn without
+   cohort and departure data. Use a simple percentage-change case to test handling
+   of supplied figures, or define the cohort and cancellations for a churn test.
+   Check arithmetic and meaning separately. Repair an invalid expected result
+   before judging the change; leave behavior unverified until that check runs.
    Record both correct behavior and the control that must remain. Repeat the
    audit only when new evidence or a concrete failure warrants another change.
    Applying a proposal is a separate owner decision: exact approved item IDs,
