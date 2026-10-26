@@ -1,6 +1,6 @@
 {
   "name": "llm-accuracy",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Experimental skills for checking numerical reports, technical work and evidence boundaries. No automatic Codex hooks or guarantee of correctness.",
   "author": {"name": "Warwick"},
   "license": "MIT",

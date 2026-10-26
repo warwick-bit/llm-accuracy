@@ -38,6 +38,75 @@ LIVE_COUNTER_DEFINITIONS = {
 }
 
 
+def skill_frontmatter(text: str, directory_name: str) -> str:
+    """Check shipped required metadata, without claiming full YAML validation."""
+    lines = text.splitlines()
+    if not lines or lines[0] != "---" or "---" not in lines[1:]:
+        return "invalid_delimiters"
+    header = lines[1:lines.index("---", 1)]
+    fields = {}
+    for key in ("name", "description"):
+        values = [line[len(key) + 1:].strip() for line in header if line.startswith(key + ":")]
+        if len(values) != 1 or not values[0]:
+            return "invalid_required_fields"
+        value = values[0]
+        # The shipped skills use one-line plain or quoted strings. Other YAML
+        # forms need a host/YAML parser; do not call them valid or invalid here.
+        if value.startswith('"'):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                return "unsupported_required_field_format"
+        elif value.startswith("'"):
+            if not re.fullmatch(r"'(?:[^']|'')*'", value):
+                return "unsupported_required_field_format"
+            value = value[1:-1].replace("''", "'")
+        elif (
+            value[0] in "|>[]{}&*!#%@`"
+            or ": " in value or " #" in value
+            or value.lower() in {"null", "~", "true", "false", "yes", "no", "on", "off"}
+            or re.fullmatch(r"[-+]?\d+(?:\.\d+)?", value)
+        ):
+            return "unsupported_required_field_format"
+        if not isinstance(value, str) or not value.strip():
+            return "invalid_required_fields"
+        fields[key] = value
+    if fields["name"] != directory_name or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", fields["name"]):
+        return "invalid_name"
+    return "required_fields_valid"
+
+
+def skill_inventory(root: Path) -> dict:
+    """Inspect package skill files only; registration is not skill delivery."""
+    inventory = {
+        "status": "unavailable",
+        "validation_scope": "delimiters_and_required_name_description_only_not_full_yaml",
+        "host_listing": "unverified",
+        "items": [],
+    }
+    try:
+        directories = sorted(path for path in (root / "skills").iterdir() if path.is_dir())
+    except OSError:
+        return inventory
+    for directory in directories:
+        item = {"name": directory.name, "skill_md": "readable", "frontmatter": "unavailable"}
+        try:
+            text = (directory / "SKILL.md").read_text(encoding="utf-8")
+        except FileNotFoundError:
+            item["skill_md"] = "missing"
+        except UnicodeError:
+            item["skill_md"] = "invalid_encoding"
+        except OSError:
+            item["skill_md"] = "unreadable"
+        else:
+            item["frontmatter"] = skill_frontmatter(text, directory.name)
+        inventory["items"].append(item)
+    inventory["status"] = "ok" if directories and all(
+        item["frontmatter"] == "required_fields_valid" for item in inventory["items"]
+    ) else "attention"
+    return inventory
+
+
 def safe_version(value: object) -> str:
     return (
         value
@@ -58,6 +127,7 @@ def installation_inventory() -> dict:
             capture_output=True,
             text=True,
             timeout=10,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
         rows = json.loads(result.stdout) if result.returncode == 0 else None
         if not isinstance(rows, list):
@@ -89,7 +159,8 @@ def installation_inventory() -> dict:
 def python_status(executable: str) -> dict:
     try:
         result = subprocess.run([executable, "-c", "import sys,json; print(json.dumps(list(sys.version_info[:3])))"],
-                                capture_output=True, text=True, timeout=5)
+                                capture_output=True, text=True, timeout=5,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         version = json.loads(result.stdout) if result.returncode == 0 else None
         if not isinstance(version, list) or len(version) != 3 or not all(type(v) is int for v in version):
             return {"status": "unusable"}
@@ -128,6 +199,7 @@ def probe_command(
             errors="replace",
             env=env,
             timeout=15,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         )
     except subprocess.TimeoutExpired:
         return "timeout"
@@ -201,9 +273,11 @@ def diagnose(root: Path = ROOT, python_executable: str | None = None) -> dict:
     executable = python_executable or os.environ.get("CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE") or sys.executable
     interpreter = python_status(executable)
     hooks = check_hooks(root, executable, mode) if interpreter["status"] == "ok" else {"interpreter": interpreter["status"]}
+    skills = skill_inventory(root)
     healthy = (
         config_status in {"ok", "missing_default"}
         and mode_recognized
+        and skills["status"] == "ok"
         and all(
             v == "emitted" or (k, v) == (SESSION_PROBE, SESSION_NOT_USED)
             for k, v in hooks.items()
@@ -219,11 +293,12 @@ def diagnose(root: Path = ROOT, python_executable: str | None = None) -> dict:
             family: len(phrases.get(family, [])) for family, _, _ in PROMPTS
         },
         "hook_commands": hooks,
+        "skills": skills,
         "python": interpreter,
         "python_selection": "explicit" if python_executable else "hook_option" if os.environ.get("CLAUDE_PLUGIN_OPTION_PYTHON_EXECUTABLE") else "doctor_process",
         "installed_python_option": "unverified",
         "current_session_activation": "unverified",
-        "scope": "local_package_commands_and_user_controls",
+        "scope": "local_package_commands_skills_and_user_controls",
     }
 
 
@@ -266,8 +341,18 @@ def presentation(report: dict) -> dict[str, str]:
     live = report.get("live")
     live_ok = isinstance(live, dict) and live_passed(live)
     registration_ok = registration_matches(report)
+    skills = report.get("skills")
+    skill_text = ""
+    if isinstance(skills, dict):
+        items = skills.get("items", [])
+        valid = sum(item.get("frontmatter") == "required_fields_valid" for item in items)
+        skill_text = (
+            f"; {valid}/{len(items)} local skill files passed required-frontmatter checks"
+            if items else "; local skill inventory unavailable or empty"
+        )
     attention = (
         report.get("status") != "ok"
+        or (isinstance(skills, dict) and skills.get("status") != "ok")
         or emitted != len(PROMPTS)
         or session not in (None, "emitted", SESSION_NOT_USED)
         or (live is not None and not live_ok)
@@ -284,9 +369,10 @@ def presentation(report: dict) -> dict[str, str]:
         "headline": "Diagnostic checks need attention."
         if attention
         else "Local package probes passed; current-session activation is unverified.",
-        "checked": f"{emitted}/{len(PROMPTS)} prompt-hook command probes emitted reminders{session_text}; {live_text}.",
+        "checked": f"{emitted}/{len(PROMPTS)} prompt-hook command probes emitted reminders{session_text}{skill_text}; {live_text}.",
         "gap": (
             "Current-session activation, substantive response compliance and factual accuracy remain unverified."
+            " Host skill listing is unverified; plugin registration does not establish skill delivery."
             + ("" if registration_ok else " Host registration requires inspection.")
         ),
         "next": "Resolve the reported diagnostic issues, then rerun the doctor."

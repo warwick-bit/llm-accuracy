@@ -1,4 +1,4 @@
-"""Five bounded consumer checks; expected figures are hand-calculated fixtures."""
+"""Bounded consumer checks; expected figures are hand-calculated fixtures."""
 import copy
 import hashlib
 import importlib.util
@@ -120,3 +120,61 @@ def test_ambiguous_source_is_execution_error_and_empty_report_has_no_verdict(tmp
     source = copy.deepcopy(SOURCE)
     source["values_cents"]["2026-08"]["North"] = True
     assert demo.check_line(source, GROWTH)["status"] == "not_verified"
+
+
+def test_declared_metrics_preserve_binding_and_existing_growth_checks(tmp_path):
+    source = copy.deepcopy(SOURCE)
+    source["metric"] = "churned MRR"
+    growth = GROWTH.replace("revenue", "churned MRR")
+    every = EVERY.replace("Revenue", "Churned MRR")
+    source_path, claims_path = tmp_path / "source.json", tmp_path / "claims.txt"
+    source_path.write_text(json.dumps(source), encoding="utf-8")
+    claims_path.write_text("\n".join([growth, every, GROWTH]), encoding="utf-8")
+    results = cli(source_path, claims_path)["claims"]
+    assert [r["status"] for r in results] == ["supported", "supported", "not_verified"]
+    assert results[0]["interpretation"]["metric"] == "churned MRR"
+    assert results[0]["evidence"]["calculated_percent"] == "12"
+    assert demo.check_line(source, growth.replace("12%", "11%"))["status"] == "contradicted"
+    source["metric"] = "MRR"
+    assert demo.check_line(source, GROWTH.replace("revenue", "mrr"))["status"] == "supported"
+    del source["values_cents"]["2026-09"]["South"]
+    assert demo.check_line(source, GROWTH.replace("revenue", "MRR"))["status"] == "not_verified"
+
+
+def test_declared_retention_ratio_cli_rounding_and_invalid_bindings(tmp_path):
+    source = {
+        "metric": "Gross revenue retention", "currency": "AUD", "population": ["North", "South"],
+        "ratio": {"numerator": "retained MRR", "denominator": "starting MRR"},
+        "series_cents": {"retained MRR": {"2026-09": {"North": 9000, "South": 18600}},
+                         "starting MRR": {"2026-08": {"North": 10000, "South": 20000}}},
+    }
+    claim = "Gross revenue retention was 92% from 2026-08 to 2026-09 in AUD."
+    source_path, claims_path = tmp_path / "ratio.json", tmp_path / "claims.txt"
+    source_path.write_text(json.dumps(source), encoding="utf-8")
+    claims_path.write_text(claim, encoding="utf-8")
+    result = cli(source_path, claims_path)["claims"][0]
+    assert result["status"] == "supported"  # (9000 + 18600) / (10000 + 20000) = 92%
+    assert result["evidence"]["numerator_cents"] == 27600
+    assert result["evidence"]["denominator_cents"] == 30000
+    assert result["interpretation"]["ratio"]["denominator_period"] == "2026-08"
+    assert demo.check_line(source, claim.replace("92%", "93%"))["status"] == "contradicted"
+    source["population"].reverse()
+    assert demo.check_line(source, claim.lower())["status"] == "supported"
+    for text in (claim.replace("Gross", "Net"), claim.replace("AUD", "USD"),
+                 claim.replace("2026-08", "2026-07"), claim + " because pricing improved."):
+        assert demo.check_line(source, text)["status"] == "not_verified"
+    for key, value in (("ratio", {}), ("series_cents", {})):
+        bad = dict(source, **{key: value})
+        assert demo.check_line(bad, claim)["status"] == "not_verified"
+    numerator = source["series_cents"]["retained MRR"]["2026-09"]
+    denominator = source["series_cents"]["starting MRR"]["2026-08"]
+    denominator.update(North=0, South=800)
+    for value, percent in ((100, "13"), (-100, "-13"), (0, "0"), (100, "12.50")):
+        numerator.update(North=0, South=value)
+        assert demo.check_line(source, claim.replace("92%", percent + "%"))["status"] == "supported"
+    for invalid in (0, -800, True):
+        denominator["South"] = invalid
+        assert demo.check_line(source, claim)["status"] == "not_verified"
+    denominator["South"] = 800
+    del numerator["North"]
+    assert demo.check_line(source, claim)["status"] == "not_verified"
