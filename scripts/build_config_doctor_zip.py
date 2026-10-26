@@ -10,7 +10,7 @@ from build_plugin_zip import tracked_plugin_files
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tools/config-doctor"
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 
 
 def main() -> int:

@@ -1,4 +1,4 @@
-# Config Doctor — 0.1.3 preview
+# Config Doctor — 0.1.4 preview
 
 Find instructions that disagree, outdated advice and missing checks in your
 Claude Code or Codex setup. Config Doctor helps your AI review the setup you
@@ -23,7 +23,7 @@ is a different diagnostic for that plugin's own installation and configuration.
 
 ```text
 Fetch and extract CONFIG Doctor from this released ZIP into a new local folder:
-https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.3/config-doctor-0.1.3.zip
+https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.4/config-doctor-0.1.4.zip
 Do not overwrite existing files. Use its config-doctor folder to audit my selected
 profile. Check that Python 3.11+ is available; if not, explain what is needed.
 Before any memory/history lookup or audit-input read, read that directory's
@@ -43,7 +43,7 @@ English. Prepare the audit, complete the assessment and validate the report.
 
 ### Optional manual download
 
-If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.3/config-doctor-0.1.3.zip)
+If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.4/config-doctor-0.1.4.zip)
 and extract it yourself. Use the local-folder startup prompt in
 [QUICKSTART.md](QUICKSTART.md), replacing its folder placeholder with your path.
 
@@ -59,7 +59,9 @@ provide before suggesting another rule.
 Where a useful follow-up remains, Doctor offers a multiple-choice question:
 **Check what's uncertain**, **Try a change safely**, or **Finish here**. It uses
 your app's interactive question tool when available and explains what each check
-would tell you, which files or tools it needs and the likely effort. You choose
+would tell you, which files or tools it needs and the likely effort. Related useful
+checks are offered together, with any checks left out explained. Questions stay
+short; technical details remain in the report. You choose
 how far to go; a test uses a separate copy and does not change your live setup.
 
 The audit does not connect to MCP servers, call a model itself, execute audited
