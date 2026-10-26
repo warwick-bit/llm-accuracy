@@ -7,7 +7,7 @@ the version tag and GitHub release remain pending as checked on 26 October 2026.
 [PR #77](https://github.com/warwick-bit/llm-accuracy/pull/77) merged at
 11:41 UTC on 25 October. Main delivers marketplace installs, so 0.8.1 is
 available through that channel. No `v0.8.1` tag or GitHub release exists yet;
-the latest downloadable release remains
+at that checkpoint the latest downloadable release was
 [0.8.0](https://github.com/warwick-bit/llm-accuracy/releases/tag/v0.8.0), with
 its ZIP and checksum. See the [release procedure](../CONTRIBUTING.md#releasing)
 for publishing the 0.8.1 ZIP from its merge commit.
