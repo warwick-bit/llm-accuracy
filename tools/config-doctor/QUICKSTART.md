@@ -217,12 +217,19 @@ controls which files may be read; it does not establish whole-harness coverage.
    not tested. Include good controls; RETAIN alone is not a pass. Missing evidence
    is not a failure, and a source-level tick does not prove runtime effectiveness.
    Absolute rules need a specific scope problem to be flagged; performance
-   degradation remains unverified without measurements. Follow with up to three
-   next actions and a link/path to the full report. Include finding IDs for
-   actionable changes, distinguish proposals from checks still needed, and state
-   whether edits were applied. Keep detailed evidence in the report.
-   If validation is pending or refused, say so. Keep this prose outside the
-   saved assessment JSON. A JSON-only batch auditor returns JSON; the interactive
+   degradation remains unverified without measurements.
+   In the existing assessment `summary` and in chat, prioritise recommendations:
+   **Do first** (evidence-backed consequential gap), **Already covered / keep**
+   (cite the existing control or completed fix), **Needs evidence** (name the
+   smallest check), or **Optional** (explain benefit versus added maintenance).
+   Link finding or coverage IDs and explain each disposition. Do not invent
+   findings to fill categories or add JSON fields. Rank by consequence and
+   evidence, then effort and dependencies; an urgent check can come before an
+   edit. Give up to three immediate next actions and explain why others can wait.
+   Include a link/path to the full report and state whether edits were applied.
+   Priority is advice, not approval. Keep the full inventory and evidence in the
+   report. If validation is pending or refused, say so. Keep the chat checklist
+   outside the saved JSON; the priority overview belongs in its `summary` field. A JSON-only batch auditor returns JSON; the interactive
    caller provides the summary after running `report`.
 
 4. Exercise a proposed change in a disposable copy using the named task/check.
