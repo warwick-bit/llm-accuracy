@@ -1,6 +1,6 @@
 # Preview validation and limits
 
-Config Doctor 0.1.2 is a standalone source-audit workflow for Python 3.11+.
+Config Doctor 0.1.3 is a standalone source-audit workflow for Python 3.11+.
 It uses the standard library and your existing agent for semantic review.
 
 From this folder, run the existing contract checks:
@@ -25,7 +25,7 @@ the bundled principles rather than unpublished study results.
 Release qualification runs these checks from an extracted ZIP on native Windows,
 checks bundled Markdown links and compares the archive with committed source.
 The existing repository CI runs the Doctor checks on Python 3.11 on Linux.
-See the [release](https://github.com/warwick-bit/llm-accuracy/releases/tag/config-doctor-v0.1.2)
+See the [release](https://github.com/warwick-bit/llm-accuracy/releases/tag/config-doctor-v0.1.3)
 for completed results. macOS execution, other host surfaces and comparative model
 benefit remain unverified for this preview.
 

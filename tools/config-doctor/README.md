@@ -1,8 +1,8 @@
-# Config Doctor — 0.1.2 preview
+# Config Doctor — 0.1.3 preview
 
 Find instructions that disagree, outdated advice and missing checks in your
-Claude Code or Codex setup. Config Doctor helps your AI review the files you
-choose and checks that its report matches those files. It suggests changes;
+Claude Code or Codex setup. Config Doctor helps your AI review the setup you
+choose and checks its report against the files reviewed. It suggests changes;
 you decide what to apply.
 
 This is a separate tool. You do not need the LLM Accuracy plugin, and installing
@@ -16,34 +16,34 @@ is a different diagnostic for that plugin's own installation and configuration.
 2. The workflow needs **Python 3.11 or later** and a session that can fetch files,
    read your selected local files and run Python. No additional Python packages
    or API key are required. Ordinary web chat alone cannot run this local workflow.
-3. Choose what you want checked and which files the AI may read when asked.
-   It follows the [guide](QUICKSTART.md) to review them and check its report.
+3. Choose what you want checked. The AI finds the relevant files in that setup
+   for you; you do not need to know file paths or make a file list. It follows
+   the [guide](QUICKSTART.md) to review them and check its report.
 4. Review the checklist and proposed edits. Applying changes is a separate decision.
 
 ```text
 Fetch and extract CONFIG Doctor from this released ZIP into a new local folder:
-https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.2/config-doctor-0.1.2.zip
+https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.3/config-doctor-0.1.3.zip
 Do not overwrite existing files. Use its config-doctor folder to audit my selected
 profile. Check that Python 3.11+ is available; if not, explain what is needed.
 Before any memory/history lookup or audit-input read, read that directory's
 QUICKSTART.md by itself. Do not open earlier audit memory, reports or history.
 Disclose any historical audit context already loaded; do not use it as evidence.
-Ask the audit extent if I have not supplied one or an explicit file manifest.
-Account for relevant installed plugins and configured MCP tools in every scope,
-using supplied plugin guidance, tool descriptions/schemas and safe settings summaries.
-Ask for missing sources or record coverage as unverified before proposing overlaps.
-Do not connect to MCP servers or call their tools for this source audit.
-For profile-and-harness scope, identify missing or unknown launcher, review
-adapter and hook/plugin source before collection. Ask for exact paths or my
-explicit acceptance of a partial audit; reuse decisions already supplied.
-Use an interactive question tool when available. Do not discover files, run
-audited code or change configuration. Follow prepare, assessment and report
-validation, and state the selected scope and any unverified coverage.
+Ask what I want checked using a short multiple-choice question, unless I already
+chose. Explain that you will find the relevant files in that setup for me, following
+the guide's bounded collection rules. Do not ask me to supply file paths or a
+manifest as the normal starting step. Keep an explicit file list I supply strict.
+Include relevant installed add-ons and available descriptions of connected tools;
+check what they already provide before suggesting another rule. Do not connect to
+services, run the files being reviewed, read credentials or change my setup.
+Ask again only for a real choice, such as which setup I mean or whether to include
+an additional folder. Explain findings and anything you could not check in plain
+English. Prepare the audit, complete the assessment and validate the report.
 ```
 
 ### Optional manual download
 
-If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.2/config-doctor-0.1.2.zip)
+If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.3/config-doctor-0.1.3.zip)
 and extract it yourself. Use the local-folder startup prompt in
 [QUICKSTART.md](QUICKSTART.md), replacing its folder placeholder with your path.
 
@@ -69,7 +69,7 @@ loaded; the agent should disclose it.
 
 ## Keep your audit private
 
-Choose only files you authorize. Do not supply credentials, `.env`, transcripts,
+Doctor searches only within your chosen setup. Do not supply credentials, `.env`, transcripts,
 raw logs or unrelated data. Prepared packets contain selected text sources in full;
 settings are reduced to structural summaries. Keep packets and reports outside this
 repository and do not upload them as issues. Credential-pattern refusal is a
