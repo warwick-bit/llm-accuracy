@@ -8,6 +8,7 @@ on:
     tags:
       - "v*"
       - "*--v*"
+      - "config-doctor-v*"
 
 permissions:
   contents: read
@@ -35,6 +36,13 @@ jobs:
 
       - name: Run distribution tests
         run: python3 -m pytest -q
+
+      - name: Check standalone Config Doctor (Python 3.11 minimum)
+        if: matrix.python-version == '3.11'
+        working-directory: tools/config-doctor
+        run: |
+          python3 -B workflow_tests.py
+          python3 -B tests.py
 
       - name: Validate current compatibility evidence
         run: python3 scripts/check_compatibility.py

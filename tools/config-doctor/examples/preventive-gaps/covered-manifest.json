@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "client": "claude",
+  "profile": "synthetic selected scope; no installed client",
+  "problem": "Preventive source audit of support for supplementary factual claims and unavailable-data fallbacks. No model incident is supplied. Assess the selected instructions and structural settings only; no reusable calculation or live mode evidence is supplied.",
+  "files": [
+    {"id": "core", "path": "supported.md", "role": "instructions", "consumer": "synthetic instruction source; no live loading or behavior measured"},
+    {"id": "settings", "path": "settings.json", "role": "settings", "consumer": "synthetic settings structural summary; effective launch mode unknown"}
+  ]
+}
