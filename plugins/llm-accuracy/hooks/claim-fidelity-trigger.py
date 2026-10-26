@@ -55,14 +55,14 @@ TECHNICAL_FOOTER = (
 
 GENERAL_CONTRACT = (
     "CLAIM FIDELITY CHECK: Identify what evidence establishes "
-    "and what is missing. For each material claim, including intermediate assertions, "
+    "and what is missing. For material claims, including intermediate assertions, "
     "check whether a plausible alternative could produce the same observation "
     "without that claim being true. If evidence cannot distinguish it, qualify or "
     "withhold the claim; conclude on the surviving evidence. State supported narrow "
     "facts plainly, without speculative hedging. Separate observations, hypotheses "
     "and unknowns. Check field, units, denominator, environment and version; "
     "all/none claims need coverage beyond previews, samples and truncated output. "
-    "A tool call alone is not verification. Test competing causes before declaring "
+    "A tool call is not verification. Test competing causes before declaring "
     "a root cause. Corrections must revisit dependent conclusions; repeated "
     "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
     "for diagnosis and fix checks. For material ambiguity, use llm-accuracy:clarify "
