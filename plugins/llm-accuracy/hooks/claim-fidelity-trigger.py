@@ -65,7 +65,8 @@ GENERAL_CONTRACT = (
     "A tool call alone is not verification. Test competing causes before declaring "
     "a root cause. Corrections must revisit dependent conclusions; repeated "
     "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
-    "for diagnosis and fix checks. Advisory guidance, not independent verification."
+    "for diagnosis and fix checks. For material ambiguity, use llm-accuracy:clarify "
+    "with interactive multiple-choice. Advisory guidance, not independent verification."
 )
 
 LABEL = "CLAIM FIDELITY CHECK: "

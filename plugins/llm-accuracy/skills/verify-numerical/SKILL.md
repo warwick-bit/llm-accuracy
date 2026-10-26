@@ -28,6 +28,9 @@ supported errors, retain useful valid wording and make unchecked claims clear.
 For other figures use appropriate calculations or tests and identify them as
 separate checks. Require the claim's metric to match the source; never relabel
 another measure as revenue or invent retention definitions to fit the schema.
+When a missing definition, population or comparison materially changes the result,
+use [Clarify](../clarify/SKILL.md) before dependent calculations. Reuse settled
+answers and prefer the host's available interactive question tool.
 
 For a CSV export, use the helper's `--csv-mapping` option and an explicit mapping
 from the numerical reference. It reads the original records and supplies exact

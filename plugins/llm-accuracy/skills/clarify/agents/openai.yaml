@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clarify"
+  short_description: "Resolve choices that materially change the answer"
+  default_prompt: "Use $clarify to resolve material ambiguities before proceeding."

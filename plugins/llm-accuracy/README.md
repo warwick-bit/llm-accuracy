@@ -54,6 +54,23 @@ contract; it is not automatically run or a proof of arbitrary analysis.
 The Codex manifest enables skills only, with no hooks or persistent memory.
 Skill selection and correct application still depend on the model.
 
+For an unresolved choice that materially changes an answer, the `clarify` skill
+asks the model to inspect available context, then use the host's interactive
+multiple-choice question tool when available. Invoke `/llm-accuracy:clarify` in
+Claude Code or select the Clarify skill in Codex to use it on demand. Its description
+also allows automatic selection; the Claude reminders point to it. Codex remains
+skills-only, so automatic selection depends on the model, not a prompt hook.
+Already-settled choices and harmless implementation details do not need questions.
+Recommendations need a reason and are never treated as an answer. Independent
+work can continue while dependent work waits for the user's reply. Hosts without
+a suitable question tool use a short chat question. No new integration or setting
+is required. Desktop/terminal UI behavior and an overall accuracy gain are untested.
+
+Automatic skill selection is distinct from hooks: a skills-only installation can
+still let a model choose a skill. An explicit-only edition would need invocation
+policy as well as no hooks. The current development candidate adds Clarify to the
+existing automatic-selection skills; it does not yet provide a manual-only edition.
+
 For a report and its source files, ask Claude to check the report normally or use
 `/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,
 executes the bounded monetary checker when applicable, and distinguishes other

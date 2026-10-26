@@ -209,6 +209,26 @@ def test_user_prompt_commands_fail_open_on_malformed_stdin(
     assert result.stdout == ""
 
 
+@pytest.mark.parametrize(
+    ("event", "index", "payload"),
+    [
+        ("UserPromptSubmit", 0, {"prompt": "What is our revenue?"}),
+        ("SessionStart", 1, {"source": "startup"}),
+    ],
+)
+def test_shipped_reminders_route_material_choices_to_interactive_clarify(
+    event: str, index: int, payload: dict,
+) -> None:
+    result = run_hook(event, index, json.dumps(payload))
+    assert result.returncode == 0
+    assert result.stderr == ""
+    output = json.loads(result.stdout)
+    assert set(output) == {"hookSpecificOutput"}  # advisory, no blocking decision
+    context = output["hookSpecificOutput"]["additionalContext"]
+    assert "llm-accuracy:clarify" in context
+    assert "interactive multiple-choice" in context
+
+
 ORDINARY_PROMPTS = [
     "The editor stalls after login.",
     "Proceed with the investigation.",
