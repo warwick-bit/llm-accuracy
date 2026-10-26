@@ -11,6 +11,20 @@ directory, and follow its
 workflow. Use the supplied sources and their definitions; do not invent a metric,
 source authority or complete population to make a check pass.
 
+Before choosing which supplied records count, check for an agreed inclusion rule.
+If the data contains different statuses or categories and including or excluding
+a group materially changes the requested result, read
+[Clarify](../clarify/SKILL.md) and ask when the user or authoritative source has
+not settled that choice. A familiar metric name or common filtering convention
+does not by itself settle the intended population. Disclosing an exclusion in
+the answer does not replace resolving it first. Reuse explicit definitions and
+prior answers; when the user requests all interpretations or authorizes
+assumptions, follow that request without an extra question.
+
+Apply the same clarification rule to other missing definitions or comparisons
+that materially change the result. Prefer the host's available interactive
+question tool before relying on a chosen interpretation.
+
 For consequential calculations, claims outside the bounded helper, or a request
 for mathematical proof, read `../../references/mathematical-verification.md`.
 Use its relevant failure exploration, dataset-specific checks and proof boundaries;
@@ -28,10 +42,6 @@ supported errors, retain useful valid wording and make unchecked claims clear.
 For other figures use appropriate calculations or tests and identify them as
 separate checks. Require the claim's metric to match the source; never relabel
 another measure as revenue or invent retention definitions to fit the schema.
-When a missing definition, population or comparison materially changes the result,
-use [Clarify](../clarify/SKILL.md) before dependent calculations. Reuse settled
-answers and prefer the host's available interactive question tool.
-
 For a CSV export, use the helper's `--csv-mapping` option and an explicit mapping
 from the numerical reference. It reads the original records and supplies exact
 record/line references; do not manually rewrite a CSV into a more convenient
