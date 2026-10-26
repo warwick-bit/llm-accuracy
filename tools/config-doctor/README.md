@@ -1,8 +1,9 @@
-# Config Doctor — 0.1.1 preview
+# Config Doctor — 0.1.2 preview
 
-Find conflicting instructions, stale assumptions and gaps in your Claude Code or
-Codex setup. Config Doctor prepares selected source files for your agent to review
-and validates the resulting report. It proposes changes; you decide what to apply.
+Find instructions that disagree, outdated advice and missing checks in your
+Claude Code or Codex setup. Config Doctor helps your AI review the files you
+choose and checks that its report matches those files. It suggests changes;
+you decide what to apply.
 
 This is a separate tool. You do not need the LLM Accuracy plugin, and installing
 that plugin does not install Config Doctor. The plugin's `accuracy-doctor` command
@@ -15,14 +16,13 @@ is a different diagnostic for that plugin's own installation and configuration.
 2. The workflow needs **Python 3.11 or later** and a session that can fetch files,
    read your selected local files and run Python. No additional Python packages
    or API key are required. Ordinary web chat alone cannot run this local workflow.
-3. Choose the audit scope and explicitly select the files when asked. Your agent
-   prepares the packet, completes the assessment and validates the report using
-   the commands in the [quickstart](QUICKSTART.md).
+3. Choose what you want checked and which files the AI may read when asked.
+   It follows the [guide](QUICKSTART.md) to review them and check its report.
 4. Review the checklist and proposed edits. Applying changes is a separate decision.
 
 ```text
 Fetch and extract CONFIG Doctor from this released ZIP into a new local folder:
-https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.1/config-doctor-0.1.1.zip
+https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.2/config-doctor-0.1.2.zip
 Do not overwrite existing files. Use its config-doctor folder to audit my selected
 profile. Check that Python 3.11+ is available; if not, explain what is needed.
 Before any memory/history lookup or audit-input read, read that directory's
@@ -43,16 +43,24 @@ validation, and state the selected scope and any unverified coverage.
 
 ### Optional manual download
 
-If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.1/config-doctor-0.1.1.zip)
+If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.2/config-doctor-0.1.2.zip)
 and extract it yourself. Use the local-folder startup prompt in
 [QUICKSTART.md](QUICKSTART.md), replacing its folder placeholder with your path.
 
-Expect a checklist of existing protections, partial coverage, evidence-backed gaps
-and things not yet verified, followed by a prioritised summary and detailed
-report. Doctor explains what to **do first**, what is **already covered / keep**,
-what **needs evidence**, and what is **optional**, with reasons and up to three
-immediate next actions. You do not need to accept every recommendation. Relevant installed plugins and MCP tool descriptions belong in the selected
-evidence so Doctor can check for existing protection before proposing duplicates.
+Expect a plain-English checklist of what's already covered, what may need fixing
+and what hasn't been checked yet. Each finding explains what was found, why it
+matters, how certain it is and the simplest next step. Doctor explains what to
+**do first**, what to **keep**, what **needs more checking**, and what's
+**optional**, with up to three immediate next actions. You do not need to accept
+every recommendation. Include relevant add-ons (plugins) and descriptions of
+connections to other services (MCP tools), so Doctor can check what they already
+provide before suggesting another rule.
+
+Where a useful follow-up remains, Doctor offers a multiple-choice question:
+**Check what's uncertain**, **Try a change safely**, or **Finish here**. It uses
+your app's interactive question tool when available and explains what each check
+would tell you, which files or tools it needs and the likely effort. You choose
+how far to go; a test uses a separate copy and does not change your live setup.
 
 The audit does not connect to MCP servers, call a model itself, execute audited
 hooks, change configuration or save persistent memory. Your existing agent performs
