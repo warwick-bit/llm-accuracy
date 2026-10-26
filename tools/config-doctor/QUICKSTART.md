@@ -94,7 +94,11 @@ the owner asks to expand it. A prepared packet never grants discovery permission
 - Read relevant guidance and exact referenced helper/launcher/hook files inside
   the approved roots, including the selected setup's already identified helper
   directories. Check resolved paths before reading; do not traverse symlinks or
-  junctions. A reference outside those roots does not expand permission. Bundle
+  junctions. A reference is only a candidate when its role as relevant instructions,
+  configuration or startup/check code is established. An arbitrary comment or link
+  does not justify more access; unrelated notes/data and excluded file types must
+  stay excluded, not become an option to include. A relevant reference outside
+  approved roots does not expand permission. Bundle
   such cases into one plain-English choice, e.g. "The startup checks are in this
   other folder. Include them too, or finish without checking them?" Show the found
   location; do not make the user discover it. Do not ask again for every dependency

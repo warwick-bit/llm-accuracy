@@ -69,7 +69,10 @@ installation registries for safe path/name/version/flag metadata locally; never
 print raw config, commands, URLs, credentials or environment values, or execute
 commands to resolve paths. Use structural settings summaries in the packet.
 Check resolved paths; do not follow symlinks/junctions or scan a whole drive/home.
-An outside reference is not authorisation: offer one bundled plain-English choice
+Establish that a reference is relevant instructions, configuration or startup/check
+code before collecting it or offering more access. Arbitrary comments/links,
+unrelated notes/data and excluded file types must not become inclusion choices.
+A relevant outside reference is not authorisation: offer one bundled plain-English choice
 to include the identified additional folder or continue with that gap. Do not ask
 the user to find it or repeatedly approve dependencies already inside the boundary.
 
