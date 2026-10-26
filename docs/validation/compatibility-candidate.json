@@ -4,12 +4,12 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.8.2",
-      "sha256": "e51db9dc3b35e05bbeb1e83d911e9e9a598fca3f535bd8d87e54d2b5d5f00240"
+      "version": "0.8.3",
+      "sha256": "987f85e26580c9da16d923ce4a698c0b9cd9b488295a7b0fb74198dfc9463893"
     },
     "deterministic-data": {
-      "version": "0.1.1",
-      "sha256": "a242107c1432529b5675b8506017d918c9d26a2ade7524b5ddfd5638fcfd5331"
+      "version": "0.1.2",
+      "sha256": "ac63a53cf3e4749d2c88a6c9cbc80a6560a4cf2ad36e17f60d7b52b2fa612a6a"
     },
     "session-ledger": {
       "version": "0.3.1",
@@ -43,12 +43,12 @@
       "python_version": "3.13.1",
       "packages": {
         "llm-accuracy": {
-          "version": "0.8.2",
-          "sha256": "e51db9dc3b35e05bbeb1e83d911e9e9a598fca3f535bd8d87e54d2b5d5f00240"
+          "version": "0.8.3",
+          "sha256": "987f85e26580c9da16d923ce4a698c0b9cd9b488295a7b0fb74198dfc9463893"
         },
         "deterministic-data": {
-          "version": "0.1.1",
-          "sha256": "a242107c1432529b5675b8506017d918c9d26a2ade7524b5ddfd5638fcfd5331"
+          "version": "0.1.2",
+          "sha256": "ac63a53cf3e4749d2c88a6c9cbc80a6560a4cf2ad36e17f60d7b52b2fa612a6a"
         },
         "session-ledger": {
           "version": "0.3.1",
@@ -71,8 +71,8 @@
         "invalid_python_advisory_then_recovery": true,
         "git_bash_present": true
       },
-      "source_commit": "bc773656bf07b49bba2fae97c9f2977c6ce2e508",
-      "row_sha256": "38ea99594d18da07d405bb9db6f1f3bf66410069f300bbe4627cf45e93ce90ea"
+      "source_commit": "91b2b6a5d2bb51a0213bf9d4e6b0edc06a9a8424",
+      "row_sha256": "98b9a2183e411e4294fca105ca15ddca7021d8cdf7d8620d807f98081fc26568"
     },
     "code-macos": {
       "outcome": "untested"

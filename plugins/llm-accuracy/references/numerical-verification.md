@@ -106,3 +106,101 @@ and checker bytes. It does not bind a model's interpretation to the raw source
 or prove that all material report claims were selected. Those remain explicit
 audit responsibilities. Exit 0 means execution completed; exit 2 means an
 input/execution error. No whole-report pass or guarantee is provided.
+
+## Direct CSV checking
+
+The same helper accepts a UTF-8 CSV export with an explicit mapping. It reads
+all records, adds monetary values by period/region (and named series for ratios),
+and attaches the contributing record IDs and physical line ranges to each claim.
+This removes manual snapshot transcription; it does not establish source authority
+or completeness outside the supplied file. Only the existing three claim forms
+are checked. The caller still inventories the whole report's material claims.
+
+```text
+python "<plugin-root>/scripts/check_numerical_claims.py" export.csv claims.txt --csv-mapping mapping.json
+```
+
+Example `mapping.json`, supplied from the source's documented definitions:
+
+```json
+{
+  "metric": "revenue",
+  "currency": "AUD",
+  "population": ["North", "South"],
+  "value_unit": "major",
+  "columns": {
+    "record_id": "transaction_id",
+    "period": "month",
+    "region": "region",
+    "currency": "currency",
+    "value": "amount"
+  }
+}
+```
+
+Example CSV (fictional data):
+
+```csv
+transaction_id,month,region,currency,amount
+n0,2026-08,North,AUD,1000.00
+s0,2026-08,South,AUD,2000.00
+n1,2026-09,North,AUD,1200.00
+s1,2026-09,South,AUD,2160.00
+```
+
+These records support 12% total growth and an increase in both declared regions.
+`major` means decimal currency amounts with at most two fractional digits;
+`cents` means signed integer cents. No rounding of input amounts, exponent notation,
+thousands separators or currency conversion is inferred. Zero must be explicit;
+a blank amount or absent region is not zero. Use the source's unit convention.
+
+Record IDs must be unique across the entire file. Distinct transactions for the
+same period/region are summed; repeated IDs are rejected even if values agree.
+Resolve source revisions before checking. Reordering records does not change
+the calculation. Extra unused columns are allowed, but duplicate headers,
+ragged/blank records, unknown regions and mixed currencies are refused. Use a
+comma-delimited CSV with standard quoting; headers and key fields are exact.
+The full declared population must be represented in every period selected by
+a claim. An incomplete unrelated period does not invalidate complete comparisons.
+
+For a ratio, add the existing `ratio` definition and a `series` column mapping.
+Each record then names either the declared numerator or denominator series.
+The checker uses denominator records at the from-period and numerator records
+at the to-period. It does not infer a cohort or the meaning of retention.
+
+Output includes source, mapping, checker and adapter hashes, the number of CSV
+records read, and per-claim `source_records`. Record numbers count CSV records;
+`lines` includes physical start/end lines, including quoted multiline fields.
+Unknown/malformed input retains every requested claim as `not_verified` with
+`source_status: unavailable`. A readable empty export supplies no monetary facts.
+The helper writes JSON to stdout and never updates inputs or the report.
+
+## Recheck an earlier and current source
+
+Recheck identical original claim lines against two JSON snapshots:
+
+```text
+python "<plugin-root>/scripts/check_numerical_claims.py" current.json claims.txt --previous-source previous.json
+```
+
+Or use two CSV exports:
+
+```text
+python "<plugin-root>/scripts/check_numerical_claims.py" current.csv claims.txt --csv-mapping mapping.json --previous-source previous.csv
+```
+
+Both CSVs use the same mapping unless `--previous-csv-mapping previous-mapping.json`
+is supplied. Declare changed definitions explicitly; do not relabel old facts to
+make them comparable. This command compares two sources in the same input format.
+
+Each result retains `previous`, `current` and the changed status/interpretation/
+evidence fields. Top-level counts describe current results only. Source hashes
+can change while all claim results remain the same, for example after reordering.
+Missing or malformed current input makes dependent current claims `not_verified`;
+the previous result remains labelled historical and is never substituted for it.
+An unavailable previous source does not prevent checking the current one.
+
+Inspect final prose and side claims after the recheck. The helper cannot certify
+unlisted policy thresholds, causal claims, recommendations, or a whole regenerated
+report. Preserve original deliverables; any publication/replacement procedure
+belongs to the caller and needs its own failure-preservation checks.

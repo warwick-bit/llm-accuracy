@@ -10,6 +10,13 @@ Use the tools and repository instructions available in the current workspace.
 This workflow supplies no provider access and never authorizes a destructive
 probe, deployment or external message.
 
+For reusable analysis/report generators, read
+`${CLAUDE_PLUGIN_ROOT}/references/output-refresh.md` and exercise changed-input
+and failure cases in an isolated workspace. Its optional read-only helper checks
+required files and whether a failed run preserved prior output bytes; it never
+runs the producer, publishes or proves atomicity. On hosts without placeholder
+expansion, resolve the package root two directories above this skill directory.
+
 1. **Define the claim.** State the symptom, affected process/environment/version,
    expected result and the observation that would establish success. Separate
    repair, local verification, deployment and production verification.

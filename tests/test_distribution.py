@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.8.2"
+    assert claude["version"] == "0.8.3"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -42,7 +42,7 @@ def test_deterministic_data_manifest_is_separate_and_claude_only() -> None:
     manifest = load_json("plugins/deterministic-data/.claude-plugin/plugin.json")
 
     assert manifest["name"] == "deterministic-data"
-    assert manifest["version"] == "0.1.1"
+    assert manifest["version"] == "0.1.2"
     assert manifest["license"] == "MIT"
     assert not (DETERMINISTIC / ".codex-plugin").exists()
 

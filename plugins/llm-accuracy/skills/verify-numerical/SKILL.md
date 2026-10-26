@@ -29,6 +29,18 @@ For other figures use appropriate calculations or tests and identify them as
 separate checks. Require the claim's metric to match the source; never relabel
 another measure as revenue or invent retention definitions to fit the schema.
 
+For a CSV export, use the helper's `--csv-mapping` option and an explicit mapping
+from the numerical reference. It reads the original records and supplies exact
+record/line references; do not manually rewrite a CSV into a more convenient
+population. Resolve duplicate records or revised versions from the source's
+rules, never silently deduplicate them. Missing regions or periods remain unknown.
+
+For changed source files, use `--previous-source` to recheck the same original
+claims against both snapshots. Inspect each `previous` and `current` result,
+including unavailable-source outcomes. Revisit affected prose, recommendations
+and qualifications in the final deliverable; changed calculations alone do not
+update the narrative. Retain useful independently supported results.
+
 Keep the response proportionate: corrected result, material corrections, and
 remaining gaps. Save report/audit/evidence files when the user requests files or
 the task needs reproducible deliverables; otherwise keep the audit concise in
