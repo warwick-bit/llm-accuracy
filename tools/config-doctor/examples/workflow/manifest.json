@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "client": "claude",
+  "profile": "synthetic example; no live home",
+  "problem": "Clear routine edits are repeatedly interrupted for confirmation",
+  "files": [
+    {
+      "id": "core",
+      "path": "CLAUDE.md",
+      "role": "instructions",
+      "consumer": "synthetic user-level instruction example; loading unverified"
+    }
+  ]
+}
