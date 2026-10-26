@@ -19,6 +19,10 @@ correctness.
 - provides an optional `verify-numerical` workflow and executable checks for
   declared monetary growth, whether every declared region increased, and a ratio
   using source-defined numerator/denominator series;
+- reads explicitly mapped CSV records with source lineage and rechecks original
+  claims against old/current JSON snapshots or CSV exports;
+- resolves declared local text references and matches quotations, keeping
+  semantic claim support and live URL retrieval separate;
 - includes a stateless evidence-receipt schema and structural validator for
   workflows that already produce typed evidence boundaries.
 
@@ -56,6 +60,13 @@ executes the bounded monetary checker when applicable, and distinguishes other
 calculations and unchecked claims. After a source change, ask it to update the
 report and recheck affected conclusions. See the
 [numerical workflow and supported forms](references/numerical-verification.md).
+For CSV exports, the helper's `--csv-mapping` option reads the source directly;
+`--previous-source` compares the same claims with an earlier snapshot. Missing
+current evidence remains unverified instead of inheriting an earlier pass.
+For cited claims, use claim-fidelity and the
+[citation and quotation workflow](references/citation-verification.md). Its local
+checker reports quote presence and source hashes; it does not establish that the
+source supports the surrounding claim. URLs use the host's existing retrieval tools.
 This requires file/execution tools and Python; Desktop Chat cannot establish a
 local checker run. Ordinary coding and planning still use the existing technical
 and claim-fidelity guidance. Automatic skill selection is not guaranteed.

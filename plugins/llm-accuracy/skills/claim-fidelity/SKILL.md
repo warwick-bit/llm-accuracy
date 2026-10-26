@@ -22,9 +22,16 @@ root two directories above this skill's directory. Use that absolute path for
 bundled references/scripts; do not assume the placeholder is a shell variable.
 
 For a numerical report with supplied source files, use the packaged
-`llm-accuracy:verify-numerical` skill when applicable. Its two revenue checks
+`llm-accuracy:verify-numerical` skill when applicable. Its bounded monetary checks
 do not cover the report's other factual, causal or decision claims; keep those
 within this evidence-boundary audit.
+
+For supplied references or quotations, read
+`${CLAUDE_PLUGIN_ROOT}/references/citation-verification.md`. On an execution-capable
+host, its local helper resolves explicit text snapshots and checks exact quotes.
+Use existing host retrieval tools for URLs; unavailable retrieval remains unchecked.
+A resolved reference or matching quotation does not establish that the source
+supports the surrounding claim. Apply the scope and inference checks below separately.
 
 ## Workflow
 

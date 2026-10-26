@@ -5,6 +5,7 @@ No model, automatic claim extraction or source authentication.
 Exit 0 means execution completed; inspect each claim's status, not the exit code.
 """
 import argparse
+import csv
 import hashlib
 import json
 from pathlib import Path
@@ -130,8 +131,16 @@ def check_line(source, sentence):
 
 
 def check_report(source, report):
-    results = [dict(check_line(source, sentence), line=line)
-               for line, sentence in enumerate(report.splitlines(), 1) if sentence.strip()]
+    results = []
+    for line, sentence in enumerate(report.splitlines(), 1):
+        if not sentence.strip():
+            continue
+        try:
+            checked = check_line(source, sentence)
+        except (ValueError, RecursionError):
+            checked = {"sentence": sentence, "status": "not_verified",
+                       "reason": "Claim could not be checked within numeric decoding limits"}
+        results.append(dict(checked, line=line))
     return {
         "execution": "completed",
         "coverage": "Every nonblank input line retained; only three whole-line sentence forms checked. No whole-report truth verdict.",
@@ -143,12 +152,79 @@ def check_report(source, report):
     }
 
 
+def evaluate_source(path, report, mapping_path=None):
+    """Keep unavailable sources explicit, including when only one revision is readable."""
+    from csv_source import claim_records, csv_snapshot
+
+    hashes = {"checker": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+    try:
+        raw = path.read_bytes()
+        hashes["source"] = hashlib.sha256(raw).hexdigest()
+        lineage = None
+        if mapping_path is not None:
+            mapping_bytes = mapping_path.read_bytes()
+            hashes["mapping"] = hashlib.sha256(mapping_bytes).hexdigest()
+            hashes["csv_adapter"] = hashlib.sha256(Path(__file__).with_name("csv_source.py").read_bytes()).hexdigest()
+            mapping = json.loads(mapping_bytes, object_pairs_hook=unique_object)
+            source, lineage = csv_snapshot(raw, mapping)
+        else:
+            source = json.loads(raw, object_pairs_hook=unique_object)
+        result = check_report(source, report)
+        result["source_status"] = "readable"
+        if lineage is not None:
+            result["csv_records_read"] = len(lineage)
+            for claim in result["claims"]:
+                claim["source_records"] = claim_records(claim, lineage)
+    except (OSError, ValueError, csv.Error, RecursionError) as error:
+        result = check_report(None, report)
+        result["source_status"] = "unavailable"
+        result["source_error"] = ("Source or mapping could not be read" if isinstance(error, OSError)
+                                  else "Source or mapping could not be decoded" if isinstance(error, (UnicodeError, RecursionError))
+                                  else str(error))
+        for claim in result["claims"]:
+            claim["reason"] = "Source unavailable: " + result["source_error"]
+    result["sha256"] = hashes
+    return result
+
+
+def recheck(previous, current):
+    """Compare the same original claims; never carry an old pass into a failed refresh."""
+    results = []
+    for old, new in zip(previous["claims"], current["claims"]):
+        changed = [field for field in ("status", "interpretation", "evidence") if old.get(field) != new.get(field)]
+        results.append({"line": new["line"], "sentence": new["sentence"],
+                        "previous": old, "current": new, "changed": changed})
+    return {"execution": "completed", "coverage": current["coverage"],
+            "assumptions": current["assumptions"], "freshness": current["freshness"],
+            "counts": current["counts"], "claims": results,
+            "previous_source": {key: value for key, value in previous.items() if key not in ("claims", "counts")},
+            "current_source": {key: value for key, value in current.items() if key not in ("claims", "counts")},
+            "scope": "Original supplied claim lines only; changed source bytes do not establish changed meaning or narrative completeness"}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path, help="Declared monetary metric snapshot JSON with signed integer cents")
     parser.add_argument("claims", type=Path, help="UTF-8 text, one complete claim per line")
+    parser.add_argument("--csv-mapping", type=Path, help="Explicit CSV column/unit/population mapping JSON")
+    parser.add_argument("--previous-source", type=Path, help="Recheck these same claims against an earlier source")
+    parser.add_argument("--previous-csv-mapping", type=Path, help="Earlier CSV mapping; defaults to --csv-mapping")
     args = parser.parse_args()
+    if args.previous_csv_mapping and (not args.previous_source or not args.csv_mapping):
+        parser.error("--previous-csv-mapping requires --previous-source and --csv-mapping")
     try:
+        if args.csv_mapping or args.previous_source:
+            report_bytes = args.claims.read_bytes()
+            report = report_bytes.decode("utf-8-sig")
+            current = evaluate_source(args.source, report, args.csv_mapping)
+            if args.previous_source:
+                previous = evaluate_source(args.previous_source, report, args.previous_csv_mapping or args.csv_mapping)
+                result = recheck(previous, current)
+            else:
+                result = current
+            result["claims_sha256"] = hashlib.sha256(report_bytes).hexdigest()
+            print(json.dumps(result, indent=2))
+            return 0  # As with the original helper, inspect per-claim results.
         source_bytes, report_bytes = args.source.read_bytes(), args.claims.read_bytes()
         source = json.loads(source_bytes, object_pairs_hook=unique_object)
         result = check_report(source, report_bytes.decode("utf-8"))
