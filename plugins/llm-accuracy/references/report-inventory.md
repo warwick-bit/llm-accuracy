@@ -84,3 +84,6 @@ assertions, a missing qualification or an incorrect manual assessment. Semantic
 completeness stays `not_verified`, even for an empty report or a fully listed one.
 This deliberately avoids an automatic extractor whose omissions could be mistaken
 for complete verification. It is not a publication gate or a model-efficacy study.
+
+For saved generators, also use [refresh/output checks](output-refresh.md) to test
+changed inputs and failure preservation before relying on repeated publication.

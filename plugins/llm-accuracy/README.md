@@ -257,6 +257,15 @@ line reordering and surrounding whitespace changes while retaining every repeate
 occurrence. Line coverage and source-hash matches do not certify semantic truth
 or completeness; arbitrary prose still needs an evidence-boundary assessment.
 
+## Check failed refreshes
+
+The optional [output-refresh helper](references/output-refresh.md) captures declared
+input/output hashes and checks required files after an explicitly run producer.
+It detects overwritten/deleted outputs after failure and refuses to call missing
+baseline evidence preserved. It does not run or repair the producer, certify
+semantic freshness, or guarantee atomic publication. Use an isolated workspace
+and check the actual consuming application's failure path.
+
 ## Verify technical work
 
 Use `/llm-accuracy:verify-technical` for a diagnosis, disputed cause or fix claim.

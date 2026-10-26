@@ -54,7 +54,7 @@ changed thresholds and numerical sources, final shortening, missing evidence,
 source preservation, and valid line ordering/whitespace/repeated occurrences.
 See the packaged `references/report-inventory.md` for the consumer workflow.
 
-## Further addition worth evaluating
+## Failed-refresh checks
 
 A second opportunity is an optional deliverable/reuse check for user-authored
 analysis programs: required files, changed-input runs and preservation of the
@@ -62,7 +62,16 @@ previous complete output on failure. It belongs at the consuming application's
 publication boundary; the stateless Accuracy plugin should not claim to enforce
 arbitrary writers or silently rerun a user's program.
 
-The deliverable/reuse recommendation remains unimplemented. For a new
+The owner also authorized this follow-up. The packaged `check_output_refresh.py`
+captures declared input/output bytes as hashes, compares required files after an
+explicitly run producer, and detects observed overwrite/deletion after failure.
+`tests/test_output_refresh.py` runs a synthetic producer that updates totals then
+fails on empty inputs before updating its report, as well as a failure that leaves
+the complete set unchanged. Missing/unreadable evidence, valid unchanged outputs,
+empty files and manifest-order alternatives are covered. This observation helper
+does not enforce atomic publication or automatically run a user's program.
+
+For a new
 model efficacy study, follow the eval repository's standing protocol: observed-
 failure replay and realistic human-led conversation, each in matched clean and
 current-harness sessions, with actual delivery verified and original failures

@@ -4,12 +4,12 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.8.3-dev.1",
-      "sha256": "c5a803b4ee4d8eaae723acfd5b04b006e6710e5e988cf662b0179168dab4b842"
+      "version": "0.8.3",
+      "sha256": "987f85e26580c9da16d923ce4a698c0b9cd9b488295a7b0fb74198dfc9463893"
     },
     "deterministic-data": {
-      "version": "0.1.1",
-      "sha256": "a63940a9e81f774ed52f98dc4cbc33514f90da094069041550ba97893079279b"
+      "version": "0.1.2",
+      "sha256": "ac63a53cf3e4749d2c88a6c9cbc80a6560a4cf2ad36e17f60d7b52b2fa612a6a"
     },
     "session-ledger": {
       "version": "0.3.1",
