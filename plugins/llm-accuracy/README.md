@@ -17,7 +17,8 @@ correctness.
 - nudges a model to recheck stale details after long sessions; and
 - provides self-audit and claim-fidelity workflows;
 - provides an optional `verify-numerical` workflow and executable checks for
-  total revenue growth and whether every declared region increased;
+  declared monetary growth, whether every declared region increased, and a ratio
+  using source-defined numerator/denominator series;
 - includes a stateless evidence-receipt schema and structural validator for
   workflows that already produce typed evidence boundaries.
 
@@ -51,7 +52,7 @@ Skill selection and correct application still depend on the model.
 
 For a report and its source files, ask Claude to check the report normally or use
 `/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,
-executes the bounded revenue checker when applicable, and distinguishes other
+executes the bounded monetary checker when applicable, and distinguishes other
 calculations and unchecked claims. After a source change, ask it to update the
 report and recheck affected conclusions. See the
 [numerical workflow and supported forms](references/numerical-verification.md).

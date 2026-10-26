@@ -18,8 +18,9 @@ in this repository. Reproducible model studies, comparisons, charts and the
 practitioner narrative live in the
 [Finance/Data Eval repository](https://github.com/warwick-bit/llm-finance-data-eval).
 The studies report failures and limitations; they do not establish a universal
-accuracy benefit. See the [0.8.1 candidate status](docs/release-0.8.1.md) for
-current local qualification and outstanding release gates.
+accuracy benefit. See the [0.8.1 marketplace qualification](docs/release-0.8.1.md) for
+that version's evidence and pending tag, and the [0.8.2 release notes](docs/release-0.8.2.md)
+for the current changes, qualification and remaining coverage gaps.
 
 ## Acknowledgements
 

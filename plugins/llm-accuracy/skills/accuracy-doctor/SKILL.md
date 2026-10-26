@@ -1,6 +1,6 @@
 ---
 name: accuracy-doctor
-description: Check LLM Accuracy version, trigger configuration, bypasses and hook commands when the plugin seems inactive or behaves differently across machines.
+description: Check LLM Accuracy version, local skill files, trigger configuration, bypasses and hook commands when the plugin seems inactive or behaves differently across machines.
 argument-hint: "[optional: live]"
 ---
 
@@ -40,9 +40,20 @@ host without these tools, report the check as unavailable; do not imply that
 this command diagnoses that host's activation.
 
 Report the package version, reminder mode, configuration status, phrase counts,
-disabled checks, host-listed installations and command-probe outcomes. The report contains no configured
+disabled checks, host-listed installations, each local skill's `SKILL.md` and
+required-frontmatter result, and command-probe outcomes. Frontmatter checks cover
+delimiters, name and description only; they do not validate the full YAML schema.
+Host plugin listing does not expose individual skills, so keep host skill listing
+unverified; an enabled plugin does not establish skill delivery or current-session
+access. The report contains no configured
 phrases, paths, prompts, tool output or credentials. Explain fixed diagnostic
 codes using the plugin README. Do not dump settings files or ask for credentials.
+
+If the current host already provides an explicit skill catalogue, separately
+compare each local skill with that catalogue and identify the host evidence used.
+Report absence only when the catalogue is complete for that package. Preserve
+the doctor's `host_listing` and `current_session_activation` fields as unverified;
+listing does not prove invocation. Do not scan transcripts or logs for this check.
 
 Lead with `presentation.headline` verbatim. Report the diagnostic details, then
 end with a `---` divider (blank line before and after), then `- **Checked:**`,

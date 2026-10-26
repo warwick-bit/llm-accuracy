@@ -22,7 +22,7 @@ Ask the assistant:
    When translating prose to a checkable statement, record the original and the
    interpreted meaning together. Splitting a compound sentence does not verify
    its unchecked clauses.
-3. For total revenue growth or an every-region increase, use
+3. For a supported monetary growth, every-region increase or declared ratio, use
    `<plugin-root>/scripts/check_numerical_claims.py`. Prepare a derived JSON snapshot only when
    the raw source supplies the required definition and complete population.
    Preserve the raw-source filenames and SHA-256 hashes alongside the derived
@@ -51,7 +51,8 @@ Run with the working Python executable on the current host:
 python "<plugin-root>/scripts/check_numerical_claims.py" source.json claims.txt
 ```
 
-`source.json` contains `metric: "revenue"`, one `currency`, a nonempty unique
+`source.json` contains an explicit monetary `metric` (for example, `"revenue"`,
+`"MRR"` or `"churned MRR"`), one `currency`, a nonempty unique
 `population` of regions, and `values_cents` mapping each selected `YYYY-MM` to
 exactly those regions and signed integer-cent values. Do not drop missing regions
 to make the population appear complete. Incomplete data remains unverified.
@@ -61,12 +62,44 @@ to make the population appear complete. Incomplete data remains unverified.
 ```text
 Total revenue growth was 12% from 2026-08 to 2026-09 in AUD.
 Revenue increased for every region from 2026-08 to 2026-09 in AUD.
+Total MRR growth was 12% from 2026-08 to 2026-09 in AUD.
+Gross revenue retention was 92% from 2026-08 to 2026-09 in AUD.
 ```
 
 The dates, currency and percentage can vary. Case and whitespace variants are
 accepted. Growth needs a positive starting total and rounds to the displayed
 zero to two decimal places, with ties away from zero. The regional claim requires
 every included region to increase strictly. Other forms remain unverified.
+
+The claim must name the declared metric; case and whitespace differences are
+accepted, aliases are not. Names use up to 80 ASCII letters, digits, spaces,
+hyphens, underscores or slashes, starting with a letter. Values remain monetary
+integer cents: counts, mixed currencies and automatic FX conversion are outside
+this helper. Do not relabel a different measure as revenue to make it pass.
+
+For the ratio form `<metric> was <percent>% from <period> to <period> in <currency>`,
+the source names both series. For example:
+
+```json
+{
+  "metric": "Gross revenue retention",
+  "currency": "AUD",
+  "population": ["North", "South"],
+  "ratio": {"numerator": "retained MRR", "denominator": "starting MRR"},
+  "series_cents": {
+    "retained MRR": {"2026-09": {"North": 9000, "South": 18600}},
+    "starting MRR": {"2026-08": {"North": 10000, "South": 20000}}
+  }
+}
+```
+
+This checks `100 * sum(numerator at to-period) / sum(denominator at from-period)`:
+27,600 / 30,000 is 92%. Both selected series must contain exactly the declared
+regions; periods must be chronological and the denominator total positive.
+Rounding follows the same displayed-precision rule as growth. The source owner
+defines the eligible cohort, retained/churned amounts and treatment of expansion;
+the helper does not infer them, decide whether a ratio is economically meaningful,
+or enforce a 0–100% range. A zero/negative denominator remains unverified.
 
 The JSON output preserves each line and binds the exact supplied source, claims
 and checker bytes. It does not bind a model's interpretation to the raw source

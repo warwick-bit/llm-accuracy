@@ -168,3 +168,74 @@ def test_registration_ambiguity_keeps_local_scope_and_names_next_check(
 def test_missing_command_results_cannot_render_success(doctor):
     value = doctor.presentation(report(hook_commands={}))
     assert value["status"] == "attention"
+
+
+def test_shipped_skill_inventory_reports_files_without_host_delivery(doctor):
+    inventory = doctor.skill_inventory(ROOT / "plugins/llm-accuracy")
+    assert inventory["status"] == "ok"
+    assert {item["name"] for item in inventory["items"]} == {
+        "accuracy-doctor", "claim-fidelity", "self-audit",
+        "verify-numerical", "verify-technical",
+    }
+    assert all(item["skill_md"] == "readable" for item in inventory["items"])
+    assert all(item["frontmatter"] == "required_fields_valid" for item in inventory["items"])
+    assert "not_full_yaml" in inventory["validation_scope"]
+    assert inventory["host_listing"] == "unverified"
+    value = doctor.presentation(report(skills=inventory))
+    assert "5/5 local skill files" in value["checked"]
+    assert "Host skill listing is unverified" in value["gap"]
+    assert "does not establish skill delivery" in value["gap"]
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("name: example\ndescription: Test.\n", "invalid_delimiters"),
+        ("---\nname: example\ndescription: Test.\n", "invalid_delimiters"),
+        ("---\nname: example\n---\n", "invalid_required_fields"),
+        ("---\nname: example\ndescription:\n---\n", "invalid_required_fields"),
+        ("---\nname: example\nname: other\ndescription: Test.\n---\n", "invalid_required_fields"),
+        ("---\nname: other\ndescription: Test.\n---\n", "invalid_name"),
+        ("---\nname: example\ndescription: []\n---\n", "unsupported_required_field_format"),
+        ("---\nname: example\ndescription: false\n---\n", "unsupported_required_field_format"),
+        ("---\nname: 'example'\ndescription: \"Test.\"\n---\n", "required_fields_valid"),
+        ("---\nname: example\ndescription: Test.\n---\n", "required_fields_valid"),
+    ],
+)
+def test_skill_metadata_checks_are_bounded_and_do_not_echo_contents(doctor, text, expected):
+    assert doctor.skill_frontmatter(text, "example") == expected
+
+
+@pytest.mark.parametrize("contents", [None, b"\xff", b"not frontmatter: private-needle"])
+def test_broken_skill_needs_attention_without_blocking_other_inventory(
+    doctor, tmp_path, monkeypatch, contents
+):
+    skills = tmp_path / "skills"
+    broken = skills / "broken"
+    broken.mkdir(parents=True)
+    if contents is not None:
+        (broken / "SKILL.md").write_bytes(contents)
+    valid = skills / "example"
+    valid.mkdir()
+    (valid / "SKILL.md").write_text("---\nname: example\ndescription: Test.\n---\n")
+    manifest = tmp_path / ".claude-plugin/plugin.json"
+    manifest.parent.mkdir()
+    manifest.write_text(json.dumps({"version": "0.6.1"}))
+    monkeypatch.setattr(doctor, "python_status", lambda _: {"status": "ok"})
+    monkeypatch.setattr(doctor, "check_hooks", lambda *_: report()["hook_commands"])
+    result = doctor.diagnose(tmp_path)
+    assert result["status"] == "attention"
+    assert result["skills"]["status"] == "attention"
+    assert len(result["skills"]["items"]) == 2
+    assert result["skills"]["items"][1]["frontmatter"] == "required_fields_valid"
+    assert result["skills"]["host_listing"] == "unverified"
+    assert result["current_session_activation"] == "unverified"
+    assert "private-needle" not in json.dumps(result)
+    assert "1/2 local skill files" in doctor.presentation(result)["checked"]
+
+
+def test_missing_skills_directory_is_unavailable(doctor, tmp_path):
+    inventory = doctor.skill_inventory(tmp_path)
+    assert inventory["status"] == "unavailable"
+    assert inventory["items"] == []
+    assert inventory["host_listing"] == "unverified"
