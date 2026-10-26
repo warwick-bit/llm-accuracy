@@ -1,9 +1,13 @@
 # Config Doctor 0.1.2 preview
 
-After the prioritised report, Doctor now offers a useful follow-up through the
-client's interactive multiple-choice question tool: investigate missing evidence,
-test a proposed fix, or finish here. It names the relevant findings, what the
-check would establish, its access needs and likely effort. Inapplicable choices
+Findings and questions now use plain English: what was found, why it matters,
+how certain it is and the simplest next step. Exact evidence and proposed edits
+remain available in the supporting report, with a plain-English explanation.
+
+After the prioritised report, Doctor offers a useful follow-up through the
+client's interactive multiple-choice question tool: **Check what's uncertain**,
+**Try a change safely**, or **Finish here**. It explains what each check would
+tell you, which files or tools it needs and the likely effort. Inapplicable choices
 are omitted; no useful follow-up means no extra question. When the tool is
 unavailable in the current mode, the agent presents the choices in chat.
 

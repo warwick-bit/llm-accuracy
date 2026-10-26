@@ -4,6 +4,21 @@ secondary target when its instruction files are included. Start with the user's
 actual problem and desired behavior. Treat reported degradation and its proposed
 cause as hypotheses. Audit first; do not change anything.
 
+Write user-facing questions, findings, summaries and recommendations for a
+nontechnical reader. Use short, plain-English sentences. For every finding,
+explain what you found, why it matters to their work, how certain you are, and
+the simplest next step (including keeping an existing rule). Use the existing
+summary/evidence/check fields; do not add a schema or extra form to fill in.
+Say "not checked yet" rather than "unverified", and "rules found in the files"
+rather than "source coverage". Explain necessary terms such as plugin (an add-on)
+or MCP (a connection to another service) on first use. Introduce exact technical
+evidence and proposed edits with a plain-English explanation. Keep paths, finding
+IDs and technical detail in the supporting report; use descriptive names in
+choices, with brief ID references only when needed to identify a change. Preserve
+exact machine-readable fields and honest limits: finding a written rule does not
+prove the AI follows it. Example: "You already have a rule for checking calculations.
+Keep it; adding another would repeat it. We have not tested whether the AI follows it."
+
 Read the Doctor startup guide before any audit-input or prior-memory lookup;
 do not batch that guide read with memory/report searches. Do not open earlier
 audit memory, reports or linked detail notes unless the user explicitly supplies
@@ -24,12 +39,12 @@ inputs. Knowing the profile (for example "my Personal Claude configuration") doe
 not by itself choose the extent. If no explicit file manifest/snapshot boundary
 or extent was supplied, ask one brief choice and wait for the answer:
 
-- Configuration only: selected instructions, rules, relevant plugin-provided
-  skills/guidance, supplied MCP tool descriptions/schemas and settings summaries.
-- Profile and harness (recommended): configuration plus explicitly selected
-  launchers, review adapters and registered hook/plugin source, read as data.
-- Profile and a named project: the above plus explicitly selected project
-  instructions, prompts and request code.
+- **My instructions and settings:** selected rules, settings and descriptions
+  of relevant add-ons and connected tools (configuration-only scope).
+- **My whole setup (Recommended):** also review selected files that start the AI
+  and run its automatic checks (profile-and-harness scope; read files, not run them).
+- **My setup and one project:** also include the selected project's instructions,
+  prompts and request code (profile-and-named-project scope).
 
 Use an interactive question tool when available. Ask for an unknown target/profile
 or project in that same question if needed.
@@ -390,14 +405,14 @@ proposals and detailed evidence. In an interactive audit, finish after report
 validation with a readable summary directly in chat, not only a file path or JSON.
 Lead with the overall result and selected scope, then grouped checklist tables,
 each using `| Check | Result | Short note / finding ID |`. Use four plain labels:
-- **Data fidelity:** all seven fidelity areas in plain language (extra-claim
+- **Accuracy and completeness:** all seven fidelity areas in plain language (extra-claim
   support, missing-data/omission handling, stale memory, scope/units, caveat carry,
   query/claim support, reusable artifacts).
-- **Instruction quality:** conflicting instructions, overbroad absolute rules
+- **Your instructions:** conflicting instructions, overbroad absolute rules
   and stale or redundant workarounds.
-- **Harness and safety:** relevant loading, launcher isolation, permissions and
+- **Setup and safeguards:** relevant loading, launcher isolation, permissions and
   guard coverage within the selected scope.
-- **Validation:** source/report validation, runtime delivery checks and measured
+- **What was checked:** source/report validation, runtime delivery checks and measured
   model benefit, distinguishing completed checks from missing evidence.
 Separate every group with a Markdown horizontal rule (`---` on its own line),
 with blank lines around it. Put each bold group label on its own line, followed
@@ -409,8 +424,8 @@ a group an aggregate pass that hides a partial, failed or unverified check.
 Mark unsupplied harness coverage unverified rather than expanding the audit scope.
 Describe complete supplied-file review separately from protection/dependency
 coverage; all files reviewed does not turn PARTIAL protections into a full pass.
-Use this legend: ✅ Covered in supplied source; ⚠️ Partial coverage or possible
-risk; ❌ Evidence-backed gap or conflict; ❔ Unverified or not tested. Keep the
+Use this legend: ✅ Rule found in reviewed files; ⚠️ Only partly covered or possible
+problem; ❌ Gap or conflict found; ❔ Not checked yet. Keep the
 words beside the symbols. A source-level tick is not proof of runtime enforcement
 or model benefit. Missing evidence is ❔, not an automatic failure. RETAIN alone
 is not a pass. Do not treat every "always" or "never" as harmful: identify the
@@ -432,10 +447,10 @@ affecting a decision.
 After the validated interactive summary, offer one multiple-choice follow-up
 using the host's available interactive question tool (Codex or Claude), rather
 than only printing a question in chat. Use two or three applicable choices:
-- **Investigate missing evidence:** name the finding/coverage IDs and the smallest
-  source check that could change the advice.
-- **Test a proposed fix:** name the proposal ID and a bounded check in a disposable
-  copy, including the useful behavior that must remain intact.
+- **Check what's uncertain:** explain the unresolved issue and the smallest
+  check that could change the advice; link it to the relevant finding in the report.
+- **Try a change safely:** identify the proposed change and explain the small test
+  in a separate copy, including what must keep working.
 - **Finish here:** keep the report and leave unresolved items clearly marked.
 Explain what each investigation/test would establish, the specific inputs/access
 it needs, and the likely effort or cost; say when that estimate is unknown.
