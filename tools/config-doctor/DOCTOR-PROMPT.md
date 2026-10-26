@@ -359,6 +359,13 @@ whole-block suggestion is a starting point, never an approved edit. If two cues
 share a paragraph, reconcile them in one proposal. Include the observable check
 that would validate the change, what control it must preserve, and a rollback
 condition. Do not invent current receipts or model results to fill missing evidence.
+Check that the proposed test's expected answer follows from its supplied data and
+definitions before using it to judge a change. For example, a fall in total users
+establishes net count change, not churn: arrivals and departures are not separated.
+Use percentage change to test supplied-number handling, or supply an explicit
+cohort and cancellation definition to test churn. Verify arithmetic separately
+from metric meaning. Correct a faulty test and leave the change unverified until
+the corrected check runs; a bad expected answer is not evidence against the model.
 When a required source, date or partition is unavailable, the proposed rule must
 mark the requested dependent result unavailable. It may show a separately labeled
 historical/partial comparator, but must not substitute it for the requested result.
@@ -394,6 +401,13 @@ Keep current-source evidence separate from historical audit advice. Reconcile
 overlaps before prioritising, and preserve useful controls in any proposed change.
 Priority is advice, not approval to apply; neither a high priority nor a clean
 report authorises changes.
+
+Preserve the words that determine a recommendation's meaning in every summary:
+source restrictions, qualifiers, definitions and evidence limits. For example,
+"only from current-session tool/query evidence" is narrower than "current-session
+evidence". Do not drop "tool/query" and then accept or reject the recommendation
+on that altered wording. Check the exact source and full finding first. A possible
+wording problem may justify an optional hypothesis, without proving bad behavior.
 
 Keep the saved assessment as valid JSON; the rendered report carries exact
 proposals and detailed evidence. In an interactive audit, finish after report
