@@ -20,11 +20,25 @@ If useful and feasible, calculate alternatives from available evidence to explai
 the effect of the choice. Do not invent figures or require a full analysis before
 asking a simple defining question.
 
+When the user asks for one result and an unresolved definition changes that
+result, ask before choosing a headline answer. Calculating or showing both
+interpretations does not settle the user's intended meaning; use those
+alternatives to help frame the question. If the user requested both interpretations
+or explicitly authorized assumptions, follow that request without an extra
+definition question.
+
 Use the host's available interactive question tool in preference to ordinary
 chat. Inspect its actual schema and mode restrictions: tools may be named
 `AskUserQuestion`, `request_user_input`, `request_user_input_async`, or something
-else. Use an asynchronous question when supported so independent work can
-continue. Do not change modes, install an integration or invent a tool to ask.
+else. In a Codex CLI terminal, prefer `request_user_input` for the native
+selectable menu when the tool is available and permitted in the current mode.
+In other clients, prefer an asynchronous question when the client supports
+rendering its interactive choices, so independent work can continue. A tool
+being listed or returning `accepted` does not prove that a selector appeared.
+If the user reports no selector, try another available, permitted interactive
+question tool instead of repeating the same failed route; otherwise use the
+chat fallback below. Do not change modes, install an integration or invent a
+tool to ask.
 
 For a few meaningful alternatives, offer concise, distinct multiple-choice
 answers with a brief consequence for each. Put a recommendation first only when
