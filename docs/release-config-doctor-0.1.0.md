@@ -5,10 +5,10 @@ settings summaries, plugin guidance and MCP tool descriptions. It identifies
 conflicting rules, stale assumptions and source-coverage gaps, then validates
 the agent's assessment and proposed edit spans. It does not apply changes.
 
-Start with the [guide](../tools/config-doctor/README.md) or download the ZIP from
-the [preview release](https://github.com/warwick-bit/llm-accuracy/releases/tag/config-doctor-v0.1.0).
-Extract it, open a fresh local Claude Code or Codex session and paste the startup
-prompt with the extracted folder's path. Python 3.11+ is required; no extra Python
+Open a fresh local Claude Code or Codex session and paste the prompt from the
+[guide](../tools/config-doctor/README.md). Your agent fetches the released tool;
+no manual download is needed. The [preview ZIP](https://github.com/warwick-bit/llm-accuracy/releases/tag/config-doctor-v0.1.0)
+remains available for manual setup. Python 3.11+ is required; no extra Python
 packages or separate API key are needed. Your agent performs the review.
 
 The download includes the workflow, scanner, self-contained guidance, synthetic

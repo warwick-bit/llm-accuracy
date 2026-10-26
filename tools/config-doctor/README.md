@@ -10,19 +10,21 @@ is a different diagnostic for that plugin's own installation and configuration.
 
 ## Start here
 
-1. [Download the Config Doctor ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.0/config-doctor-0.1.0.zip) and extract it.
-2. Use Python **3.11 or later** and a Claude Code or Codex session that can read
-   your selected local files and run Python. No additional Python packages or API
-   key are required. Ordinary web chat alone cannot run this local workflow.
-3. Start a fresh session. Paste the prompt below, replacing `<this directory>`
-   with the extracted `config-doctor` folder's full path.
-4. Choose the audit scope and explicitly select the files when asked. Your agent
+1. Open a fresh **Claude Code or Codex** session and paste the prompt below.
+   Your agent fetches the released tool for you; no manual download is needed.
+2. The workflow needs **Python 3.11 or later** and a session that can fetch files,
+   read your selected local files and run Python. No additional Python packages
+   or API key are required. Ordinary web chat alone cannot run this local workflow.
+3. Choose the audit scope and explicitly select the files when asked. Your agent
    prepares the packet, completes the assessment and validates the report using
    the commands in the [quickstart](QUICKSTART.md).
-5. Review the checklist and proposed edits. Applying changes is a separate decision.
+4. Review the checklist and proposed edits. Applying changes is a separate decision.
 
 ```text
-Use CONFIG Doctor at <this directory> to audit my selected profile.
+Fetch and extract CONFIG Doctor from this released ZIP into a new local folder:
+https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.0/config-doctor-0.1.0.zip
+Do not overwrite existing files. Use its config-doctor folder to audit my selected
+profile. Check that Python 3.11+ is available; if not, explain what is needed.
 Before any memory/history lookup or audit-input read, read that directory's
 QUICKSTART.md by itself. Do not open earlier audit memory, reports or history.
 Disclose any historical audit context already loaded; do not use it as evidence.
@@ -38,6 +40,12 @@ Use an interactive question tool when available. Do not discover files, run
 audited code or change configuration. Follow prepare, assessment and report
 validation, and state the selected scope and any unverified coverage.
 ```
+
+### Optional manual download
+
+If you prefer, [download the ZIP](https://github.com/warwick-bit/llm-accuracy/releases/download/config-doctor-v0.1.0/config-doctor-0.1.0.zip)
+and extract it yourself. Use the local-folder startup prompt in
+[QUICKSTART.md](QUICKSTART.md), replacing its folder placeholder with your path.
 
 Expect a checklist of existing protections, partial coverage, evidence-backed gaps
 and things not yet verified, followed by up to three next actions and a detailed
