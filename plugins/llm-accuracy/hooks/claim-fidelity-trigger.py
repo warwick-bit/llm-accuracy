@@ -2,8 +2,8 @@
 """Add general evidence guidance once per session, plus targeted prompt guidance.
 
 Session mode (the default) adds the static general reminder from SessionStart,
-which runs on startup, resume, clear and compaction. Prompts then receive only
-the targeted guidance their wording triggers. General mode restores the general
+which runs on startup, resume, clear and compaction. Each prompt gets a short
+clarification check plus any targeted evidence guidance. General mode restores the general
 reminder on every prompt; targeted mode keeps only the triggered guidance.
 Subprocess tests live in tests/test_accuracy_wiring.py.
 No prompt or evidence is retained or echoed.
@@ -67,10 +67,20 @@ GENERAL_CONTRACT = (
     "for diagnosis and fix checks. For data calculations, use "
     "llm-accuracy:verify-numerical; conventions do not settle an "
     "unresolved inclusion rule. For material ambiguity, use llm-accuracy:clarify "
-    "with interactive multiple-choice. Advisory, not verification."
+    "and CALL interactive multiple-choice. Advisory, not verification."
 )
 
 LABEL = "CLAIM FIDELITY CHECK: "
+
+CLARIFY_CONTRACT = (
+    "CLARIFY CHECK: Before reporting a metric, check its definition, included records "
+    "and required inputs. If an unresolved choice materially changes the answer, "
+    "use llm-accuracy:clarify and CALL the available interactive multiple-choice "
+    "question tool; prose options or showing both results do not resolve the choice. "
+    "Reuse settled definitions. If the user requested alternatives or authorized "
+    "assumptions, follow that request. Otherwise wait for the answer before dependent "
+    "conclusions. Proceed directly when nothing material is unresolved."
+)
 
 CONTRACT = (
     LABEL + "Keep every load-bearing conclusion inside the observed "
@@ -109,6 +119,9 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     """Choose bounded guidance without treating prompt text as configuration."""
     if not prompt.strip() or BYPASS_RE.search(prompt):
         return ""
+    if mode == "session":
+        targeted = CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
+        return CLARIFY_CONTRACT + (" " + targeted if targeted else "")
     if mode != "general":
         return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
     if should_fire(prompt):

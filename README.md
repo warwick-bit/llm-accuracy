@@ -487,6 +487,8 @@ answers.
 
 In Claude Code, the general fidelity reminder is added once when a session
 starts, resumes, is cleared or is compacted (every prompt is an opt-in mode).
+The development candidate also sends a short Clarify check on each non-empty
+prompt in default session mode; it asks only about unresolved material choices.
 Additional reminders target ambiguous business questions, open-ended analysis,
 evidence-boundary claims, source conflicts and context compaction. They do not
 block work, fetch evidence, or verify an answer for you. The general reminder also

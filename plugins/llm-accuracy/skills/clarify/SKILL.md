@@ -1,6 +1,6 @@
 ---
 name: clarify
-description: Resolve missing choices that materially change a data analysis, factual answer or requested deliverable, or when the user asks to clarify assumptions. Use automatically for consequential ambiguity and on explicit invocation. Skip choices already settled by the user or authoritative context, and harmless implementation details.
+description: Check definitions and missing inputs before reporting metrics, averages, rates, growth or comparisons from supplied data. Also use for ambiguous factual requests or deliverables, and explicit requests to clarify assumptions. Ask only when an unresolved choice materially changes the result; proceed directly when context settles it.
 ---
 
 # Clarify
@@ -27,28 +27,35 @@ alternatives to help frame the question. If the user requested both interpretati
 or explicitly authorized assumptions, follow that request without an extra
 definition question.
 
-Use the host's available interactive question tool in preference to ordinary
-chat. Inspect its actual schema and mode restrictions: tools may be named
-`AskUserQuestion`, `request_user_input`, `request_user_input_async`, or something
-else. In a Codex CLI terminal, prefer `request_user_input` for the native
-selectable menu when the tool is available and permitted in the current mode.
-In other clients, prefer an asynchronous question when the client supports
-rendering its interactive choices, so independent work can continue. A tool
-being listed or returning `accepted` does not prove that a selector appeared.
-If the user reports no selector, try another available, permitted interactive
-question tool instead of repeating the same failed route; otherwise use the
-chat fallback below. Do not change modes, install an integration or invent a
-tool to ask.
+When a question is needed, make an actual call to the host's interactive question
+tool before ending the turn. Writing options in a chat message is not a tool
+call. Check the tools available in this conversation and their actual schemas
+and mode restrictions; do not infer availability from the app name. The tool
+may be named `AskUserQuestion`, `request_user_input`, `request_user_input_async`,
+or have another name or namespace. Use the available question capability even
+when its name differs from these examples.
+
+In a Codex CLI terminal, prefer `request_user_input` for the native selectable
+menu when permitted. In other clients, prefer an asynchronous question when
+the client supports rendering its interactive choices, so independent work can
+continue. Reading this skill or describing the intended question does not
+complete this step. A listed tool or an `accepted` result does not prove that a
+selector appeared. If the user reports no selector, try another available,
+permitted question tool; do not repeat the failed route. Do not change modes,
+install an integration or invent a tool to ask.
 
 For a few meaningful alternatives, offer concise, distinct multiple-choice
 answers with a brief consequence for each. Put a recommendation first only when
 the user's goal or evidence supports it; label and explain that recommendation.
 Allow a free-text alternative through the host's built-in facility. If the
 choice is open-ended, use its free-text question instead of forcing false options.
-Follow the host's question/option limits and avoid duplicating its built-in Other
-option. If no suitable question tool is available in the current mode, ask one
-short question in chat, with numbered choices where useful. Do not repeat a tool
-question in chat.
+When a request needs both a definition choice and a missing value, keep the
+definition as selectable options and collect the value through the tool's
+free-text facility or a follow-up. Missing numbers do not turn a meaningful
+definition choice into an entirely prose question. Follow the host's question
+limits and avoid duplicating its built-in Other option. Only fall back to a
+short chat question when no suitable tool is available or permitted, or the
+available tools failed. Do not repeat a tool question in chat.
 
 Ask the smallest set of questions needed to remove the material ambiguity.
 Follow the user's configured language, tone, accessibility and question-format
