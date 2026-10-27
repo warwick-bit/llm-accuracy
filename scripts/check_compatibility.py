@@ -18,8 +18,8 @@ TARGETS = ('code-linux', 'code-wsl', 'code-windows-no-bash', 'code-windows-git-b
 CODE_TARGETS = TARGETS[:5]
 CI_TARGETS = tuple(target for target in CODE_TARGETS if target != 'code-wsl')
 SUPPORT_POLICY = {'code': 'native_installation_and_local_live_qa',
-                  'desktop_chat': 'experimental_stateless_skills',
-                  'cowork': 'experimental_stateless_skills'}
+                  'desktop_chat': 'stateless_skills',
+                  'cowork': 'stateless_skills'}
 LAUNCHER_COMMAND = (r'set -- "([a-z][a-z_-]*\.py(?::[a-z-]+)?)"; '
                     r'\(\. "\$\{CLAUDE_PLUGIN_ROOT\}/hooks/python-launcher\.cmd" "\1"\); exit 0')
 CHECKS = ('clean_install', 'configured_python', 'automatic_python_upgrade', 'automatic_python_fresh',

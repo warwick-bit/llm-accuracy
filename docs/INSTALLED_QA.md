@@ -3,7 +3,7 @@
 Code publication requires all four native installation targets plus at least
 one genuine current-source local live Code pass. Live coverage on other hosts
 stays explicitly untested. Offline execution does not certify model-driven
-Claude scheduling or Desktop UI. Desktop Chat/Cowork remain experimental
+Claude scheduling or Desktop UI. Desktop Chat/Cowork use
 stateless skills; keep their six untested rows visible.
 
 ## Hosted Code QA

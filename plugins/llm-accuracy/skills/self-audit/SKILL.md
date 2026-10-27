@@ -1,11 +1,11 @@
 ---
 name: self-audit
-description: Use when asked to audit, check, rate, or correct Claude Code's own previous answer, including "you said", "you told me", "your previous answer", "audit your answer", or a pasted prior response from this assistant. Do not use for intern, agent, or bot output review.
+description: Use when asked to audit, check, rate, or correct this assistant's own previous answer, including "you said", "you told me", "your previous answer", "audit your answer", or a pasted prior response from this assistant. Do not use for intern, agent, or bot output review.
 argument-hint: "[paste or describe the prior assistant answer to audit]"
 skill: self-audit
 plugin: llm-accuracy
 fully_qualified: llm-accuracy:self-audit
-version: "0.1.1"
+version: "0.1.2"
 triggers:
   - pattern: "\\b(you said|you told me|your previous answer|audit your answer|check your answer|were you right|did you make that up)\\b"
     confidence: 0.90

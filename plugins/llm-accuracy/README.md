@@ -1,7 +1,8 @@
 # LLM Accuracy plugin
 
-LLM Accuracy provides evidence-aware workflows for Claude Code and experimental
-Codex skills-only use, with separate experimental stateless host support. It
+LLM Accuracy provides evidence-aware workflows for Claude Code, Claude Chat,
+Cowork and Codex. Chat, Cowork and Codex use the stateless skills; Claude Code
+also provides advisory hooks. It
 ships general accuracy hygiene rather than a claim of universal factual
 correctness.
 
@@ -72,8 +73,8 @@ skill keeps the choice selectable and requests the number separately when needed
 
 Automatic skill selection is distinct from hooks: a skills-only installation can
 still let a model choose a skill. An explicit-only edition would need invocation
-policy as well as no hooks. The current development candidate adds Clarify to the
-existing automatic-selection skills; it does not yet provide a manual-only edition.
+policy as well as no hooks. The release includes Clarify and Self-Audit alongside the verification skills;
+it does not provide a manual-only edition.
 
 For a report and its source files, ask Claude to check the report normally or use
 `/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,
@@ -97,7 +98,7 @@ In Claude Code, Python 3.9+ is discovered automatically by probing `python3`,
 change. Saved overrides take precedence. Use the optional **Python executable**
 option in `/config` to choose a particular executable; clear it to restore
 discovery. Native Windows does not require Git Bash.
-Cowork stateless skills are a separate target; this source candidate's hook
+Cowork stateless skills are a separate target; this release's hook
 delivery in Cowork is unverified and Desktop Chat runs no hooks.
 
 Once installed and activated in Claude Code, a general
@@ -130,8 +131,8 @@ The post-compaction reminder remains separate. None verifies facts automatically
 - **Session (default since 0.8.0):** the general reminder is added once, from
   `SessionStart`: at startup, resume and `/clear`, and again after every
   compaction, because an injected reminder does not survive the next one.
-  Each non-empty prompt also gets a short clarification check (since this
-  development candidate); evidence-boundary prompts get the detailed fidelity
+  Each non-empty prompt also gets a short clarification check (since
+  0.8.4); evidence-boundary prompts get the detailed fidelity
   guidance too. The clarification check says to proceed directly when nothing
   material is unresolved, including ordinary greetings and creative tasks.
 - **General (default 0.6.0 to 0.7.2):** the same reminder on every non-empty
