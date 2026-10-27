@@ -148,6 +148,21 @@ Chat and Cowork separately, with only Accuracy and Deterministic Data:
 4. Upgrade from the previous packages, then verify the candidate skills again.
 5. Remove both packages and confirm their registrations/skills are gone.
 
+For Clarify behavior, test automatic selection and explicit invocation separately
+in fresh conversations. Use synthetic data with an unresolved inclusion rule,
+then controls with a stated definition and with both alternatives requested.
+The unresolved case needs a question before a selected result; a conventional
+definition or two calculated alternatives does not settle user intent.
+For a request missing both a definition and a value, answer only the definition
+first. Confirm it retains that choice, asks for the remaining value, and waits
+before calculating. An open value may need a concise chat follow-up if the host
+cannot ask free-text-only questions; do not require artificial menu choices.
+Supply the value in the same conversation and check the resulting definition,
+population, units and calculation. A total must not be relabelled as per-item.
+Record actual question-tool use and visible rendering separately. These behavior
+observations supplement the lifecycle checks; they do not measure an adherence
+rate or certify a different host.
+
 Write the result as a row file with `outcome` `pass`, the target's `platform`
 and `host_kind`, the actual app version as `host_version`, the two package
 bindings as `packages`, the exact
