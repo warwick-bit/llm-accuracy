@@ -52,6 +52,10 @@ or bot output review; route those to the relevant domain/plugin review skill.
    missing caveat, withheld source, or not checked. For claimed members or
    exclusions, require an explicit mapping in the user's facts or source
    definition. A category label or conventional example is not that mapping.
+   Preserve accurate scope limits and explicitly conditional statements: they
+   do not assert that the unknown condition holds. Unnecessary wording is not
+   automatically a factual error. Missing evidence also does not establish the
+   opposite claim; distinguish an unverified wider result from a different one.
 7. Rebuild the corrected answer from the supported facts and definitions. Retain
    correct calculations and useful supported explanations. Where a category's
    composition is unknown, use its agreed name rather than replacing rejected
