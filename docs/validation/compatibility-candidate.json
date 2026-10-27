@@ -36,7 +36,43 @@
       "outcome": "untested"
     },
     "code-windows-git-bash": {
-      "outcome": "untested"
+      "outcome": "pass",
+      "platform": "Windows",
+      "host_kind": "code",
+      "host_version": "2.1.287",
+      "python_version": "3.13.1",
+      "packages": {
+        "llm-accuracy": {
+          "version": "0.8.4-dev.7",
+          "sha256": "6b2382a96ba4cec722984d0aacdff6ab2edbd4c15cce806778df7e27c7148263"
+        },
+        "deterministic-data": {
+          "version": "0.1.2",
+          "sha256": "ac63a53cf3e4749d2c88a6c9cbc80a6560a4cf2ad36e17f60d7b52b2fa612a6a"
+        },
+        "session-ledger": {
+          "version": "0.3.1",
+          "sha256": "78086777ea2f85d844fe7243369108f4c9d1e2e6c4a537e01f53d1e9d3093d3d"
+        },
+        "evidence-memory": {
+          "version": "0.5.1",
+          "sha256": "43cd1b2d2565594be6ba2510782d0773f5faf507766a16d490f8976ab83c3e85"
+        }
+      },
+      "checks": {
+        "clean_install": true,
+        "configured_python": true,
+        "automatic_python_upgrade": true,
+        "automatic_python_fresh": true,
+        "unconfigured_prompt_delivery": true,
+        "prompt_delivery": true,
+        "upgrade": true,
+        "uninstall": true,
+        "invalid_python_advisory_then_recovery": true,
+        "git_bash_present": true
+      },
+      "source_commit": "50e5b31ed6af5302ab46c6088809f6729d6f0d32",
+      "row_sha256": "1be38f07293f83e89e5eeed8907bf484abf1d278b8c0c181a4de1389e6641ebb"
     },
     "code-macos": {
       "outcome": "untested"
