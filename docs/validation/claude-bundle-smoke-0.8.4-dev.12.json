@@ -1,6 +1,6 @@
 {
   "scope": "code_bundle_registration_accuracy_delivery",
-  "source_commit": "a4cdbba92d517d3521c50a2285b35967919c15bd",
+  "source_commit": "a0feddaec476a28bb5387560ff7c638bf1e844c1",
   "platform": "Windows",
   "desktop_gui": "not_tested",
   "windows_bash": "present",
@@ -9,8 +9,8 @@
   "python_version": "3.13.1",
   "packages": {
     "llm-accuracy": {
-      "version": "0.8.4-dev.11",
-      "sha256": "3c0d55e0f2d70532b555e0cb202bf64fe3ba311f70a1076ea7b98fcbd26894c0"
+      "version": "0.8.4-dev.12",
+      "sha256": "c878f7dd491e2b4fcf8e231a3b66aeb6a5f83600f48fa45664e1a7307f6c6b07"
     },
     "deterministic-data": {
       "version": "0.1.2",
