@@ -47,7 +47,9 @@ permitted question tool; do not repeat the failed route. Do not change modes,
 install an integration or invent a tool to ask.
 
 For a few meaningful alternatives, offer concise, distinct multiple-choice
-answers with a brief consequence for each. Put a recommendation first only when
+answers with a brief supported consequence for each. Describe category choices
+by their inclusion rule; do not invent lists of members or exclusions from a
+category name. Use examples only when their membership is established. Put a recommendation first only when
 the user's goal or evidence supports it; label and explain that recommendation.
 Allow a free-text alternative through the host's built-in facility. If the
 choice is open-ended, use a free-text question if the tool supports one.
@@ -78,11 +80,11 @@ results conditional. Missing source evidence still remains unavailable.
 Apply the answer to the task and retain its meaning in the conversation or
 existing task brief. Keep the selected measure, units, population and period in
 the result. Plain-English labels must preserve the calculation: a total is not
-a per-item figure without the relevant count. A chosen category does not authorize
-extra inclusions or exclusions: explain its rule without assuming particular
-items always belong inside or outside it. Keep the answer focused on the requested
-result; do not add a causal diagnosis or claim that a definition is usual without
-supporting evidence.
+a per-item figure without the relevant count. Before sending, check every claimed
+inclusion and exclusion against the user's choice and supplied evidence. Remove
+unsupported elaboration rather than expanding the chosen definition or asking
+unnecessary questions. Report the requested result and calculation; do not append
+speculative causes, unprovided category lists or claims about what is usual.
 Do not create a new persistent store. Revisit the choice only
 when the user changes it or new evidence creates a material conflict. If nothing
 material remains unresolved, proceed without a ceremonial confirmation.
