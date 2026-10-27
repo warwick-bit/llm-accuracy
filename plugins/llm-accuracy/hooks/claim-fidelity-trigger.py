@@ -64,8 +64,8 @@ GENERAL_CONTRACT = (
     "A tool call is not verification. Test competing causes before declaring "
     "a root cause. Corrections must revisit dependent conclusions; repeated "
     "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
-    "for diagnosis and fix checks. For data calculations, first use "
-    "llm-accuracy:verify-numerical; a conventional filter does not settle an "
+    "for diagnosis and fix checks. For data calculations, use "
+    "llm-accuracy:verify-numerical; conventions do not settle an "
     "unresolved inclusion rule. For material ambiguity, use llm-accuracy:clarify "
     "with interactive multiple-choice. Advisory, not verification."
 )
