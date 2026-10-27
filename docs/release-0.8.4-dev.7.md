@@ -14,13 +14,18 @@ No new persistence, telemetry, connector or external service is added.
 
 ## Install for team testing
 
-Download `llm-accuracy-0.8.4-dev.7.zip` from the
-[preview release](https://github.com/warwick-bit/llm-accuracy/releases/tag/v0.8.4-dev.7).
-In Claude Chat or Cowork, open **Customize → Plugins** and use the custom-plugin
-upload option. In Cowork, open the Cowork tab first. Verify the installed version
-is **0.8.4-dev.7**, then start a fresh conversation. Clarify is included in LLM
-Accuracy; it is not a separate plugin. Organization policy may control sharing
-and installation. See [Claude's installation and sharing instructions](https://support.claude.com/en/articles/13837440-use-plugins-in-claude).
+Install through the **LLM Accuracy marketplace**; no ZIP download is needed.
+
+1. In Claude, open **Customize → Plugins**. In Cowork, open the Cowork tab first.
+2. Choose **Add marketplace** from **Add** (or the **+** beside Personal plugins), then **Add from a repository**.
+3. Enter `https://github.com/warwick-bit/llm-accuracy`.
+4. Select **LLM Accuracy** from that marketplace and install it.
+5. Confirm version **0.8.4-dev.7**, then start a fresh conversation.
+
+Clarify is included in LLM Accuracy; it is not a separate plugin. If the marketplace
+is already added, refresh/sync it and update the existing LLM Accuracy installation.
+Organization policy may control marketplace access. See
+[Claude's marketplace instructions](https://support.claude.com/en/articles/13837440-use-plugins-in-claude).
 
 Claude Code users can add the repository marketplace and install the package:
 

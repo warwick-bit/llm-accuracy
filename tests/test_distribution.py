@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.8.4-dev.7"
+    assert claude["version"] == "0.8.4"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -85,7 +85,7 @@ def test_codex_marketplace_publishes_memory_and_accuracy() -> None:
     assert accuracy["version"] == load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")["version"]
     assert accuracy["skills"] == [
         "./skills/verify-numerical", "./skills/verify-technical", "./skills/claim-fidelity",
-        "./skills/clarify"]
+        "./skills/clarify", "./skills/self-audit"]
     assert accuracy["hooks"] == {"hooks": {}}
     for plugin in (DETERMINISTIC, LEDGER):
         assert not (plugin / ".codex-plugin").exists()

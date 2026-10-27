@@ -3,7 +3,7 @@
 Code publication requires all four native installation targets plus at least
 one genuine current-source local live Code pass. Live coverage on other hosts
 stays explicitly untested. Offline execution does not certify model-driven
-Claude scheduling or Desktop UI. Desktop Chat/Cowork remain experimental
+Claude scheduling or Desktop UI. Desktop Chat/Cowork use
 stateless skills; keep their six untested rows visible.
 
 ## Hosted Code QA
@@ -147,6 +147,38 @@ Chat and Cowork separately, with only Accuracy and Deterministic Data:
    In Cowork, confirm the stateless boundary and absence of Ledger/Memory claims.
 4. Upgrade from the previous packages, then verify the candidate skills again.
 5. Remove both packages and confirm their registrations/skills are gone.
+
+For Clarify behavior, test automatic selection and explicit invocation separately
+in fresh conversations. Use synthetic data with an unresolved inclusion rule,
+then controls with a stated definition and with both alternatives requested.
+The unresolved case needs a question before a selected result; a conventional
+definition or two calculated alternatives does not settle user intent.
+For a request missing both a definition and a value, answer only the definition
+first. Confirm it retains that choice, asks for the remaining value, and waits
+before calculating. An open value may need a concise chat follow-up if the host
+cannot ask free-text-only questions; do not require artificial menu choices.
+Supply the value in the same conversation and check the resulting definition,
+population, units and calculation. A total must not be relabelled as per-item.
+Inspect the whole answer, including optional caveats: an aggregate must not be
+expanded into unsupported member/exclusion lists or directional predictions.
+Check a source-defined category that includes an item often assigned elsewhere.
+For a settled metric with no stated reporting purpose, require the requested
+result without an unconditional claim that another measure is better or that
+the result establishes a different operational quantity. Add a control with an
+explicit purpose and supported interpretation, so this check does not reward
+silencing useful explanations. Assess meaning, not a fixed phrase or word ban.
+Record actual question-tool use and visible rendering separately. These behavior
+observations supplement the lifecycle checks; they do not measure an adherence
+rate or certify a different host.
+
+For self-audit, include an answer with correct arithmetic but unsupported
+category membership or advice. Check every part of the audit, especially the
+rewritten answer: acknowledging an unsupported claim is insufficient if the
+closing note repeats it or substitutes another unsupported example. Include
+a source-defined membership control and an entirely supported answer; the
+audit must preserve their definitions and calculations without inventing
+corrections. Test a nonfinancial category as well. Record explicit audit
+invocation separately from automatic prevention of an initial error.
 
 Write the result as a row file with `outcome` `pass`, the target's `platform`
 and `host_kind`, the actual app version as `host_version`, the two package

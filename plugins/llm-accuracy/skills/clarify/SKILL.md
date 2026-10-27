@@ -1,6 +1,6 @@
 ---
 name: clarify
-description: Check definitions and missing inputs before reporting metrics, averages, rates, growth or comparisons from supplied data. Also use for ambiguous factual requests or deliverables, and explicit requests to clarify assumptions. Ask only when an unresolved choice materially changes the result; proceed directly when context settles it.
+description: Use before interpreting supplied data or reporting metrics, averages, rates, growth or comparisons. Resolve material ambiguity through the host's interactive question tool before choosing a result; showing alternatives does not settle the choice. Also use for ambiguous factual requests or deliverables and explicit requests to clarify assumptions. Reuse settled definitions and collect only missing inputs.
 ---
 
 # Clarify
@@ -21,9 +21,11 @@ the effect of the choice. Do not invent figures or require a full analysis befor
 asking a simple defining question.
 
 When the user asks for one result and an unresolved definition changes that
-result, ask before choosing a headline answer. Calculating or showing both
-interpretations does not settle the user's intended meaning; use those
-alternatives to help frame the question. If the user requested both interpretations
+result, ask before choosing a headline answer. A familiar convention or a
+plausible use for each alternative does not establish the user's intended meaning.
+Keep definition choices neutral unless their stated goal supports a recommendation.
+Calculating or showing both interpretations does not settle the user's intended
+meaning; use those alternatives to help frame the question. If the user requested both interpretations
 or explicitly authorized assumptions, follow that request without an extra
 definition question.
 
@@ -45,14 +47,20 @@ permitted question tool; do not repeat the failed route. Do not change modes,
 install an integration or invent a tool to ask.
 
 For a few meaningful alternatives, offer concise, distinct multiple-choice
-answers with a brief consequence for each. Put a recommendation first only when
+answers with a brief supported consequence for each. Describe category choices
+by their inclusion rule; do not invent lists of members or exclusions from a
+category name. Use examples only when their membership is established. Put a recommendation first only when
 the user's goal or evidence supports it; label and explain that recommendation.
 Allow a free-text alternative through the host's built-in facility. If the
-choice is open-ended, use its free-text question instead of forcing false options.
+choice is open-ended, use a free-text question if the tool supports one.
 When a request needs both a definition choice and a missing value, keep the
-definition as selectable options and collect the value through the tool's
-free-text facility or a follow-up. Missing numbers do not turn a meaningful
-definition choice into an entirely prose question. Follow the host's question
+definition as selectable options and collect the actual value through a suitable
+free-text input or a follow-up. If the tool requires multiple choices but only
+an amount, date or other open value is missing, ask a short chat question instead
+of inventing choices, ranges or an "I'll type it" option. Such a selection is not
+the missing value. A partial answer settles only what the user actually supplied;
+retain that part and ask only for what is still needed. Missing numbers do not
+turn a meaningful definition choice into an entirely prose question. Follow the host's question
 limits and avoid duplicating its built-in Other option. Only fall back to a
 short chat question when no suitable tool is available or permitted, or the
 available tools failed. Do not repeat a tool question in chat.
@@ -70,6 +78,20 @@ to proceed with assumptions, state the chosen assumptions and keep dependent
 results conditional. Missing source evidence still remains unavailable.
 
 Apply the answer to the task and retain its meaning in the conversation or
-existing task brief. Do not create a new persistent store. Revisit the choice only
+existing task brief. Keep the selected measure, units, population and period in
+the result. Plain-English labels must preserve the calculation: a total is not
+a per-item figure without the relevant count. Apply the same evidence boundary to
+the entire answer and later follow-ups. When a total's composition is unknown,
+describe its scope using only the agreed category name: do not supply examples
+of presumed members or exclusions. A caveat is still a claim; do not predict
+unspecified adjustments or invent a cause to justify an authorized assumption.
+Once the needed answers arrive, give the requested result, calculation and
+material qualifications, then stop. Do not append a generic advice section.
+When interpretation or advice is requested, tie each recommendation to the
+stated purpose and available evidence. Do not present one measured quantity as
+another operational quantity without the required relationship and inputs.
+Omit additions that need missing context rather than asking questions solely
+to support optional commentary.
+Do not create a new persistent store. Revisit the choice only
 when the user changes it or new evidence creates a material conflict. If nothing
 material remains unresolved, proceed without a ceremonial confirmation.

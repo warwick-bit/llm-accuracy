@@ -282,11 +282,21 @@ local session record.
 If installation fails, first confirm the repository contains
 `.claude-plugin/marketplace.json` on `main`.
 
-## Claude Desktop and Cowork — release ZIP
+## Claude Desktop and Cowork — marketplace installation
 
-Current Desktop Chat/Cowork support is **experimental**, limited to stateless
-Accuracy and Deterministic Data skills. Current UI QA remains untested; Code
-terminal certification does not establish Desktop behavior.
+Install LLM Accuracy through its repository marketplace; no ZIP is needed.
+Open **Customize → Plugins**, choose **Add marketplace → Add from a repository**,
+and enter `https://github.com/warwick-bit/llm-accuracy`. Select **LLM Accuracy**
+and install it. For an existing installation, refresh/sync the marketplace and
+update the plugin. Confirm version **0.8.4**, then start a fresh conversation.
+Clarify and Self-Audit are included; they are not separate plugins.
+
+Chat/Cowork use stateless Accuracy and Deterministic Data skills. Focused
+maintainer-reported tests cover clarification and self-audit behavior; full
+Desktop lifecycle and per-OS UI qualification remain incomplete. Code terminal
+checks do not establish Desktop behavior.
+
+### Optional ZIP installation
 
 Download the latest `llm-accuracy-<version>.zip` asset from the
 [latest GitHub release](https://github.com/warwick-bit/llm-accuracy/releases/latest).
@@ -305,7 +315,7 @@ In the **Chat** tab, LLM Accuracy's skills are available, including self-audit.
 The automatic advisory hooks do not run in chat, so use the skill when you want
 an explicit check of an earlier answer.
 
-### Claude Cowork — experimental stateless skills
+### Claude Cowork — stateless skills
 
 In **Cowork**, use only stateless LLM Accuracy or Deterministic Data. The current
 candidate's configured Python hook delivery is unverified in Cowork's execution

@@ -1,0 +1,19 @@
+{
+  "version": "0.8.4",
+  "limits": [
+    "Discovery and installation only; no Codex model or UI claim."
+  ],
+  "status": "pass",
+  "source_commit": "b3783e293c39f659d05299c18194ab080522ca7a",
+  "exact_installed_files": 40,
+  "skills": [
+    "llm-accuracy:claim-fidelity",
+    "llm-accuracy:clarify",
+    "llm-accuracy:self-audit",
+    "llm-accuracy:verify-numerical",
+    "llm-accuracy:verify-technical"
+  ],
+  "host_version": "codex-cli 0.162.0-alpha.17.2",
+  "configuration_restored": true,
+  "prior_accuracy_cache_files_preserved": 204
+}

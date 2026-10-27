@@ -11,7 +11,7 @@ Windows with Git Bash do not establish support without it; Chat is skills-only.
 Main is the marketplace delivery branch. Protected changes require actual native
 installation and direct installed-hook execution on Linux/macOS/Windows with
 and without Bash, plus at least one current-source local live Code pass. Desktop
-Chat/Cowork are experimental stateless skills; their untested rows remain visible.
+Chat/Cowork use stateless skills; their untested rows remain visible.
 Run `python3 scripts/check_marketplace_publication.py --base-ref BASE_SHA` using
 the actual PR base commit. Main/tag builds use `--release`. Keep native installed
 QA and publication in the required aggregate; independently review checker,

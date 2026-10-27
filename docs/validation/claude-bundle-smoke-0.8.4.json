@@ -1,0 +1,61 @@
+{
+  "scope": "code_bundle_registration_accuracy_delivery",
+  "source_commit": "b3783e293c39f659d05299c18194ab080522ca7a",
+  "platform": "Windows",
+  "desktop_gui": "not_tested",
+  "windows_bash": "present",
+  "partial": false,
+  "host_version": "2.1.287",
+  "python_version": "3.13.1",
+  "packages": {
+    "llm-accuracy": {
+      "version": "0.8.4",
+      "sha256": "9f9470ab80a6eb336808efbe40291f29479d1de80e35abbe2670cd82079ef95a"
+    },
+    "deterministic-data": {
+      "version": "0.1.2",
+      "sha256": "ac63a53cf3e4749d2c88a6c9cbc80a6560a4cf2ad36e17f60d7b52b2fa612a6a"
+    },
+    "session-ledger": {
+      "version": "0.3.1",
+      "sha256": "78086777ea2f85d844fe7243369108f4c9d1e2e6c4a537e01f53d1e9d3093d3d"
+    },
+    "evidence-memory": {
+      "version": "0.5.1",
+      "sha256": "43cd1b2d2565594be6ba2510782d0773f5faf507766a16d490f8976ab83c3e85"
+    }
+  },
+  "baseline_packages": {
+    "llm-accuracy": {
+      "version": "0.8.3",
+      "sha256": "987f85e26580c9da16d923ce4a698c0b9cd9b488295a7b0fb74198dfc9463893"
+    },
+    "deterministic-data": {
+      "version": "0.1.2",
+      "sha256": "ac63a53cf3e4749d2c88a6c9cbc80a6560a4cf2ad36e17f60d7b52b2fa612a6a"
+    },
+    "session-ledger": {
+      "version": "0.3.1",
+      "sha256": "78086777ea2f85d844fe7243369108f4c9d1e2e6c4a537e01f53d1e9d3093d3d"
+    },
+    "evidence-memory": {
+      "version": "0.5.1",
+      "sha256": "43cd1b2d2565594be6ba2510782d0773f5faf507766a16d490f8976ab83c3e85"
+    }
+  },
+  "invalid_python_advisory_then_recovery": true,
+  "checks": {
+    "clean_install": true,
+    "configured_python": true,
+    "upgrade": true,
+    "automatic_python_upgrade": true,
+    "automatic_python_fresh": true,
+    "unconfigured_prompt_delivery": true,
+    "installed_hook_execution": true,
+    "prompt_delivery": true,
+    "invalid_python_advisory_then_recovery": true,
+    "uninstall": true
+  },
+  "isolated_cleanup": true,
+  "status": "pass"
+}

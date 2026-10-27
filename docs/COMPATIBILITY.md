@@ -11,8 +11,8 @@ bound to the candidate's package bytes; historical passes do not certify it.
 
 ## OS and host boundaries
 
-Accuracy also has an experimental Codex skills-only package: verify-numerical,
-verify-technical, claim-fidelity and clarify share the same instructions/helpers as Claude.
+Accuracy also has a Codex skills-only package: verify-numerical, verify-technical,
+claim-fidelity, clarify and self-audit share the same instructions/helpers as Claude.
 Its Codex manifest explicitly disables hook discovery; it does not port Claude
 session reminders or configuration. The local Codex catalogue exposes it as an
 optional installation. This candidate's focused WSL trials are separate from the
@@ -33,9 +33,10 @@ does not establish installation or public-directory availability in ChatGPT Work
 [Claude's plugin documentation](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)
 describes skills across Chat, Desktop, Cowork and Code, with hooks confined to
 Cowork/Code. These documented capabilities are not product-specific UI receipts.
-Clarify's actual discovery, invocation and question/answer flow in each desktop
-surface and ChatGPT Work remain untested. Never substitute a terminal check for
-those UI checks.
+Maintainer-reported Chat/Cowork trials exercised Clarify and Self-Audit on the
+dev.14 candidate. Those focused trials do not cover complete Desktop lifecycle QA
+or every OS; the matrix below retains those gaps. ChatGPT Work installation remains
+unverified. Never substitute a terminal check for a UI check.
 
 - **Claude Code terminal/IDE:** Linux,
   WSL, native Windows and macOS use the same shell-form registrations. CI checks
@@ -44,12 +45,12 @@ those UI checks.
   Claude session. See the current candidate receipt for installed-host results.
 - **Desktop's local Code mode:** candidate only; UI delivery is unverified.
   A terminal Code receipt does not certify this UI.
-- **Claude Desktop Chat / web chat:** experimental skills-only. No hooks, doctor execution,
+- **Claude Desktop Chat / web chat:** skills-only. No hooks, doctor execution,
   local ledger or evidence capture. Accuracy and Deterministic Data provide
   instructions; executing a local validator requires a separate capable host.
   Desktop exists on Windows/macOS and Linux beta; each UI needs its own receipt.
   On WSL, use the Windows Desktop application for Desktop sessions.
-- **Cowork on Windows/macOS/Linux beta:** experimental stateless Accuracy and Deterministic Data only.
+- **Cowork on Windows/macOS/Linux beta:** stateless Accuracy and Deterministic Data only.
   Candidate hook delivery remains unverified. A stateless skills receipt does
   not certify hooks or Python execution. Do not assume a configured
   desktop Python exists inside Cowork's execution environment. Session Ledger
@@ -132,7 +133,7 @@ bindings, checks (`clean_install`, `configured_python`, `automatic_python_upgrad
 An installed row cannot populate a live/UI target. Every recorded live pass still
 needs its required Code checks below. Remaining live Code gaps do not block publication,
 but remain untested and must be disclosed. Local WSL live QA cannot certify macOS
-or native Linux/Windows live delivery. Desktop Chat/Cowork are experimental stateless
+or native Linux/Windows live delivery. Desktop Chat/Cowork use stateless
 skills; their six rows remain explicit and any pass still needs actual UI QA.
 Missing, stale or incomplete required evidence fails the check.
 

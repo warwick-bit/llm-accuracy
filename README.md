@@ -19,7 +19,7 @@ practitioner narrative live in the
 [Finance/Data Eval repository](https://github.com/warwick-bit/llm-finance-data-eval).
 The studies report failures and limitations; they do not establish a universal
 accuracy benefit. See the [0.8.1 marketplace qualification](docs/release-0.8.1.md) for
-that version's evidence and pending tag, and the [0.8.3 release notes](docs/release-0.8.3.md)
+that version's evidence and pending tag, and the [0.8.4 release notes](docs/release-0.8.4.md)
 for the current changes, qualification and remaining coverage gaps.
 
 ## Acknowledgements
@@ -54,8 +54,7 @@ independently verify the source or guarantee the final answer. **Deterministic
 Data** is the separate plugin for applying your own reviewed definitions and
 declared source routes to repeat data questions.
 
-For this source candidate, Desktop Chat/Cowork support is **experimental**, using
-only stateless Accuracy/Deterministic Data skills. Cowork hook delivery remains
+Desktop Chat/Cowork use the stateless Accuracy/Deterministic Data skills. Cowork hook delivery remains
 unverified. See [platform capabilities and current QA](docs/COMPATIBILITY.md).
 
 The general reminder asks Claude to verify measurements and coverage, test
@@ -113,13 +112,14 @@ Checked / Gap / Next footer. These are advisory workflows, not accuracy guarante
 
 ### Try LLM Accuracy in five minutes
 
-The next development candidate adds an on-demand `clarify` skill and routes
+Version 0.8.4 includes an on-demand `clarify` skill and routes
 material ambiguity to the host's available interactive multiple-choice question
 tool, with a chat fallback. It reuses settled answers and asks only about choices
 that change the result. Claude reminders and model-selected Codex skills provide
 the automatic path; Codex has no automatic hooks. See the
 [packaged workflow](plugins/llm-accuracy/skills/clarify/SKILL.md).
-This is not part of the published 0.8.3 release, and cross-host UI behavior is untested.
+See the [0.8.4 release notes](docs/release-0.8.4.md) for tested behavior and
+remaining host coverage gaps.
 
 Before installing it, ask your current Claude:
 
@@ -487,7 +487,7 @@ answers.
 
 In Claude Code, the general fidelity reminder is added once when a session
 starts, resumes, is cleared or is compacted (every prompt is an opt-in mode).
-The development candidate also sends a short Clarify check on each non-empty
+Version 0.8.4 also sends a short Clarify check on each non-empty
 prompt in default session mode; it asks only about unresolved material choices.
 Additional reminders target ambiguous business questions, open-ended analysis,
 evidence-boundary claims, source conflicts and context compaction. They do not
@@ -523,11 +523,10 @@ gap from memory.
 Read [the OS and host contract](docs/COMPATIBILITY.md) for the source candidate.
 Claude hooks require a configured Python 3.9+ executable and Claude Code 2.1.287+;
 The hook implementation does not require Git Bash; installed support is certified
-only by current receipts. Desktop Chat/Cowork are experimental stateless skills.
+only by current receipts. Desktop Chat/Cowork use stateless skills.
 Code publication requires credential-free native installation/hook checks on
 Linux, macOS and both Windows Bash scenarios, plus current-source local live QA.
-Offline checks do not certify live delivery on every OS. Experimental Desktop
-gaps stay visible. Codex has a separate boundary.
+Offline checks do not certify live delivery on every OS. Remaining Desktop lifecycle and platform QA gaps stay visible. Codex has a separate boundary.
 
 ## Development
 

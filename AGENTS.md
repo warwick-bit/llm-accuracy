@@ -2,7 +2,7 @@
 
 This public repository distributes standalone Claude Code plugins. Evidence
 Memory also ships a separate experimental Codex POSIX package. Accuracy has an
-experimental Codex skills-only manifest with no automatic hooks; the other plugins
+Codex skills-only manifest with no automatic hooks; the other plugins
 stay Claude-only. Read `docs/COMPATIBILITY.md` before editing runtime or packaging.
 Keep each plugin generic and safe to share publicly.
 
@@ -63,8 +63,8 @@ Independently review checker/workflow/receipt changes. Require credential-free
 native installation and direct installed-hook execution on Linux/macOS/Windows
 with and without Bash, plus at least one genuine current-source local live Code
 pass. Keep live coverage gaps explicit; offline results use separate installed
-rows and cannot certify live delivery on another OS. Desktop Chat/Cowork remain
-experimental stateless skills with six explicit untested rows. Terminal receipts
+rows and cannot certify live delivery on another OS. Desktop Chat/Cowork use
+stateless skills with six explicit untested rows. Terminal receipts
 do not certify Desktop UI or Cowork hooks. Keep native installed CI mandatory
 in the aggregate; missing/failed/skipped evidence fails. CI never needs a model
 credential or copies a local login/profile. Optional live tests stay local.
