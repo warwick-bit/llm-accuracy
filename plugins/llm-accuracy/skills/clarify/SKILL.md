@@ -81,14 +81,17 @@ Apply the answer to the task and retain its meaning in the conversation or
 existing task brief. Keep the selected measure, units, population and period in
 the result. Plain-English labels must preserve the calculation: a total is not
 a per-item figure without the relevant count. Apply the same evidence boundary to
-the entire answer, including examples, caveats and recommendations. A category
-total does not reveal its individual members or which items remain outside it;
-do not assert exclusions or the direction of further adjustments without evidence.
-Report the requested result and calculation. Add interpretation only when it
-helps the request and follows from the supplied definitions and facts. Recommend
-a different measure only when the user's stated purpose supports it; describe
-an alternative conditionally when useful. Remove unsupported additions instead
-of asking questions needed only for optional commentary.
+the entire answer and later follow-ups. When a total's composition is unknown,
+describe its scope using only the agreed category name: do not supply examples
+of presumed members or exclusions. A caveat is still a claim; do not predict
+unspecified adjustments or invent a cause to justify an authorized assumption.
+Once the needed answers arrive, give the requested result, calculation and
+material qualifications, then stop. Do not append a generic advice section.
+When interpretation or advice is requested, tie each recommendation to the
+stated purpose and available evidence. Do not present one measured quantity as
+another operational quantity without the required relationship and inputs.
+Omit additions that need missing context rather than asking questions solely
+to support optional commentary.
 Do not create a new persistent store. Revisit the choice only
 when the user changes it or new evidence creates a material conflict. If nothing
 material remains unresolved, proceed without a ceremonial confirmation.
