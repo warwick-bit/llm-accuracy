@@ -56,6 +56,10 @@ bind qualification to the released package bytes. Publication also requires the
 full release gates, including native installation and installed-hook checks on
 Linux, macOS, and Windows with and without Git Bash.
 
+The [native Codex receipt](validation/codex-skills-smoke-0.8.4.json) records
+marketplace installation, exact package-file comparison and discovery of all
+five exported skills. It does not establish model adherence or UI behavior.
+
 Maintainer-reported Chat and Cowork trials on the dev.14 instructions preserved
 correct arithmetic and valid conditional caveats, and removed unsupported
 category exclusions. These focused trials are not a reliability rate or complete

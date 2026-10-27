@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "scope": "fresh_profile_local_marketplace_and_archive",
+  "source_commit": "b3783e293c39f659d05299c18194ab080522ca7a",
+  "plugin_tree": "1f0b041f972c269307e0c524f8155654af6dbd2a",
+  "plugin_version": "0.8.4",
+  "host_version": "2.1.287 (Claude Code)",
+  "model_requested": "sonnet",
+  "checks": {
+    "marketplace_add": true,
+    "plugin_install": true,
+    "python_configured": true,
+    "installed_enabled_version": true,
+    "tracked_files": 40,
+    "installed_byte_mismatches": 0,
+    "installed_files_match_source": true,
+    "installed_default_session": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 4,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 5,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "resolved_model": "claude-sonnet-5-5",
+      "expected_fidelity_hook_responses": 1,
+      "footer_present": true,
+      "divider_before_footer": true,
+      "passed": true
+    },
+    "installed_targeted": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 2,
+      "hook_response_count": 9,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 16,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "resolved_model": "claude-sonnet-5-5",
+      "expected_fidelity_hook_responses": 2,
+      "footer_present": true,
+      "divider_before_footer": true,
+      "passed": true
+    },
+    "installed_bypass": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 9,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 16,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "resolved_model": "claude-sonnet-5-5",
+      "expected_fidelity_hook_responses": 1,
+      "footer_present": false,
+      "divider_before_footer": false,
+      "passed": true
+    },
+    "archive_session": {
+      "status": "ok",
+      "result_count": 1,
+      "fidelity_hook_responses": 1,
+      "hook_response_count": 4,
+      "builtin_signal_responses": 0,
+      "host_inventory": {
+        "status": "reported",
+        "tool_count": 0,
+        "mcp_count": 0,
+        "plugin_count": 5,
+        "accuracy_plugin_count": 1,
+        "telemetry_plugin_count": 0
+      },
+      "resolved_model": "claude-sonnet-5-5",
+      "expected_fidelity_hook_responses": 1,
+      "footer_present": true,
+      "divider_before_footer": true,
+      "passed": true
+    },
+    "isolated_cleanup": true
+  },
+  "archive_sha256": "660a892029ea489f50b647c8f4d21e2dabea02e417dcc63893aed4bc7893d723",
+  "passed": true,
+  "tested_on": "2026-10-27",
+  "platform": "Windows",
+  "limitations": [
+    "Local-path marketplace from this checkout, not a hosted GitHub installation",
+    "Auth-only temporary profiles; the current session and other machines are not verified",
+    "One model run per session path: a screen, not an adherence rate",
+    "Footer layout is observed, not gated; hook delivery does not establish factual accuracy",
+    "Custom-phrase triggers are covered by unit tests, not by this live smoke"
+  ]
+}
