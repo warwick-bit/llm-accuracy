@@ -31,7 +31,7 @@ source LLM Accuracy, which I developed over six months while working there.
 
 Want to review your existing Claude Code or Codex setup first? Use
 [Config Doctor](tools/config-doctor/README.md), a separate preview tool with its
-own [download](https://github.com/warwick-bit/llm-accuracy/releases/tag/config-doctor-v0.1.0)
+own [download](https://github.com/warwick-bit/llm-accuracy/releases/tag/config-doctor-v0.1.5)
 and copy-paste quickstart. It proposes configuration improvements for you to
 review; no LLM Accuracy plugin installation is required.
 
