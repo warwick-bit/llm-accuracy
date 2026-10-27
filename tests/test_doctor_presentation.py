@@ -174,7 +174,7 @@ def test_shipped_skill_inventory_reports_files_without_host_delivery(doctor):
     inventory = doctor.skill_inventory(ROOT / "plugins/llm-accuracy")
     assert inventory["status"] == "ok"
     assert {item["name"] for item in inventory["items"]} == {
-        "accuracy-doctor", "claim-fidelity", "self-audit",
+        "accuracy-doctor", "claim-fidelity", "clarify", "self-audit",
         "verify-numerical", "verify-technical",
     }
     assert all(item["skill_md"] == "readable" for item in inventory["items"])
@@ -182,7 +182,7 @@ def test_shipped_skill_inventory_reports_files_without_host_delivery(doctor):
     assert "not_full_yaml" in inventory["validation_scope"]
     assert inventory["host_listing"] == "unverified"
     value = doctor.presentation(report(skills=inventory))
-    assert "5/5 local skill files" in value["checked"]
+    assert "6/6 local skill files" in value["checked"]
     assert "Host skill listing is unverified" in value["gap"]
     assert "does not establish skill delivery" in value["gap"]
 

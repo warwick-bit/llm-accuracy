@@ -54,6 +54,27 @@ contract; it is not automatically run or a proof of arbitrary analysis.
 The Codex manifest enables skills only, with no hooks or persistent memory.
 Skill selection and correct application still depend on the model.
 
+For an unresolved choice that materially changes an answer, the `clarify` skill
+asks the model to inspect available context, then use the host's interactive
+multiple-choice question tool when available. Invoke `/llm-accuracy:clarify` in
+Claude Code or select the Clarify skill in Codex to use it on demand. Its description
+also prompts a definition check before reporting metrics; the Claude reminders point to it. Codex remains
+skills-only, so automatic selection depends on the model, not a prompt hook.
+Already-settled choices and harmless implementation details do not need questions.
+Questions follow the user's configured language and style preferences, with plain
+English as the default and brief explanations for necessary technical terms.
+Recommendations need a reason and are never treated as an answer. Independent
+work can continue while dependent work waits for the user's reply. Hosts without
+a suitable question tool use a short chat question. No new integration or setting
+is required. A correct tool call still needs a host UI check; an overall accuracy
+gain is untested. If a question needs both a choice and a missing number, the
+skill keeps the choice selectable and requests the number separately when needed.
+
+Automatic skill selection is distinct from hooks: a skills-only installation can
+still let a model choose a skill. An explicit-only edition would need invocation
+policy as well as no hooks. The current development candidate adds Clarify to the
+existing automatic-selection skills; it does not yet provide a manual-only edition.
+
 For a report and its source files, ask Claude to check the report normally or use
 `/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,
 executes the bounded monetary checker when applicable, and distinguishes other
@@ -96,7 +117,12 @@ the footer is a model-written account, not a validated receipt. Hook tests prove
 the instruction is emitted, not that Claude follows it.
 Targeted mode includes this guidance only when a fidelity trigger matches.
 
-Business-ambiguity, analysis and source-conflict reminders remain targeted.
+In default session mode, each non-empty request also receives a short Clarify
+check, independent of vocabulary. It asks for a question-tool call only when a
+material choice is unresolved; settled definitions, requested alternatives and
+authorized assumptions do not require another question. This does not make
+skill invocation or host UI rendering deterministic. The full analysis and
+source-conflict reminders remain targeted.
 The post-compaction reminder remains separate. None verifies facts automatically.
 
 ## Reminder modes
@@ -104,9 +130,10 @@ The post-compaction reminder remains separate. None verifies facts automatically
 - **Session (default since 0.8.0):** the general reminder is added once, from
   `SessionStart`: at startup, resume and `/clear`, and again after every
   compaction, because an injected reminder does not survive the next one.
-  Explicit evidence-boundary prompts also receive the detailed fidelity
-  guidance. The reminder also covers greetings and creative tasks; it asks
-  Claude to keep non-factual tasks brief.
+  Each non-empty prompt also gets a short clarification check (since this
+  development candidate); evidence-boundary prompts get the detailed fidelity
+  guidance too. The clarification check says to proceed directly when nothing
+  material is unresolved, including ordinary greetings and creative tasks.
 - **General (default 0.6.0 to 0.7.2):** the same reminder on every non-empty
   prompt, plus the detailed guidance on evidence-boundary prompts. This uses
   more context. Choose it if you rely on a model the cadence tests did not
@@ -121,7 +148,8 @@ The post-compaction reminder remains separate. None verifies facts automatically
 - **Mute:** include `# fidelity-ok` in a prompt to mute that prompt's fidelity
   guidance; it cannot remove a session reminder that is already in context. Set
   `CC_SKIP_CLAIM_FIDELITY=1` in the host environment to mute both. These controls
-  mute only the fidelity reminder; the other hooks keep their own controls.
+  mute the fidelity reminder and its per-request Clarify check; the other hooks
+  keep their own controls. They do not disable model-driven skill selection.
 
 For example, start a Claude Code session with the reminder on every prompt from
 a POSIX shell:
@@ -130,7 +158,10 @@ a POSIX shell:
 CC_CLAIM_FIDELITY_MODE=general claude
 ```
 
-**Why once per session.** In isolated tests, the reminder's footer instruction
+**Why the full evidence reminder stays once per session.** These cadence results
+measure the footer instruction, not automatic skill selection. The short
+per-request Clarify check addresses a separate observed invocation failure.
+In isolated tests, the reminder's footer instruction
 was followed as often when sent once from `SessionStart` as when sent on every
 prompt: 24/24 deep probes each on Claude Opus 5.5 (12 sessions per arm, 8
 turns), 8/8 each in a 20-turn stress run, and 8/8 each in a smaller Claude

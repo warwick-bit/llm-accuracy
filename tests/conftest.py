@@ -52,7 +52,11 @@ def fidelity_responses(prompt):
     spec = importlib.util.spec_from_file_location("claim_fidelity_trigger", path)
     hook = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(hook)
-    return bool(hook.context_for_session("session")) + bool(hook.context_for_prompt(prompt, "session"))
+    # Match the host probe's evidence-label count. A Clarify-only prompt response
+    # is a separate reminder, not another full claim-fidelity response.
+    return sum("CLAIM FIDELITY CHECK" in context for context in (
+        hook.context_for_session("session"), hook.context_for_prompt(prompt, "session"),
+    ))
 
 
 def hook_argv(handler, root, data="", executable=None):

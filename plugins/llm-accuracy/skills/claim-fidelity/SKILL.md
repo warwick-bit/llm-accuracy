@@ -79,6 +79,8 @@ retain that conflict rather than explaining it away as a denominator difference.
 When the business definition is unsettled, name the supported working measure
 instead of silently choosing a canonical rate. Ask only if the missing choice
 changes the requested decision and cannot be resolved from the available context.
+For such choices, use [Clarify](../clarify/SKILL.md): prefer the host's available
+interactive question tool and preserve the user's answers on follow-up.
 
 For a continuing investigation, reuse the existing brief/profile to retain the
 agreed metric or label, population, cutoff, source version and consequential

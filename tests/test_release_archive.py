@@ -50,6 +50,7 @@ def test_release_archive_has_plugin_root_contents_only(tmp_path: Path) -> None:
     assert "skills/accuracy-doctor/SKILL.md" in names
     assert "skills/verify-technical/SKILL.md" in names
     assert "skills/self-audit/SKILL.md" in names
+    assert "skills/clarify/SKILL.md" in names
     assert not any(name.startswith("plugins/") for name in names)
     assert not any("__pycache__" in name for name in names)
 

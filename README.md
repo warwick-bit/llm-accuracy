@@ -113,6 +113,14 @@ Checked / Gap / Next footer. These are advisory workflows, not accuracy guarante
 
 ### Try LLM Accuracy in five minutes
 
+The next development candidate adds an on-demand `clarify` skill and routes
+material ambiguity to the host's available interactive multiple-choice question
+tool, with a chat fallback. It reuses settled answers and asks only about choices
+that change the result. Claude reminders and model-selected Codex skills provide
+the automatic path; Codex has no automatic hooks. See the
+[packaged workflow](plugins/llm-accuracy/skills/clarify/SKILL.md).
+This is not part of the published 0.8.3 release, and cross-host UI behavior is untested.
+
 Before installing it, ask your current Claude:
 
 > What is our revenue?
@@ -479,6 +487,8 @@ answers.
 
 In Claude Code, the general fidelity reminder is added once when a session
 starts, resumes, is cleared or is compacted (every prompt is an opt-in mode).
+The development candidate also sends a short Clarify check on each non-empty
+prompt in default session mode; it asks only about unresolved material choices.
 Additional reminders target ambiguous business questions, open-ended analysis,
 evidence-boundary claims, source conflicts and context compaction. They do not
 block work, fetch evidence, or verify an answer for you. The general reminder also

@@ -209,6 +209,26 @@ def test_user_prompt_commands_fail_open_on_malformed_stdin(
     assert result.stdout == ""
 
 
+@pytest.mark.parametrize(
+    ("event", "index", "payload"),
+    [
+        ("UserPromptSubmit", 0, {"prompt": "What is our revenue?"}),
+        ("SessionStart", 1, {"source": "startup"}),
+    ],
+)
+def test_shipped_reminders_route_material_choices_to_interactive_clarify(
+    event: str, index: int, payload: dict,
+) -> None:
+    result = run_hook(event, index, json.dumps(payload))
+    assert result.returncode == 0
+    assert result.stderr == ""
+    output = json.loads(result.stdout)
+    assert set(output) == {"hookSpecificOutput"}  # advisory, no blocking decision
+    context = output["hookSpecificOutput"]["additionalContext"]
+    assert "llm-accuracy:clarify" in context
+    assert "interactive multiple-choice" in context
+
+
 ORDINARY_PROMPTS = [
     "The editor stalls after login.",
     "Proceed with the investigation.",
@@ -249,11 +269,23 @@ def test_general_fidelity_covers_technical_work_and_followups(prompt: str) -> No
 
 
 @pytest.mark.parametrize("prompt", ORDINARY_PROMPTS)
-def test_default_session_mode_keeps_ordinary_prompts_silent(prompt: str) -> None:
+def test_default_session_mode_delivers_bounded_clarification_without_keyword_gate(prompt: str) -> None:
     result = run_hook("UserPromptSubmit", 2, json.dumps({"prompt": prompt}))
 
     assert result.returncode == 0
-    assert result.stdout == result.stderr == ""
+    assert result.stderr == ""
+    assert result.stdout, "Missing per-request clarification reminder"
+    output = json.loads(result.stdout)
+    assert set(output) == {"hookSpecificOutput"}
+    assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    context = output["hookSpecificOutput"]["additionalContext"]
+    assert "llm-accuracy:clarify" in context
+    assert "interactive multiple-choice" in context
+    assert "settled definitions" in context
+    assert prompt not in context
+    assert GENERAL_ONLY not in context  # the full evidence reminder stays at session start
+    assert "Checked / Gap / Next" not in context
+    assert len(context) <= 600
 
 
 @pytest.mark.parametrize("source", SESSION_SOURCES)
@@ -352,11 +384,11 @@ OPTION = "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE"
 @pytest.mark.parametrize(
     ("prompt", "controls", "expected"),
     [
-        # Default session mode: targeted guidance only; the baseline is at SessionStart.
-        (ORDINARY, {}, None),
-        (TRIGGERED, {}, "targeted"),
-        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "typo"}, None),
-        (TRIGGERED, {"CC_CLAIM_FIDELITY_MODE": "typo"}, "targeted"),
+        # Session mode keeps a small clarification check at each request.
+        (ORDINARY, {}, "clarify"),
+        (TRIGGERED, {}, "clarify+targeted"),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "typo"}, "clarify"),
+        (TRIGGERED, {"CC_CLAIM_FIDELITY_MODE": "typo"}, "clarify+targeted"),
         (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "general"}, "general"),
         (TRIGGERED, {"CC_CLAIM_FIDELITY_MODE": "general"}, "general+targeted"),
         (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "targeted"}, None),
@@ -367,7 +399,7 @@ OPTION = "CLAUDE_PLUGIN_OPTION_CLAIM_FIDELITY_MODE"
         (ORDINARY, {OPTION: " General "}, "general"),
         (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "targeted", OPTION: "general"}, None),
         (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "", OPTION: "general"}, "general"),
-        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "typo", OPTION: "general"}, None),
+        (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "typo", OPTION: "general"}, "clarify"),
         (ORDINARY, {"CC_CLAIM_FIDELITY_MODE": "general", OPTION: "session"}, "general"),
         # Mutes.
         (ORDINARY, {"CC_SKIP_CLAIM_FIDELITY": "1", "CC_CLAIM_FIDELITY_MODE": "general"}, None),
@@ -393,10 +425,12 @@ def test_fidelity_modes_and_bypasses(
     output = json.loads(result.stdout)
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert context.count("CLAIM FIDELITY CHECK") == 1
-    assert "Checked:" in context
-    assert "Gap:" in context
-    assert "Next:" in context
+    assert len(context) <= 2000
+    if expected.startswith("clarify"):
+        assert "llm-accuracy:clarify" in context
+    assert context.count("CLAIM FIDELITY CHECK") == (0 if expected == "clarify" else 1)
+    for label in ("Checked:", "Gap:", "Next:"):
+        assert (label in context) == (expected != "clarify")
     assert (GENERAL_ONLY in context) == expected.startswith("general")
     assert (TARGETED_ONLY in context) == expected.endswith("targeted")
 

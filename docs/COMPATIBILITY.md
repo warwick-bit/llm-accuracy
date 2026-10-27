@@ -12,11 +12,30 @@ bound to the candidate's package bytes; historical passes do not certify it.
 ## OS and host boundaries
 
 Accuracy also has an experimental Codex skills-only package: verify-numerical,
-verify-technical and claim-fidelity share the same instructions/helpers as Claude.
+verify-technical, claim-fidelity and clarify share the same instructions/helpers as Claude.
 Its Codex manifest explicitly disables hook discovery; it does not port Claude
 session reminders or configuration. The local Codex catalogue exposes it as an
 optional installation. This candidate's focused WSL trials are separate from the
 Claude release matrix below and do not certify other Codex hosts or UI surfaces.
+
+Clarify is instruction-only and checks the host's current question-tool schema
+and mode restrictions. It prefers interactive multiple-choice questions, then
+falls back to a concise chat question. No Python or hook is required for that
+workflow. Its automatic selection is model-dependent; an installed skill is not
+proof that it was invoked or that a question UI appeared.
+
+The [OpenAI skills documentation](https://learn.chatgpt.com/docs/build-skills)
+describes explicit and implicit skills in ChatGPT Work and Codex. The
+[plugin packaging documentation](https://developers.openai.com/plugins/build/plugins)
+supports the existing Codex compatibility manifest; local/repo distribution is
+separate from the public universal directory. This repository's GitHub release
+does not establish installation or public-directory availability in ChatGPT Work.
+[Claude's plugin documentation](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)
+describes skills across Chat, Desktop, Cowork and Code, with hooks confined to
+Cowork/Code. These documented capabilities are not product-specific UI receipts.
+Clarify's actual discovery, invocation and question/answer flow in each desktop
+surface and ChatGPT Work remain untested. Never substitute a terminal check for
+those UI checks.
 
 - **Claude Code terminal/IDE:** Linux,
   WSL, native Windows and macOS use the same shell-form registrations. CI checks

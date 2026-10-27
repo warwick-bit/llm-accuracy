@@ -2,8 +2,8 @@
 """Add general evidence guidance once per session, plus targeted prompt guidance.
 
 Session mode (the default) adds the static general reminder from SessionStart,
-which runs on startup, resume, clear and compaction. Prompts then receive only
-the targeted guidance their wording triggers. General mode restores the general
+which runs on startup, resume, clear and compaction. Each prompt gets a short
+clarification check plus any targeted evidence guidance. General mode restores the general
 reminder on every prompt; targeted mode keeps only the triggered guidance.
 Subprocess tests live in tests/test_accuracy_wiring.py.
 No prompt or evidence is retained or echoed.
@@ -54,21 +54,33 @@ TECHNICAL_FOOTER = (
 )
 
 GENERAL_CONTRACT = (
-    "CLAIM FIDELITY CHECK: Before concluding, identify what the evidence establishes "
-    "and what is missing. For each material claim, including intermediate assertions, "
-    "check whether a plausible alternative could produce the same observation "
-    "without that claim being true. If evidence cannot distinguish it, qualify or "
-    "withhold the claim; conclude on the surviving evidence. State supported narrow "
-    "facts plainly, without speculative hedging. Separate observations, hypotheses "
+    "CLAIM FIDELITY CHECK: Identify what evidence establishes "
+    "and what is missing. For material claims and intermediate assertions, "
+    "check whether alternatives explain the same observation. If evidence cannot "
+    "distinguish them, qualify or withhold the claim. State supported narrow facts "
+    "plainly. Separate observations, hypotheses "
     "and unknowns. Check field, units, denominator, environment and version; "
     "all/none claims need coverage beyond previews, samples and truncated output. "
-    "A tool call alone is not verification. Test competing causes before declaring "
+    "A tool call is not verification. Test competing causes before declaring "
     "a root cause. Corrections must revisit dependent conclusions; repeated "
     "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
-    "for diagnosis and fix checks. Advisory guidance, not independent verification."
+    "for diagnosis and fix checks. For data calculations, use "
+    "llm-accuracy:verify-numerical; conventions do not settle an "
+    "unresolved inclusion rule. For material ambiguity, use llm-accuracy:clarify "
+    "and CALL interactive multiple-choice. Advisory, not verification."
 )
 
 LABEL = "CLAIM FIDELITY CHECK: "
+
+CLARIFY_CONTRACT = (
+    "CLARIFY CHECK: Before reporting a metric, check its definition, included records "
+    "and required inputs. If an unresolved choice materially changes the answer, "
+    "use llm-accuracy:clarify and CALL the available interactive multiple-choice "
+    "question tool; prose options or showing both results do not resolve the choice. "
+    "Reuse settled definitions. If the user requested alternatives or authorized "
+    "assumptions, follow that request. Otherwise wait for the answer before dependent "
+    "conclusions. Proceed directly when nothing material is unresolved."
+)
 
 CONTRACT = (
     LABEL + "Keep every load-bearing conclusion inside the observed "
@@ -107,6 +119,9 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     """Choose bounded guidance without treating prompt text as configuration."""
     if not prompt.strip() or BYPASS_RE.search(prompt):
         return ""
+    if mode == "session":
+        targeted = CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
+        return CLARIFY_CONTRACT + (" " + targeted if targeted else "")
     if mode != "general":
         return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
     if should_fire(prompt):

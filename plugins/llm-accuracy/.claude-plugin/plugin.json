@@ -1,7 +1,7 @@
 {
   "name": "llm-accuracy",
   "description": "Advisory evidence reminders for technical and data work, targeted ambiguity checks, claim fidelity, and self-audit.",
-  "version": "0.8.3",
+  "version": "0.8.4-dev.7",
   "author": {
     "name": "Warwick"
   },
@@ -18,7 +18,7 @@
     "claim_fidelity_mode": {
       "type": "string",
       "title": "Claim fidelity reminder mode (optional)",
-      "description": "Leave empty for session: the evidence reminder once per session start, resume, clear and compaction, plus targeted guidance on matching prompts. general: the reminder on every prompt. targeted: matching prompts only. The CC_CLAIM_FIDELITY_MODE environment variable overrides this.",
+      "description": "Leave empty for session: the evidence reminder once per session start, resume, clear and compaction, plus a short clarification check on each prompt and targeted evidence guidance. general: the reminder on every prompt. targeted: matching prompts only. The CC_CLAIM_FIDELITY_MODE environment variable overrides this.",
       "required": false
     }
   }
