@@ -1,6 +1,6 @@
 {
   "name": "llm-accuracy",
-  "version": "0.8.4-dev.8",
+  "version": "0.8.4-dev.9",
   "description": "Experimental skills for clarifying material ambiguity and checking numerical reports, technical work and evidence boundaries. No automatic Codex hooks or guarantee of correctness.",
   "author": {"name": "Warwick"},
   "license": "MIT",

@@ -1,6 +1,6 @@
 ---
 name: clarify
-description: Use before interpreting supplied data or reporting a metric, average, rate, growth or comparison, including apparently straightforward calculations. Check definitions and missing inputs; ask only when an unresolved choice materially changes the result. Also use for ambiguous factual requests or deliverables and explicit requests to clarify assumptions. Proceed directly when context settles the meaning and inputs.
+description: Use before interpreting supplied data or reporting metrics, averages, rates, growth or comparisons. Resolve material ambiguity through the host's interactive question tool before choosing a result; showing alternatives does not settle the choice. Also use for ambiguous factual requests or deliverables and explicit requests to clarify assumptions. Reuse settled definitions and collect only missing inputs.
 ---
 
 # Clarify
@@ -25,8 +25,7 @@ result, ask before choosing a headline answer. A familiar convention or a
 plausible use for each alternative does not establish the user's intended meaning.
 Keep definition choices neutral unless their stated goal supports a recommendation.
 Calculating or showing both interpretations does not settle the user's intended
-meaning; use those
-alternatives to help frame the question. If the user requested both interpretations
+meaning; use those alternatives to help frame the question. If the user requested both interpretations
 or explicitly authorized assumptions, follow that request without an extra
 definition question.
 
@@ -59,8 +58,7 @@ an amount, date or other open value is missing, ask a short chat question instea
 of inventing choices, ranges or an "I'll type it" option. Such a selection is not
 the missing value. A partial answer settles only what the user actually supplied;
 retain that part and ask only for what is still needed. Missing numbers do not
-turn a meaningful
-definition choice into an entirely prose question. Follow the host's question
+turn a meaningful definition choice into an entirely prose question. Follow the host's question
 limits and avoid duplicating its built-in Other option. Only fall back to a
 short chat question when no suitable tool is available or permitted, or the
 available tools failed. Do not repeat a tool question in chat.
@@ -80,8 +78,11 @@ results conditional. Missing source evidence still remains unavailable.
 Apply the answer to the task and retain its meaning in the conversation or
 existing task brief. Keep the selected measure, units, population and period in
 the result. Plain-English labels must preserve the calculation: a total is not
-a per-item figure without the relevant count. Do not add a causal diagnosis or
-claim that a definition is usual without supporting evidence.
+a per-item figure without the relevant count. A chosen category does not authorize
+extra inclusions or exclusions: explain its rule without assuming particular
+items always belong inside or outside it. Keep the answer focused on the requested
+result; do not add a causal diagnosis or claim that a definition is usual without
+supporting evidence.
 Do not create a new persistent store. Revisit the choice only
 when the user changes it or new evidence creates a material conflict. If nothing
 material remains unresolved, proceed without a ceremonial confirmation.
