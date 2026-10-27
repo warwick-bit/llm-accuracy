@@ -171,6 +171,15 @@ Record actual question-tool use and visible rendering separately. These behavior
 observations supplement the lifecycle checks; they do not measure an adherence
 rate or certify a different host.
 
+For self-audit, include an answer with correct arithmetic but unsupported
+category membership or advice. Check every part of the audit, especially the
+rewritten answer: acknowledging an unsupported claim is insufficient if the
+closing note repeats it or substitutes another unsupported example. Include
+a source-defined membership control and an entirely supported answer; the
+audit must preserve their definitions and calculations without inventing
+corrections. Test a nonfinancial category as well. Record explicit audit
+invocation separately from automatic prevention of an initial error.
+
 Write the result as a row file with `outcome` `pass`, the target's `platform`
 and `host_kind`, the actual app version as `host_version`, the two package
 bindings as `packages`, the exact
