@@ -80,11 +80,15 @@ results conditional. Missing source evidence still remains unavailable.
 Apply the answer to the task and retain its meaning in the conversation or
 existing task brief. Keep the selected measure, units, population and period in
 the result. Plain-English labels must preserve the calculation: a total is not
-a per-item figure without the relevant count. Before sending, check every claimed
-inclusion and exclusion against the user's choice and supplied evidence. Remove
-unsupported elaboration rather than expanding the chosen definition or asking
-unnecessary questions. Report the requested result and calculation; do not append
-speculative causes, unprovided category lists or claims about what is usual.
+a per-item figure without the relevant count. Apply the same evidence boundary to
+the entire answer, including examples, caveats and recommendations. A category
+total does not reveal its individual members or which items remain outside it;
+do not assert exclusions or the direction of further adjustments without evidence.
+Report the requested result and calculation. Add interpretation only when it
+helps the request and follows from the supplied definitions and facts. Recommend
+a different measure only when the user's stated purpose supports it; describe
+an alternative conditionally when useful. Remove unsupported additions instead
+of asking questions needed only for optional commentary.
 Do not create a new persistent store. Revisit the choice only
 when the user changes it or new evidence creates a material conflict. If nothing
 material remains unresolved, proceed without a ceremonial confirmation.

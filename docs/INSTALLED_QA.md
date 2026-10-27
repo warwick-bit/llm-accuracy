@@ -159,6 +159,14 @@ before calculating. An open value may need a concise chat follow-up if the host
 cannot ask free-text-only questions; do not require artificial menu choices.
 Supply the value in the same conversation and check the resulting definition,
 population, units and calculation. A total must not be relabelled as per-item.
+Inspect the whole answer, including optional caveats: an aggregate must not be
+expanded into unsupported member/exclusion lists or directional predictions.
+Check a source-defined category that includes an item often assigned elsewhere.
+For a settled metric with no stated reporting purpose, require the requested
+result without an unconditional claim that another measure is better or that
+the result establishes a different operational quantity. Add a control with an
+explicit purpose and supported interpretation, so this check does not reward
+silencing useful explanations. Assess meaning, not a fixed phrase or word ban.
 Record actual question-tool use and visible rendering separately. These behavior
 observations supplement the lifecycle checks; they do not measure an adherence
 rate or certify a different host.

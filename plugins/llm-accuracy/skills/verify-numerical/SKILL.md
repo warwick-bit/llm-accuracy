@@ -54,6 +54,14 @@ including unavailable-source outcomes. Revisit affected prose, recommendations
 and qualifications in the final deliverable; changed calculations alone do not
 update the narrative. Retain useful independently supported results.
 
+Before sending, check the explanation as well as the arithmetic. A supplied
+category total does not establish its members or exclusions; preserve the
+source's definition and do not predict the direction of unspecified adjustments.
+Recommend a different measure only when the stated purpose supports it. A
+calculated measure does not by itself establish a different operational quantity
+or causal explanation. Omit unsupported additions; do not ask extra questions
+solely to supply optional commentary. Keep useful, supported interpretation.
+
 Keep the response proportionate: corrected result, material corrections, and
 remaining gaps. Save report/audit/evidence files when the user requests files or
 the task needs reproducible deliverables; otherwise keep the audit concise in
