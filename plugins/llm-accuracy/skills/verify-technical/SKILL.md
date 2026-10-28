@@ -1,6 +1,6 @@
 ---
 name: verify-technical
-description: Use for a technical incident, disputed diagnosis, bug fix, or claim that a change works. Reproduce, isolate, test competing causes, and repeat the original check before reporting verification.
+description: Use for a technical incident, disputed diagnosis, bug fix, concrete recovery recommendation, or claim that a change works. Reproduce, isolate, test competing causes, and check the proposed remedy before reporting verification.
 argument-hint: "[symptom, diagnosis, or change to verify]"
 ---
 
@@ -20,6 +20,8 @@ expansion, resolve the package root two directories above this skill directory.
 1. **Define the claim.** State the symptom, affected process/environment/version,
    expected result and the observation that would establish success. Separate
    repair, local verification, deployment and production verification.
+   A concrete recovery recommendation also makes a claim: that the proposed
+   action permits the blocked operation under its actual rules.
 2. **Reproduce or inspect.** Run the narrowest safe reproduction, or inspect
    current evidence if reproduction is unavailable. Record the command/check,
    result and scope in the conversation. An unavailable reproduction is a gap.
@@ -32,6 +34,14 @@ expansion, resolve the package root two directories above this skill directory.
 5. **Repeat the original check.** Use the same input and affected environment
    after the change. Where possible, demonstrate fail-before/pass-after. A new
    test that never exercised the failure does not establish that it is fixed.
+   For proposed recovery, inspect prerequisites and validation order, then try
+   the exact proposed action in a disposable copy where safe and feasible. Check
+   both the operation's result and the resulting output. Reproducing the original
+   unchanged failure only verifies the blocker, not the remedy. If testing is
+   unavailable, say what remains untested; do not offer an option contradicted
+   by the actual rules. Hypothetical inputs do not establish source authority:
+   preserve original source bytes and the active publication, and obtain the
+   required owner decision before changing business inputs.
 6. **Check the boundary.** Run relevant regression checks and required repo gates.
    A local pass does not establish CI, deployment or another machine's state.
    Verify those separately only when they are in the requested scope.

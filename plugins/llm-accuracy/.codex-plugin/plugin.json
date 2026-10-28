@@ -1,6 +1,6 @@
 {
   "name": "llm-accuracy",
-  "version": "0.8.4",
+  "version": "0.8.5-dev.1",
   "description": "Skills for clarifying material ambiguity, auditing prior answers and checking numerical reports, technical work and evidence boundaries. No automatic Codex hooks or guarantee of correctness.",
   "author": {"name": "Warwick"},
   "license": "MIT",

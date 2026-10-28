@@ -33,8 +33,11 @@ Use existing host retrieval tools for URLs; unavailable retrieval remains unchec
 A resolved reference or matching quotation does not establish that the source
 supports the surrounding claim. Apply the scope and inference checks below separately.
 
-For a consequential final report or a shortened/regenerated draft, read
-`${CLAUDE_PLUGIN_ROOT}/references/report-inventory.md`. Its optional local helper
+For a consequential final report, generated output, saved example or shortened
+draft, read `${CLAUDE_PLUGIN_ROOT}/references/report-inventory.md`. First check
+the actual files and command output the reader will use, including their
+explanations and recommendations. A correct companion note does not repair a
+contradictory current output. Its optional local helper
 binds an explicit assertion inventory to the actual delivered file, shows every
 unlisted nonblank line and missing assertion, reruns bounded numerical checks,
 and flags changed sources behind manual assessments. Line coverage is not semantic
