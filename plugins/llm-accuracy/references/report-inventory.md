@@ -1,9 +1,40 @@
-# Check the final report's assertion inventory
+# Check the delivered report and outputs
 
 Use this for a consequential report with supplied evidence, especially after
 shortening, regeneration or source changes. Check the actual final UTF-8 text or
 Markdown file. A calculation checked earlier does not establish that the delivered
 prose retained its population, threshold, period or qualification.
+
+Check what the reader will actually receive:
+
+- Identify the current file, any saved example, and the command you recommend.
+  Where execution is available and safe, run that command and read its complete
+  relevant output, including explanatory footers. Otherwise inspect the producing
+  code and saved output and state that execution is unchecked.
+- Compare the meaning of its explanations and recommendations with the source
+  evidence, not just its numbers or your new note. Matching saved output to live
+  output establishes reproducibility, not correctness: both can repeat the same
+  false claim. Passing tests or an inventory do not settle that comparison.
+- Resolve contradictions at the producing text or code, then regenerate the
+  affected current outputs. If that is outside scope, clearly mark the stale
+  output as superseded where readers encounter it and give a usable corrected
+  alternative. Do not recommend a known-wrong output as current merely because
+  a separate note explains the right answer. Preserve historical evidence.
+- For a shortened selection or priority list, derive the named items and any
+  replacements from the same checked full list. Compare identities, order and
+  cutoff, respecting the agreed tie rule. Do not silently skip higher-priority
+  eligible items. Matching counts or totals does not check the recommendation.
+- Recheck these surfaces after the last edit or shortening step. Keep unknowns
+  and material qualifications attached to the claims they limit.
+
+Reuse existing calculations and evidence. An inventory is optional bookkeeping;
+do not build one instead of resolving a contradiction in the delivered output.
+
+## Optional assertion inventory
+
+Use the following helper workflow only when an explicit inventory is requested
+or useful for maintaining the report. It follows the checks above; it is not a
+required step or evidence that the output's meaning is correct.
 
 1. Read the final report and enumerate material assertions, including side claims,
    policy thresholds, population labels and necessary qualifications. Split compound

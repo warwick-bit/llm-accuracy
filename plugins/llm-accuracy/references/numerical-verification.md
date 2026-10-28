@@ -42,6 +42,9 @@ Ask the assistant:
    relative path resolve from that directory.
    Include postprocessing/finalization steps that change the delivered wording;
    reproducing an earlier output is insufficient if it drops final qualifications.
+   Use the [delivered-output check](report-inventory.md) for saved examples,
+   generated explanations and shortened rankings or replacement recommendations;
+   correct arithmetic alone does not establish those outputs are correct.
 
 ## Helper input and scope
 
