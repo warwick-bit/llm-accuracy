@@ -19,7 +19,7 @@ practitioner narrative live in the
 [Finance/Data Eval repository](https://github.com/warwick-bit/llm-finance-data-eval).
 The studies report failures and limitations; they do not establish a universal
 accuracy benefit. See the [0.8.1 marketplace qualification](docs/release-0.8.1.md) for
-that version's evidence and pending tag, and the [0.8.4 release notes](docs/release-0.8.4.md)
+that version's evidence and pending tag, and the [0.8.5 release notes](docs/release-0.8.5.md)
 for the current changes, qualification and remaining coverage gaps.
 
 ## Acknowledgements
