@@ -22,6 +22,10 @@ or bot output review; route those to the relevant domain/plugin review skill.
 
 ## Workflow
 
+For an audit of saved reports or versioned handovers, read
+`${CLAUDE_PLUGIN_ROOT}/references/saved-output-repair.md`. Apply its check to the
+correction explanations as well as the repaired values and historical records.
+
 1. Identify the prior answer being audited. If the user did not provide enough
    context, ask for the missing answer or summarize the exact claim you can
    audit. Separate the user's supplied facts, choices and source material from

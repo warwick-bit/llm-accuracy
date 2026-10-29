@@ -45,6 +45,11 @@ completeness, and recorded manual assessments are not machine verification.
 
 ## Workflow
 
+When revising a saved report or explaining changes to earlier versions, read
+`${CLAUDE_PLUGIN_ROOT}/references/saved-output-repair.md`. Check the current data,
+actual historical contents and correction explanations separately; a correct
+replacement does not establish the claimed cause of the earlier discrepancy.
+
 1. State the exact load-bearing claim. Split compound claims before checking.
 2. Identify the evidence actually observed, including failed, partial, cached,
    stale, redacted, permission-limited, or unavailable reads.
