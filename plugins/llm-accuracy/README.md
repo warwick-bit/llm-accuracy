@@ -17,6 +17,9 @@ correctness.
   window, freshness and completeness boundaries;
 - nudges a model to recheck stale details after long sessions; and
 - provides self-audit and claim-fidelity workflows;
+- provides a saved-output audit workflow with bounded, read-only literal
+  formula and version-labelled checksum checks, followed by source-bound prose
+  review and at most two correction attempts;
 - provides an optional `verify-numerical` workflow and executable checks for
   declared monetary growth, whether every declared region increased, and a ratio
   using source-defined numerator/denominator series;
@@ -45,6 +48,16 @@ pass means the receipt satisfies the generic structural contract; it does not
 mean the underlying claim is correct.
 
 ## Day-to-day use
+
+For a saved factual report, invoke `/llm-accuracy:saved-output-audit` or ask for
+the report to be checked against its sources and earlier versions. Automatic
+skill selection depends on the model. Where Python/file execution is available,
+`scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_FILE`
+checks supported labelled formulas and digest citations in the actual bytes.
+Passes are bounded; source truth, historical explanations, percentages and
+unlabelled equations still need separate review. Without execution, the skill
+uses supplied snapshots and reports byte-level checks unavailable. The plugin
+does not launch an external reviewer or a Desktop controller.
 
 For Codex data analysis, the same package includes source/metric scope checks,
 numerical verification, technical verification and correction-aware summaries.

@@ -175,14 +175,14 @@ def test_shipped_skill_inventory_reports_files_without_host_delivery(doctor):
     assert inventory["status"] == "ok"
     assert {item["name"] for item in inventory["items"]} == {
         "accuracy-doctor", "claim-fidelity", "clarify", "self-audit",
-        "verify-numerical", "verify-technical",
+        "verify-numerical", "verify-technical", "saved-output-audit",
     }
     assert all(item["skill_md"] == "readable" for item in inventory["items"])
     assert all(item["frontmatter"] == "required_fields_valid" for item in inventory["items"])
     assert "not_full_yaml" in inventory["validation_scope"]
     assert inventory["host_listing"] == "unverified"
     value = doctor.presentation(report(skills=inventory))
-    assert "6/6 local skill files" in value["checked"]
+    assert "7/7 local skill files" in value["checked"]
     assert "Host skill listing is unverified" in value["gap"]
     assert "does not establish skill delivery" in value["gap"]
 

@@ -25,6 +25,8 @@ or bot output review; route those to the relevant domain/plugin review skill.
 For an audit of saved reports or versioned handovers, read
 `${CLAUDE_PLUGIN_ROOT}/references/saved-output-repair.md`. Apply its check to the
 correction explanations as well as the repaired values and historical records.
+Use the packaged `llm-accuracy:saved-output-audit` workflow when actual saved
+files are available; keep helper results separate from narrative verification.
 
 1. Identify the prior answer being audited. If the user did not provide enough
    context, ask for the missing answer or summarize the exact claim you can

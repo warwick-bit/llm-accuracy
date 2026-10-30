@@ -85,7 +85,7 @@ def test_codex_marketplace_publishes_memory_and_accuracy() -> None:
     assert accuracy["version"] == load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")["version"]
     assert accuracy["skills"] == [
         "./skills/verify-numerical", "./skills/verify-technical", "./skills/claim-fidelity",
-        "./skills/clarify", "./skills/self-audit"]
+        "./skills/clarify", "./skills/self-audit", "./skills/saved-output-audit"]
     assert accuracy["hooks"] == {"hooks": {}}
     for plugin in (DETERMINISTIC, LEDGER):
         assert not (plugin / ".codex-plugin").exists()

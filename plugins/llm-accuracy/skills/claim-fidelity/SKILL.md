@@ -49,6 +49,9 @@ When revising a saved report or explaining changes to earlier versions, read
 `${CLAUDE_PLUGIN_ROOT}/references/saved-output-repair.md`. Check the current data,
 actual historical contents and correction explanations separately; a correct
 replacement does not establish the claimed cause of the earlier discrepancy.
+For the actual-file checking and bounded repair workflow, use the packaged
+`llm-accuracy:saved-output-audit` skill. Its formula/checksum helper is a scoped
+check, not a substitute for this source-bound narrative review.
 
 1. State the exact load-bearing claim. Split compound claims before checking.
 2. Identify the evidence actually observed, including failed, partial, cached,
