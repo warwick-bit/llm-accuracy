@@ -52,7 +52,7 @@ mean the underlying claim is correct.
 For a saved factual report, invoke `/llm-accuracy:saved-output-audit` or ask for
 the report to be checked against its sources and earlier versions. Automatic
 skill selection depends on the model. Where Python/file execution is available,
-`scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_FILE`
+`skills/saved-output-audit/scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_FILE`
 checks supported labelled formulas and digest citations in the actual bytes.
 Passes are bounded; source truth, historical explanations, percentages and
 unlabelled equations still need separate review. Without execution, the skill
@@ -361,3 +361,7 @@ Model identity is `unreported` if it differs between turns.
 The tool-free acknowledgement probe normally reports zero for this counter;
 that does not mean prompt checks are inactive. A successful acknowledgement
 proves neither factual accuracy nor activation in your existing conversation.
+
+The saved-output skill includes its own scripts and reference for hosts that mount
+only a skill directory. Tests keep these copies equal to the plugin-root helpers.
+This packaging support does not establish execution in a particular host.

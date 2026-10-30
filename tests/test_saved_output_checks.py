@@ -109,3 +109,26 @@ def test_precision_and_quotation_regressions_detect_restored_defects(tmp_path):
     old = load_module(old_path, "unquoted_formulas")
     text = "```text\nCost formula: 1 + 1 = 3.\n```"
     assert current.check(text)["status"] == "not_applicable" and old.check(text)["status"] == "fail"
+
+
+def test_independently_mounted_saved_output_skill(tmp_path):
+    """A host mounting only the skill can execute its shipped helper."""
+    import shutil
+    original = ROOT / "plugins/llm-accuracy/skills/saved-output-audit"
+    mounted = tmp_path / "mounted-skill"
+    shutil.copytree(original, mounted, ignore=shutil.ignore_patterns("__pycache__"))
+    for name in ("check_saved_output.py", "saved_output_formulas.py", "saved_output_digests.py"):
+        assert (mounted / "scripts" / name).read_bytes() == (SCRIPTS / name).read_bytes()
+    assert (mounted / "references/saved-output-repair.md").read_bytes() == (
+        ROOT / "plugins/llm-accuracy/references/saved-output-repair.md").read_bytes()
+    report = tmp_path / "report.md"
+    for text, expected, code in (("Cost formula: 1 + 1 = 3.", "fail", 1),
+                                 ("Cost formula: 1 + 1 = 2.", "bounded_checks_pass", 0)):
+        report.write_text(text, encoding="utf-8")
+        result = subprocess.run([sys.executable, "-B", str(mounted / "scripts/check_saved_output.py"),
+                                 str(report), "--version", "v3"], cwd=tmp_path,
+                                capture_output=True, text=True, encoding="utf-8", timeout=20,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        assert result.returncode == code, result.stderr
+        assert json.loads(result.stdout)["status"] == expected
+        assert report.read_text(encoding="utf-8") == text

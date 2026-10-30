@@ -10,9 +10,10 @@ Deliver the user's requested file and check its contents against the evidence.
 Keep the check proportionate. This skill is not an independent reviewer and its
 helper does not certify whole-report accuracy.
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/references/saved-output-repair.md`. On hosts that
-   do not expand the placeholder, resolve the package root two directories above
-   this skill directory. Use the current host's real tools and permissions.
+1. Read `references/saved-output-repair.md` relative to this skill's own
+   directory (the directory containing this SKILL.md). Its scripts and reference
+   are bundled here so a host can mount this skill independently of the plugin
+   root. Use the current host's real tools and permissions.
 2. Separate current facts, actual earlier versions and explanations of changes.
    A new source value does not make an older own-source answer wrong. Preserve
    IDs, dates, source scope, membership, ranking and original historical errors.
@@ -22,17 +23,18 @@ helper does not certify whole-report accuracy.
    from the supplied sources with deterministic tools when available. Correct
    numbers do not establish a correct explanation or prove a tool was used.
 4. On a host with Python and access to these packaged scripts, run
-   `scripts/check_saved_output.py` on the actual report and any saved delivery
+   this skill's `scripts/check_saved_output.py` on the actual report and any saved delivery
    text. Resolve a working Python executable first; do not assume `python3`.
    For example, using resolved paths as separate arguments:
 
    ```text
-   PYTHON PACKAGE_ROOT/scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_REPORT_1 --source v2=EARLIER_REPORT_2 --delivery DELIVERY_TEXT
+   PYTHON SKILL_DIRECTORY/scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_REPORT_1 --source v2=EARLIER_REPORT_2 --delivery DELIVERY_TEXT
    ```
 
    Omit optional arguments for unavailable files; never reconstruct earlier
    bytes and claim they are original. The helper is read-only and stateless.
-   Read its JSON status and limits, not only its exit code. It checks plainly
+   Read its JSON status and limits, not only its exit code. If citing a computed
+   hash, use the explicit label `SHA-256 v3: <full digest>` (or its actual version). It checks plainly
    labelled single literal formula equalities and version-labelled SHA-256
    claims. Percentage-valued equations, units, source truth and other prose
    require separate checks. Fenced and blockquoted historical equations are
