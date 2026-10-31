@@ -289,6 +289,15 @@ def build_arm(arm: str, dest: Path) -> Path:
         BANNER_SCRIPT.format(text=BANNER_TEXT), encoding="utf-8"
     )
     (hooks_dir / SESSION_FILE).write_text(SESSION_SCRIPT, encoding="utf-8")
+    if arm == "every_prompt":
+        # Freeze the recorded fixed-text arm; new task checks must not confound cadence.
+        fixed = subprocess.run(
+            [sys.executable, str(hooks_dir / SESSION_FILE)],
+            capture_output=True, text=True, check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+        )
+        text = json.loads(fixed.stdout)["hookSpecificOutput"]["additionalContext"]
+        (hooks_dir / HOOK_FILE).write_text(BANNER_SCRIPT.format(text=text), encoding="utf-8")
     path = hooks_dir / "hooks.json"
     config = json.loads(path.read_text(encoding="utf-8"))
     config["hooks"] = rewire(config["hooks"], arm)
