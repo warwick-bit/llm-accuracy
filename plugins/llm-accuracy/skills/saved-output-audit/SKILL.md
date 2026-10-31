@@ -19,6 +19,13 @@ helper does not certify whole-report accuracy.
    IDs, dates, source scope, membership, ranking and original historical errors.
    Check each material prose claim, including any account of when instructions
    arrived. A later error is not evidence that an earlier claim was false.
+   Before delivery, reconcile every claim in the explanation against the final
+   saved output and the sources: each statement that a value changed or did not
+   change, or that a figure, method or earlier report is valid, invalid, correct
+   or wrong. A correct component figure stays correct even when an aggregate
+   built from it is wrong: name the actual flaw (for example the method of
+   combining) rather than disputing correct inputs. Remove or correct any claim
+   the data does not support.
 3. Inspect the actual saved file after writing it. Recompute required fields
    from the supplied sources with deterministic tools when available. Correct
    numbers do not establish a correct explanation or prove a tool was used.
