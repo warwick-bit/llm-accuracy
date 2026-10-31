@@ -444,6 +444,8 @@ NON_DATA_PROMPTS = ORDINARY_PROMPTS + [
     "Use 3 workers for lines 10-20 of app.py.",
     "My laptop has 16 GB RAM, 512 GB SSD and a 14 inch screen. Enough?",
     "Explain what a gross margin is.",
+    "Review the updated file app.py for style.",
+    "Reformat this table:\n| Name | Status |\n|---|---|\n| Ada | Ready |",
 ]
 SAVED_OUTPUT_PROMPTS = [
     "Write report_v3.json from the updated sources.",

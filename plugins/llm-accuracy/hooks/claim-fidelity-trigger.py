@@ -52,7 +52,7 @@ MIN_DATA_NUMBERS = 3
 SAVED_OUTPUT_RE = re.compile(
     r"(\b\w*report\w*_v\d"
     r"|\b(saved|versioned|earlier|previous|prior|revised|updated|corrected)\s+(\w+\s+){0,2}"
-    r"(report|handover|spreadsheet|file|version)s?\b"
+    r"(report|handover|spreadsheet)s?\b"
     r"|\b(report|handover|spreadsheet)\s+(\w+\s+){0,3}(v\d+|version\s*\d+)\b)",
     re.IGNORECASE,
 )
@@ -134,7 +134,7 @@ SAVED_OUTPUT_CONTRACT = (
 
 def has_data_cues(prompt: str) -> bool:
     """Supplied figures: a markdown table, or several numbers with a data word."""
-    if len(TABLE_ROW_RE.findall(prompt)) >= 2:
+    if len(TABLE_ROW_RE.findall(prompt)) >= 2 and NUMBER_RE.search(prompt):
         return True
     if not DATA_WORD_RE.search(prompt):
         return False
