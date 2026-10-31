@@ -1,6 +1,6 @@
 ---
 name: saved-output-audit
-description: Use when creating, revising or checking a saved factual report, spreadsheet handover or versioned output against supplied sources and earlier reports. Check the actual final file, historical claims and correction explanations; preserve correct history. Also use when a claimed file was not delivered.
+description: Use before delivering any saved report file, versioned report (v2, v3 and later) or spreadsheet handover built from supplied sources, especially one that updates, corrects or audits an earlier version. Load it before writing the final file. It checks the actual saved file, historical claims and every correction or change explanation against the sources, and preserves correct history. Also use when a claimed file was not delivered.
 argument-hint: "[report and its source files or supplied snapshots]"
 ---
 

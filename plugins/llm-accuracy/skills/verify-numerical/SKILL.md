@@ -1,6 +1,6 @@
 ---
 name: verify-numerical
-description: Use when analysing supplied data, calculating or checking report figures, or updating numerical claims after source changes. Includes source-bound maths guidance and bounded monetary growth/ratio checks; other forms need separate calculations. Not for creative writing or ordinary coding without data analysis.
+description: Use whenever an answer relies on supplied numbers, tables or financial data, including ordinary chat questions about rates, margins, growth, variances, averages, totals or currency, and when checking someone's analysis, summary or report figures or updating numerical claims after source changes. Recomputes figures and reconciles every explanation with them. Not for creative writing or ordinary coding without data analysis.
 argument-hint: "[report and source files, or source update]"
 ---
 
@@ -55,7 +55,13 @@ and qualifications in the final deliverable; changed calculations alone do not
 update the narrative. Retain useful independently supported results.
 
 Before sending, check the explanation as well as the arithmetic, including in
-later follow-ups. When a total's composition is unknown, use only its agreed
+later follow-ups. Recompute every stated figure from the supplied data, then reread each
+explanation and summary sentence against your own final numbers: direction,
+cause, comparison, dates, favourable/unfavourable, typical value and counts
+("two of four claims are wrong"). Give one clear headline and remove superseded
+working. When checking someone's analysis, give one verdict per claim, confirm
+the correct ones as correct, write those verdicts before any overall summary,
+and make the summary match them. When a total's composition is unknown, use only its agreed
 category name; do not supply examples of presumed members or exclusions. A
 caveat is still a claim: do not predict unspecified adjustments or invent causes.
 For a direct calculation, give the result, working and material qualifications,

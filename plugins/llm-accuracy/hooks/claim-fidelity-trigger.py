@@ -37,6 +37,26 @@ REPORT_PERCENTAGE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Data cues: a markdown table, or several numbers next to a data/finance word.
+TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
+NUMBER_RE = re.compile(r"(?<![\w.])[-+]?[$€£]?\d[\d,]*(?:\.\d+)?%?")
+DATA_WORD_RE = re.compile(
+    r"\b(?:revenue|sales|cost|costs|cogs|margin|profit|loss|budget|actual|variance|"
+    r"expense|expenses|invoice|invoices|price|prices|forecast|growth|cagr|churn|"
+    r"conversion|conversions|rate|rates|ratio|average|mean|median|total|totals|"
+    r"percent|percentage|share|aud|usd|eur|gbp|currency|exchange|fx|cash|balance|"
+    r"customers|orders|units|quarter|quarterly|annual|monthly|yoy|kpi|metric)\b",
+    re.IGNORECASE,
+)
+MIN_DATA_NUMBERS = 3
+SAVED_OUTPUT_RE = re.compile(
+    r"(\b\w*report\w*_v\d"
+    r"|\b(saved|versioned|earlier|previous|prior|revised|updated|corrected)\s+(\w+\s+){0,2}"
+    r"(report|handover|spreadsheet|file|version)s?\b"
+    r"|\b(report|handover|spreadsheet)\s+(\w+\s+){0,3}(v\d+|version\s*\d+)\b)",
+    re.IGNORECASE,
+)
+
 MAX_INPUT_CHARS = 1_000_000
 # hooks.json passes this action to the SessionStart registration.
 SESSION_START = "session-start"
@@ -93,6 +113,44 @@ CONTRACT = (
 )
 
 
+DATA_CONTRACT = (
+    "DATA ANSWER CHECK: This prompt supplies figures. Use llm-accuracy:verify-numerical. "
+    "Recompute every figure you state from the supplied data. Before sending, reconcile "
+    "every explanation and summary sentence (direction, cause, comparison, dates, "
+    "favourable/unfavourable, typical value, and counts such as \"two of four are "
+    "wrong\") with your own final numbers and the data. Give one clear headline and "
+    "remove superseded working. When checking someone's analysis, give one verdict per "
+    "claim and confirm the correct ones; write those verdicts before any overall "
+    "summary, and make the summary match them."
+)
+
+SAVED_OUTPUT_CONTRACT = (
+    "SAVED OUTPUT CHECK (required): this request creates or revises a saved factual "
+    "report or versioned output. Your first action must be the Skill tool call for "
+    "llm-accuracy:saved-output-audit, before writing any file; follow it to check the "
+    "saved file and every change or correction explanation against the sources."
+)
+
+
+def has_data_cues(prompt: str) -> bool:
+    """Supplied figures: a markdown table, or several numbers with a data word."""
+    if len(TABLE_ROW_RE.findall(prompt)) >= 2:
+        return True
+    if not DATA_WORD_RE.search(prompt):
+        return False
+    return len(NUMBER_RE.findall(prompt)) >= MIN_DATA_NUMBERS
+
+
+def task_checks(prompt: str) -> str:
+    """Task-shaped checks added to any mode's prompt guidance."""
+    checks = []
+    if SAVED_OUTPUT_RE.search(prompt):
+        checks.append(SAVED_OUTPUT_CONTRACT)
+    if has_data_cues(prompt):
+        checks.append(DATA_CONTRACT)
+    return " ".join(checks)
+
+
 def should_fire(prompt: str) -> bool:
     """Legacy targeted detector; general mode does not depend on vocabulary."""
     if BYPASS_RE.search(prompt):
@@ -119,6 +177,12 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     """Choose bounded guidance without treating prompt text as configuration."""
     if not prompt.strip() or BYPASS_RE.search(prompt):
         return ""
+    base = _mode_context(prompt, mode)
+    checks = task_checks(prompt)
+    return " ".join(part for part in (base, checks) if part)
+
+
+def _mode_context(prompt: str, mode: str) -> str:
     if mode == "session":
         targeted = CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
         return CLARIFY_CONTRACT + (" " + targeted if targeted else "")

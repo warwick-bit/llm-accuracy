@@ -435,6 +435,91 @@ def test_fidelity_modes_and_bypasses(
     assert (TARGETED_ONLY in context) == expected.endswith("targeted")
 
 
+DATA_PROMPTS = [
+    "Budget vs actual:\n\n| Line | Budget | Actual |\n|---|---|---|\n| Revenue | 500 | 520 |",
+    "Annual revenue ($m): 2021: 2.0, 2022: 2.6, 2024: 3.2. What was the growth rate?",
+    "Check this: churn was 10% on 200 customers, 50 joined and 20 left.",
+]
+NON_DATA_PROMPTS = ORDINARY_PROMPTS + [
+    "Use 3 workers for lines 10-20 of app.py.",
+    "My laptop has 16 GB RAM, 512 GB SSD and a 14 inch screen. Enough?",
+    "Explain what a gross margin is.",
+]
+SAVED_OUTPUT_PROMPTS = [
+    "Write report_v3.json from the updated sources.",
+    "Correct the earlier spreadsheet handover.",
+    "Check the revised report against the sources.",
+]
+
+
+def prompt_context(prompt: str, controls: dict[str, str] | None = None) -> str:
+    result = run_hook(
+        "UserPromptSubmit", 2, json.dumps({"prompt": prompt}), controls=controls
+    )
+    assert result.returncode == 0
+    assert result.stderr == ""
+    if not result.stdout:
+        return ""
+    output = json.loads(result.stdout)
+    assert set(output) == {"hookSpecificOutput"}  # no blocking decision
+    assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    return output["hookSpecificOutput"]["additionalContext"]
+
+
+@pytest.mark.parametrize("mode", ["session", "general", "targeted"])
+@pytest.mark.parametrize("prompt", DATA_PROMPTS)
+def test_supplied_figures_add_the_data_answer_check(prompt: str, mode: str) -> None:
+    context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
+
+    assert context.count("DATA ANSWER CHECK") == 1
+    assert "llm-accuracy:verify-numerical" in context
+    assert "Recompute every figure" in context
+    assert "verdicts before any overall summary" in context
+    assert prompt not in context
+    assert "SAVED OUTPUT CHECK" not in context
+
+
+@pytest.mark.parametrize("prompt", NON_DATA_PROMPTS)
+def test_prompts_without_supplied_figures_skip_the_task_checks(prompt: str) -> None:
+    for mode in ("session", "general", "targeted"):
+        context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
+        assert "DATA ANSWER CHECK" not in context
+        assert "SAVED OUTPUT CHECK" not in context
+
+
+@pytest.mark.parametrize("mode", ["session", "general", "targeted"])
+@pytest.mark.parametrize("prompt", SAVED_OUTPUT_PROMPTS)
+def test_saved_output_requests_add_the_audit_reminder(prompt: str, mode: str) -> None:
+    context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
+
+    assert context.count("SAVED OUTPUT CHECK") == 1
+    assert "llm-accuracy:saved-output-audit" in context
+    assert "before writing any file" in context
+
+
+@pytest.mark.parametrize(
+    "controls",
+    [{"CC_SKIP_CLAIM_FIDELITY": "1"}, {}],
+    ids=["skip-env", "bypass-marker"],
+)
+def test_task_checks_honour_the_mutes(controls: dict[str, str]) -> None:
+    prompt = DATA_PROMPTS[0] + "\nRevise report_v2."
+    if not controls:
+        prompt += " # fidelity-ok"
+
+    assert prompt_context(prompt, controls) == ""
+
+
+def test_combined_prompt_guidance_stays_bounded() -> None:
+    prompt = TRIGGERED + " Revise report_v2.\n" + DATA_PROMPTS[0]
+    context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": "general"})
+
+    for label in ("CLAIM FIDELITY CHECK", "SAVED OUTPUT CHECK", "DATA ANSWER CHECK"):
+        assert context.count(label) == 1
+    # Local reminder budget, including the general, targeted and footer text.
+    assert len(context) <= 3000
+
+
 @pytest.mark.parametrize(
     "payload",
     [{}, {"prompt": None}, {"prompt": 42}, {"prompt": []}, {"prompt": "  "},
