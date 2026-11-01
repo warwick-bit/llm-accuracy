@@ -64,7 +64,7 @@ def compact_evidence(value, candidate):
             covered.update(p for p in markers if occurrence.start()<=p<occurrence.end())
     if any(p not in covered for p in markers):
         raise ValueError('Evidence omitted an explicit if-marker; full audit not submitted')
-    return {'origin':'Automatically selected structured working from a separate model session; not source authority.',
+    return {'origin':'Supplied structured working; not source authority. This helper does not verify its origin or independence.',
             'checks':compact,'limits':'Arithmetic and quote binding only. Scenario admissibility, implication, source mapping, completeness and prose need independent review.'}
 
 def validate_audit(value, candidate):

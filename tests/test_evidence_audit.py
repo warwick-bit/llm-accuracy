@@ -37,6 +37,7 @@ def test_compaction_drops_verified_historical_commentary_defect():
     assert 'small' not in json.dumps(value)
     assert value['checks'][0]['executed_equations']['status']=='pass'
     assert 'not source authority' in value['origin']
+    assert 'does not verify its origin or independence' in value['origin']
 
 @pytest.mark.parametrize('bad',['(910-90)-(900-90)=11','23/28=0.82143'])
 def test_false_or_wrong_precision_equations_are_refused(bad):
