@@ -285,7 +285,8 @@ def test_default_session_mode_delivers_bounded_clarification_without_keyword_gat
     assert prompt not in context
     assert GENERAL_ONLY not in context  # the full evidence reminder stays at session start
     assert "Checked / Gap / Next" not in context
-    assert len(context) <= 600
+    assert len(context.partition("VERIFICATION CHECK (required):")[0].rstrip()) <= 600
+    assert len(context) <= 3500
 
 
 @pytest.mark.parametrize("source", SESSION_SOURCES)
@@ -367,13 +368,15 @@ def assert_general_reminder(context: str) -> None:
     assert "repeated reversals" in context
     assert "Checked / Gap / Next" in context
     assert "actual checks or supplied evidence, with scope" in context
-    assert "including rejecting" in context
+    assert "a Gap cannot excuse a stronger claim above" in context
     assert context.count("- **Checked:** actual") == 1
-    assert "footer:\n\n---\n\n- **Checked:**" in context
+    assert "handover:\n\n---\n\n- **Checked:**" in context
     assert "\n- **Gap:** remaining" in context
     assert "\n- **Next:** smallest" in context
-    assert "Skip this footer for routine replies" in context
-    assert len(context) <= 1500
+    assert "Omit this footer from" in context
+    assert "ordinary numerical answers" in context
+    assert len(context.partition("VERIFICATION CHECK (required):")[0].rstrip()) <= 1500
+    assert len(context) <= 3500
 
 
 ORDINARY = "Repair src/transport.py."
@@ -425,7 +428,8 @@ def test_fidelity_modes_and_bypasses(
     output = json.loads(result.stdout)
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert len(context) <= 2000
+    assert len(context.partition("VERIFICATION CHECK (required):")[0].rstrip()) <= 2100
+    assert len(context) <= 3500
     if expected.startswith("clarify"):
         assert "llm-accuracy:clarify" in context
     assert context.count("CLAIM FIDELITY CHECK") == (0 if expected == "clarify" else 1)
@@ -474,8 +478,9 @@ def test_supplied_figures_add_the_data_answer_check(prompt: str, mode: str) -> N
     context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
 
     assert context.count("DATA ANSWER CHECK") == 1
-    assert "llm-accuracy:verify-numerical" in context
-    assert "Recompute every figure" in context
+    assert "llm-accuracy:verify" in context
+    assert "Recompute stated figures" in context
+    assert "reconcile explanations" in context
     assert "verdicts before any overall summary" in context
     assert prompt not in context
     assert "SAVED OUTPUT CHECK" not in context
@@ -495,8 +500,9 @@ def test_saved_output_requests_add_the_audit_reminder(prompt: str, mode: str) ->
     context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
 
     assert context.count("SAVED OUTPUT CHECK") == 1
-    assert "llm-accuracy:saved-output-audit" in context
-    assert "before writing any file" in context
+    assert "llm-accuracy:verify" in context
+    assert "first action must be the Skill tool call" in context
+    assert "actual saved file, history and correction" in context
 
 
 @pytest.mark.parametrize(
@@ -787,3 +793,21 @@ def test_accuracy_hooks_fail_open_on_invalid_utf8_bytes(name):
                             capture_output=True, timeout=30)
     assert result.returncode == 0
     assert result.stdout == result.stderr == b""
+
+
+@pytest.mark.parametrize(("prompt", "expected"), [
+    ("Audit the figures in this draft: 20/100 is 40%.", True),
+    ("Fix the failing contract in latency.py.", True),
+    ("Revise report_v3.md against the earlier source.", True),
+    ("You said the result was verified. Check your previous answer.", True),
+    ("Translate the phrase 'verify the figures' into French.", False),
+    ("Write a poem about an outage.", False),
+    ("Fix a typo in this function comment.", False),
+    ("Explain what a gross margin means.", False),
+])
+def test_unified_route_is_one_skill_without_unrelated_activation(prompt, expected):
+    context = prompt_context(prompt)
+    assert context.count("Skill tool call for llm-accuracy:verify") == int(expected)
+    assert not any("llm-accuracy:"+name in context for name in (
+        "claim-fidelity", "self-audit", "verify-numerical", "verify-technical", "saved-output-audit"))
+    assert len(context) <= 3500

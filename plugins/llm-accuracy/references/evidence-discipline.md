@@ -76,31 +76,19 @@ After compaction, interruption, a long session, or a handoff, re-read exact
 counts, IDs, dates, revisions, statuses, file paths, and task-completion claims
 before asserting them. Recall is not evidence.
 
-## Evidence footer
+## Evidence scope in the answer
 
-For substantive technical diagnoses and verification claims, end with a `---`
-divider (blank line before and after) and a compact footer of bold-labelled
-bullets: `- **Checked:**`, `- **Gap:**` and `- **Next:**`. `Checked` names
-checks actually performed, their outcome and scope, or explicitly says none.
-`Gap` names unresolved or untested parts. `Next` names the smallest useful
-action, or none when the requested scope is complete. Keep any material
-uncertainty in the answer body too. This is a model-written evidence summary,
-not a validated receipt. Skip it for routine replies without a diagnosis or
-verification claim.
+For a technical incident diagnosis or code-repair handover, use a compact
+Checked / Gap / Next footer. Name actual completed checks and their scope,
+material unresolved parts, and the smallest useful next action. Distinguish
+supplied evidence, attempted/refused checks and checks actually performed.
+Keep any material uncertainty in the answer body too. This is a model-written
+summary, not a validated receipt.
 
-For other consequential factual answers, end with the same `---` divider and
-bold-labelled bullets for the labels that apply:
-
-- **Source:**
-- **Time window:**
-- **Scope or denominator:**
-- **Caveat or data gap:**
-- **Direct evidence versus inference:**
-- **Next step:**
-
-For multi-source, disputed, blocked, or complex answers, also include conflict
-status, source freshness, and entity/denominator alignment. If an input is
-unavailable, say that explicitly and downgrade the conclusion.
+For numerical answers and other factual audits, give the requested result or
+per-claim verdicts with useful working and material source/scope limits. Do not
+append a generic footer or an inventory of optional unknowns. Keep conflicts,
+source freshness and denominator alignment visible when they affect the result.
 
 ## Confidence calibration
 

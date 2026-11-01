@@ -114,7 +114,7 @@ def test_precision_and_quotation_regressions_detect_restored_defects(tmp_path):
 def test_independently_mounted_saved_output_skill(tmp_path):
     """A host mounting only the skill can execute its shipped helper."""
     import shutil
-    original = ROOT / "plugins/llm-accuracy/skills/saved-output-audit"
+    original = ROOT / "plugins/llm-accuracy/skills/verify"
     mounted = tmp_path / "mounted-skill"
     shutil.copytree(original, mounted, ignore=shutil.ignore_patterns("__pycache__"))
     for name in ("check_saved_output.py", "saved_output_formulas.py", "saved_output_digests.py"):

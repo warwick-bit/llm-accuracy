@@ -1,7 +1,7 @@
 {
   "name": "llm-accuracy",
-  "description": "Advisory evidence reminders for technical and data work, targeted ambiguity checks, claim fidelity, and self-audit.",
-  "version": "0.8.6-personal.4",
+  "description": "One verification workflow for accurate first outputs and checking existing answers, plus clarification and local diagnostics.",
+  "version": "0.8.6-personal.5.21",
   "author": {
     "name": "Warwick"
   },

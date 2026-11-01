@@ -4,7 +4,7 @@ The optional Accuracy plugin now packages the [verification workflow](../plugins
 and its bounded checker. In Claude Code with this local candidate installed:
 
 ```text
-/llm-accuracy:verify-numerical Check this report against these sources.
+/llm-accuracy:verify Check this report against these sources.
 ```
 
 Claude can also select the skill for relevant ordinary requests. Automatic
@@ -19,7 +19,7 @@ codex plugin marketplace add /absolute/path/to/this/checkout
 codex plugin add llm-accuracy@llm-accuracy
 ```
 
-Start a fresh session. Ask normally or invoke `$llm-accuracy:verify-numerical`.
+Start a fresh session. Ask normally or invoke `$llm-accuracy:verify`.
 The Codex package exposes three shared verification skills and no automatic hooks.
 Claude keeps its existing advisory session reminders. Installation in an isolated
 test profile does not enable either package in your everyday profile.

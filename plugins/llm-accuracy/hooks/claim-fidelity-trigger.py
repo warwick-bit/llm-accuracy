@@ -57,20 +57,41 @@ SAVED_OUTPUT_RE = re.compile(
     re.IGNORECASE,
 )
 
+VERIFY_REQUEST_RE = re.compile(
+    r"\b(?:verify|fact[ -]?check|audit|check (?:this|that|your|my|the (?:figures|facts|claims|accuracy))|you said|you told me|"
+    r"your (?:previous|earlier) answer|root cause|outage|incident|recovery|patch|"
+    r"production (?:fix|deployment)|bug fix)\b", re.IGNORECASE,
+)
+
+# Pure creative/translation requests do not ask to verify mentioned words.
+TRANSFORM_REQUEST_RE = re.compile(
+    r"^\s*(?:please\s+)?(?:translate\b|(?:write|compose)\b.{0,50}\b(?:poem|haiku|song|story)\b)",
+    re.IGNORECASE,
+)
+ADDED_CHECK_RE = re.compile(
+    r"\b(?:and|also|then)\s+(?:also\s+)?(?:verify|audit|fact[ -]?check)\b|"
+    r"\b(?:verify|audit|fact[ -]?check|check)\s+(?:the\s+)?(?:facts|figures|accuracy|claims)\b",
+    re.IGNORECASE,
+)
+
+FIX_ACTION_RE = re.compile(r"\bfix(?:ing)?\b", re.IGNORECASE)
+FIX_BEHAVIOR_RE = re.compile(r"\b(?:contract|failing|failure|bug|defect|regression)\b", re.IGNORECASE)
+
 MAX_INPUT_CHARS = 1_000_000
 # hooks.json passes this action to the SessionStart registration.
 SESSION_START = "session-start"
 
 TECHNICAL_FOOTER = (
-    "End substantive technical diagnoses, verification claims and evidence-sufficiency "
-    "answers (including rejecting or withholding a claim) with this Checked / Gap / Next footer:\n"
+    "Use this Checked / Gap / Next footer only for a technical incident diagnosis "
+    "or a code-repair handover:\n"
     "\n---\n\n"
     "- **Checked:** actual checks or supplied evidence, with scope\n"
     "- **Gap:** remaining unknowns (or none)\n"
     "- **Next:** smallest useful check or action (or none)\n"
     "Supplied evidence is not a check you performed. Keep headline, body and footer "
-    "consistent; a Gap cannot excuse a stronger claim above. Skip this footer for "
-    "routine replies and creative requests."
+    "consistent; a Gap cannot excuse a stronger claim above. Omit this footer from "
+    "ordinary numerical answers, other factual audits, routine replies and creative requests. "
+    "Include only material scope or uncertainty where it affects the requested conclusion."
 )
 
 GENERAL_CONTRACT = (
@@ -83,9 +104,8 @@ GENERAL_CONTRACT = (
     "all/none claims need coverage beyond previews, samples and truncated output. "
     "A tool call is not verification. Test competing causes before declaring "
     "a root cause. Corrections must revisit dependent conclusions; repeated "
-    "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
-    "for diagnosis and fix checks. For data calculations, use "
-    "llm-accuracy:verify-numerical; conventions do not settle an "
+    "reversals require rechecking the framing. Use llm-accuracy:verify "
+    "for diagnosis, fix checks and data calculations; conventions do not settle an "
     "unresolved inclusion rule. For material ambiguity, use llm-accuracy:clarify "
     "and CALL interactive multiple-choice. Advisory, not verification."
 )
@@ -114,7 +134,7 @@ CONTRACT = (
 
 
 DATA_CONTRACT = (
-    "DATA ANSWER CHECK: This prompt supplies figures. Use llm-accuracy:verify-numerical. "
+    "DATA ANSWER CHECK: This prompt supplies figures. Before answering, call the Skill tool for llm-accuracy:verify. "
     "Recompute every figure you state from the supplied data. Before sending, reconcile "
     "every explanation and summary sentence (direction, cause, comparison, dates, "
     "favourable/unfavourable, typical value, and counts such as \"two of four are "
@@ -127,7 +147,7 @@ DATA_CONTRACT = (
 SAVED_OUTPUT_CONTRACT = (
     "SAVED OUTPUT CHECK (required): this request creates or revises a saved factual "
     "report or versioned output. Your first action must be the Skill tool call for "
-    "llm-accuracy:saved-output-audit, before writing any file; follow it to check the "
+    "llm-accuracy:verify, before writing any file; follow it to check the "
     "saved file and every change or correction explanation against the sources."
 )
 
@@ -141,13 +161,27 @@ def has_data_cues(prompt: str) -> bool:
     return len(NUMBER_RE.findall(prompt)) >= MIN_DATA_NUMBERS
 
 
-def task_checks(prompt: str) -> str:
-    """Task-shaped checks added to any mode's prompt guidance."""
-    checks = []
-    if SAVED_OUTPUT_RE.search(prompt):
-        checks.append(SAVED_OUTPUT_CONTRACT)
-    if has_data_cues(prompt):
-        checks.append(DATA_CONTRACT)
+def task_checks(prompt: str, targeted: bool | None = None) -> str:
+    """One skill request, with only the applicable task reminders."""
+    # Quoted words are transformation input, not additional task instructions.
+    directives = re.sub(r'"[^"\r\n]*"|(?<!\w)\'[^\'\r\n]*\'|`[^`\r\n]*`', "", prompt)
+    if TRANSFORM_REQUEST_RE.search(prompt) and not ADDED_CHECK_RE.search(directives):
+        return ""
+    saved = bool(SAVED_OUTPUT_RE.search(prompt))
+    figures = has_data_cues(prompt)
+    requested = bool(VERIFY_REQUEST_RE.search(prompt)) or (should_fire(prompt) if targeted is None else targeted)
+    requested = requested or bool(FIX_ACTION_RE.search(prompt) and FIX_BEHAVIOR_RE.search(prompt))
+    if not (saved or figures or requested):
+        return ""
+    checks = ["VERIFICATION CHECK (required): Before substantive work or an audit verdict, "
+              "your first action must be the Skill tool call for llm-accuracy:verify. "
+              "Apply the relevant checks while working and to the final output before delivery."]
+    if figures:
+        checks.append("DATA ANSWER CHECK: Recompute stated figures and reconcile explanations "
+                      "with the final numbers. Give per-claim audit verdicts before any overall summary.")
+    if saved:
+        checks.append("SAVED OUTPUT CHECK: Check the actual saved file, history and correction "
+                      "explanations against the sources; preserve valid earlier claims.")
     return " ".join(checks)
 
 
@@ -177,18 +211,20 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     """Choose bounded guidance without treating prompt text as configuration."""
     if not prompt.strip() or BYPASS_RE.search(prompt):
         return ""
-    base = _mode_context(prompt, mode)
-    checks = task_checks(prompt)
+    targeted = should_fire(prompt)
+    base = _mode_context(prompt, mode, targeted)
+    checks = task_checks(prompt, targeted)
     return " ".join(part for part in (base, checks) if part)
 
 
-def _mode_context(prompt: str, mode: str) -> str:
+def _mode_context(prompt: str, mode: str, targeted: bool | None = None) -> str:
+    targeted = should_fire(prompt) if targeted is None else targeted
     if mode == "session":
-        targeted = CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
+        targeted = CONTRACT + " " + TECHNICAL_FOOTER if targeted else ""
         return CLARIFY_CONTRACT + (" " + targeted if targeted else "")
     if mode != "general":
-        return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
-    if should_fire(prompt):
+        return CONTRACT + " " + TECHNICAL_FOOTER if targeted else ""
+    if targeted:
         # One label per reminder; the targeted contract follows the general one.
         return GENERAL_CONTRACT + " " + CONTRACT[len(LABEL) :] + " " + TECHNICAL_FOOTER
     return GENERAL_CONTRACT + " " + TECHNICAL_FOOTER

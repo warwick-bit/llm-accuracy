@@ -95,7 +95,7 @@ resumes, is cleared or is compacted, rather than on every prompt; it still
 covers technical requests and short follow-ups. Additional reminders target
 ambiguous business questions, open-ended analysis, evidence-boundary claims,
 source conflicts and context compaction. They do not fetch evidence, block work
-or verify facts automatically. Use `/llm-accuracy:claim-fidelity` for an explicit
+or verify facts automatically. Use `/llm-accuracy:verify` for an explicit
 check. See [reminder modes](../plugins/llm-accuracy/README.md#reminder-modes) for
 every-prompt and targeted-only behaviour and bypasses. Hook delivery does not prove improved
 diagnostic accuracy on your tasks.

@@ -16,11 +16,11 @@ correctness.
 - checks whether claims remain within their source, population, definition,
   window, freshness and completeness boundaries;
 - nudges a model to recheck stale details after long sessions; and
-- provides self-audit and claim-fidelity workflows;
+- combines self-audit, claim fidelity, numerical, technical and saved-output checks in one Verify workflow;
 - provides a saved-output audit workflow with bounded, read-only literal
   formula and version-labelled checksum checks, followed by source-bound prose
   review and at most two correction attempts;
-- provides an optional `verify-numerical` workflow and executable checks for
+- provides an `verify` workflow and executable checks for
   declared monetary growth, whether every declared region increased, and a ratio
   using source-defined numerator/denominator series;
 - reads explicitly mapped CSV records with source lineage and rechecks original
@@ -32,13 +32,12 @@ correctness.
 
 ## What it does not do
 
-- access a provider, database, or external source of truth;
+- automatically access a provider, database, or external source of truth;
 - verify a specific domain metric or business definition;
 - certify source truth, arbitrary arithmetic, domain correctness or whole-answer
   factual accuracy;
-- create or persist prompt epochs, receipts, prompts, or tool output;
-- collect telemetry, persist prompts or tool output, or send data to a server;
-  or
+- automatically create persistent memory or prompt epochs;
+- collect telemetry; or
 - guarantee that an answer is complete, current, or correct. It does not guarantee factual correctness.
 
 Hooks are advisory and non-blocking.
@@ -49,15 +48,14 @@ mean the underlying claim is correct.
 
 ## Day-to-day use
 
-For a saved factual report, invoke `/llm-accuracy:saved-output-audit` or ask for
+For a saved factual report, invoke `/llm-accuracy:verify` or ask for
 the report to be checked against its sources and earlier versions. Automatic
 skill selection depends on the model. Where Python/file execution is available,
-`skills/saved-output-audit/scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_FILE`
+`skills/verify/scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_FILE`
 checks supported labelled formulas and digest citations in the actual bytes.
 Passes are bounded; source truth, historical explanations, percentages and
 unlabelled equations still need separate review. Without execution, the skill
-uses supplied snapshots and reports byte-level checks unavailable. The plugin
-does not launch an external reviewer or a Desktop controller.
+uses supplied snapshots and reports byte-level checks unavailable. The ordinary workflow does not launch a model reviewer or Desktop controller.
 
 For Codex data analysis, the same package includes source/metric scope checks,
 numerical verification, technical verification and correction-aware summaries.
@@ -90,7 +88,7 @@ policy as well as no hooks. The release includes Clarify and Self-Audit alongsid
 it does not provide a manual-only edition.
 
 For a report and its source files, ask Claude to check the report normally or use
-`/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,
+`/llm-accuracy:verify` explicitly. The skill checks source mapping,
 executes the bounded monetary checker when applicable, and distinguishes other
 calculations and unchecked claims. After a source change, ask it to update the
 report and recheck affected conclusions. See the
@@ -313,7 +311,7 @@ and check the actual consuming application's failure path.
 
 ## Verify technical work
 
-Use `/llm-accuracy:verify-technical` for a diagnosis, disputed cause or fix claim.
+Use `/llm-accuracy:verify` for a diagnosis, disputed cause or fix claim.
 It asks for a scoped reproduction, competing explanations, the smallest justified
 change, and a rerun of the original check. Local verification, deployment and
 production verification stay separate. Corrections require checking dependent
@@ -365,3 +363,23 @@ proves neither factual accuracy nor activation in your existing conversation.
 The saved-output skill includes its own scripts and reference for hosts that mount
 only a skill directory. Tests keep these copies equal to the plugin-root helpers.
 This packaging support does not establish execution in a particular host.
+
+## Optional separate evidence pass
+
+For an existing answer with numerical conditional claims, Verify supports a
+minimal evidence pass followed by a full source-bound audit. The host supplies
+any independently authorized model context. The packaged offline
+`skills/verify/scripts/evidence_handoff.py` checks quote binding, explicit
+if-marker coverage and literal equations, then forwards only compact working.
+It calls no provider, network service or external model. See
+[the two-pass workflow](skills/verify/references/two-pass-audit.md).
+
+Repository-only `tools/verify-audit` is a separate optional Claude CLI adapter
+for maintainers who explicitly authorize two model calls. It is excluded from
+the plugin archive and never runs from hooks. Verify, Clarify and Accuracy
+Doctor remain available without this adapter. Codex exposes Verify and Clarify
+only, with no automatic hooks.
+
+This personal candidate is not activated or published. The completed historical
+comparison does not establish overall parity; current evaluation and platform
+coverage gaps remain release blockers. No universal accuracy benefit is claimed.

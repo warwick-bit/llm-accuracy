@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.8.6-personal.4"
+    assert claude["version"] == "0.8.6-personal.5.21"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 
@@ -84,8 +84,7 @@ def test_codex_marketplace_publishes_memory_and_accuracy() -> None:
     accuracy = load_json("plugins/llm-accuracy/.codex-plugin/plugin.json")
     assert accuracy["version"] == load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")["version"]
     assert accuracy["skills"] == [
-        "./skills/verify-numerical", "./skills/verify-technical", "./skills/claim-fidelity",
-        "./skills/clarify", "./skills/self-audit", "./skills/saved-output-audit"]
+        "./skills/verify", "./skills/clarify"]
     assert accuracy["hooks"] == {"hooks": {}}
     for plugin in (DETERMINISTIC, LEDGER):
         assert not (plugin / ".codex-plugin").exists()
@@ -194,13 +193,13 @@ def test_self_audit_requires_a_committed_official_source() -> None:
     # passed withheld-source answers in a reviewer benchmark; with this rule
     # it caught them. Withholding is a correction, not caution.
     skill = " ".join(
-        (PLUGIN / "skills" / "self-audit" / "SKILL.md").read_text(encoding="utf-8").split()
+        (PLUGIN / "skills" / "verify" / "references" / "answer-audit.md").read_text(encoding="utf-8").split()
     )
 
     assert "check that it commits to the official source" in skill
     assert "state that basis" in skill
     assert "\"the data can't establish which is official\" is a correction" in skill
-    assert "withheld source" in skill
+    assert "withheld-source claim" in skill
     # No checkable rule -> unconfirmed, never a rule borrowed from the answer.
     assert "never taken from the answer being audited" in skill
     assert "say official status is unconfirmed" in skill
