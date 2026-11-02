@@ -288,8 +288,9 @@ Install LLM Accuracy through its repository marketplace; no ZIP is needed.
 Open **Customize → Plugins**, choose **Add marketplace → Add from a repository**,
 and enter `https://github.com/warwick-bit/llm-accuracy`. Select **LLM Accuracy**
 and install it. For an existing installation, refresh/sync the marketplace and
-update the plugin. Confirm version **0.8.4**, then start a fresh conversation.
-Clarify and Self-Audit are included; they are not separate plugins.
+update the plugin. Confirm the version matches the
+[latest release](https://github.com/warwick-bit/llm-accuracy/releases/latest), then start a fresh conversation.
+Verify, Clarify and Accuracy Doctor are included; they are not separate plugins.
 
 Chat/Cowork use stateless Accuracy and Deterministic Data skills. Focused
 maintainer-reported tests cover clarification and self-audit behavior; full
@@ -301,7 +302,7 @@ checks do not establish Desktop behavior.
 Download the latest `llm-accuracy-<version>.zip` asset from the
 [latest GitHub release](https://github.com/warwick-bit/llm-accuracy/releases/latest).
 In Claude Desktop or Cowork, open **Customize**, then **Plugins**, and upload
-the custom plugin file. Confirm that the self-audit skill appears before relying
+the custom plugin file. Confirm that the verify skill appears before relying
 on the plugin for consequential work.
 
 For a customised Deterministic Data plugin, edit the source catalogue first,
@@ -309,9 +310,24 @@ run the validators and build `deterministic-data-<version>.zip`. Upload that ZIP
 to Cowork. Shared installed plugin content is replaced through an updated ZIP or
 synced marketplace; it is not an in-place catalogue editor.
 
+### Claude Desktop — attach a folder for automatic checks
+
+In Claude Desktop 4.4212 (November 2026), Chat and Cowork are one conversation
+type with an optional folder. A canary plugin test on 2 Nov 2026 (one Pro
+account, Windows) found that plugin hooks reached Claude in conversations with a
+folder attached (2 of 2) and in none without one (0 of 3), including a
+conversation that created and shared a file. LLM Accuracy's final reread showed
+the same pattern. Anthropic's documentation says Chat runs plugin hooks; the
+difference has been reported to Anthropic.
+
+Until that changes, attach a folder (an empty one is enough) when you want the
+automatic reminders and final reread. Without a folder only the skills run, and
+only when Claude loads them, so ask for a check in plain words. These are small
+maintainer checks on one account, not a qualification.
+
 ### Claude Desktop Chat — skills-only
 
-In the **Chat** tab, LLM Accuracy's skills are available, including self-audit.
+In the **Chat** tab, LLM Accuracy's skills are available, including verify.
 The automatic advisory hooks do not run in chat, so use the skill when you want
 an explicit check of an earlier answer.
 
