@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Use before analysing supplied data, calculating figures or explaining numerical changes; before technical diagnoses or claims a fix works; and for requests to check or audit an answer or saved report. Includes 'verify your own previous answer', 'you said' and self-audits. Recompute figures and check all explanations. Apply to first outputs and later verification. Skip creative writing, pure translations and routine code changes without a material factual claim.
+description: Use before answering from supplied figures, tables, lists, reports or other material, including everyday questions such as 'is this right?', 'can I say this?', 'what does this show?', 'summarise these numbers' or 'check this report'; before analysing data, calculating figures or explaining changes; before technical diagnoses or claims a fix works; and for requests to check or audit an answer or saved report, including 'verify your own previous answer', 'you said' and self-audits. Recompute figures, check every explanation and reread the answer against the source before sending. Apply to first outputs and later verification. Skip creative writing, pure translations and routine code changes without a material factual claim.
 ---
 
 # Verify
@@ -23,6 +23,16 @@ Use one workflow for accurate first answers and for checking an existing answer.
    what-if calculations, speculative explanations, source-correction scenarios or
    generic advice. If asked why something happened, separate the arithmetic
    explanation from an unknown underlying cause.
+4. **Reread against the source before sending.** Go sentence by sentence through
+   the actual answer and any file saved this turn. Call each quantity by the
+   source's own label, not a related metric or broader term. Keep a direction,
+   cause, generalisation or every/all claim only if the supplied facts establish
+   it; otherwise narrow it or say it is unknown. Judge a statement by its exact
+   words, without strengthening or weakening it. A statement that the data does
+   not indicate something is supported when the data gives no sign of it or
+   explains the observation another way. Recheck each stated figure against the
+   source.
+   Correct the answer and file before sending.
 
 Before sending, read the actual answer or final saved bytes. Check every material
 claim, including explanations, examples, counts, recommendations and claims about
