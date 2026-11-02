@@ -95,17 +95,17 @@ def load_module(path, name):
 def test_precision_and_quotation_regressions_detect_restored_defects(tmp_path):
     source = (SCRIPTS / "saved_output_formulas.py").read_text(encoding="utf-8")
     current = load_module(SCRIPTS / "saved_output_formulas.py", "current_formulas")
-    literal = "Fraction(ast.get_source_segment(text,node))"
+    literal = "Fraction(ast.get_source_segment(text, node))"
     assert source.count(literal) == 1
     old_path = tmp_path / "lossy.py"
     old_path.write_text(source.replace(literal, "Fraction(str(node.value))"), encoding="utf-8")
     old = load_module(old_path, "lossy_formulas")
     text = "Cost formula: 0.10000000000000000001 = 0.1."
     assert current.check(text)["status"] == "fail" and old.check(text)["status"] == "pass"
-    boundary = "if fence is not None or line.lstrip().startswith('>'):continue"
+    boundary = 'if fence is not None or line.lstrip().startswith(">"):'
     assert source.count(boundary) == 1
     old_path = tmp_path / "unquoted.py"
-    old_path.write_text(source.replace(boundary, "if False:continue"), encoding="utf-8")
+    old_path.write_text(source.replace(boundary, "if False:"), encoding="utf-8")
     old = load_module(old_path, "unquoted_formulas")
     text = "```text\nCost formula: 1 + 1 = 3.\n```"
     assert current.check(text)["status"] == "not_applicable" and old.check(text)["status"] == "fail"
