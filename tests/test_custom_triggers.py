@@ -229,7 +229,8 @@ def test_custom_phrase_adds_detailed_guidance(tmp_path, mode):
     assert ("competing causes" in context) == (mode == "general")
     assert "equal membership" in context
     assert context.count("CLAIM FIDELITY CHECK") == 1
-    assert len(context) <= 2000
+    assert len(context.partition("VERIFICATION CHECK (required):")[0].rstrip()) <= 2100
+    assert len(context) <= 3500
 
 
 @pytest.mark.parametrize("script,family", [

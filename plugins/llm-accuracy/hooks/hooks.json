@@ -67,6 +67,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "set -- \"claim-fidelity-trigger.py:stop\"; (. \"${CLAUDE_PLUGIN_ROOT}/hooks/python-launcher.cmd\" \"claim-fidelity-trigger.py:stop\"); exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking llm-accuracy source reread"
+          }
+        ]
+      }
     ]
   }
 }

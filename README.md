@@ -19,7 +19,7 @@ practitioner narrative live in the
 [Finance/Data Eval repository](https://github.com/warwick-bit/llm-finance-data-eval).
 The studies report failures and limitations; they do not establish a universal
 accuracy benefit. See the [0.8.1 marketplace qualification](docs/release-0.8.1.md) for
-that version's evidence and pending tag, and the [0.8.5 release notes](docs/release-0.8.5.md)
+that version's evidence and pending tag, and the [0.8.6-personal.5.26 release notes](docs/release-0.8.6-personal.5.26.md)
 for the current changes, qualification and remaining coverage gaps.
 
 ## Acknowledgements
@@ -47,7 +47,7 @@ The basic loop is:
    with the source's population, definition, time window, freshness and
    completeness.
 4. When you want a structured second pass, run
-   `/llm-accuracy:claim-fidelity` or ask Claude to audit its previous answer.
+   `/llm-accuracy:verify` or ask Claude to audit its previous answer.
 
 The hooks are advisory. They help Claude reason more carefully, but they do not
 independently verify the source or guarantee the final answer. **Deterministic
@@ -63,7 +63,7 @@ Additional business-ambiguity and source-conflict reminders remain targeted.
 When the data is available, the ambiguity reminder asks Claude to inspect it
 first and show how each reading changes the figure before asking which one you
 mean.
-Use `/llm-accuracy:claim-fidelity` for an explicit check. See
+Use `/llm-accuracy:verify` for an explicit check. See
 [reminder modes](plugins/llm-accuracy/README.md#reminder-modes) to restore the
 previous targeted-only behaviour or mute the fidelity reminder.
 Users can also [add their own trigger phrases](plugins/llm-accuracy/README.md#custom-trigger-phrases)
@@ -332,7 +332,7 @@ enabled separately. Neither plugin depends on the other.
 The answer silently changes the population from surveyed trial users to all
 customers.
 
-**With `/llm-accuracy:claim-fidelity`**
+**With `/llm-accuracy:verify`**
 
 > **Status:** withheld
 >
@@ -496,7 +496,7 @@ covers greetings and creative tasks; it asks Claude to keep those tasks brief.
 Delivery coverage is not proof that the model follows the reminder or answers
 more accurately.
 
-Use `/llm-accuracy:claim-fidelity` to check whether a conclusion is supported
+Use `/llm-accuracy:verify` to check whether a conclusion is supported
 by its source, population, definition, window, freshness and completeness. The
 receipt validator checks structure only and stores no receipt content.
 

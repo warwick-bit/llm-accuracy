@@ -42,6 +42,10 @@ EXPECTED_HANDLERS = {
         "partial-result-sentinel.py",
         "Checking llm-accuracy partial result signal",
     ),
+    ("Stop", 0): (
+        "claim-fidelity-trigger.py:stop",
+        "Checking llm-accuracy source reread",
+    ),
 }
 
 
@@ -98,7 +102,8 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
 
     config = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))
     assert set(config) == {"hooks"}
-    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse"}
+    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse", "Stop"}
+    assert "matcher" not in config["hooks"]["Stop"][0]
     assert config["hooks"]["SessionStart"][0]["matcher"] == "compact"
     # No matcher: startup, resume, clear and compaction all restore the reminder.
     assert "matcher" not in config["hooks"]["SessionStart"][1]
@@ -285,7 +290,8 @@ def test_default_session_mode_delivers_bounded_clarification_without_keyword_gat
     assert prompt not in context
     assert GENERAL_ONLY not in context  # the full evidence reminder stays at session start
     assert "Checked / Gap / Next" not in context
-    assert len(context) <= 600
+    assert len(context.partition("VERIFICATION CHECK (required):")[0].rstrip()) <= 600
+    assert len(context) <= 3500
 
 
 @pytest.mark.parametrize("source", SESSION_SOURCES)
@@ -367,13 +373,15 @@ def assert_general_reminder(context: str) -> None:
     assert "repeated reversals" in context
     assert "Checked / Gap / Next" in context
     assert "actual checks or supplied evidence, with scope" in context
-    assert "including rejecting" in context
+    assert "a Gap cannot excuse a stronger claim above" in context
     assert context.count("- **Checked:** actual") == 1
-    assert "footer:\n\n---\n\n- **Checked:**" in context
+    assert "handover:\n\n---\n\n- **Checked:**" in context
     assert "\n- **Gap:** remaining" in context
     assert "\n- **Next:** smallest" in context
-    assert "Skip this footer for routine replies" in context
-    assert len(context) <= 1500
+    assert "Omit this footer from" in context
+    assert "ordinary numerical answers" in context
+    assert len(context.partition("VERIFICATION CHECK (required):")[0].rstrip()) <= 1500
+    assert len(context) <= 3500
 
 
 ORDINARY = "Repair src/transport.py."
@@ -425,7 +433,8 @@ def test_fidelity_modes_and_bypasses(
     output = json.loads(result.stdout)
     assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
     context = output["hookSpecificOutput"]["additionalContext"]
-    assert len(context) <= 2000
+    assert len(context.partition("VERIFICATION CHECK (required):")[0].rstrip()) <= 2100
+    assert len(context) <= 3500
     if expected.startswith("clarify"):
         assert "llm-accuracy:clarify" in context
     assert context.count("CLAIM FIDELITY CHECK") == (0 if expected == "clarify" else 1)
@@ -433,6 +442,95 @@ def test_fidelity_modes_and_bypasses(
         assert (label in context) == (expected != "clarify")
     assert (GENERAL_ONLY in context) == expected.startswith("general")
     assert (TARGETED_ONLY in context) == expected.endswith("targeted")
+
+
+DATA_PROMPTS = [
+    "Budget vs actual:\n\n| Line | Budget | Actual |\n|---|---|---|\n| Revenue | 500 | 520 |",
+    "Annual revenue ($m): 2021: 2.0, 2022: 2.6, 2024: 3.2. What was the growth rate?",
+    "Check this: churn was 10% on 200 customers, 50 joined and 20 left.",
+]
+NON_DATA_PROMPTS = ORDINARY_PROMPTS + [
+    "Use 3 workers for lines 10-20 of app.py.",
+    "My laptop has 16 GB RAM, 512 GB SSD and a 14 inch screen. Enough?",
+    "Explain what a gross margin is.",
+    "Review the updated file app.py for style.",
+    "Reformat this table:\n| Name | Status |\n|---|---|\n| Ada | Ready |",
+]
+SAVED_OUTPUT_PROMPTS = [
+    "Write report_v3.json from the updated sources.",
+    "Correct the earlier spreadsheet handover.",
+    "Check the revised report against the sources.",
+]
+
+
+def prompt_context(prompt: str, controls: dict[str, str] | None = None) -> str:
+    result = run_hook(
+        "UserPromptSubmit", 2, json.dumps({"prompt": prompt}), controls=controls
+    )
+    assert result.returncode == 0
+    assert result.stderr == ""
+    if not result.stdout:
+        return ""
+    output = json.loads(result.stdout)
+    assert set(output) == {"hookSpecificOutput"}  # no blocking decision
+    assert output["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    return output["hookSpecificOutput"]["additionalContext"]
+
+
+@pytest.mark.parametrize("mode", ["session", "general", "targeted"])
+@pytest.mark.parametrize("prompt", DATA_PROMPTS)
+def test_supplied_figures_add_the_data_answer_check(prompt: str, mode: str) -> None:
+    context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
+
+    assert context.count("DATA ANSWER CHECK") == 1
+    assert "llm-accuracy:verify" in context
+    assert "Recompute stated figures" in context
+    assert "reconcile explanations" in context
+    assert "verdicts before any overall summary" in context
+    assert prompt not in context
+    assert "SAVED OUTPUT CHECK" not in context
+
+
+@pytest.mark.parametrize("prompt", NON_DATA_PROMPTS)
+def test_prompts_without_supplied_figures_skip_the_task_checks(prompt: str) -> None:
+    for mode in ("session", "general", "targeted"):
+        context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
+        assert "DATA ANSWER CHECK" not in context
+        assert "SAVED OUTPUT CHECK" not in context
+
+
+@pytest.mark.parametrize("mode", ["session", "general", "targeted"])
+@pytest.mark.parametrize("prompt", SAVED_OUTPUT_PROMPTS)
+def test_saved_output_requests_add_the_audit_reminder(prompt: str, mode: str) -> None:
+    context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": mode})
+
+    assert context.count("SAVED OUTPUT CHECK") == 1
+    assert "llm-accuracy:verify" in context
+    assert "first action must be the Skill tool call" in context
+    assert "actual saved file, history and correction" in context
+
+
+@pytest.mark.parametrize(
+    "controls",
+    [{"CC_SKIP_CLAIM_FIDELITY": "1"}, {}],
+    ids=["skip-env", "bypass-marker"],
+)
+def test_task_checks_honour_the_mutes(controls: dict[str, str]) -> None:
+    prompt = DATA_PROMPTS[0] + "\nRevise report_v2."
+    if not controls:
+        prompt += " # fidelity-ok"
+
+    assert prompt_context(prompt, controls) == ""
+
+
+def test_combined_prompt_guidance_stays_bounded() -> None:
+    prompt = TRIGGERED + " Revise report_v2.\n" + DATA_PROMPTS[0]
+    context = prompt_context(prompt, {"CC_CLAIM_FIDELITY_MODE": "general"})
+
+    for label in ("CLAIM FIDELITY CHECK", "SAVED OUTPUT CHECK", "DATA ANSWER CHECK"):
+        assert context.count(label) == 1
+    # Local reminder budget, including the general, targeted and footer text.
+    assert len(context) <= 3000
 
 
 @pytest.mark.parametrize(
@@ -700,3 +798,106 @@ def test_accuracy_hooks_fail_open_on_invalid_utf8_bytes(name):
                             capture_output=True, timeout=30)
     assert result.returncode == 0
     assert result.stdout == result.stderr == b""
+
+
+@pytest.mark.parametrize(("prompt", "expected"), [
+    ("Audit the figures in this draft: 20/100 is 40%.", True),
+    ("Fix the failing contract in latency.py.", True),
+    ("Revise report_v3.md against the earlier source.", True),
+    ("You said the result was verified. Check your previous answer.", True),
+    ("Translate the phrase 'verify the figures' into French.", False),
+    ("Write a poem about an outage.", False),
+    ("Fix a typo in this function comment.", False),
+    ("Explain what a gross margin means.", False),
+])
+def test_unified_route_is_one_skill_without_unrelated_activation(prompt, expected):
+    context = prompt_context(prompt)
+    assert context.count("Skill tool call for llm-accuracy:verify") == int(expected)
+    assert not any("llm-accuracy:"+name in context for name in (
+        "claim-fidelity", "self-audit", "verify-numerical", "verify-technical", "saved-output-audit"))
+    assert len(context) <= 3500
+
+
+SESSION = "session-123_abc"
+
+
+def reread_controls(tmp_path: Path, **extra: str) -> dict[str, str]:
+    temp = str(tmp_path / "temp")
+    os.makedirs(temp, exist_ok=True)
+    return {"TMPDIR": temp, "TEMP": temp, "TMP": temp, **extra}
+
+
+def submit(prompt: str, controls: dict[str, str], session_id: object = SESSION):
+    payload = {"prompt": prompt, "session_id": session_id}
+    return run_hook("UserPromptSubmit", 2, json.dumps(payload), controls=controls)
+
+
+def stop(controls: dict[str, str], session_id: object = SESSION, active: bool = False):
+    payload = {"session_id": session_id, "stop_hook_active": active}
+    return run_hook("Stop", 0, json.dumps(payload), controls=controls)
+
+
+def markers(controls: dict[str, str]) -> list[str]:
+    return sorted(os.listdir(controls["TEMP"]))
+
+
+@pytest.mark.parametrize("prompt", [DATA_PROMPTS[0], "Source notes: " + "plain words " * 30])
+def test_source_turn_gets_one_final_reread(tmp_path: Path, prompt: str) -> None:
+    controls = reread_controls(tmp_path)
+    assert submit(prompt, controls).returncode == 0
+    assert markers(controls) == [f"llm-accuracy-reread-{SESSION}"]
+
+    first = stop(controls)
+    assert first.returncode == 0 and first.stderr == ""
+    output = json.loads(first.stdout)
+    assert output["decision"] == "block"
+    assert output["reason"].startswith("FINAL SOURCE REREAD (once)")
+    assert prompt not in first.stdout
+    assert markers(controls) == []
+
+    again = stop(controls, active=True)
+    assert again.returncode == 0 and again.stdout == again.stderr == ""
+
+
+def test_reread_stays_silent_when_stop_hook_is_already_active(tmp_path: Path) -> None:
+    controls = reread_controls(tmp_path)
+    submit(DATA_PROMPTS[0], controls)
+    result = stop(controls, active=True)
+    assert result.returncode == 0 and result.stdout == ""
+    assert markers(controls) == []
+
+
+@pytest.mark.parametrize(
+    ("prompt", "session_id", "extra"),
+    [
+        ("Hello!", SESSION, {}),
+        (DATA_PROMPTS[0] + " # fidelity-ok", SESSION, {}),
+        (DATA_PROMPTS[0], SESSION, {"CC_SKIP_CLAIM_FIDELITY": "1"}),
+        (DATA_PROMPTS[0], "../escape", {}),
+        (DATA_PROMPTS[0], None, {}),
+    ],
+    ids=["short-prompt", "bypass", "muted", "unsafe-id", "missing-id"],
+)
+def test_reread_is_skipped_without_a_marked_source_turn(
+    tmp_path: Path, prompt: str, session_id: object, extra: dict[str, str]
+) -> None:
+    controls = reread_controls(tmp_path, **extra)
+    assert submit(prompt, controls, session_id).returncode == 0
+    assert markers(controls) == []
+    result = stop(controls, session_id)
+    assert result.returncode == 0 and result.stdout == result.stderr == ""
+
+
+def test_unmarked_turn_clears_an_interrupted_marker(tmp_path: Path) -> None:
+    controls = reread_controls(tmp_path)
+    submit(DATA_PROMPTS[0], controls)
+    submit("Hello!", controls)
+    assert markers(controls) == []
+    assert stop(controls).stdout == ""
+
+
+@pytest.mark.parametrize("stdin_text", ["", "{not json", '["array"]'])
+def test_stop_fails_open_on_malformed_stdin(stdin_text: str) -> None:
+    result = run_hook("Stop", 0, stdin_text)
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == ""

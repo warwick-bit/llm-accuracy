@@ -16,8 +16,11 @@ correctness.
 - checks whether claims remain within their source, population, definition,
   window, freshness and completeness boundaries;
 - nudges a model to recheck stale details after long sessions; and
-- provides self-audit and claim-fidelity workflows;
-- provides an optional `verify-numerical` workflow and executable checks for
+- combines self-audit, claim fidelity, numerical, technical and saved-output checks in one Verify workflow;
+- provides a saved-output audit workflow with bounded, read-only literal
+  formula and version-labelled checksum checks, followed by source-bound prose
+  review and at most two correction attempts;
+- provides an `verify` workflow and executable checks for
   declared monetary growth, whether every declared region increased, and a ratio
   using source-defined numerator/denominator series;
 - reads explicitly mapped CSV records with source lineage and rechecks original
@@ -29,13 +32,12 @@ correctness.
 
 ## What it does not do
 
-- access a provider, database, or external source of truth;
+- automatically access a provider, database, or external source of truth;
 - verify a specific domain metric or business definition;
 - certify source truth, arbitrary arithmetic, domain correctness or whole-answer
   factual accuracy;
-- create or persist prompt epochs, receipts, prompts, or tool output;
-- collect telemetry, persist prompts or tool output, or send data to a server;
-  or
+- automatically create persistent memory or prompt epochs;
+- collect telemetry; or
 - guarantee that an answer is complete, current, or correct. It does not guarantee factual correctness.
 
 Hooks are advisory and non-blocking.
@@ -45,6 +47,15 @@ pass means the receipt satisfies the generic structural contract; it does not
 mean the underlying claim is correct.
 
 ## Day-to-day use
+
+For a saved factual report, invoke `/llm-accuracy:verify` or ask for
+the report to be checked against its sources and earlier versions. Automatic
+skill selection depends on the model. Where Python/file execution is available,
+`skills/verify/scripts/check_saved_output.py REPORT --version v3 --source v1=EARLIER_FILE`
+checks supported labelled formulas and digest citations in the actual bytes.
+Passes are bounded; source truth, historical explanations, percentages and
+unlabelled equations still need separate review. Without execution, the skill
+uses supplied snapshots and reports byte-level checks unavailable. The ordinary workflow does not launch a model reviewer or Desktop controller.
 
 For Codex data analysis, the same package includes source/metric scope checks,
 numerical verification, technical verification and correction-aware summaries.
@@ -77,7 +88,7 @@ policy as well as no hooks. The release includes Clarify and Self-Audit alongsid
 it does not provide a manual-only edition.
 
 For a report and its source files, ask Claude to check the report normally or use
-`/llm-accuracy:verify-numerical` explicitly. The skill checks source mapping,
+`/llm-accuracy:verify` explicitly. The skill checks source mapping,
 executes the bounded monetary checker when applicable, and distinguishes other
 calculations and unchecked claims. After a source change, ask it to update the
 report and recheck affected conclusions. See the
@@ -151,6 +162,11 @@ The post-compaction reminder remains separate. None verifies facts automatically
   `CC_SKIP_CLAIM_FIDELITY=1` in the host environment to mute both. These controls
   mute the fidelity reminder and its per-request Clarify check; the other hooks
   keep their own controls. They do not disable model-driven skill selection.
+- **Final source reread (all modes):** when a prompt supplies figures or at
+  least 300 characters of material, the `Stop` hook asks Claude once to reread
+  its answer, and any file saved that turn, against that material before
+  finishing. This costs one extra short model turn on those prompts. The same
+  mutes skip it.
 
 For example, start a Claude Code session with the reminder on every prompt from
 a POSIX shell:
@@ -233,8 +249,11 @@ same home directory or environment as your terminal.
 
 The hook requires the documented `prompt` field. Empty, malformed or oversized
 inputs (over 1,000,000 characters of serialized input) fail open without a
-reminder. It does not persist prompts, read transcripts, count retractions or
-enforce a Stop gate. Child sessions that do not emit `UserPromptSubmit` do not
+reminder. It does not persist prompts, read transcripts or count retractions.
+The final reread keeps only an empty per-session marker in the system temp
+directory between the prompt and `Stop`, asks at most once per marked prompt,
+and stays silent when `stop_hook_active` is set or the session id is missing or
+unsafe. Child sessions that do not emit `UserPromptSubmit` do not
 receive this reminder directly. The partial-result sentinel covers MCP envelope
 signals, text Read line-range metadata, and Bash saved-output metadata. It never
 parses shell stdout or file contents for pagination fields. Missing metadata and
@@ -300,7 +319,7 @@ and check the actual consuming application's failure path.
 
 ## Verify technical work
 
-Use `/llm-accuracy:verify-technical` for a diagnosis, disputed cause or fix claim.
+Use `/llm-accuracy:verify` for a diagnosis, disputed cause or fix claim.
 It asks for a scoped reproduction, competing explanations, the smallest justified
 change, and a rerun of the original check. Local verification, deployment and
 production verification stay separate. Corrections require checking dependent
@@ -348,3 +367,27 @@ Model identity is `unreported` if it differs between turns.
 The tool-free acknowledgement probe normally reports zero for this counter;
 that does not mean prompt checks are inactive. A successful acknowledgement
 proves neither factual accuracy nor activation in your existing conversation.
+
+The saved-output skill includes its own scripts and reference for hosts that mount
+only a skill directory. Tests keep these copies equal to the plugin-root helpers.
+This packaging support does not establish execution in a particular host.
+
+## Optional separate evidence pass
+
+For an existing answer with numerical conditional claims, Verify supports a
+minimal evidence pass followed by a full source-bound audit. The host supplies
+any independently authorized model context. The packaged offline
+`skills/verify/scripts/evidence_handoff.py` checks quote binding, explicit
+if-marker coverage and literal equations, then forwards only compact working.
+It calls no provider, network service or external model. See
+[the two-pass workflow](skills/verify/references/two-pass-audit.md).
+
+Repository-only `tools/verify-audit` is a separate optional Claude CLI adapter
+for maintainers who explicitly authorize two model calls. It is excluded from
+the plugin archive and never runs from hooks. Verify, Clarify and Accuracy
+Doctor remain available without this adapter. Codex exposes Verify and Clarify
+only, with no automatic hooks.
+
+This personal candidate is not activated or published. The completed historical
+comparison does not establish overall parity; current evaluation and platform
+coverage gaps remain release blockers. No universal accuracy benefit is claimed.

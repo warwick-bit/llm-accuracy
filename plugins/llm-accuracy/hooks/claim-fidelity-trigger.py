@@ -5,7 +5,9 @@ Session mode (the default) adds the static general reminder from SessionStart,
 which runs on startup, resume, clear and compaction. Each prompt gets a short
 clarification check plus any targeted evidence guidance. General mode restores the general
 reminder on every prompt; targeted mode keeps only the triggered guidance.
-Subprocess tests live in tests/test_accuracy_wiring.py.
+A prompt with supplied figures or long source material leaves an empty
+per-session temp marker; the Stop hook consumes it and asks once for a source
+reread. Subprocess tests live in tests/test_accuracy_wiring.py.
 No prompt or evidence is retained or echoed.
 """
 
@@ -15,6 +17,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 
 from hook_input import read_hook_input
 
@@ -37,20 +40,61 @@ REPORT_PERCENTAGE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Data cues: a markdown table, or several numbers next to a data/finance word.
+TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
+NUMBER_RE = re.compile(r"(?<![\w.])[-+]?[$€£]?\d[\d,]*(?:\.\d+)?%?")
+DATA_WORD_RE = re.compile(
+    r"\b(?:revenue|sales|cost|costs|cogs|margin|profit|loss|budget|actual|variance|"
+    r"expense|expenses|invoice|invoices|price|prices|forecast|growth|cagr|churn|"
+    r"conversion|conversions|rate|rates|ratio|average|mean|median|total|totals|"
+    r"percent|percentage|share|aud|usd|eur|gbp|currency|exchange|fx|cash|balance|"
+    r"customers|orders|units|quarter|quarterly|annual|monthly|yoy|kpi|metric)\b",
+    re.IGNORECASE,
+)
+MIN_DATA_NUMBERS = 3
+SAVED_OUTPUT_RE = re.compile(
+    r"(\b\w*report\w*_v\d"
+    r"|\b(saved|versioned|earlier|previous|prior|revised|updated|corrected)\s+(\w+\s+){0,2}"
+    r"(report|handover|spreadsheet)s?\b"
+    r"|\b(report|handover|spreadsheet)\s+(\w+\s+){0,3}(v\d+|version\s*\d+)\b)",
+    re.IGNORECASE,
+)
+
+VERIFY_REQUEST_RE = re.compile(
+    r"\b(?:verify|fact[ -]?check|audit|check (?:this|that|your|my|the (?:figures|facts|claims|accuracy))|you said|you told me|"
+    r"your (?:previous|earlier) answer|root cause|outage|incident|recovery|patch|"
+    r"production (?:fix|deployment)|bug fix)\b", re.IGNORECASE,
+)
+
+# Pure creative/translation requests do not ask to verify mentioned words.
+TRANSFORM_REQUEST_RE = re.compile(
+    r"^\s*(?:please\s+)?(?:translate\b|(?:write|compose)\b.{0,50}\b(?:poem|haiku|song|story)\b)",
+    re.IGNORECASE,
+)
+ADDED_CHECK_RE = re.compile(
+    r"\b(?:and|also|then)\s+(?:also\s+)?(?:verify|audit|fact[ -]?check)\b|"
+    r"\b(?:verify|audit|fact[ -]?check|check)\s+(?:the\s+)?(?:facts|figures|accuracy|claims)\b",
+    re.IGNORECASE,
+)
+
+FIX_ACTION_RE = re.compile(r"\bfix(?:ing)?\b", re.IGNORECASE)
+FIX_BEHAVIOR_RE = re.compile(r"\b(?:contract|failing|failure|bug|defect|regression)\b", re.IGNORECASE)
+
 MAX_INPUT_CHARS = 1_000_000
 # hooks.json passes this action to the SessionStart registration.
 SESSION_START = "session-start"
 
 TECHNICAL_FOOTER = (
-    "End substantive technical diagnoses, verification claims and evidence-sufficiency "
-    "answers (including rejecting or withholding a claim) with this Checked / Gap / Next footer:\n"
+    "Use this Checked / Gap / Next footer only for a technical incident diagnosis "
+    "or a code-repair handover:\n"
     "\n---\n\n"
     "- **Checked:** actual checks or supplied evidence, with scope\n"
     "- **Gap:** remaining unknowns (or none)\n"
     "- **Next:** smallest useful check or action (or none)\n"
     "Supplied evidence is not a check you performed. Keep headline, body and footer "
-    "consistent; a Gap cannot excuse a stronger claim above. Skip this footer for "
-    "routine replies and creative requests."
+    "consistent; a Gap cannot excuse a stronger claim above. Omit this footer from "
+    "ordinary numerical answers, other factual audits, routine replies and creative requests. "
+    "Include only material scope or uncertainty where it affects the requested conclusion."
 )
 
 GENERAL_CONTRACT = (
@@ -63,9 +107,8 @@ GENERAL_CONTRACT = (
     "all/none claims need coverage beyond previews, samples and truncated output. "
     "A tool call is not verification. Test competing causes before declaring "
     "a root cause. Corrections must revisit dependent conclusions; repeated "
-    "reversals require rechecking the framing. Use llm-accuracy:verify-technical "
-    "for diagnosis and fix checks. For data calculations, use "
-    "llm-accuracy:verify-numerical; conventions do not settle an "
+    "reversals require rechecking the framing. Use llm-accuracy:verify "
+    "for diagnosis, fix checks and data calculations; conventions do not settle an "
     "unresolved inclusion rule. For material ambiguity, use llm-accuracy:clarify "
     "and CALL interactive multiple-choice. Advisory, not verification."
 )
@@ -91,6 +134,58 @@ CONTRACT = (
     "unknowns, separate causal claims from measured associations, and name the smallest "
     "additional check needed for any material gap."
 )
+
+
+DATA_CONTRACT = (
+    "DATA ANSWER CHECK: This prompt supplies figures. Before answering, call the Skill tool for llm-accuracy:verify. "
+    "Recompute every figure you state from the supplied data. Before sending, reconcile "
+    "every explanation and summary sentence (direction, cause, comparison, dates, "
+    "favourable/unfavourable, typical value, and counts such as \"two of four are "
+    "wrong\") with your own final numbers and the data. Give one clear headline and "
+    "remove superseded working. When checking someone's analysis, give one verdict per "
+    "claim and confirm the correct ones; write those verdicts before any overall "
+    "summary, and make the summary match them."
+)
+
+SAVED_OUTPUT_CONTRACT = (
+    "SAVED OUTPUT CHECK (required): this request creates or revises a saved factual "
+    "report or versioned output. Your first action must be the Skill tool call for "
+    "llm-accuracy:verify, before writing any file; follow it to check the "
+    "saved file and every change or correction explanation against the sources."
+)
+
+
+def has_data_cues(prompt: str) -> bool:
+    """Supplied figures: a markdown table, or several numbers with a data word."""
+    if len(TABLE_ROW_RE.findall(prompt)) >= 2 and NUMBER_RE.search(prompt):
+        return True
+    if not DATA_WORD_RE.search(prompt):
+        return False
+    return len(NUMBER_RE.findall(prompt)) >= MIN_DATA_NUMBERS
+
+
+def task_checks(prompt: str, targeted: bool | None = None) -> str:
+    """One skill request, with only the applicable task reminders."""
+    # Quoted words are transformation input, not additional task instructions.
+    directives = re.sub(r'"[^"\r\n]*"|(?<!\w)\'[^\'\r\n]*\'|`[^`\r\n]*`', "", prompt)
+    if TRANSFORM_REQUEST_RE.search(prompt) and not ADDED_CHECK_RE.search(directives):
+        return ""
+    saved = bool(SAVED_OUTPUT_RE.search(prompt))
+    figures = has_data_cues(prompt)
+    requested = bool(VERIFY_REQUEST_RE.search(prompt)) or (should_fire(prompt) if targeted is None else targeted)
+    requested = requested or bool(FIX_ACTION_RE.search(prompt) and FIX_BEHAVIOR_RE.search(prompt))
+    if not (saved or figures or requested):
+        return ""
+    checks = ["VERIFICATION CHECK (required): Before substantive work or an audit verdict, "
+              "your first action must be the Skill tool call for llm-accuracy:verify. "
+              "Apply the relevant checks while working and to the final output before delivery."]
+    if figures:
+        checks.append("DATA ANSWER CHECK: Recompute stated figures and reconcile explanations "
+                      "with the final numbers. Give per-claim audit verdicts before any overall summary.")
+    if saved:
+        checks.append("SAVED OUTPUT CHECK: Check the actual saved file, history and correction "
+                      "explanations against the sources; preserve valid earlier claims.")
+    return " ".join(checks)
 
 
 def should_fire(prompt: str) -> bool:
@@ -119,15 +214,80 @@ def context_for_prompt(prompt: str, mode: str) -> str:
     """Choose bounded guidance without treating prompt text as configuration."""
     if not prompt.strip() or BYPASS_RE.search(prompt):
         return ""
+    targeted = should_fire(prompt)
+    base = _mode_context(prompt, mode, targeted)
+    checks = task_checks(prompt, targeted)
+    return " ".join(part for part in (base, checks) if part)
+
+
+def _mode_context(prompt: str, mode: str, targeted: bool | None = None) -> str:
+    targeted = should_fire(prompt) if targeted is None else targeted
     if mode == "session":
-        targeted = CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
+        targeted = CONTRACT + " " + TECHNICAL_FOOTER if targeted else ""
         return CLARIFY_CONTRACT + (" " + targeted if targeted else "")
     if mode != "general":
-        return CONTRACT + " " + TECHNICAL_FOOTER if should_fire(prompt) else ""
-    if should_fire(prompt):
+        return CONTRACT + " " + TECHNICAL_FOOTER if targeted else ""
+    if targeted:
         # One label per reminder; the targeted contract follows the general one.
         return GENERAL_CONTRACT + " " + CONTRACT[len(LABEL) :] + " " + TECHNICAL_FOOTER
     return GENERAL_CONTRACT + " " + TECHNICAL_FOOTER
+
+
+STOP = "stop"
+MIN_SOURCE_CHARS = 300
+FINAL_REREAD = (
+    "FINAL SOURCE REREAD (once): before finishing, reread your answer sentence by "
+    "sentence against the material the user supplied. (1) Call each quantity by the "
+    "source's own label; do not substitute a related metric or broader term. "
+    "(2) Keep a direction, cause, generalisation or every/all claim only if the "
+    "supplied facts establish it; otherwise narrow it or say it is unknown. (3) When "
+    "you judge someone's statement, judge its exact words; do not strengthen or "
+    "weaken it. A statement that the data does not indicate or show something is "
+    "supported when the data gives no sign of it or explains the observation another "
+    "way; it does not need proof of the opposite. For an if-then claim or forecast, "
+    "try a counterexample: fix only what the condition states and let every other "
+    "quantity vary. If any such case breaks the conclusion, the verdict is that it "
+    "does not follow (not merely qualified); if none can, keep it. Apply the same "
+    "reread to any file you saved this turn and correct the file too. If nothing "
+    "needs changing, reply only: No changes after source reread. Otherwise reply "
+    "with the complete corrected answer."
+)
+
+
+def reread_marker(session_id: object) -> str | None:
+    """Per-session marker path; None for a missing or unsafe session id."""
+    if not isinstance(session_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", session_id):
+        return None
+    return os.path.join(tempfile.gettempdir(), f"llm-accuracy-reread-{session_id}")
+
+
+def mark_for_reread(payload: dict, prompt: str) -> None:
+    """Remember whether this turn answers from supplied material."""
+    path = reread_marker(payload.get("session_id"))
+    if not path:
+        return
+    if BYPASS_RE.search(prompt) or not (has_data_cues(prompt) or len(prompt) >= MIN_SOURCE_CHARS):
+        # An interrupted earlier turn must not make this turn reread.
+        if os.path.exists(path):
+            os.remove(path)
+        return
+    with open(path, "w", encoding="utf-8"):
+        pass
+
+
+def stop_reread() -> int:
+    """Ask once for a source reread when the turn answered from supplied material."""
+    payload = json.loads(read_hook_input(sys.stdin, MAX_INPUT_CHARS + 1))
+    if not isinstance(payload, dict):
+        return 0
+    path = reread_marker(payload.get("session_id"))
+    if not path or not os.path.exists(path):
+        return 0
+    os.remove(path)  # one reread per marked turn, even if the model stops again
+    if payload.get("stop_hook_active"):
+        return 0
+    print(json.dumps({"decision": "block", "reason": FINAL_REREAD}))
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -136,6 +296,8 @@ def main(argv: list[str] | None = None) -> int:
     arguments = sys.argv[1:] if argv is None else argv
     try:
         mode, _ = claim_fidelity_mode()
+        if arguments[:1] == [STOP]:
+            return stop_reread()
         if arguments[:1] == [SESSION_START]:
             # Every SessionStart source gets the reminder: an injection does not
             # survive the next compaction, so it must return after each one.
@@ -155,6 +317,10 @@ def main(argv: list[str] | None = None) -> int:
             prompt = payload.get("prompt")
             if not isinstance(prompt, str):
                 return 0
+            try:
+                mark_for_reread(payload, prompt)
+            except OSError:
+                pass
             event, context = "UserPromptSubmit", context_for_prompt(prompt, mode)
         if not context:
             return 0

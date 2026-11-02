@@ -95,12 +95,15 @@ def test_codex_home_hooks_emit_and_log(tmp_path, monkeypatch, arm):
 def pointer_output(tmp_path: Path, payload: dict) -> dict:
     script = tmp_path / "pointer.py"
     script.write_text(
-        cx.POINTER_SCRIPT.format(text=pc.POINTER_TEMPLATE.replace("{REGISTRY}", "/reg"))
+        cx.POINTER_SCRIPT.format(text=pc.POINTER_TEMPLATE.replace("{REGISTRY}", "/reg")),
+        encoding="utf-8",
     )
     out = subprocess.run(
         [sys.executable, str(script)],
         input=json.dumps(payload),
         text=True,
+        encoding="utf-8",
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
         capture_output=True,
         check=True,
     ).stdout
