@@ -42,6 +42,10 @@ EXPECTED_HANDLERS = {
         "partial-result-sentinel.py",
         "Checking llm-accuracy partial result signal",
     ),
+    ("Stop", 0): (
+        "claim-fidelity-trigger.py:stop",
+        "Checking llm-accuracy source reread",
+    ),
 }
 
 
@@ -98,7 +102,8 @@ def test_only_the_canonical_hook_manifest_is_shipped() -> None:
 
     config = json.loads(HOOK_CONFIG.read_text(encoding="utf-8"))
     assert set(config) == {"hooks"}
-    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse"}
+    assert set(config["hooks"]) == {"UserPromptSubmit", "SessionStart", "PostToolUse", "Stop"}
+    assert "matcher" not in config["hooks"]["Stop"][0]
     assert config["hooks"]["SessionStart"][0]["matcher"] == "compact"
     # No matcher: startup, resume, clear and compaction all restore the reminder.
     assert "matcher" not in config["hooks"]["SessionStart"][1]
@@ -811,3 +816,88 @@ def test_unified_route_is_one_skill_without_unrelated_activation(prompt, expecte
     assert not any("llm-accuracy:"+name in context for name in (
         "claim-fidelity", "self-audit", "verify-numerical", "verify-technical", "saved-output-audit"))
     assert len(context) <= 3500
+
+
+SESSION = "session-123_abc"
+
+
+def reread_controls(tmp_path: Path, **extra: str) -> dict[str, str]:
+    temp = str(tmp_path / "temp")
+    os.makedirs(temp, exist_ok=True)
+    return {"TMPDIR": temp, "TEMP": temp, "TMP": temp, **extra}
+
+
+def submit(prompt: str, controls: dict[str, str], session_id: object = SESSION):
+    payload = {"prompt": prompt, "session_id": session_id}
+    return run_hook("UserPromptSubmit", 2, json.dumps(payload), controls=controls)
+
+
+def stop(controls: dict[str, str], session_id: object = SESSION, active: bool = False):
+    payload = {"session_id": session_id, "stop_hook_active": active}
+    return run_hook("Stop", 0, json.dumps(payload), controls=controls)
+
+
+def markers(controls: dict[str, str]) -> list[str]:
+    return sorted(os.listdir(controls["TEMP"]))
+
+
+@pytest.mark.parametrize("prompt", [DATA_PROMPTS[0], "Source notes: " + "plain words " * 30])
+def test_source_turn_gets_one_final_reread(tmp_path: Path, prompt: str) -> None:
+    controls = reread_controls(tmp_path)
+    assert submit(prompt, controls).returncode == 0
+    assert markers(controls) == [f"llm-accuracy-reread-{SESSION}"]
+
+    first = stop(controls)
+    assert first.returncode == 0 and first.stderr == ""
+    output = json.loads(first.stdout)
+    assert output["decision"] == "block"
+    assert output["reason"].startswith("FINAL SOURCE REREAD (once)")
+    assert prompt not in first.stdout
+    assert markers(controls) == []
+
+    again = stop(controls, active=True)
+    assert again.returncode == 0 and again.stdout == again.stderr == ""
+
+
+def test_reread_stays_silent_when_stop_hook_is_already_active(tmp_path: Path) -> None:
+    controls = reread_controls(tmp_path)
+    submit(DATA_PROMPTS[0], controls)
+    result = stop(controls, active=True)
+    assert result.returncode == 0 and result.stdout == ""
+    assert markers(controls) == []
+
+
+@pytest.mark.parametrize(
+    ("prompt", "session_id", "extra"),
+    [
+        ("Hello!", SESSION, {}),
+        (DATA_PROMPTS[0] + " # fidelity-ok", SESSION, {}),
+        (DATA_PROMPTS[0], SESSION, {"CC_SKIP_CLAIM_FIDELITY": "1"}),
+        (DATA_PROMPTS[0], "../escape", {}),
+        (DATA_PROMPTS[0], None, {}),
+    ],
+    ids=["short-prompt", "bypass", "muted", "unsafe-id", "missing-id"],
+)
+def test_reread_is_skipped_without_a_marked_source_turn(
+    tmp_path: Path, prompt: str, session_id: object, extra: dict[str, str]
+) -> None:
+    controls = reread_controls(tmp_path, **extra)
+    assert submit(prompt, controls, session_id).returncode == 0
+    assert markers(controls) == []
+    result = stop(controls, session_id)
+    assert result.returncode == 0 and result.stdout == result.stderr == ""
+
+
+def test_unmarked_turn_clears_an_interrupted_marker(tmp_path: Path) -> None:
+    controls = reread_controls(tmp_path)
+    submit(DATA_PROMPTS[0], controls)
+    submit("Hello!", controls)
+    assert markers(controls) == []
+    assert stop(controls).stdout == ""
+
+
+@pytest.mark.parametrize("stdin_text", ["", "{not json", '["array"]'])
+def test_stop_fails_open_on_malformed_stdin(stdin_text: str) -> None:
+    result = run_hook("Stop", 0, stdin_text)
+    assert result.returncode == 0
+    assert result.stdout == result.stderr == ""

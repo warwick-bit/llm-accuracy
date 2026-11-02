@@ -162,6 +162,11 @@ The post-compaction reminder remains separate. None verifies facts automatically
   `CC_SKIP_CLAIM_FIDELITY=1` in the host environment to mute both. These controls
   mute the fidelity reminder and its per-request Clarify check; the other hooks
   keep their own controls. They do not disable model-driven skill selection.
+- **Final source reread (all modes):** when a prompt supplies figures or at
+  least 300 characters of material, the `Stop` hook asks Claude once to reread
+  its answer, and any file saved that turn, against that material before
+  finishing. This costs one extra short model turn on those prompts. The same
+  mutes skip it.
 
 For example, start a Claude Code session with the reminder on every prompt from
 a POSIX shell:
@@ -244,8 +249,11 @@ same home directory or environment as your terminal.
 
 The hook requires the documented `prompt` field. Empty, malformed or oversized
 inputs (over 1,000,000 characters of serialized input) fail open without a
-reminder. It does not persist prompts, read transcripts, count retractions or
-enforce a Stop gate. Child sessions that do not emit `UserPromptSubmit` do not
+reminder. It does not persist prompts, read transcripts or count retractions.
+The final reread keeps only an empty per-session marker in the system temp
+directory between the prompt and `Stop`, asks at most once per marked prompt,
+and stays silent when `stop_hook_active` is set or the session id is missing or
+unsafe. Child sessions that do not emit `UserPromptSubmit` do not
 receive this reminder directly. The partial-result sentinel covers MCP envelope
 signals, text Read line-range metadata, and Bash saved-output metadata. It never
 parses shell stdout or file contents for pagination fields. Missing metadata and

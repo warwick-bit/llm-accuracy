@@ -5,7 +5,9 @@ Session mode (the default) adds the static general reminder from SessionStart,
 which runs on startup, resume, clear and compaction. Each prompt gets a short
 clarification check plus any targeted evidence guidance. General mode restores the general
 reminder on every prompt; targeted mode keeps only the triggered guidance.
-Subprocess tests live in tests/test_accuracy_wiring.py.
+A prompt with supplied figures or long source material leaves an empty
+per-session temp marker; the Stop hook consumes it and asks once for a source
+reread. Subprocess tests live in tests/test_accuracy_wiring.py.
 No prompt or evidence is retained or echoed.
 """
 
@@ -15,6 +17,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 
 from hook_input import read_hook_input
 
@@ -230,12 +233,71 @@ def _mode_context(prompt: str, mode: str, targeted: bool | None = None) -> str:
     return GENERAL_CONTRACT + " " + TECHNICAL_FOOTER
 
 
+STOP = "stop"
+MIN_SOURCE_CHARS = 300
+FINAL_REREAD = (
+    "FINAL SOURCE REREAD (once): before finishing, reread your answer sentence by "
+    "sentence against the material the user supplied. (1) Call each quantity by the "
+    "source's own label; do not substitute a related metric or broader term. "
+    "(2) Keep a direction, cause, generalisation or every/all claim only if the "
+    "supplied facts establish it; otherwise narrow it or say it is unknown. (3) When "
+    "you judge someone's statement, judge its exact words; do not strengthen or "
+    "weaken it. A statement that the data does not indicate or show something is "
+    "supported when the data gives no sign of it or explains the observation another "
+    "way; it does not need proof of the opposite. For an if-then claim or forecast, "
+    "try a counterexample: fix only what the condition states and let every other "
+    "quantity vary. If any such case breaks the conclusion, the verdict is that it "
+    "does not follow (not merely qualified); if none can, keep it. Apply the same "
+    "reread to any file you saved this turn and correct the file too. If nothing "
+    "needs changing, reply only: No changes after source reread. Otherwise reply "
+    "with the complete corrected answer."
+)
+
+
+def reread_marker(session_id: object) -> str | None:
+    """Per-session marker path; None for a missing or unsafe session id."""
+    if not isinstance(session_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", session_id):
+        return None
+    return os.path.join(tempfile.gettempdir(), f"llm-accuracy-reread-{session_id}")
+
+
+def mark_for_reread(payload: dict, prompt: str) -> None:
+    """Remember whether this turn answers from supplied material."""
+    path = reread_marker(payload.get("session_id"))
+    if not path:
+        return
+    if BYPASS_RE.search(prompt) or not (has_data_cues(prompt) or len(prompt) >= MIN_SOURCE_CHARS):
+        # An interrupted earlier turn must not make this turn reread.
+        if os.path.exists(path):
+            os.remove(path)
+        return
+    with open(path, "w", encoding="utf-8"):
+        pass
+
+
+def stop_reread() -> int:
+    """Ask once for a source reread when the turn answered from supplied material."""
+    payload = json.loads(read_hook_input(sys.stdin, MAX_INPUT_CHARS + 1))
+    if not isinstance(payload, dict):
+        return 0
+    path = reread_marker(payload.get("session_id"))
+    if not path or not os.path.exists(path):
+        return 0
+    os.remove(path)  # one reread per marked turn, even if the model stops again
+    if payload.get("stop_hook_active"):
+        return 0
+    print(json.dumps({"decision": "block", "reason": FINAL_REREAD}))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     if os.environ.get("CC_SKIP_CLAIM_FIDELITY") == "1":
         return 0
     arguments = sys.argv[1:] if argv is None else argv
     try:
         mode, _ = claim_fidelity_mode()
+        if arguments[:1] == [STOP]:
+            return stop_reread()
         if arguments[:1] == [SESSION_START]:
             # Every SessionStart source gets the reminder: an injection does not
             # survive the next compaction, so it must return after each one.
@@ -255,6 +317,10 @@ def main(argv: list[str] | None = None) -> int:
             prompt = payload.get("prompt")
             if not isinstance(prompt, str):
                 return 0
+            try:
+                mark_for_reread(payload, prompt)
+            except OSError:
+                pass
             event, context = "UserPromptSubmit", context_for_prompt(prompt, mode)
         if not context:
             return 0
