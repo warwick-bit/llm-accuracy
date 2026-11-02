@@ -21,7 +21,7 @@ def test_claude_plugin_manifest_identifies_the_plugin() -> None:
     claude = load_json("plugins/llm-accuracy/.claude-plugin/plugin.json")
 
     assert claude["name"] == "llm-accuracy"
-    assert claude["version"] == "0.8.6-personal.5.25"
+    assert claude["version"] == "0.8.6-personal.5.26"
     assert claude["license"] == "MIT"
     assert "codex" not in str(claude).lower()
 

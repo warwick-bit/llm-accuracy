@@ -4,8 +4,8 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.8.6-personal.5.25",
-      "sha256": "b748c3a40c1d93983777ef4d644a76dc1ed896beee58b030f7624ac7548ee2f5"
+      "version": "0.8.6-personal.5.26",
+      "sha256": "b4ebdfea4ce71a1d14fb90079b96a0c8b7df029dae55fa1ce7fcfd9a89fba099"
     },
     "deterministic-data": {
       "version": "0.1.2",
@@ -36,43 +36,7 @@
       "outcome": "untested"
     },
     "code-windows-git-bash": {
-      "outcome": "pass",
-      "platform": "Windows",
-      "host_kind": "code",
-      "host_version": "2.1.287",
-      "python_version": "3.13.1",
-      "packages": {
-        "llm-accuracy": {
-          "version": "0.8.6-personal.5.25",
-          "sha256": "b748c3a40c1d93983777ef4d644a76dc1ed896beee58b030f7624ac7548ee2f5"
-        },
-        "deterministic-data": {
-          "version": "0.1.2",
-          "sha256": "ac63a53cf3e4749d2c88a6c9cbc80a6560a4cf2ad36e17f60d7b52b2fa612a6a"
-        },
-        "session-ledger": {
-          "version": "0.3.1",
-          "sha256": "78086777ea2f85d844fe7243369108f4c9d1e2e6c4a537e01f53d1e9d3093d3d"
-        },
-        "evidence-memory": {
-          "version": "0.5.1",
-          "sha256": "43cd1b2d2565594be6ba2510782d0773f5faf507766a16d490f8976ab83c3e85"
-        }
-      },
-      "checks": {
-        "clean_install": true,
-        "configured_python": true,
-        "automatic_python_upgrade": true,
-        "automatic_python_fresh": true,
-        "unconfigured_prompt_delivery": true,
-        "prompt_delivery": true,
-        "upgrade": true,
-        "uninstall": true,
-        "invalid_python_advisory_then_recovery": true,
-        "git_bash_present": true
-      },
-      "source_commit": "47ca134aee521917e3c643b720cb0027dc48c267",
-      "row_sha256": "182c11caedb4722037e2478d66f5d051efa7be7b079865ef77b40cb2fdc61ba2"
+      "outcome": "untested"
     },
     "code-macos": {
       "outcome": "untested"

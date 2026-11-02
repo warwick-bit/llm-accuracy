@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Use before analysing supplied data, calculating figures or explaining numerical changes; before technical diagnoses or claims a fix works; and for requests to check or audit an answer or saved report. Includes 'verify your own previous answer', 'you said' and self-audits. Recompute figures and check all explanations. Apply to first outputs and later verification. Skip creative writing, pure translations and routine code changes without a material factual claim.
+description: Use before analysing supplied data, calculating figures or explaining numerical changes; before technical diagnoses or claims a fix works; and for requests to check or audit an answer or saved report. Includes 'verify your own previous answer', 'you said' and self-audits. Recompute figures and check all explanations. Apply to first outputs and later verification. Skip creative writing, pure translations and routine code changes without a material factual claim. Also use when someone asks whether a claim, figure or draft is right before it is sent, forwarded or shared.
 ---
 
 # Verify
