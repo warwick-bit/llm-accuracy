@@ -888,6 +888,55 @@ def test_reread_is_skipped_without_a_marked_source_turn(
     assert result.returncode == 0 and result.stdout == result.stderr == ""
 
 
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "<task-notification>\n<task-id>b1</task-id>\n",
+        '<agent-message from="a1">\n[Subagent hand-back] ',
+        'Another Claude session sent a message:\n<agent-message from="a1">\n',
+    ],
+    ids=["task-notification", "agent-message", "agent-message-framed"],
+)
+def test_background_delivery_does_not_mark_a_reread(tmp_path: Path, prefix: str) -> None:
+    controls = reread_controls(tmp_path)
+    delivery = prefix + 'Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. '
+    assert len(delivery) >= 300
+    assert submit(delivery, controls).returncode == 0
+    assert markers(controls) == []
+    result = stop(controls)
+    assert result.returncode == 0 and result.stdout == result.stderr == ""
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "<task-notification>\n<task-id>b1</task-id>\n",
+        'Another Claude session sent a message:\n<agent-message from="a1">\n',
+    ],
+    ids=["task-notification", "agent-message-framed"],
+)
+def test_background_delivery_clears_an_interrupted_marker(tmp_path: Path, prefix: str) -> None:
+    controls = reread_controls(tmp_path)
+    submit(DATA_PROMPTS[0], controls)
+    assert markers(controls) == [f"llm-accuracy-reread-{SESSION}"]
+    # Short, with data cues: neither the length nor the cue test may mark it.
+    submit(prefix + DATA_PROMPTS[2], controls)
+    assert markers(controls) == []
+    assert stop(controls).stdout == ""
+
+
+@pytest.mark.parametrize(
+    "opening",
+    ["Why did <task-notification> fire? ", "<task-notification-log> "],
+    ids=["mention-later", "look-alike-tag"],
+)
+def test_typed_prompt_mentioning_a_delivery_still_marks(tmp_path: Path, opening: str) -> None:
+    controls = reread_controls(tmp_path)
+    typed = opening + 'Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. Revenue 120, cost 80, margin 40 for the quarter. '
+    submit(typed, controls)
+    assert markers(controls) == [f"llm-accuracy-reread-{SESSION}"]
+
+
 def test_unmarked_turn_clears_an_interrupted_marker(tmp_path: Path) -> None:
     controls = reread_controls(tmp_path)
     submit(DATA_PROMPTS[0], controls)
