@@ -25,6 +25,12 @@ from accuracy_config import claim_fidelity_mode, custom_trigger_matches
 
 
 BYPASS_RE = re.compile(r"#\s*fidelity-ok\b", re.IGNORECASE)
+# Claude Code submits background results (a finished task, a subagent's report)
+# as prompts; they are not material the user supplied.
+BACKGROUND_DELIVERY_RE = re.compile(
+    r"\A\s*(?:Another Claude session sent a message:\s*)?"
+    r"<(?:task-notification|agent-message)(?=[\s>])"
+)
 TRIGGER_RE = re.compile(
     r"\b(?:does\s+(?:this|that)\s+prove|can\s+we\s+conclude|"
     r"claim\s+fidelity|"
@@ -266,7 +272,11 @@ def mark_for_reread(payload: dict, prompt: str) -> None:
     path = reread_marker(payload.get("session_id"))
     if not path:
         return
-    if BYPASS_RE.search(prompt) or not (has_data_cues(prompt) or len(prompt) >= MIN_SOURCE_CHARS):
+    if (
+        BYPASS_RE.search(prompt)
+        or BACKGROUND_DELIVERY_RE.match(prompt)
+        or not (has_data_cues(prompt) or len(prompt) >= MIN_SOURCE_CHARS)
+    ):
         # An interrupted earlier turn must not make this turn reread.
         if os.path.exists(path):
             os.remove(path)
