@@ -27,9 +27,18 @@ message:` line that interactive transcripts show before an agent message. If
 Claude Code changes these wrappers, the extra rereads return; typed prompts
 keep their reread either way.
 
-Installed-host receipts are reset to untested for this package. Publication
-requires the release gates, including installed-hook checks on Linux, macOS and
-Windows with and without Git Bash.
+In print-mode sessions on Claude Code 2.1.287 with the plugin loaded from source
+(one run per case), the reply after a finished background command was asked for
+a reread with the 0.8.6-personal.5.26 hooks and was not with these hooks. A
+typed 346-character prompt with figures was still asked for one. Interactive
+sessions and subagent hand-backs were not run.
+
+The [live bundle receipt](validation/claude-bundle-smoke-0.8.6-personal.5.27.json) and
+[Accuracy installation/archive receipt](validation/claude-code-smoke-0.8.6-personal.5.27.json)
+record the final package's native Windows qualification. Publication requires
+the release gates, including installed-hook checks on Linux, macOS and Windows
+with and without Git Bash. Other live and UI coverage remains as recorded in
+the compatibility matrix; these terminal checks do not certify Desktop or Cowork.
 
 ## Update
 
