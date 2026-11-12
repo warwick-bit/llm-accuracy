@@ -4,3 +4,34 @@ __pycache__/
 .coverage
 dist/
 build/
+
+# Private Claude/Codex credentials, approvals and session state.
+# Shared settings.json, config.toml, skills, hooks and custom rules stay versionable.
+**/.claude/settings.local.json
+**/.claude/settings.local.json.*
+**/.claude/.credentials.json
+**/.claude/.claude.json
+**/.claude/history.jsonl
+**/.claude/projects/
+**/.claude/sessions/
+**/.claude/backups/
+**/.claude/file-history/
+**/.claude/paste-cache/
+**/.claude/shell-snapshots/
+**/.claude/session-env/
+**/.claude/cache/
+**/.claude/debug/
+**/.claude.json
+**/.claude.json.*
+**/.codex/auth.json
+**/.codex/auth.lock
+**/.codex/history.jsonl
+**/.codex/session_index.jsonl*
+**/.codex/sessions/
+**/.codex/log/
+**/.codex/*.sqlite*
+**/.codex/.sandbox*/
+**/.codex/tmp/
+**/.codex/.tmp/
+**/.codex/config.toml.*
+**/.codex/rules/default.rules
