@@ -1,6 +1,6 @@
 {
   "name": "llm-accuracy",
-  "version": "0.8.6-personal.5.27",
+  "version": "0.8.6-personal.5.28",
   "description": "One verification workflow for accurate first outputs and checking existing answers, plus clarification and local diagnostics.",
   "author": {
     "name": "Warwick"

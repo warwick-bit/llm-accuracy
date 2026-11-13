@@ -5,11 +5,31 @@ Source truth, unit semantics, claim coverage and factual prose remain unverified
 import argparse
 import hashlib
 import json
+import re
 from fractions import Fraction
 from pathlib import Path
 from saved_output_formulas import expression, check as labelled_formulas
 
 LIMIT = 'Only submitted equations or observed file bytes are checked. Sources, units, completeness and prose require source review.'
+
+def parse_places(value):
+    if value == 'shown':
+        return value
+    try:
+        places = int(value)
+        if 0 <= places <= 12:
+            return places
+    except ValueError:
+        pass
+    raise argparse.ArgumentTypeError("must be 'shown' or an integer from 0 to 12")
+
+
+def shown_places(value):
+    if not re.fullmatch(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)', value):
+        return None
+    places = len(value.partition('.')[2])
+    return places if places <= 12 else None
+
 
 def calculate(equations, places=None):
     rows = []
@@ -21,13 +41,24 @@ def calculate(equations, places=None):
             lhs,rhs = equation.split('=')
             rhs = rhs.strip()
             percent = rhs.endswith('%')
-            observed_display = Fraction(rhs[:-1].strip() if percent else rhs)
+            stated = rhs[:-1].strip() if percent else rhs
+            decimal_places = shown_places(stated) if places == 'shown' else places
+            observed_display = Fraction(stated)
             computed = expression(lhs)
             displayed = computed*100 if percent else computed
-            rounded = round(displayed,places) if places is not None else displayed
+            rounded = round(displayed,decimal_places) if decimal_places is not None else displayed
+            if places == 'shown' and decimal_places is not None and rounded != observed_display:
+                scale = 10 ** decimal_places
+                scaled = displayed * scale
+                # A reduced rational has denominator 2 exactly at a rounding tie.
+                if scaled.denominator == 2:
+                    half_up = Fraction((abs(scaled.numerator) // 2 + 1) * (1 if scaled > 0 else -1), scale)
+                    if observed_display == half_up:
+                        rounded = half_up
+                        row['tie_pass'] = 'half_up'
             row.update(status='pass' if rounded==observed_display else 'fail',computed_exact=str(computed),
                        computed_display_exact=str(rounded),reported_display_exact=str(observed_display),
-                       percent=percent,decimal_places=places)
+                       percent=percent,decimal_places=decimal_places)
         except (ValueError,SyntaxError,ZeroDivisionError,OverflowError) as exc:
             row.update(status='unavailable',reason=str(exc))
         rows.append(row)
@@ -55,9 +86,9 @@ def inspect_files(paths):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='operation',required=True)
-    calc = commands.add_parser('calculate',help='Check submitted literal equalities; % on the right means a fractional rate')
+    calc = commands.add_parser('calculate',help='Check submitted literal equalities; %% on the right means a fractional rate')
     calc.add_argument('--check',action='append',required=True)
-    calc.add_argument('--places',type=int,choices=range(13),help='Round computed values to this many displayed decimal places, in percent units when RHS uses %')
+    calc.add_argument('--places',type=parse_places,metavar='0..12|shown',help='Round computed values to 0..12 decimal places, or use each stated value\'s precision with shown (in percent units when RHS uses %%); shown accepts half-even or half-up at exact ties')
     inspect = commands.add_parser('inspect',help='Return actual saved bytes as UTF-8 text plus hashes; never an accuracy certificate')
     inspect.add_argument('files',nargs='+')
     args = parser.parse_args()
