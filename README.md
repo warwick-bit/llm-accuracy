@@ -19,8 +19,9 @@ practitioner narrative live in the
 [Finance/Data Eval repository](https://github.com/warwick-bit/llm-finance-data-eval).
 The studies report failures and limitations; they do not establish a universal
 accuracy benefit. See the [0.8.1 marketplace qualification](docs/release-0.8.1.md) for
-that version's evidence and pending tag, and the [0.8.6-personal.5.27 release notes](docs/release-0.8.6-personal.5.27.md)
-for the current changes, qualification and remaining coverage gaps.
+that version's evidence and pending tag. The [0.8.6-personal.5.28 qualification](docs/release-0.8.6-personal.5.28.md)
+covers mixed-precision Verify checks and their coverage limits; the
+[0.8.6-personal.5.27 release notes](docs/release-0.8.6-personal.5.27.md) cover the earlier background-delivery fix.
 
 ## Acknowledgements
 

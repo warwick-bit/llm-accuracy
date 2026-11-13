@@ -63,8 +63,14 @@ compound fallback shell command.
 - **Numbers:** execute `python "<skill-directory>/scripts/run_checks.py" calculate
   --check "(2.6/2-1)=30%"`. Supply the equations you will actually report; repeat
   `--check` for more equations. A percentage RHS is a fractional rate, so the
-  ratio `2.6/2` is130%, not30%. For rounded output add `--places` with its displayed
-  precision. The helper supports literal + - * / and parentheses, not units,
+  ratio `2.6/2` is130%, not30%. For rounded output add `--places shown`: each check
+  is compared at the decimal places its stated value shows (`1/3=0.33` at 2,
+  `1/3=33%` at 0), and a stated value that isn't a plain number is compared
+  exactly. Plain numbers showing more than 12 decimal places are also compared
+  exactly. At exact ties, shown mode accepts half-even or half-up (away from
+  zero); a half-up-only match carries `tie_pass: half_up`. `--places N` applies
+  one precision to every check in the call. The helper supports literal + - * /
+  and parentheses, not units,
   symbolic inputs or all mathematical forms; use separate executed calculations
   for unsupported forms. Map operands to original sources yourself.
 - **Saved files:** after the final write, execute `python
