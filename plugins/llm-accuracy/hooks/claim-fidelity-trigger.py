@@ -144,7 +144,7 @@ CONTRACT = (
 
 DATA_CONTRACT = (
     "DATA ANSWER CHECK: This prompt supplies figures. Before answering, call the Skill tool for llm-accuracy:verify. "
-    "Recompute every figure you state from the supplied data. Before sending, reconcile "
+    "Check stated figures against sources and reuse matching executed tool calculations. Before sending, reconcile "
     "every explanation and summary sentence (direction, cause, comparison, dates, "
     "favourable/unfavourable, typical value, and counts such as \"two of four are "
     "wrong\") with your own final numbers and the data. Give one clear headline and "
@@ -155,9 +155,9 @@ DATA_CONTRACT = (
 
 SAVED_OUTPUT_CONTRACT = (
     "SAVED OUTPUT CHECK (required): this request creates or revises a saved factual "
-    "report or versioned output. Your first action must be the Skill tool call for "
-    "llm-accuracy:verify, before writing any file; follow it to check the "
-    "saved file and every change or correction explanation against the sources."
+    "report or versioned output. Before delivery, call the Skill tool for "
+    "llm-accuracy:verify if it is not already loaded for this task; check the actual "
+    "draft, saved file and every change or correction explanation against the sources."
 )
 
 
@@ -182,11 +182,13 @@ def task_checks(prompt: str, targeted: bool | None = None) -> str:
     requested = requested or bool(FIX_ACTION_RE.search(prompt) and FIX_BEHAVIOR_RE.search(prompt))
     if not (saved or figures or requested):
         return ""
-    checks = ["VERIFICATION CHECK (required): Before substantive work or an audit verdict, "
-              "your first action must be the Skill tool call for llm-accuracy:verify. "
-              "Apply the relevant checks while working and to the final output before delivery."]
+    checks = ["VERIFICATION CHECK (required): Before delivery, call the Skill tool for "
+              "llm-accuracy:verify if it is not already loaded for this task. "
+              "Apply the relevant checks while working and check the actual draft before sending; "
+              "loading the skill alone is not verification."]
     if figures:
-        checks.append("DATA ANSWER CHECK: Recompute stated figures and reconcile explanations "
+        checks.append("DATA ANSWER CHECK: Check stated figures against sources, "
+                      "reuse matching executed tool calculations, and reconcile explanations "
                       "with the final numbers. Give per-claim audit verdicts before any overall summary.")
     if saved:
         checks.append("SAVED OUTPUT CHECK: Check the actual saved file, history and correction "

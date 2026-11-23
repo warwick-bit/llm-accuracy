@@ -572,3 +572,117 @@ parent/agent reconciliation is not a second independent review. The reviewer was
 packet-only and did not execute artifacts. Local candidate delivery and essential
 checks are complete; normal profiles remain unchanged. No push, PR, merge or
 release was performed. Stop here unless new blocking evidence appears.
+
+### Verify timing and arithmetic reuse — 23 November 2026
+
+Desired outcome: verify the actual draft before delivery without forcing the
+skill call to be the first action or duplicating arithmetic already executed by
+a tool. Preserve clarification, source checks and saved-file inspection.
+
+Smallest useful deliverable: revise the existing prompt reminder, Verify skill
+and numerical reference; update the existing hook-output checks. No checker
+changes, personal runtime edits, new integrations or release are needed.
+
+Essential checks: demonstrate the changed reminder fails against the original
+hook and passes after the patch, through the shipped hook registration; preserve
+the final source reread and saved-file checks; run the native Windows full suite,
+manifest parsing, hook compilation and compatibility checks; obtain one bounded
+independent delivery review. Reset stale package QA instead of copying passes.
+
+Relevant failure lookback: early skill selection does not prove final-output
+verification, so require checks on the actual draft and retain the existing
+Stop reread. A helper result does not establish source authority, so reused
+arithmetic must still match source inputs, definitions, units and final wording;
+changed inputs or transformed results need fresh calculations. Existing hook
+consumer tests cover reminder delivery and final reread behavior. Local tests do
+not establish model compliance, time savings or Desktop behavior; those remain
+outside this patch's evidence. Reuse the current mixed-precision checker unchanged.
+
+Delivery checks: original focused consumer checks passed (28 cases). Against the
+original hook, the updated requirements failed at 18 intended reminder assertions;
+the patched hook passed all 28 focused cases, including final reread and control
+prompts. Ruff, 17 JSON parses, 15 hook compilations, all four distribution
+boundaries, compatibility and whitespace checks passed. The original numerical
+examples in the changed Markdown files were compared and retained.
+
+The full native Windows Python 3.13 suite completed with 1,445 passed, 32 skipped
+and one archive failure: the builder deliberately rejects uncommitted plugin
+source. This is its existing source-integrity guard, not a changed expectation.
+After committing the package, the complete archive group passed: 9 passed and
+1 skipped. The failed archive case now passes without a code or test change.
+
+One independent native Codex personal delivery review returned PASS with no
+findings. Its complete packet had no truncation or redactions and covered the
+patch, focused checks, candidate reset and failure mapping above. The full suite
+was still running during that review; its result was checked separately by the
+author. The same package source remains under review. Live installation,
+multiplatform and Desktop/Cowork behavior remain untested for the changed bytes.
+This is a draft source change, not a release or installed-profile update; retain
+the publication gate and require fresh qualification before merge.
+The publication check against the actual base commit confirmed that it still
+rejects missing native installation and current-source live Code evidence.
+The agreed draft patch and local checks are complete; no merge, installation or
+release was performed.
+
+#### Qualification and merge continuation
+
+The owner authorized the next step after PR #95 was opened. Desired outcome:
+qualify and merge this marketplace change. Smallest useful deliverable: version
+0.8.6-personal.5.29, fresh existing live installation receipts, and a green final
+PR head before merge. GitHub tagging and hosted ZIP publication remain separate.
+Essential checks: reuse the completed source review and tests; review the new
+workflow/receipt/version changes independently; run current-source native live
+bundle and installation/archive smokes; record the actual pass through the
+existing recorder; require every final-head CI leg and publication aggregate.
+
+New blocking evidence: the original CI run passed all four native installation
+jobs and the other test jobs, but Python 3.9 setup failed on Ubuntu 26.04 and
+publication correctly rejected the missing local live smoke. Keep the 3.9 leg
+on Ubuntu 24.04, whose official Python build manifest supplies that runtime;
+the remaining Python versions continue on ubuntu-latest. Do not remove a check
+or relax the publication gate. Reuse the existing isolated Personal-login smoke
+helpers; do not change the owner's active profile or enable optional integrations.
+Fresh installed model-delivery evidence does not establish model adherence,
+factual accuracy, time savings, Desktop UI or live support on another OS.
+
+Initial qualification results: the native distribution, CI-installation,
+compatibility, publication, recorder and archive regression group passed with
+191 passed and 1 skipped. The fresh bundle attempt passed installation,
+configuration, upgrade, automatic Python discovery, direct hook execution,
+uninstall and cleanup, but failed every model-delivery check. A separate isolated
+no-plugin request classified the failure as authentication and reported expired
+OAuth credentials. The selected Personal login still reports logged-in status;
+that status alone does not establish live access. Failed-attempt receipts stay
+in the private task run, not in the candidate's passing evidence. The owner was
+asked to refresh the same selected login; do not substitute another account,
+an API key, historical evidence or a skipped live check. At that point, final
+qualification and merge remained pending that prerequisite and final-head CI.
+
+The repaired Python 3.9 CI leg passed on the qualification commit. The initial bounded
+independent review of the workflow/version/evidence continuation identified no
+source defect, but returned FAIL for merge readiness because current-source live
+qualification is missing. This is a valid blocker, not approval or an unavailable
+review. Preserve the earlier source review and rerun only the affected live and
+readiness checks after the login prerequisite changes; no gate was bypassed.
+
+The owner then requested a retry after refreshing the same Personal login. The
+isolated transport probe passed, followed by successful native Windows bundle
+and installation/archive smokes against committed source
+`eb1015a13f05f6bddf147988b6fe2a5a5cf95d50`. The bundle passed every required
+check, including unconfigured and configured live delivery and invalid-Python
+recovery; all 65 tracked Accuracy files matched the installation with 0 byte
+mismatches. Both smokes cleaned up their temporary profiles. The recorder sealed
+the genuine pass into the Windows-with-Git-Bash live row; no package bytes have
+changed since those runs. This evidence resolves the earlier authentication/live
+blocker; that earlier failed attempt and review remain historical.
+
+The original source review and verified behavior are reused. The bounded
+independent review of the newly recorded receipts and seal returned PASS with no
+findings; its complete packet was not truncated. The receipt/compatibility/CI
+installation/publication regression group passed all 171 cases. Lint, JSON
+parsing, hook compilation, distribution boundaries, compatibility and original
+figure preservation checks passed again. The recorded plugin tree matches the
+current tree, and package files remain unchanged from the tested source.
+Require the full final-head CI and publication gate before merge. Other live
+hosts and Desktop/Cowork UI remain untested;
+installation delivery is not a model-adherence or factual-accuracy guarantee.

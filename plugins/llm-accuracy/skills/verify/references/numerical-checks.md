@@ -8,20 +8,26 @@ to the directory containing SKILL.md; never pass the literal placeholder to a to
 - Preserve the agreed metric, currency, included population, grain, denominator,
   dates and source version. A common convention does not settle an unresolved
   definition. Apply Verify's clarification step before choosing a result.
-- When execution is available, use a small calculation to check every numerical
-  result and displayed equation you will report, including explanatory working.
-  Check the expression actually printed, not just a correct headline or a related
-  helper result. Keep ratios distinct from growth (ratio minus one). If execution
-  is unavailable, calculate what is supportable and state the consequential gap.
+- When execution is available, execute arithmetic not already calculated by a
+  tool, including explanatory working. Reuse an observed executed tool calculation
+  only when its inputs and source version match the requested calculation; check
+  definitions, units and faithful transcription. Recalculate after input changes,
+  transformations or rounding introduced in the answer, or if a discrepancy appears.
+  Values quoted directly from a source need source and transcription checks, not
+  an invented equation. Check the expression actually printed, not just a correct
+  headline or a related helper result. Keep ratios distinct from growth (ratio minus
+  one). If execution is unavailable, calculate what is supportable and state the
+  consequential gap.
   Do not add unchecked alternative calculations merely to expand the answer.
   Use exact counts/cents or decimal/rational arithmetic when useful. Aggregate
   totals before a pooled rate; do not substitute an unweighted average. Distinguish
   percentage points from relative change, missing from zero, and an undefined
   denominator from a defined rate. Round only the displayed result.
-- For supported monetary growth, every-region or declared ratio claims, run
+- For supported monetary growth, every-region or declared ratio claims not already
+  covered by a matching executed tool calculation, run
   `<skill-directory>/scripts/check_numerical_claims.py` with original inputs.
   For CSV use its explicit column/unit/population mapping. Preserve source hashes
-  and inspect each claim's result. Other figures need separate calculations;
+  and inspect each claim's result. Other new arithmetic needs separate calculations;
   do not rename a metric or rewrite the population to fit a helper.
 - For changed sources, use `--previous-source` when applicable and inspect both
   historical and current results, including unavailable sources. Revisit affected
