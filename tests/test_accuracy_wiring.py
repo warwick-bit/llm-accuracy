@@ -484,7 +484,8 @@ def test_supplied_figures_add_the_data_answer_check(prompt: str, mode: str) -> N
 
     assert context.count("DATA ANSWER CHECK") == 1
     assert "llm-accuracy:verify" in context
-    assert "Recompute stated figures" in context
+    assert "Check stated figures against sources" in context
+    assert "reuse matching executed tool calculations" in context
     assert "reconcile explanations" in context
     assert "verdicts before any overall summary" in context
     assert prompt not in context
@@ -506,7 +507,10 @@ def test_saved_output_requests_add_the_audit_reminder(prompt: str, mode: str) ->
 
     assert context.count("SAVED OUTPUT CHECK") == 1
     assert "llm-accuracy:verify" in context
-    assert "first action must be the Skill tool call" in context
+    assert "Before delivery, call the Skill tool" in context
+    assert "check the actual draft before sending" in context
+    assert "first action" not in context
+    assert "Before substantive work" not in context
     assert "actual saved file, history and correction" in context
 
 
@@ -812,7 +816,12 @@ def test_accuracy_hooks_fail_open_on_invalid_utf8_bytes(name):
 ])
 def test_unified_route_is_one_skill_without_unrelated_activation(prompt, expected):
     context = prompt_context(prompt)
-    assert context.count("Skill tool call for llm-accuracy:verify") == int(expected)
+    assert context.count("call the Skill tool for llm-accuracy:verify") == int(expected)
+    if expected:
+        assert "check the actual draft before sending" in context
+        assert "if it is not already loaded for this task" in context
+        assert "first action" not in context
+        assert "Before substantive work" not in context
     assert not any("llm-accuracy:"+name in context for name in (
         "claim-fidelity", "self-audit", "verify-numerical", "verify-technical", "saved-output-audit"))
     assert len(context) <= 3500

@@ -1,23 +1,30 @@
 ---
 name: verify
-description: Use before analysing supplied data, calculating figures or explaining numerical changes; before technical diagnoses or claims a fix works; and for requests to check or audit an answer or saved report. Includes 'verify your own previous answer', 'you said' and self-audits. Recompute figures and check all explanations. Apply to first outputs and later verification. Skip creative writing, pure translations and routine code changes without a material factual claim. Also use when someone asks whether a claim, figure or draft is right before it is sent, forwarded or shared.
+description: Use while analysing supplied data, calculating figures or explaining numerical changes, and to check the actual draft before delivery; for technical diagnoses or claims a fix works; and for requests to check or audit an answer or saved report. Includes 'verify your own previous answer', 'you said' and self-audits. Check figures against sources, execute new arithmetic and check all explanations. Apply to first outputs and later verification. Skip creative writing, pure translations and routine code changes without a material factual claim. Also use when someone asks whether a claim, figure or draft is right before it is sent, forwarded or shared.
 ---
 
 # Verify
 
 Use one workflow for accurate first answers and for checking an existing answer.
+Apply the relevant checks while working, then check the actual draft before
+delivery. Loading this skill early does not perform that final check.
 
 1. **Set the basis.** Identify the question, source and requested result. Reuse
    settled definitions, units, population, denominator, dates and source authority.
    If an unresolved choice changes the answer, use the host's interactive question
    tool before choosing; follow explicitly authorized assumptions or alternatives.
    Missing evidence stays unavailable; finish independently supported parts.
-2. **Check the claims while working.** Re-derive them from the source. For numbers,
-   use available execution to check every reported value and displayed equation,
-   including explanatory working. Apply the relevant branch below. A helper checks
-   only its declared forms; it does not approve sources or all prose. Resolve helper
-   paths against this skill directory. Execute the applicable command below;
-   reading this skill is not execution. Retain a check that could not run as a gap.
+2. **Check the claims while working.** Trace them to the source. For numbers,
+   execute arithmetic not already calculated by a tool, including explanatory
+   working. Reuse an observed executed tool calculation when its inputs and source
+   version match the requested calculation; check definitions, units and faithful
+   transcription. Recalculate after input changes, transformations or rounding
+   introduced in the answer, or if a discrepancy appears. Apply the relevant branch
+   below. A helper checks only its declared forms; it does not approve sources or
+   all prose. Resolve helper
+   paths against this skill directory. Execute the applicable command below when
+   needed; reading this skill is not execution. Retain a required check that could
+   not run as a gap.
 3. **Give the requested answer.** Include enough working to check it and only
    material limits. Stop when the question is answered. Do not add unrequested
    what-if calculations, speculative explanations, source-correction scenarios or
@@ -60,7 +67,8 @@ working directory; use Read for references rather than changing into the plugin.
 Invoke one direct command with a working `python`, not assumed `python3` or a
 compound fallback shell command.
 
-- **Numbers:** execute `python "<skill-directory>/scripts/run_checks.py" calculate
+- **Numbers:** for arithmetic worked out without an executed tool result, execute
+  `python "<skill-directory>/scripts/run_checks.py" calculate
   --check "(2.6/2-1)=30%"`. Supply the equations you will actually report; repeat
   `--check` for more equations. A percentage RHS is a fractional rate, so the
   ratio `2.6/2` is130%, not30%. For rounded output add `--places shown`: each check
@@ -72,7 +80,11 @@ compound fallback shell command.
   one precision to every check in the call. The helper supports literal + - * /
   and parentheses, not units,
   symbolic inputs or all mathematical forms; use separate executed calculations
-  for unsupported forms. Map operands to original sources yourself.
+  for unsupported forms. Map operands to original sources yourself. Do not rerun
+  a matching executed tool calculation solely to repeat its arithmetic. Values
+  quoted directly from a source need source and transcription checks, not an
+  invented equation. Reuse never replaces the final source reread or saved-file
+  inspection below.
 - **Saved files:** after the final write, execute `python
   "<skill-directory>/scripts/run_checks.py" inspect report_v3.md delivery.md`,
   substituting the actual requested paths. Read its returned text and compare

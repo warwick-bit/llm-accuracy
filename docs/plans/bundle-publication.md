@@ -572,3 +572,54 @@ parent/agent reconciliation is not a second independent review. The reviewer was
 packet-only and did not execute artifacts. Local candidate delivery and essential
 checks are complete; normal profiles remain unchanged. No push, PR, merge or
 release was performed. Stop here unless new blocking evidence appears.
+
+### Verify timing and arithmetic reuse — 23 November 2026
+
+Desired outcome: verify the actual draft before delivery without forcing the
+skill call to be the first action or duplicating arithmetic already executed by
+a tool. Preserve clarification, source checks and saved-file inspection.
+
+Smallest useful deliverable: revise the existing prompt reminder, Verify skill
+and numerical reference; update the existing hook-output checks. No checker
+changes, personal runtime edits, new integrations or release are needed.
+
+Essential checks: demonstrate the changed reminder fails against the original
+hook and passes after the patch, through the shipped hook registration; preserve
+the final source reread and saved-file checks; run the native Windows full suite,
+manifest parsing, hook compilation and compatibility checks; obtain one bounded
+independent delivery review. Reset stale package QA instead of copying passes.
+
+Relevant failure lookback: early skill selection does not prove final-output
+verification, so require checks on the actual draft and retain the existing
+Stop reread. A helper result does not establish source authority, so reused
+arithmetic must still match source inputs, definitions, units and final wording;
+changed inputs or transformed results need fresh calculations. Existing hook
+consumer tests cover reminder delivery and final reread behavior. Local tests do
+not establish model compliance, time savings or Desktop behavior; those remain
+outside this patch's evidence. Reuse the current mixed-precision checker unchanged.
+
+Delivery checks: original focused consumer checks passed (28 cases). Against the
+original hook, the updated requirements failed at 18 intended reminder assertions;
+the patched hook passed all 28 focused cases, including final reread and control
+prompts. Ruff, 17 JSON parses, 15 hook compilations, all four distribution
+boundaries, compatibility and whitespace checks passed. The original numerical
+examples in the changed Markdown files were compared and retained.
+
+The full native Windows Python 3.13 suite completed with 1,445 passed, 32 skipped
+and one archive failure: the builder deliberately rejects uncommitted plugin
+source. This is its existing source-integrity guard, not a changed expectation.
+After committing the package, the complete archive group passed: 9 passed and
+1 skipped. The failed archive case now passes without a code or test change.
+
+One independent native Codex personal delivery review returned PASS with no
+findings. Its complete packet had no truncation or redactions and covered the
+patch, focused checks, candidate reset and failure mapping above. The full suite
+was still running during that review; its result was checked separately by the
+author. The same package source remains under review. Live installation,
+multiplatform and Desktop/Cowork behavior remain untested for the changed bytes.
+This is a draft source change, not a release or installed-profile update; retain
+the publication gate and require fresh qualification before merge.
+The publication check against the actual base commit confirmed that it still
+rejects missing native installation and current-source live Code evidence.
+The agreed draft patch and local checks are complete; no merge, installation or
+release was performed.
