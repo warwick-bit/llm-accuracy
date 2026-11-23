@@ -34,3 +34,8 @@ qualification and final-head CI are pending. Fresh local live installation and
 archive receipts must be recorded before merge; historical receipts do not certify
 this source. Other live hosts and Desktop/Cowork UI remain untested. Reminder
 delivery and passing tests do not prove model compliance or improved accuracy.
+
+The follow-up native qualification regression group passed with 191 passed and
+1 skipped. The fresh bundle attempt passed installation and direct hook checks,
+but model delivery failed; an isolated no-plugin request identified expired
+OAuth authentication. This is a failed attempt, not current live qualification.

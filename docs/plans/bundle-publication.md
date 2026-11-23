@@ -645,4 +645,22 @@ helpers; do not change the owner's active profile or enable optional integration
 Fresh installed model-delivery evidence does not establish model adherence,
 factual accuracy, time savings, Desktop UI or live support on another OS.
 
-Qualification results: pending.
+Qualification results so far: the native distribution, CI-installation,
+compatibility, publication, recorder and archive regression group passed with
+191 passed and 1 skipped. The fresh bundle attempt passed installation,
+configuration, upgrade, automatic Python discovery, direct hook execution,
+uninstall and cleanup, but failed every model-delivery check. A separate isolated
+no-plugin request classified the failure as authentication and reported expired
+OAuth credentials. The selected Personal login still reports logged-in status;
+that status alone does not establish live access. Failed-attempt receipts stay
+in the private task run, not in the candidate's passing evidence. The owner was
+asked to refresh the same selected login; do not substitute another account,
+an API key, historical evidence or a skipped live check. Final qualification
+and merge remain pending that prerequisite and final-head CI.
+
+The repaired Python 3.9 CI leg passed on the qualification commit. The bounded
+independent review of the workflow/version/evidence continuation identified no
+source defect, but returned FAIL for merge readiness because current-source live
+qualification is missing. This is a valid blocker, not approval or an unavailable
+review. Preserve the earlier source review and rerun only the affected live and
+readiness checks after the login prerequisite changes; no gate was bypassed.
