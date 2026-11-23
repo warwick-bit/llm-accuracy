@@ -22,6 +22,8 @@ accuracy benefit. See the [0.8.1 marketplace qualification](docs/release-0.8.1.m
 that version's evidence and pending tag. The [0.8.6-personal.5.28 qualification](docs/release-0.8.6-personal.5.28.md)
 covers mixed-precision Verify checks and their coverage limits; the
 [0.8.6-personal.5.27 release notes](docs/release-0.8.6-personal.5.27.md) cover the earlier background-delivery fix.
+The [0.8.6-personal.5.29 qualification](docs/release-0.8.6-personal.5.29.md)
+covers verification of the actual draft and reuse of matching executed arithmetic.
 
 ## Acknowledgements
 

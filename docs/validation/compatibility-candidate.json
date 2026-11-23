@@ -4,8 +4,8 @@
   "python_minimum": "3.9",
   "packages": {
     "llm-accuracy": {
-      "version": "0.8.6-personal.5.28",
-      "sha256": "0a1ffc634fc4f19cf1625019fde41659aa90f1df279537058134d10b8ad02b25"
+      "version": "0.8.6-personal.5.29",
+      "sha256": "3a90a5c4d55b40b4e481ce2f85da39f0e3e0bd149fefdc529f28cb7475298bde"
     },
     "deterministic-data": {
       "version": "0.1.2",

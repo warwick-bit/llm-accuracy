@@ -623,3 +623,26 @@ The publication check against the actual base commit confirmed that it still
 rejects missing native installation and current-source live Code evidence.
 The agreed draft patch and local checks are complete; no merge, installation or
 release was performed.
+
+#### Qualification and merge continuation
+
+The owner authorized the next step after PR #95 was opened. Desired outcome:
+qualify and merge this marketplace change. Smallest useful deliverable: version
+0.8.6-personal.5.29, fresh existing live installation receipts, and a green final
+PR head before merge. GitHub tagging and hosted ZIP publication remain separate.
+Essential checks: reuse the completed source review and tests; review the new
+workflow/receipt/version changes independently; run current-source native live
+bundle and installation/archive smokes; record the actual pass through the
+existing recorder; require every final-head CI leg and publication aggregate.
+
+New blocking evidence: the original CI run passed all four native installation
+jobs and the other test jobs, but Python 3.9 setup failed on Ubuntu 26.04 and
+publication correctly rejected the missing local live smoke. Keep the 3.9 leg
+on Ubuntu 24.04, whose official Python build manifest supplies that runtime;
+the remaining Python versions continue on ubuntu-latest. Do not remove a check
+or relax the publication gate. Reuse the existing isolated Personal-login smoke
+helpers; do not change the owner's active profile or enable optional integrations.
+Fresh installed model-delivery evidence does not establish model adherence,
+factual accuracy, time savings, Desktop UI or live support on another OS.
+
+Qualification results: pending.
