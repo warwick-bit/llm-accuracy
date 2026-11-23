@@ -645,7 +645,7 @@ helpers; do not change the owner's active profile or enable optional integration
 Fresh installed model-delivery evidence does not establish model adherence,
 factual accuracy, time savings, Desktop UI or live support on another OS.
 
-Qualification results so far: the native distribution, CI-installation,
+Initial qualification results: the native distribution, CI-installation,
 compatibility, publication, recorder and archive regression group passed with
 191 passed and 1 skipped. The fresh bundle attempt passed installation,
 configuration, upgrade, automatic Python discovery, direct hook execution,
@@ -655,12 +655,34 @@ OAuth credentials. The selected Personal login still reports logged-in status;
 that status alone does not establish live access. Failed-attempt receipts stay
 in the private task run, not in the candidate's passing evidence. The owner was
 asked to refresh the same selected login; do not substitute another account,
-an API key, historical evidence or a skipped live check. Final qualification
-and merge remain pending that prerequisite and final-head CI.
+an API key, historical evidence or a skipped live check. At that point, final
+qualification and merge remained pending that prerequisite and final-head CI.
 
-The repaired Python 3.9 CI leg passed on the qualification commit. The bounded
+The repaired Python 3.9 CI leg passed on the qualification commit. The initial bounded
 independent review of the workflow/version/evidence continuation identified no
 source defect, but returned FAIL for merge readiness because current-source live
 qualification is missing. This is a valid blocker, not approval or an unavailable
 review. Preserve the earlier source review and rerun only the affected live and
 readiness checks after the login prerequisite changes; no gate was bypassed.
+
+The owner then requested a retry after refreshing the same Personal login. The
+isolated transport probe passed, followed by successful native Windows bundle
+and installation/archive smokes against committed source
+`eb1015a13f05f6bddf147988b6fe2a5a5cf95d50`. The bundle passed every required
+check, including unconfigured and configured live delivery and invalid-Python
+recovery; all 65 tracked Accuracy files matched the installation with 0 byte
+mismatches. Both smokes cleaned up their temporary profiles. The recorder sealed
+the genuine pass into the Windows-with-Git-Bash live row; no package bytes have
+changed since those runs. This evidence resolves the earlier authentication/live
+blocker; that earlier failed attempt and review remain historical.
+
+The original source review and verified behavior are reused. The bounded
+independent review of the newly recorded receipts and seal returned PASS with no
+findings; its complete packet was not truncated. The receipt/compatibility/CI
+installation/publication regression group passed all 171 cases. Lint, JSON
+parsing, hook compilation, distribution boundaries, compatibility and original
+figure preservation checks passed again. The recorded plugin tree matches the
+current tree, and package files remain unchanged from the tested source.
+Require the full final-head CI and publication gate before merge. Other live
+hosts and Desktop/Cowork UI remain untested;
+installation delivery is not a model-adherence or factual-accuracy guarantee.
